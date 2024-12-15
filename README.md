@@ -1,5 +1,15 @@
 # RedShirt.Example.Api
 
+Example of an ASP.NET Core API.
+
+Repo features:
+
+* Initialisation script for quick namespace adjustment.
+* Use of [NSwag](https://github.com/RicoSuter/NSwag) to automatically document endpoints and to generate client code for
+  an interop package.
+    * Recommended next step: Exporting the interop package as a NuGet for use in other projects.
+* Configuration is based on environment variables.
+
 # Initialisation
 
 To change the namespace of the API en-masse for your purposes, use the `init-repo.sh` script:
