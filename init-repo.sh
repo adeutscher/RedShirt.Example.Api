@@ -33,4 +33,4 @@ mv "${NAMESPACE_OLD}.sln" "${NAMESPACE_NEW}.sln"
 
 while read -r f; do
   sed -i "s/${NAMESPACE_OLD}/${NAMESPACE_NEW}/g" "${f}"
-done <<< "$(find . -name "*.cs" -o -name '*.csproj' -o -name '*.md' -o -name '*.sln' -o -name '*.sh')"
+done <<< "$(find . -name "*.cs" -o -name '*.csproj' -o -name '*.md' -o -name '*.sln' -o -name '*.sh' -o -name 'Dockerfile')"
