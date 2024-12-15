@@ -1,0 +1,19 @@
+services:
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - 4566:4566
+  api:
+    build: ../..
+    depends_on:
+      - localstack
+    ports:
+      - "9000:8080"
+    environment:
+      # General
+      AWS_SERVICE_URL: http://localstack:4566
+      ASPNETCORE_ENVIRONMENT: Development # Enable swagger
+      AWS_ACCESS_KEY_ID: foo
+      AWS_SECRET_ACCESS_KEY: bar
+      # App-specific variables
+      STORAGE__EXAMPLE_ITEM__TABLE_NAME: example

@@ -1,0 +1,241 @@
+{
+  "x-generator": "NSwag v14.2.0.0 (NJsonSchema v11.1.0.0 (Newtonsoft.Json v13.0.0.0))",
+  "openapi": "3.0.0",
+  "info": {
+    "title": "RedShirt.Example.Api",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/example/{name}": {
+      "delete": {
+        "tags": [
+          "ExampleItem"
+        ],
+        "operationId": "ExampleItem_Delete",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "ExampleItem"
+        ],
+        "operationId": "ExampleItem_Get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExampleItemModel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/example": {
+      "get": {
+        "tags": [
+          "ExampleItem"
+        ],
+        "operationId": "ExampleItem_GetList",
+        "parameters": [
+          {
+            "name": "continuationToken",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExampleItemListModel"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "ExampleItem"
+        ],
+        "operationId": "ExampleItem_Put",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleItemPutRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExampleItemModel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ProblemDetails": {
+        "type": "object",
+        "additionalProperties": {
+          "nullable": true
+        },
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ExampleItemModel": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ExampleItemListModel": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "continuationToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExampleItemModel"
+            }
+          }
+        }
+      },
+      "ExampleItemPutRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

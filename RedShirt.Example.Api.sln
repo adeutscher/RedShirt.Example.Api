@@ -1,0 +1,80 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{660591FB-7244-4332-885D-C914E33274CB}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+		Dockerfile = Dockerfile
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B25D689C-BA79-4E67-A5EB-A5771D8EE768}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{E8344A39-85AE-4B3F-A2AE-AEB32BC51446}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "swagger", "swagger", "{31171FEB-4838-475C-865E-ECB6B988456B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedShirt.Example.Api.Interop", "swagger\RedShirt.Example.Api.Interop\RedShirt.Example.Api.Interop.csproj", "{4BFAEB53-6FEB-4CB6-AEBC-D9DFB07BB488}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedShirt.Example.Api", "src\RedShirt.Example.Api\RedShirt.Example.Api.csproj", "{691F2021-7D94-40DC-9EB0-6B63B13BCE8D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedShirt.Example.Api.Core", "src\RedShirt.Example.Api.Core\RedShirt.Example.Api.Core.csproj", "{5162E7E9-D0CC-44BD-A4D7-BB142493BB57}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedShirt.Example.Api.Implementations", "src\RedShirt.Example.Api.Implementations\RedShirt.Example.Api.Implementations.csproj", "{48C364D9-E1C1-477E-8BB1-A69F277BC1ED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedShirt.Example.Api.UnitTests", "test\RedShirt.Example.Api.UnitTests\RedShirt.Example.Api.UnitTests.csproj", "{AC49DE83-CC2A-4CC7-B26B-E90455482033}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedShirt.Example.Api.IntegrationTests", "test\RedShirt.Example.Api.IntegrationTests\RedShirt.Example.Api.IntegrationTests.csproj", "{E706106D-1CA2-47E8-B929-FECCBEC2D749}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedShirt.Example.Api.Core.UnitTests", "test\RedShirt.Example.Api.Core.UnitTests\RedShirt.Example.Api.Core.UnitTests.csproj", "{C178D0FE-0A74-416D-9EFA-213421301E41}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedShirt.Example.Api.Implementations.UnitTests", "test\RedShirt.Example.Api.Implementations.UnitTests\RedShirt.Example.Api.Implementations.UnitTests.csproj", "{84D414FE-E1CF-4781-B0AB-C68DBDE7CA6B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4BFAEB53-6FEB-4CB6-AEBC-D9DFB07BB488}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4BFAEB53-6FEB-4CB6-AEBC-D9DFB07BB488}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4BFAEB53-6FEB-4CB6-AEBC-D9DFB07BB488}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4BFAEB53-6FEB-4CB6-AEBC-D9DFB07BB488}.Release|Any CPU.Build.0 = Release|Any CPU
+		{691F2021-7D94-40DC-9EB0-6B63B13BCE8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{691F2021-7D94-40DC-9EB0-6B63B13BCE8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{691F2021-7D94-40DC-9EB0-6B63B13BCE8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{691F2021-7D94-40DC-9EB0-6B63B13BCE8D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5162E7E9-D0CC-44BD-A4D7-BB142493BB57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5162E7E9-D0CC-44BD-A4D7-BB142493BB57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5162E7E9-D0CC-44BD-A4D7-BB142493BB57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5162E7E9-D0CC-44BD-A4D7-BB142493BB57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48C364D9-E1C1-477E-8BB1-A69F277BC1ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48C364D9-E1C1-477E-8BB1-A69F277BC1ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48C364D9-E1C1-477E-8BB1-A69F277BC1ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48C364D9-E1C1-477E-8BB1-A69F277BC1ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC49DE83-CC2A-4CC7-B26B-E90455482033}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC49DE83-CC2A-4CC7-B26B-E90455482033}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC49DE83-CC2A-4CC7-B26B-E90455482033}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC49DE83-CC2A-4CC7-B26B-E90455482033}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E706106D-1CA2-47E8-B929-FECCBEC2D749}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E706106D-1CA2-47E8-B929-FECCBEC2D749}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E706106D-1CA2-47E8-B929-FECCBEC2D749}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E706106D-1CA2-47E8-B929-FECCBEC2D749}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C178D0FE-0A74-416D-9EFA-213421301E41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C178D0FE-0A74-416D-9EFA-213421301E41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C178D0FE-0A74-416D-9EFA-213421301E41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C178D0FE-0A74-416D-9EFA-213421301E41}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84D414FE-E1CF-4781-B0AB-C68DBDE7CA6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84D414FE-E1CF-4781-B0AB-C68DBDE7CA6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84D414FE-E1CF-4781-B0AB-C68DBDE7CA6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84D414FE-E1CF-4781-B0AB-C68DBDE7CA6B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4BFAEB53-6FEB-4CB6-AEBC-D9DFB07BB488} = {31171FEB-4838-475C-865E-ECB6B988456B}
+		{691F2021-7D94-40DC-9EB0-6B63B13BCE8D} = {B25D689C-BA79-4E67-A5EB-A5771D8EE768}
+		{5162E7E9-D0CC-44BD-A4D7-BB142493BB57} = {B25D689C-BA79-4E67-A5EB-A5771D8EE768}
+		{48C364D9-E1C1-477E-8BB1-A69F277BC1ED} = {B25D689C-BA79-4E67-A5EB-A5771D8EE768}
+		{AC49DE83-CC2A-4CC7-B26B-E90455482033} = {E8344A39-85AE-4B3F-A2AE-AEB32BC51446}
+		{E706106D-1CA2-47E8-B929-FECCBEC2D749} = {E8344A39-85AE-4B3F-A2AE-AEB32BC51446}
+		{C178D0FE-0A74-416D-9EFA-213421301E41} = {E8344A39-85AE-4B3F-A2AE-AEB32BC51446}
+		{84D414FE-E1CF-4781-B0AB-C68DBDE7CA6B} = {E8344A39-85AE-4B3F-A2AE-AEB32BC51446}
+	EndGlobalSection
+EndGlobal

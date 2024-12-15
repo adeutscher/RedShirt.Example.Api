@@ -1,0 +1,22 @@
+{
+  "runtime": "Net80",
+  "defaultVariables": "Configuration=Debug",
+  "documentGenerator": {
+    "aspNetCoreToOpenApi": {
+      "project": null,
+      "documentName": "v1",
+      "msBuildProjectExtensionsPath": null,
+      "configuration": null,
+      "runtime": null,
+      "targetFramework": null,
+      "noBuild": true,
+      "msBuildOutputPath": null,
+      "verbose": true,
+      "workingDirectory": null,
+      "aspNetCoreEnvironment": null,
+      "output": "../../swagger/RedShirt.Example.Api.Interop/swagger.json",
+      "newLineBehavior": "Auto"
+    }
+  },
+  "codeGenerators": {}
+}
