@@ -32,7 +32,7 @@ internal class DynamoExampleItemRepository(
 
     public async Task<ExampleItemModel> GetByName(string name, CancellationToken cancellationToken = default)
     {
-        var obj = await dynamoDbContext.LoadAsync<ExampleItemModel>(name, GetOperationConfig(), cancellationToken);
+        var obj = await dynamoDbContext.LoadAsync<ExampleItemMapping>(name, GetOperationConfig(), cancellationToken);
 
         if (obj is null)
         {
