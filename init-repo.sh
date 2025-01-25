@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NAMESPACE_OLD="Foo.Bar"
+NAMESPACE_OLD="RedShirt.Example.Api"
 NAMESPACE_NEW="${1}"
 
 rename_project() {
