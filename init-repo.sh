@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NAMESPACE_OLD="RedShirt.Example.Api"
+NAMESPACE_OLD="Foo.Bar"
 NAMESPACE_NEW="${1}"
 
 rename_project() {
@@ -33,4 +33,4 @@ mv "${NAMESPACE_OLD}.sln" "${NAMESPACE_NEW}.sln"
 
 while read -r f; do
   sed -i "s/${NAMESPACE_OLD}/${NAMESPACE_NEW}/g" "${f}"
-done <<< "$(find . -name "*.cs" -o -name '*.csproj' -o -name '*.md' -o -name '*.sln' -o -name '*.sh' -o -name 'Dockerfile')"
+done <<< "$(find . -name "*.cs" -o -name '*.csproj' -o -name '*.md' -o -name '*.sln' -o -name '*.sh' -o -name 'Dockerfile' -o -name 'nswag.json')"
