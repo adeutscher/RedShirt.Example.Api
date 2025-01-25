@@ -4,7 +4,10 @@ services:
     ports:
       - 4566:4566
   api:
-    build: ../..
+    build:
+      context: ../..
+      args:
+        TESTS_ENABLE: "${TESTS_ENABLE-1}"
     depends_on:
       - localstack
     ports:
