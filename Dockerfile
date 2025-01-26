@@ -6,7 +6,6 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 COPY . /build
 WORKDIR /build
-RUN ls -la
 RUN dotnet restore
 RUN dotnet build
 ARG TESTS_ENABLE=1
