@@ -24,13 +24,14 @@ public static class ServiceCollectionExtensions
 
         // Note: S3 needs a special carve-out for AmazonS3Config.ForcePathStyle that is not needed here.
 
-        Console.WriteLine($"Using AWS service URL: {url}");
+        Console.WriteLine($"Using AWS service URL for {typeof(TService)}: {url}");
 
         return services.AddAWSService<TService>(new AWSOptions
         {
             DefaultClientConfig =
             {
-                ServiceURL = url
+                ServiceURL = url,
+                AuthenticationRegion = Environment.GetEnvironmentVariable("AWS_REGION")
             }
         });
     }
