@@ -32,33 +32,41 @@ public class DependencyInjectionTests
 
         var serviceCollection = new ServiceCollection();
 
-        TestUtilities.WrapEnvironment(new Dictionary<string, string>
+        var environment = new Dictionary<string, string>
         {
-            ["AWS_SERVICE_URL"] = "http://localhost:8000"
-        }, () => { serviceCollection.ConfigureApiServices(configuration); });
+            ["AWS_SERVICE_URL"] = "http://localhost:8000",
+            ["AWS_ACCESS_KEY_ID"] = "foo",
+            ["AWS_SECRET_ACCESS_KEY"] = "bar",
+            ["AWS_SESSION_TOKEN"] = "foobar"
+        };
 
-        foreach (var controllerType in controllerClasses)
+        TestUtilities.WrapEnvironment(environment, () =>
         {
-            // Unclear on why, but need to declare our type as an implementation of itself
-            serviceCollection.AddSingleton(controllerType, controllerType);
-        }
+            serviceCollection.ConfigureApiServices(configuration);
 
-        var provider = serviceCollection.BuildServiceProvider();
-
-        foreach (var controllerType in controllerClasses)
-        {
-            // Confirm that we can build each controller
-            var service = provider.GetService(controllerType);
-            Assert.NotNull(service);
-
-            foreach (var method in controllerType.GetMethods())
+            foreach (var controllerType in controllerClasses)
             {
-                foreach (var parameter in method.GetParameters()
-                             .Where(parameter => parameter.GetCustomAttributes<FromServicesAttribute>().Any()))
+                // Unclear on why, but need to declare our type as an implementation of itself
+                serviceCollection.AddSingleton(controllerType, controllerType);
+            }
+
+            var provider = serviceCollection.BuildServiceProvider();
+
+            foreach (var controllerType in controllerClasses)
+            {
+                // Confirm that we can build each controller
+                var service = provider.GetService(controllerType);
+                Assert.NotNull(service);
+
+                foreach (var method in controllerType.GetMethods())
                 {
-                    provider.GetRequiredService(parameter.ParameterType);
+                    foreach (var parameter in method.GetParameters()
+                                 .Where(parameter => parameter.GetCustomAttributes<FromServicesAttribute>().Any()))
+                    {
+                        provider.GetRequiredService(parameter.ParameterType);
+                    }
                 }
             }
-        }
+        });
     }
 }

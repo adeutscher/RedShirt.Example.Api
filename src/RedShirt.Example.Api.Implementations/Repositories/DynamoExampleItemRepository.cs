@@ -16,23 +16,17 @@ internal class DynamoExampleItemRepository(
     IDynamoDBContext dynamoDbContext,
     IOptions<DynamoExampleItemRepository.ConfigurationModel> options) : IExampleItemRepository
 {
-    private DynamoDBOperationConfig GetOperationConfig()
-    {
-        return new DynamoDBOperationConfig
-        {
-            OverrideTableName = options.Value.TableName
-        };
-    }
-
     public async Task DeleteByName(string name, CancellationToken cancellationToken = default)
     {
         var resource = await GetByName(name, cancellationToken);
-        await dynamoDbContext.DeleteAsync(resource, GetOperationConfig(), cancellationToken);
+        await dynamoDbContext.DeleteAsync(resource, new DeleteConfig {OverrideTableName = options.Value.TableName},
+            cancellationToken);
     }
 
     public async Task<ExampleItemModel> GetByName(string name, CancellationToken cancellationToken = default)
     {
-        var obj = await dynamoDbContext.LoadAsync<ExampleItemMapping>(name, GetOperationConfig(), cancellationToken);
+        var obj = await dynamoDbContext.LoadAsync<ExampleItemMapping>(name,
+            new LoadConfig {OverrideTableName = options.Value.TableName}, cancellationToken);
 
         if (obj is null)
         {
@@ -50,7 +44,7 @@ internal class DynamoExampleItemRepository(
         return dynamoDbContext.SaveAsync(new ExampleItemMapping
         {
             Name = model.Name
-        }, GetOperationConfig(), cancellationToken);
+        }, new SaveConfig {OverrideTableName = options.Value.TableName}, cancellationToken);
     }
 
     public async Task<ExampleItemListModel> GetListAsync(string? continuationToken,
