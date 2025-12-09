@@ -20,7 +20,7 @@
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-        <Exec Command="$(NSwagExe_Net90) run nswag.json /variables:Configuration=$(Configuration)"/>
+        <Exec Command="$(NSwagExe_Net100) run nswag.json /variables:Configuration=$(Configuration)"/>
     </Target>
 
 </Project>

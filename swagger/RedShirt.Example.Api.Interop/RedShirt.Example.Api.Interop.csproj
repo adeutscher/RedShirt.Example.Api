@@ -16,7 +16,7 @@
     </ItemGroup>
 
     <Target Name="NSwag" BeforeTargets="BeforeBuild;BeforeRebuild">
-        <Exec Command="$(NSwagExe_Net90) run nswag.json"/>
+        <Exec Command="$(NSwagExe_Net100) run nswag.json"/>
     </Target>
 
 </Project>
