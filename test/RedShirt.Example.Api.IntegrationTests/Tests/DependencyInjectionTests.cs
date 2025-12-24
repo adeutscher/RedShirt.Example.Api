@@ -22,7 +22,8 @@ public class DependencyInjectionTests
             !.DefinedTypes
             .Where(t =>
                 t != typeof(Controller)
-                && t.IsAssignableTo(typeof(Controller)))
+                && t != typeof(ControllerBase)
+                && t.IsAssignableTo(typeof(ControllerBase)))
             .ToList();
 
         // Sanity-check our test's seeking
