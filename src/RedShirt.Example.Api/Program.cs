@@ -58,4 +58,4 @@ app.MapControllerRoute(
     "default",
     "{controller=Home}/{action=Index}/{id?}");
 
-app.Run();
+await app.RunAsync();

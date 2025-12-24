@@ -10,7 +10,7 @@ namespace RedShirt.Example.Api.Controllers;
 [ApiController]
 [Route("example")]
 [ProducesJson]
-public class ExampleItemController(IExampleItemService exampleItemService) : Controller
+public class ExampleItemController(IExampleItemService exampleItemService) : ControllerBase
 {
     [HttpDelete("{name}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
