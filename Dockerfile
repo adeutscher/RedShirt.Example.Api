@@ -22,7 +22,7 @@ RUN \[ ${TESTS_ENABLE} -ne 1 \] \
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN rm -rf swagger swagger *sln global.json \
+RUN rm -rf swagger test/ *sln global.json \
  && dotnet publish "src/RedShirt.Example.Api/RedShirt.Example.Api.csproj" --self-contained -c $BUILD_CONFIGURATION -o /app/publish
 
 FROM base AS final
