@@ -13,10 +13,14 @@ services:
     ports:
       - "9000:8080"
     environment:
-      # General
-      AWS_SERVICE_URL: http://localstack:4566
+      # AspNetCore
       ASPNETCORE_ENVIRONMENT: Development # Enable swagger
+      ASPNETCORE_URLS: http://*:8080
+      # AWS Settings
+      AWS_SERVICE_URL: http://localstack:4566
       AWS_ACCESS_KEY_ID: foo
       AWS_SECRET_ACCESS_KEY: bar
+      # General
+      LOGGING__LOG_LEVEL__DEFAULT: Information
       # App-specific variables
       STORAGE__EXAMPLE_ITEM__TABLE_NAME: example
