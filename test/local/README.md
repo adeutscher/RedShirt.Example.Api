@@ -1,4 +1,4 @@
-# Testing Testing Instructions
+# Local Testing Instructions
 
 1. Bring up `localstack` container:
 
