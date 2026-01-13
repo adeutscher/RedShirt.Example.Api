@@ -9,6 +9,7 @@
     "openApiToCSharpClient": {
       "generateClientClasses": true,
       "generateClientInterfaces": true,
+      "jsonLibrary": "SystemTextJson",
       "generateDtoTypes": true,
       "injectHttpClient": true,
       "disposeHttpClient": true,
