@@ -1,6 +1,6 @@
 services:
-  localstack:
-    image: localstack/localstack:latest
+  ministack:
+    image: ministackorg/ministack:latest
     ports:
       - 4566:4566
   api:
@@ -9,7 +9,7 @@ services:
       args:
         TESTS_ENABLE: "${TESTS_ENABLE-1}"
     depends_on:
-      - localstack
+      - ministack
     ports:
       - "9000:8080"
     environment:
@@ -17,9 +17,10 @@ services:
       ASPNETCORE_ENVIRONMENT: Development # Enable swagger
       ASPNETCORE_URLS: http://*:8080
       # AWS Settings
-      AWS_SERVICE_URL: http://localstack:4566
+      AWS_SERVICE_URL: http://ministack:4566
       AWS_ACCESS_KEY_ID: foo
       AWS_SECRET_ACCESS_KEY: bar
+      AWS_REGION: us-east-1
       # General
       LOGGING__LOG_LEVEL__DEFAULT: Information
       # App-specific variables
