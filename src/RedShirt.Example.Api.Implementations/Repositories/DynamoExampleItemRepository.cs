@@ -72,7 +72,7 @@ internal class DynamoExampleItemRepository(
 
         return new ExampleItemListModel
         {
-            ContinuationToken = response.LastEvaluatedKey.Count == 0
+            ContinuationToken = (response.LastEvaluatedKey?.Count ?? 0) == 0
                 ? null
                 : Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(response.LastEvaluatedKey)),
             Items = data
