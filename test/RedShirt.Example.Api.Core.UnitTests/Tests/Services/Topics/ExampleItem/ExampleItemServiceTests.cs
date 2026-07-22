@@ -1,6 +1,4 @@
 using Moq;
-using RedShirt.Example.Api.Common.Shared.Core.Abstractions;
-using RedShirt.Example.Api.Core.Exceptions;
 using RedShirt.Example.Api.Core.Exceptions.Responses;
 using RedShirt.Example.Api.Core.Models;
 using RedShirt.Example.Api.Core.Repositories;
@@ -16,18 +14,23 @@ public class ExampleItemServiceTests
 {
     private static ExampleItemService CreateService(
         IExampleItemRepository? repository = null,
-        ISubmissionIdempotencyService? idempotencyService = null)
+        ISubmissionIdempotencyWrapperService? idempotencyWrapperService = null)
     {
         return new ExampleItemService(
             repository ?? new Mock<IExampleItemRepository>().Object,
-            idempotencyService ?? new Mock<ISubmissionIdempotencyService>().Object);
+            idempotencyWrapperService ?? CreateInvokingWrapper().Object);
     }
 
-    private static Mock<IAbstractedLock> CreateLock(bool isAcquired)
+    private static Mock<ISubmissionIdempotencyWrapperService> CreateInvokingWrapper()
     {
-        var lockHandle = new Mock<IAbstractedLock>();
-        lockHandle.SetupGet(l => l.IsAcquired).Returns(isAcquired);
-        return lockHandle;
+        var wrapper = new Mock<ISubmissionIdempotencyWrapperService>();
+        wrapper
+            .Setup(w => w.RunIdempotentlyAsync(
+                It.IsAny<string>(),
+                It.IsAny<Func<Task<ExampleItemModel>>>(),
+                It.IsAny<CancellationToken>()))
+            .Returns((string _, Func<Task<ExampleItemModel>> callback, CancellationToken _) => callback());
+        return wrapper;
     }
 
     [Fact]
@@ -109,120 +112,70 @@ public class ExampleItemServiceTests
     }
 
     [Fact]
-    public async Task PutAsync_PersistsCachesAndUnlocks_OnSuccess()
+    public async Task PutAsync_ReturnsWrapperResult_WithoutCallingRepository_WhenCallbackIsSkipped()
+    {
+        var cached = new ExampleItemModel {Name = "cached"};
+        var repository = new Mock<IExampleItemRepository>();
+        var wrapper = new Mock<ISubmissionIdempotencyWrapperService>();
+        wrapper
+            .Setup(w => w.RunIdempotentlyAsync(
+                "idem-1",
+                It.IsAny<Func<Task<ExampleItemModel>>>(),
+                TestContext.Current.CancellationToken))
+            .ReturnsAsync(cached);
+        var service = CreateService(repository.Object, wrapper.Object);
+
+        var result = await service.PutAsync(new ExampleItemModel {Name = "fresh"}, "idem-1",
+            TestContext.Current.CancellationToken);
+
+        Assert.Same(cached, result);
+        repository.Verify(
+            r => r.Put(It.IsAny<ExampleItemModel>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task PutAsync_RunsThroughIdempotencyWrapper_AndPersistsOnSuccess()
     {
         var repository = new Mock<IExampleItemRepository>();
-        var lockHandle = CreateLock(true);
-        var idempotency = new Mock<ISubmissionIdempotencyService>();
-        idempotency
-            .Setup(s => s.GetRecordAsync<ExampleItemModel>("idem-1", TestContext.Current.CancellationToken))
-            .ReturnsAsync((ExampleItemModel?) null);
-        idempotency
-            .Setup(s => s.GetLockAsync("idem-1", TestContext.Current.CancellationToken))
-            .ReturnsAsync(lockHandle.Object);
         repository
             .Setup(r => r.Put(It.IsAny<ExampleItemModel>(), TestContext.Current.CancellationToken))
             .Returns(Task.CompletedTask);
-        idempotency
-            .Setup(s => s.SetRecordAsync("idem-1", It.IsAny<ExampleItemModel>(),
-                TestContext.Current.CancellationToken))
-            .Returns(Task.CompletedTask);
-        var service = CreateService(repository.Object, idempotency.Object);
+        var wrapper = CreateInvokingWrapper();
+        var service = CreateService(repository.Object, wrapper.Object);
         var model = new ExampleItemModel {Name = "widget"};
 
         var result = await service.PutAsync(model, "idem-1", TestContext.Current.CancellationToken);
 
         Assert.Same(model, result);
         repository.Verify(r => r.Put(model, TestContext.Current.CancellationToken), Times.Once);
-        idempotency.Verify(
-            s => s.SetRecordAsync("idem-1", model, TestContext.Current.CancellationToken),
-            Times.Once);
-        lockHandle.Verify(l => l.Unlock(), Times.Once);
-    }
-
-    [Fact]
-    public async Task PutAsync_ReturnsCachedResponse_WithoutCallingRepositoryOrLock()
-    {
-        var cached = new ExampleItemModel {Name = "cached"};
-        var repository = new Mock<IExampleItemRepository>();
-        var idempotency = new Mock<ISubmissionIdempotencyService>();
-        idempotency
-            .Setup(s => s.GetRecordAsync<ExampleItemModel>("idem-1", TestContext.Current.CancellationToken))
-            .ReturnsAsync(cached);
-        var service = CreateService(repository.Object, idempotency.Object);
-        var model = new ExampleItemModel {Name = "fresh"};
-
-        var result = await service.PutAsync(model, "idem-1", TestContext.Current.CancellationToken);
-
-        Assert.Same(cached, result);
-        idempotency.Verify(
-            s => s.GetRecordAsync<ExampleItemModel>("idem-1", TestContext.Current.CancellationToken),
-            Times.Once);
-        idempotency.Verify(
-            s => s.GetLockAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        repository.Verify(
-            r => r.Put(It.IsAny<ExampleItemModel>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        idempotency.Verify(
-            s => s.SetRecordAsync(It.IsAny<string>(), It.IsAny<ExampleItemModel>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+        wrapper.Verify(w => w.RunIdempotentlyAsync(
+            "idem-1",
+            It.IsAny<Func<Task<ExampleItemModel>>>(),
+            TestContext.Current.CancellationToken), Times.Once);
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public async Task PutAsync_ThrowsBadRequest_WhenNameIsMissing_AfterLockIsAcquired(string? name)
+    public async Task PutAsync_ThrowsBadRequest_WhenNameIsMissing(string? name)
     {
         var repository = new Mock<IExampleItemRepository>();
-        var lockHandle = CreateLock(true);
-        var idempotency = new Mock<ISubmissionIdempotencyService>();
-        idempotency
-            .Setup(s => s.GetRecordAsync<ExampleItemModel>("idem-1", TestContext.Current.CancellationToken))
-            .ReturnsAsync((ExampleItemModel?) null);
-        idempotency
-            .Setup(s => s.GetLockAsync("idem-1", TestContext.Current.CancellationToken))
-            .ReturnsAsync(lockHandle.Object);
-        var service = CreateService(repository.Object, idempotency.Object);
+        var wrapper = CreateInvokingWrapper();
+        var service = CreateService(repository.Object, wrapper.Object);
 
         var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
             service.PutAsync(new ExampleItemModel {Name = name!}, "idem-1",
                 TestContext.Current.CancellationToken));
 
         Assert.Equal("Name is required", exception.Message);
-        idempotency.Verify(s => s.GetLockAsync("idem-1", TestContext.Current.CancellationToken), Times.Once);
         repository.Verify(
             r => r.Put(It.IsAny<ExampleItemModel>(), It.IsAny<CancellationToken>()),
             Times.Never);
-        idempotency.Verify(
-            s => s.SetRecordAsync(It.IsAny<string>(), It.IsAny<ExampleItemModel>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        lockHandle.Verify(l => l.Unlock(), Times.Never);
-    }
-
-    [Fact]
-    public async Task PutAsync_ThrowsIdempotentConcurrency_WhenLockIsNotAcquired()
-    {
-        var repository = new Mock<IExampleItemRepository>();
-        var lockHandle = CreateLock(false);
-        var idempotency = new Mock<ISubmissionIdempotencyService>();
-        idempotency
-            .Setup(s => s.GetRecordAsync<ExampleItemModel>("idem-1", TestContext.Current.CancellationToken))
-            .ReturnsAsync((ExampleItemModel?) null);
-        idempotency
-            .Setup(s => s.GetLockAsync("idem-1", TestContext.Current.CancellationToken))
-            .ReturnsAsync(lockHandle.Object);
-        var service = CreateService(repository.Object, idempotency.Object);
-
-        await Assert.ThrowsAsync<IdempotentConcurrencyException>(() =>
-            service.PutAsync(new ExampleItemModel {Name = "widget"}, "idem-1",
-                TestContext.Current.CancellationToken));
-
-        idempotency.Verify(s => s.GetLockAsync("idem-1", TestContext.Current.CancellationToken), Times.Once);
-        repository.Verify(
-            r => r.Put(It.IsAny<ExampleItemModel>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        lockHandle.Verify(l => l.Unlock(), Times.Never);
+        wrapper.Verify(w => w.RunIdempotentlyAsync(
+            "idem-1",
+            It.IsAny<Func<Task<ExampleItemModel>>>(),
+            TestContext.Current.CancellationToken), Times.Once);
     }
 }

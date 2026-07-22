@@ -1,4 +1,3 @@
-using RedShirt.Example.Api.Core.Exceptions;
 using RedShirt.Example.Api.Core.Exceptions.Responses;
 using RedShirt.Example.Api.Core.Models;
 using RedShirt.Example.Api.Core.Repositories;
@@ -15,7 +14,9 @@ public interface IExampleItemService
         CancellationToken cancellationToken = default);
 }
 
-internal class ExampleItemService(IExampleItemRepository repository, ISubmissionIdempotencyService idempotencyService)
+internal class ExampleItemService(
+    IExampleItemRepository repository,
+    ISubmissionIdempotencyWrapperService idempotencyWrapperService)
     : IExampleItemService
 {
     public Task<ExampleItemModel> GetAsync(string name, CancellationToken cancellationToken = default)
@@ -37,38 +38,18 @@ internal class ExampleItemService(IExampleItemRepository repository, ISubmission
     public async Task<ExampleItemModel> PutAsync(ExampleItemModel model, string idempotencyKey,
         CancellationToken cancellationToken = default)
     {
-        /* Pre-Execution Idempotency Check */
-
-        if (await idempotencyService.GetRecordAsync<ExampleItemModel>(idempotencyKey, cancellationToken) is
-            { } cachedResponse)
+        return await idempotencyWrapperService.RunIdempotentlyAsync(idempotencyKey, async () =>
         {
-            return cachedResponse;
-        }
+            if (string.IsNullOrWhiteSpace(model.Name))
+            {
+                throw new BadRequestException("Name is required");
+            }
 
-        var concurrentAttemptLock = await idempotencyService.GetLockAsync(idempotencyKey, cancellationToken);
-        if (!concurrentAttemptLock.IsAcquired)
-        {
-            // Another instance of the handler is currently trying to process this same request
-            throw new IdempotentConcurrencyException();
-        }
+            await repository.Put(model, cancellationToken);
 
-        /* Execute */
-
-        if (string.IsNullOrWhiteSpace(model.Name))
-        {
-            throw new BadRequestException("Name is required");
-        }
-
-        await repository.Put(model, cancellationToken);
-
-        /* Idempotency Cleanup */
-
-        await idempotencyService.SetRecordAsync(idempotencyKey, model, cancellationToken);
-
-        concurrentAttemptLock.Unlock();
-
-        // Return
-        return model;
+            // Return
+            return model;
+        }, cancellationToken);
     }
 
     public Task DeleteAsync(string name, CancellationToken cancellationToken = default)
