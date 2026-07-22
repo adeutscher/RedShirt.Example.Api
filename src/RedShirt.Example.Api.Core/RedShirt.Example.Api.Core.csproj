@@ -8,8 +8,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.10" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.10"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10"/>
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.10"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="Services\Topics\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Shared.Core\RedShirt.Example.Api.Common.Shared.Core.csproj"/>
     </ItemGroup>
 
 </Project>

@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using RedShirt.Example.Api.Attributes;
 using RedShirt.Example.Api.Core.Exceptions;
+using RedShirt.Example.Api.Core.Exceptions.Responses;
 using RedShirt.Example.Api.Core.Models;
-using RedShirt.Example.Api.Core.Services;
+using RedShirt.Example.Api.Core.Services.Topics.ExampleItem;
 using RedShirt.Example.Api.Models.ExampleItem;
 
 namespace RedShirt.Example.Api.Controllers;
@@ -66,20 +67,26 @@ public class ExampleItemController(IExampleItemService exampleItemService) : Con
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExampleItemModel))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Put([FromBody] ExampleItemPutRequest request)
+    public async Task<IActionResult> Put([FromBody] ExampleItemPutRequest request,
+        [FromHeader(Name = "Idempotency-Key")]
+        string idempotencyKey)
     {
         try
         {
             var model = await exampleItemService.PutAsync(new ExampleItemModel
             {
                 Name = request.Name
-            });
+            }, idempotencyKey);
 
             return Ok(model);
         }
         catch (BadRequestException e)
         {
             return BadRequest(e.Message);
+        }
+        catch (IdempotentConcurrencyException)
+        {
+            return Conflict();
         }
     }
 }

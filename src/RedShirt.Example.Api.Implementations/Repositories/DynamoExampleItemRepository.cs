@@ -7,7 +7,7 @@ using RedShirt.Example.Api.Core.Models;
 using RedShirt.Example.Api.Core.Repositories;
 using RedShirt.Example.Api.Implementations.Domain;
 using System.Text.Json;
-using ResourceNotFoundException = RedShirt.Example.Api.Core.Exceptions.ResourceNotFoundException;
+using ResourceNotFoundException = RedShirt.Example.Api.Core.Exceptions.Responses.ResourceNotFoundException;
 
 namespace RedShirt.Example.Api.Implementations.Repositories;
 

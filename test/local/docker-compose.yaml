@@ -23,5 +23,7 @@ services:
       AWS_REGION: us-east-1
       # General
       LOGGING__LOG_LEVEL__DEFAULT: Information
+      # Core Configuration
+      CORE__IDEMPOTENCY__IDEMPOTENCY_TRACKING_TIME_MINUTES: 3
       # App-specific variables
       STORAGE__EXAMPLE_ITEM__TABLE_NAME: example

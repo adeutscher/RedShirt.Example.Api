@@ -28,6 +28,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedShirt.Example.Api.Core.U
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedShirt.Example.Api.Implementations.UnitTests", "test\RedShirt.Example.Api.Implementations.UnitTests\RedShirt.Example.Api.Implementations.UnitTests.csproj", "{84D414FE-E1CF-4781-B0AB-C68DBDE7CA6B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedShirt.Example.Api.Common.Shared.Core", "src\RedShirt.Example.Api.Common.Shared.Core\RedShirt.Example.Api.Common.Shared.Core.csproj", "{12C9BDF3-111F-49A1-9D58-F07C807292CB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedShirt.Example.Api.Common.Shared.Implementation.InMemory", "src\RedShirt.Example.Api.Common.Shared.Implementation.InMemory\RedShirt.Example.Api.Common.Shared.Implementation.InMemory.csproj", "{2E8CA98B-D719-4467-A69F-1A77C1D6B960}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedShirt.Example.Api.Common.Shared.Implementation.InMemory.UnitTests", "test\RedShirt.Example.Api.Common.Shared.Implementation.InMemory.UnitTests\RedShirt.Example.Api.Common.Shared.Implementation.InMemory.UnitTests.csproj", "{16842379-1590-40AA-8A76-C577B66FFE27}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,6 +72,18 @@ Global
 		{84D414FE-E1CF-4781-B0AB-C68DBDE7CA6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{84D414FE-E1CF-4781-B0AB-C68DBDE7CA6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{84D414FE-E1CF-4781-B0AB-C68DBDE7CA6B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12C9BDF3-111F-49A1-9D58-F07C807292CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12C9BDF3-111F-49A1-9D58-F07C807292CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12C9BDF3-111F-49A1-9D58-F07C807292CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12C9BDF3-111F-49A1-9D58-F07C807292CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E8CA98B-D719-4467-A69F-1A77C1D6B960}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E8CA98B-D719-4467-A69F-1A77C1D6B960}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E8CA98B-D719-4467-A69F-1A77C1D6B960}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E8CA98B-D719-4467-A69F-1A77C1D6B960}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16842379-1590-40AA-8A76-C577B66FFE27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16842379-1590-40AA-8A76-C577B66FFE27}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16842379-1590-40AA-8A76-C577B66FFE27}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16842379-1590-40AA-8A76-C577B66FFE27}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4BFAEB53-6FEB-4CB6-AEBC-D9DFB07BB488} = {31171FEB-4838-475C-865E-ECB6B988456B}
@@ -76,5 +94,8 @@ Global
 		{E706106D-1CA2-47E8-B929-FECCBEC2D749} = {E8344A39-85AE-4B3F-A2AE-AEB32BC51446}
 		{C178D0FE-0A74-416D-9EFA-213421301E41} = {E8344A39-85AE-4B3F-A2AE-AEB32BC51446}
 		{84D414FE-E1CF-4781-B0AB-C68DBDE7CA6B} = {E8344A39-85AE-4B3F-A2AE-AEB32BC51446}
+		{12C9BDF3-111F-49A1-9D58-F07C807292CB} = {B25D689C-BA79-4E67-A5EB-A5771D8EE768}
+		{2E8CA98B-D719-4467-A69F-1A77C1D6B960} = {B25D689C-BA79-4E67-A5EB-A5771D8EE768}
+		{16842379-1590-40AA-8A76-C577B66FFE27} = {E8344A39-85AE-4B3F-A2AE-AEB32BC51446}
 	EndGlobalSection
 EndGlobal

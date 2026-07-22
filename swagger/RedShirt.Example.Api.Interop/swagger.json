@@ -134,6 +134,17 @@
           "ExampleItem"
         ],
         "operationId": "ExampleItem_Put",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "x-originalName": "idempotencyKey",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          }
+        ],
         "requestBody": {
           "x-name": "request",
           "content": {
