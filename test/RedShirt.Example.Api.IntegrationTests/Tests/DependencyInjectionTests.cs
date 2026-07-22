@@ -13,7 +13,7 @@ public class DependencyInjectionTests
     public void Controller_DependencyInjection_Test()
     {
         /*
-         * Note: Referencing ServiceCollectionExtensions because it is a decently static
+         * Note: Referencing ProducesJsonAttribute because it is a decently static
          *      class that we're about to reference a method from.
          *
          * Run cold, the assembly we're after wouldn't show up in `AppDomain.CurrentDomain.GetAssemblies()`.
@@ -59,6 +59,7 @@ public class DependencyInjectionTests
                 var service = provider.GetService(controllerType);
                 Assert.NotNull(service);
 
+                // Look for uses of [FromServices] attribute on methods
                 foreach (var method in controllerType.GetMethods())
                 {
                     foreach (var parameter in method.GetParameters()
