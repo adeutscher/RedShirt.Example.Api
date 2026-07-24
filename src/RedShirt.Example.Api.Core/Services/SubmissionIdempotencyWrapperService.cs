@@ -37,12 +37,6 @@ public class SubmissionIdempotencyWrapperService(ISubmissionIdempotencyService i
     {
         /* Pre-Execution Idempotency Check */
 
-        if (await idempotencyService.GetRecordAsync<T>(idempotencyKey, cancellationToken) is
-            { } cachedResponse)
-        {
-            return cachedResponse;
-        }
-
         var concurrentAttemptLock = await idempotencyService.GetLockAsync(idempotencyKey, cancellationToken);
         if (!concurrentAttemptLock.IsAcquired)
         {
@@ -50,15 +44,26 @@ public class SubmissionIdempotencyWrapperService(ISubmissionIdempotencyService i
             throw new IdempotentConcurrencyException();
         }
 
-        var model = await callback();
+        try
+        {
+            if (await idempotencyService.GetRecordAsync<T>(idempotencyKey, cancellationToken) is
+                { } cachedResponse)
+            {
+                return cachedResponse;
+            }
 
-        /* Idempotency Cleanup */
+            var model = await callback();
 
-        await idempotencyService.SetRecordAsync(idempotencyKey, model, cancellationToken);
+            /* Idempotency Cleanup */
 
-        concurrentAttemptLock.Unlock();
+            await idempotencyService.SetRecordAsync(idempotencyKey, model, cancellationToken);
 
-        // Return
-        return model;
+            // Return
+            return model;
+        }
+        finally
+        {
+            concurrentAttemptLock.Unlock();
+        }
     }
 }
