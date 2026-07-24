@@ -76,7 +76,7 @@ public class ExampleItemController(IExampleItemService exampleItemService) : Con
             var model = await exampleItemService.PutAsync(new ExampleItemModel
             {
                 Name = request.Name
-            }, idempotencyKey);
+            }, string.IsNullOrWhiteSpace(idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey);
 
             return Ok(model);
         }
