@@ -12,6 +12,7 @@ public static class ServiceCollectionExtensions
     {
         return services
             .AddSingleton<ISubmissionIdempotencyService, SubmissionIdempotencyService>()
+            .AddSingleton<ISubmissionIdempotencyWrapperService, SubmissionIdempotencyWrapperService>()
             .Configure<SubmissionIdempotencyService.ConfigurationModel>(configuration.GetSection("Core:Idempotency"))
             .AddSingleton<IExampleItemService, ExampleItemService>();
     }
