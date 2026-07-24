@@ -1,12 +1,12 @@
 # Local Testing Instructions
 
-1. Bring up `localstack` container:
+1. Bring up `ministack` container:
 
     ```bash
-    docker compose up -d localstack
+    docker compose up -d ministack
     ```
 
-2. Run `make-local-resources.sh` script to create localstack resources:
+2. Run `make-local-resources.sh` script to create ministack resources:
 
     ```bash
     ./make-local-resources.sh
