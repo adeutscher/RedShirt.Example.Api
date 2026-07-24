@@ -1,7 +1,7 @@
 namespace RedShirt.Example.Api.Core.Exceptions.Responses;
 
 /// <summary>
-///     Used within services to abort execution and trigger an HTTP 404 response at the endpoint level.
+///     Used within services to abort execution; mapped to an HTTP 404 ProblemDetails response by the API exception
+///     handler.
 /// </summary>
-/// <param name="message"></param>
-public class ResourceNotFoundException : Exception;
+public class ResourceNotFoundException() : Exception(string.Empty);

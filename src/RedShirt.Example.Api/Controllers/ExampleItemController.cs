@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using RedShirt.Example.Api.Attributes;
-using RedShirt.Example.Api.Core.Exceptions;
-using RedShirt.Example.Api.Core.Exceptions.Responses;
 using RedShirt.Example.Api.Core.Models;
 using RedShirt.Example.Api.Core.Services.Topics.ExampleItem;
 using RedShirt.Example.Api.Models.ExampleItem;
@@ -19,19 +17,7 @@ public class ExampleItemController(IExampleItemService exampleItemService) : Con
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete([FromRoute] string name)
     {
-        try
-        {
-            await exampleItemService.DeleteAsync(name);
-        }
-        catch (BadRequestException e)
-        {
-            return BadRequest(e.Message);
-        }
-        catch (ResourceNotFoundException)
-        {
-            return NotFound();
-        }
-
+        await exampleItemService.DeleteAsync(name);
         return Ok();
     }
 
@@ -41,19 +27,8 @@ public class ExampleItemController(IExampleItemService exampleItemService) : Con
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get([FromRoute] string name)
     {
-        try
-        {
-            var model = await exampleItemService.GetAsync(name);
-            return Ok(model);
-        }
-        catch (BadRequestException e)
-        {
-            return BadRequest(e.Message);
-        }
-        catch (ResourceNotFoundException)
-        {
-            return NotFound();
-        }
+        var model = await exampleItemService.GetAsync(name);
+        return Ok(model);
     }
 
     [HttpGet]
@@ -67,26 +42,16 @@ public class ExampleItemController(IExampleItemService exampleItemService) : Con
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExampleItemModel))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Put([FromBody] ExampleItemPutRequest request,
         [FromHeader(Name = "Idempotency-Key")]
         string idempotencyKey)
     {
-        try
+        var model = await exampleItemService.PutAsync(new ExampleItemModel
         {
-            var model = await exampleItemService.PutAsync(new ExampleItemModel
-            {
-                Name = request.Name
-            }, string.IsNullOrWhiteSpace(idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey);
+            Name = request.Name
+        }, string.IsNullOrWhiteSpace(idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey);
 
-            return Ok(model);
-        }
-        catch (BadRequestException e)
-        {
-            return BadRequest(e.Message);
-        }
-        catch (IdempotentConcurrencyException)
-        {
-            return Conflict();
-        }
+        return Ok(model);
     }
 }
