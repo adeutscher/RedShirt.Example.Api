@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Dockerfile" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/RedShirt.Example.Api.Common.Shared.Core/RedShirt.Example.Api.Common.Shared.Core.csproj" />
+    <Project Path="src/RedShirt.Example.Api.Common.Shared.Implementation.InMemory/RedShirt.Example.Api.Common.Shared.Implementation.InMemory.csproj" />
+    <Project Path="src/RedShirt.Example.Api.Core/RedShirt.Example.Api.Core.csproj" />
+    <Project Path="src/RedShirt.Example.Api.Implementations/RedShirt.Example.Api.Implementations.csproj" />
+    <Project Path="src/RedShirt.Example.Api/RedShirt.Example.Api.csproj" />
+  </Folder>
+  <Folder Name="/swagger/">
+    <Project Path="swagger/RedShirt.Example.Api.Interop/RedShirt.Example.Api.Interop.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/RedShirt.Example.Api.Common.Shared.Implementation.InMemory.UnitTests/RedShirt.Example.Api.Common.Shared.Implementation.InMemory.UnitTests.csproj" />
+    <Project Path="test/RedShirt.Example.Api.Core.UnitTests/RedShirt.Example.Api.Core.UnitTests.csproj" />
+    <Project Path="test/RedShirt.Example.Api.Implementations.UnitTests/RedShirt.Example.Api.Implementations.UnitTests.csproj" />
+    <Project Path="test/RedShirt.Example.Api.IntegrationTests/RedShirt.Example.Api.IntegrationTests.csproj" />
+    <Project Path="test/RedShirt.Example.Api.UnitTests/RedShirt.Example.Api.UnitTests.csproj" />
+  </Folder>
+</Solution>
