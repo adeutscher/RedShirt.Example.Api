@@ -16,7 +16,7 @@ public interface IExampleItemService
 
 internal class ExampleItemService(
     IExampleItemRepository repository,
-    ISubmissionIdempotencyWrapperService idempotencyWrapperService)
+    ICacheBasedIdempotencyWrapperService idempotencyWrapperService)
     : IExampleItemService
 {
     public Task<ExampleItemModel> GetAsync(string name, CancellationToken cancellationToken = default)

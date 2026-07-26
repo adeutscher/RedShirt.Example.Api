@@ -5,17 +5,20 @@ using System.Text.Json;
 
 namespace RedShirt.Example.Api.Core.Services;
 
-public interface ISubmissionIdempotencyService
+/// <summary>
+///     Perform idempotent operation. Repeated attempts will be served out of a cache.
+/// </summary>
+public interface ICacheBasedIdempotencyService
 {
     Task<IAbstractedLock> GetLockAsync(string key, CancellationToken cancellationToken = default);
     Task<T?> GetRecordAsync<T>(string key, CancellationToken cancellationToken = default);
     Task SetRecordAsync<T>(string key, T value, CancellationToken cancellationToken = default);
 }
 
-public class SubmissionIdempotencyService(
+public class CacheBasedIdempotencyService(
     IDataCacheService dataCacheService,
     IAbstractedLockService lockService,
-    IOptions<SubmissionIdempotencyService.ConfigurationModel> config) : ISubmissionIdempotencyService
+    IOptions<CacheBasedIdempotencyService.ConfigurationModel> config) : ICacheBasedIdempotencyService
 {
     public Task<IAbstractedLock> GetLockAsync(string key, CancellationToken cancellationToken = default)
     {
@@ -48,9 +51,10 @@ public class SubmissionIdempotencyService(
     public sealed class ConfigurationModel
     {
         /// <summary>
-        /// Amount of time that idempotent operations should be tracked for.
+        ///     Amount of time that idempotent operations should be tracked for.
         /// </summary>
         public required int IdempotencyTrackingTimeMinutes { get; init; }
+
         public int EffectiveIdempotencyTimeMinutes => Math.Max(1, IdempotencyTrackingTimeMinutes);
     }
 }

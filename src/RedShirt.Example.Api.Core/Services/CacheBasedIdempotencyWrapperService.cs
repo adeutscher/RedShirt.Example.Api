@@ -2,10 +2,11 @@ using RedShirt.Example.Api.Core.Exceptions;
 
 namespace RedShirt.Example.Api.Core.Services;
 
-public interface ISubmissionIdempotencyWrapperService
+public interface ICacheBasedIdempotencyWrapperService
 {
     /// <summary>
-    ///     Run idempotent operation
+    ///     Wrapper service around cache-based idempotent operations.
+    ///     Repeated attempts will be served out of a cache.
     /// </summary>
     /// <param name="idempotencyKey"></param>
     /// <param name="callback"></param>
@@ -20,8 +21,8 @@ public interface ISubmissionIdempotencyWrapperService
         CancellationToken cancellationToken = default) where T : class;
 }
 
-public class SubmissionIdempotencyWrapperService(ISubmissionIdempotencyService idempotencyService)
-    : ISubmissionIdempotencyWrapperService
+public class CacheBasedIdempotencyWrapperService(ICacheBasedIdempotencyService idempotencyService)
+    : ICacheBasedIdempotencyWrapperService
 {
     /// <summary>
     ///     This implementation captures the common flow of checking operations for idempotence

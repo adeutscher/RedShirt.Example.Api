@@ -14,16 +14,16 @@ public class ExampleItemServiceTests
 {
     private static ExampleItemService CreateService(
         IExampleItemRepository? repository = null,
-        ISubmissionIdempotencyWrapperService? idempotencyWrapperService = null)
+        ICacheBasedIdempotencyWrapperService? idempotencyWrapperService = null)
     {
         return new ExampleItemService(
             repository ?? new Mock<IExampleItemRepository>().Object,
             idempotencyWrapperService ?? CreateInvokingWrapper().Object);
     }
 
-    private static Mock<ISubmissionIdempotencyWrapperService> CreateInvokingWrapper()
+    private static Mock<ICacheBasedIdempotencyWrapperService> CreateInvokingWrapper()
     {
-        var wrapper = new Mock<ISubmissionIdempotencyWrapperService>();
+        var wrapper = new Mock<ICacheBasedIdempotencyWrapperService>();
         wrapper
             .Setup(w => w.RunIdempotentlyAsync(
                 It.IsAny<string>(),
@@ -116,7 +116,7 @@ public class ExampleItemServiceTests
     {
         var cached = new ExampleItemModel {Name = "cached"};
         var repository = new Mock<IExampleItemRepository>();
-        var wrapper = new Mock<ISubmissionIdempotencyWrapperService>();
+        var wrapper = new Mock<ICacheBasedIdempotencyWrapperService>();
         wrapper
             .Setup(w => w.RunIdempotentlyAsync(
                 "idem-1",

@@ -11,9 +11,9 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         return services
-            .AddSingleton<ISubmissionIdempotencyService, SubmissionIdempotencyService>()
-            .AddSingleton<ISubmissionIdempotencyWrapperService, SubmissionIdempotencyWrapperService>()
-            .Configure<SubmissionIdempotencyService.ConfigurationModel>(configuration.GetSection("Core:Idempotency"))
+            .AddSingleton<ICacheBasedIdempotencyService, CacheBasedIdempotencyService>()
+            .AddSingleton<ICacheBasedIdempotencyWrapperService, CacheBasedIdempotencyWrapperService>()
+            .Configure<CacheBasedIdempotencyService.ConfigurationModel>(configuration.GetSection("Core:Idempotency"))
             .AddSingleton<IExampleItemService, ExampleItemService>();
     }
 }
