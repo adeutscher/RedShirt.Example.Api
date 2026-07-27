@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using RedShirt.Example.Api.Attributes;
 using RedShirt.Example.Api.Extensions;
 using System.Reflection;
-using ServiceCollectionExtensions = RedShirt.Example.Api.Extensions.ServiceCollectionExtensions;
+using CoreServiceCollectionExtensions = RedShirt.Example.Api.Core.Extensions.ServiceCollectionExtensions;
 
 namespace RedShirt.Example.Api.IntegrationTests.Tests;
 
@@ -81,22 +81,21 @@ public class DependencyInjectionTests
     public void CqrsValidator_DependencyInjection_Test()
     {
         /*
-         * Note: Referencing the CQRS project's ServiceCollectionExtensions because it is
-         *      a decently static class
+         * Note: Referencing the Core project's ServiceCollectionExtensions because it is
+         *      a decently static class in the assembly that registers FluentValidation validators.
          *
          * Run cold, the assembly we're after wouldn't show up in `AppDomain.CurrentDomain.GetAssemblies()`.
          */
-
-        var validatorTypes = Assembly.GetAssembly(typeof(ServiceCollectionExtensions))
+        var validatorInterfaces = Assembly.GetAssembly(typeof(CoreServiceCollectionExtensions))
             !.DefinedTypes
-            .Where(t => t is {IsAbstract: false, IsInterface: false}
-                        && t.GetInterfaces().Any(i =>
-                            i.IsGenericType
-                            && i.GetGenericTypeDefinition() == typeof(IValidator<>)))
+            .Where(t => t is {IsAbstract: false, IsInterface: false, IsGenericTypeDefinition: false})
+            .SelectMany(t => t.GetInterfaces()
+                .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IValidator<>)))
+            .Distinct()
             .ToList();
 
         // Sanity-check our test's seeking
-        Assert.NotEmpty(validatorTypes);
+        Assert.NotEmpty(validatorInterfaces);
 
         var configuration = new ConfigurationBuilder().Build();
 
@@ -114,19 +113,12 @@ public class DependencyInjectionTests
         {
             serviceCollection.ConfigureApiServices(configuration);
 
-            foreach (var controllerType in validatorTypes)
-            {
-                // Unclear on why, but need to declare our type as an implementation of itself
-                serviceCollection.AddSingleton(controllerType, controllerType);
-            }
-
             var provider = serviceCollection.BuildServiceProvider();
 
-            // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
-            foreach (var controllerType in validatorTypes)
+            foreach (var validatorInterface in validatorInterfaces)
             {
-                // Confirm that we can build each controller
-                var service = provider.GetService(controllerType);
+                // AddValidatorsFromAssembly registers IValidator<T>, not the concrete validator type.
+                var service = provider.GetService(validatorInterface);
                 Assert.NotNull(service);
             }
         });
