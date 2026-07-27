@@ -28,11 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\RedShirt.Example.Api.Core\RedShirt.Example.Api.Core.csproj"/>
-    </ItemGroup>
-
-    <ItemGroup>
-        <Folder Include="Tests\Services\Topics\"/>
+        <ProjectReference Include="..\..\src\RedShirt.Example.Api.Implementations.ExampleItem\RedShirt.Example.Api.Implementations.ExampleItem.csproj"/>
     </ItemGroup>
 
 </Project>

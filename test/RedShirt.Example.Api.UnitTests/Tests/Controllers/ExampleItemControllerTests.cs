@@ -3,8 +3,11 @@ using Moq;
 using RedShirt.Example.Api.Controllers;
 using RedShirt.Example.Api.Core.Exceptions;
 using RedShirt.Example.Api.Core.Exceptions.Responses;
-using RedShirt.Example.Api.Core.Models;
-using RedShirt.Example.Api.Core.Services.Topics.ExampleItem;
+using RedShirt.Example.Api.Core.UseCases.ExampleItem.Commands.Create;
+using RedShirt.Example.Api.Core.UseCases.ExampleItem.Commands.Delete;
+using RedShirt.Example.Api.Core.UseCases.ExampleItem.Models;
+using RedShirt.Example.Api.Core.UseCases.ExampleItem.Queries.GetRecord;
+using RedShirt.Example.Api.Core.UseCases.ExampleItem.Queries.ListRecords;
 using RedShirt.Example.Api.Models.ExampleItem;
 
 namespace RedShirt.Example.Api.UnitTests.Tests.Controllers;
@@ -14,16 +17,18 @@ namespace RedShirt.Example.Api.UnitTests.Tests.Controllers;
 /// </summary>
 public class ExampleItemControllerTests
 {
+    private readonly ExampleItemController _controller = new();
+
     [Fact]
     public async Task Delete_PropagatesBadRequestException()
     {
-        var service = new Mock<IExampleItemService>();
-        service
-            .Setup(s => s.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        var deleteHandler = new Mock<IDeleteExampleItemCommandHandler>();
+        deleteHandler
+            .Setup(h => h.Handle(It.IsAny<DeleteExampleItemCommand>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new BadRequestException("Name is required"));
-        var controller = new ExampleItemController(service.Object);
 
-        var exception = await Assert.ThrowsAsync<BadRequestException>(() => controller.Delete(" "));
+        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
+            _controller.Delete(" ", deleteHandler.Object, TestContext.Current.CancellationToken));
 
         Assert.Equal("Name is required", exception.Message);
     }
@@ -31,28 +36,30 @@ public class ExampleItemControllerTests
     [Fact]
     public async Task Delete_PropagatesResourceNotFoundException()
     {
-        var service = new Mock<IExampleItemService>();
-        service
-            .Setup(s => s.DeleteAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        var deleteHandler = new Mock<IDeleteExampleItemCommandHandler>();
+        deleteHandler
+            .Setup(h => h.Handle(It.IsAny<DeleteExampleItemCommand>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ResourceNotFoundException());
-        var controller = new ExampleItemController(service.Object);
 
-        await Assert.ThrowsAsync<ResourceNotFoundException>(() => controller.Delete("missing"));
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
+            _controller.Delete("missing", deleteHandler.Object, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public async Task Delete_ReturnsOk_WhenServiceSucceeds()
+    public async Task Delete_ReturnsOk_WhenCommandSucceeds()
     {
-        var service = new Mock<IExampleItemService>();
-        service
-            .Setup(s => s.DeleteAsync("widget", It.IsAny<CancellationToken>()))
+        var deleteHandler = new Mock<IDeleteExampleItemCommandHandler>();
+        deleteHandler
+            .Setup(h => h.Handle(It.Is<DeleteExampleItemCommand>(c => c.Name == "widget"),
+                It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        var controller = new ExampleItemController(service.Object);
 
-        var result = await controller.Delete("widget");
+        var result = await _controller.Delete("widget", deleteHandler.Object,
+            TestContext.Current.CancellationToken);
 
         Assert.IsType<OkResult>(result);
-        service.Verify(s => s.DeleteAsync("widget", It.IsAny<CancellationToken>()), Times.Once);
+        deleteHandler.Verify(h => h.Handle(It.Is<DeleteExampleItemCommand>(c => c.Name == "widget"),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Theory]
@@ -65,29 +72,33 @@ public class ExampleItemControllerTests
             ContinuationToken = "next",
             Items = [new ExampleItemModel {Name = "a"}]
         };
-        var service = new Mock<IExampleItemService>();
-        service
-            .Setup(s => s.GetListAsync(continuationToken, It.IsAny<CancellationToken>()))
+        var listHandler = new Mock<IListExampleItemRecordsQueryHandler>();
+        listHandler
+            .Setup(h => h.Handle(
+                It.Is<ListExampleItemRecordsQuery>(q => q.ContinuationToken == continuationToken),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
-        var controller = new ExampleItemController(service.Object);
 
-        var result = await controller.GetList(continuationToken);
+        var result = await _controller.GetList(continuationToken, listHandler.Object,
+            TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Same(expected, ok.Value);
-        service.Verify(s => s.GetListAsync(continuationToken, It.IsAny<CancellationToken>()), Times.Once);
+        listHandler.Verify(h => h.Handle(
+            It.Is<ListExampleItemRecordsQuery>(q => q.ContinuationToken == continuationToken),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Get_PropagatesBadRequestException()
     {
-        var service = new Mock<IExampleItemService>();
-        service
-            .Setup(s => s.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        var getHandler = new Mock<IGetExampleItemRecordQueryHandler>();
+        getHandler
+            .Setup(h => h.Handle(It.IsAny<GetExampleItemRecordQuery>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new BadRequestException("Name is required"));
-        var controller = new ExampleItemController(service.Object);
 
-        var exception = await Assert.ThrowsAsync<BadRequestException>(() => controller.Get(" "));
+        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
+            _controller.Get(" ", getHandler.Object, TestContext.Current.CancellationToken));
 
         Assert.Equal("Name is required", exception.Message);
     }
@@ -95,47 +106,44 @@ public class ExampleItemControllerTests
     [Fact]
     public async Task Get_PropagatesResourceNotFoundException()
     {
-        var service = new Mock<IExampleItemService>();
-        service
-            .Setup(s => s.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        var getHandler = new Mock<IGetExampleItemRecordQueryHandler>();
+        getHandler
+            .Setup(h => h.Handle(It.IsAny<GetExampleItemRecordQuery>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ResourceNotFoundException());
-        var controller = new ExampleItemController(service.Object);
 
-        await Assert.ThrowsAsync<ResourceNotFoundException>(() => controller.Get("missing"));
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
+            _controller.Get("missing", getHandler.Object, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public async Task Get_ReturnsOkWithModel_WhenServiceSucceeds()
+    public async Task Get_ReturnsOkWithModel_WhenQuerySucceeds()
     {
         var expected = new ExampleItemModel {Name = "widget"};
-        var service = new Mock<IExampleItemService>();
-        service
-            .Setup(s => s.GetAsync("widget", It.IsAny<CancellationToken>()))
+        var getHandler = new Mock<IGetExampleItemRecordQueryHandler>();
+        getHandler
+            .Setup(h => h.Handle(It.Is<GetExampleItemRecordQuery>(q => q.Name == "widget"),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
-        var controller = new ExampleItemController(service.Object);
 
-        var result = await controller.Get("widget");
+        var result = await _controller.Get("widget", getHandler.Object, TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Same(expected, ok.Value);
-        service.Verify(s => s.GetAsync("widget", It.IsAny<CancellationToken>()), Times.Once);
+        getHandler.Verify(h => h.Handle(It.Is<GetExampleItemRecordQuery>(q => q.Name == "widget"),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Put_PropagatesBadRequestException()
     {
-        var service = new Mock<IExampleItemService>();
-        service
-            .Setup(s => s.PutAsync(
-                It.IsAny<ExampleItemModel>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()))
+        var createHandler = new Mock<ICreateExampleItemCommandHandler>();
+        createHandler
+            .Setup(h => h.Handle(It.IsAny<CreateExampleItemCommand>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new BadRequestException("Name is required"));
-        var controller = new ExampleItemController(service.Object);
         var request = new ExampleItemPutRequest {Name = " "};
 
         var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
-            controller.Put(request, "idem-1"));
+            _controller.Put(request, "idem-1", createHandler.Object, TestContext.Current.CancellationToken));
 
         Assert.Equal("Name is required", exception.Message);
     }
@@ -143,41 +151,35 @@ public class ExampleItemControllerTests
     [Fact]
     public async Task Put_PropagatesIdempotentConcurrencyException()
     {
-        var service = new Mock<IExampleItemService>();
-        service
-            .Setup(s => s.PutAsync(
-                It.IsAny<ExampleItemModel>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()))
+        var createHandler = new Mock<ICreateExampleItemCommandHandler>();
+        createHandler
+            .Setup(h => h.Handle(It.IsAny<CreateExampleItemCommand>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new IdempotentConcurrencyException());
-        var controller = new ExampleItemController(service.Object);
         var request = new ExampleItemPutRequest {Name = "widget"};
 
         await Assert.ThrowsAsync<IdempotentConcurrencyException>(() =>
-            controller.Put(request, "idem-1"));
+            _controller.Put(request, "idem-1", createHandler.Object, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public async Task Put_ReturnsOkWithModel_WhenServiceSucceeds()
+    public async Task Put_ReturnsOkWithModel_WhenCommandSucceeds()
     {
         var expected = new ExampleItemModel {Name = "widget"};
-        var service = new Mock<IExampleItemService>();
-        service
-            .Setup(s => s.PutAsync(
-                It.Is<ExampleItemModel>(m => m.Name == "widget"),
-                "idem-1",
+        var createHandler = new Mock<ICreateExampleItemCommandHandler>();
+        createHandler
+            .Setup(h => h.Handle(
+                It.Is<CreateExampleItemCommand>(c => c.Model.Name == "widget" && c.IdempotencyKey == "idem-1"),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
-        var controller = new ExampleItemController(service.Object);
         var request = new ExampleItemPutRequest {Name = "widget"};
 
-        var result = await controller.Put(request, "idem-1");
+        var result = await _controller.Put(request, "idem-1", createHandler.Object,
+            TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Same(expected, ok.Value);
-        service.Verify(s => s.PutAsync(
-            It.Is<ExampleItemModel>(m => m.Name == "widget"),
-            "idem-1",
+        createHandler.Verify(h => h.Handle(
+            It.Is<CreateExampleItemCommand>(c => c.Model.Name == "widget" && c.IdempotencyKey == "idem-1"),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 }

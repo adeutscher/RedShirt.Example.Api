@@ -22,12 +22,12 @@ public class CacheBasedIdempotencyService(
 {
     public Task<IAbstractedLock> GetLockAsync(string key, CancellationToken cancellationToken = default)
     {
-        return lockService.GetLockAsync($"idempotent-concurrency:{key}");
+        return lockService.GetLockAsync($"idempotent-concurrency:{key}", cancellationToken);
     }
 
     public async Task<T?> GetRecordAsync<T>(string key, CancellationToken cancellationToken = default)
     {
-        if (await dataCacheService.GetStringAsync(key) is not { } dataString)
+        if (await dataCacheService.GetStringAsync(key, cancellationToken) is not { } dataString)
         {
             return default;
         }
@@ -45,7 +45,7 @@ public class CacheBasedIdempotencyService(
     public Task SetRecordAsync<T>(string key, T value, CancellationToken cancellationToken = default)
     {
         return dataCacheService.SetStringAsync(key, JsonSerializer.Serialize(value),
-            TimeSpan.FromMinutes(config.Value.EffectiveIdempotencyTimeMinutes));
+            TimeSpan.FromMinutes(config.Value.EffectiveIdempotencyTimeMinutes), cancellationToken);
     }
 
     public sealed class ConfigurationModel

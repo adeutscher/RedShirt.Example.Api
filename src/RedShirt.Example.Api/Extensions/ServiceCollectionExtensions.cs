@@ -3,7 +3,7 @@ using RedShirt.Example.Api.Common.RateLimiting.Extensions;
 using RedShirt.Example.Api.Common.Redis.Extensions;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Extensions;
 using RedShirt.Example.Api.ExceptionHandlers;
-using RedShirt.Example.Api.Implementations.Extensions;
+using RedShirt.Example.Api.Implementations.ExampleItem.Extensions;
 
 namespace RedShirt.Example.Api.Extensions;
 
@@ -13,6 +13,7 @@ internal static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         return serviceCollection
+            .AddLogging()
             .AddProblemDetails()
             .AddExceptionHandler<ApiExceptionHandler>()
             // Rate Limiting
