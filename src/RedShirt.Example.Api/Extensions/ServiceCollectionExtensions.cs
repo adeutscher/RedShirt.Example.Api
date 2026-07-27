@@ -1,4 +1,7 @@
-using RedShirt.Example.Api.Common.Shared.Implementation.InMemory.Extensions;
+using RedShirt.Example.Api.Common.Aws.SsmSecretManager.Extensions;
+using RedShirt.Example.Api.Common.RateLimiting.Extensions;
+using RedShirt.Example.Api.Common.Redis.Extensions;
+using RedShirt.Example.Api.Common.SecretManagers.Core.Extensions;
 using RedShirt.Example.Api.ExceptionHandlers;
 using RedShirt.Example.Api.Implementations.Extensions;
 
@@ -12,7 +15,13 @@ internal static class ServiceCollectionExtensions
         return serviceCollection
             .AddProblemDetails()
             .AddExceptionHandler<ApiExceptionHandler>()
-            .AddInMemorySharedImplementations()
+            // Rate Limiting
+            .ConsiderAddingRateLimitingPolicies(configuration)
+            // Common
+            .AddSecretManagerCore(configuration)
+            .AddSecretManagerSsm() // AWS binding
+            .AddRedisImplementations(configuration)
+            // App-specific
             .ConfigureApiImplementations(configuration);
     }
 }

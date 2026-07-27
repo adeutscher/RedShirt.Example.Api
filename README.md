@@ -8,6 +8,8 @@ Repo features:
 * Use of [NSwag](https://github.com/RicoSuter/NSwag) to automatically document endpoints and to generate client code for
   an interop package.
     * Recommended next step: Exporting the interop package as a NuGet for use in other projects.
+* Configurable rate limiting using a sliding window system:
+    * Uses either Redis or in-memory for storing limits.
 * Configuration is based on environment variables.
 
 # Initialisation
@@ -17,6 +19,33 @@ To change the namespace of the API en-masse for your purposes, use the `init-rep
 ```bash
 bash init-repo.sh New.Namespace.Here
 ```
+
+# Configuration
+
+This API is expected to be run out of a docker container, so it relies on environment variables for most of its
+configuration.
+
+For configuration examples, see the `api` section of the `test/local/docker-compose.yaml` file.
+
+## Rate Limiting Configuration
+
+This API is built with the option for rate limiting, using a sliding window system backed either by Redis or an
+in-memory
+system.
+
+To make use of rate limiting, you must either:
+
+* Use the `[EnableRateLimiting("example")]` attribute to name a policy (unlike the example on this list item, using
+  constants for this is strongly encouraged).
+* Set and configure a default policy to require rate limiting across all endpoints (unless ruled out by the use of the
+  `[DisableRateLimiting]` attribute applied to an endpoint or controller).
+
+Resources:
+
+* For configuration examples, see the `api` section of the `test/local/docker-compose.yaml` file. Rate limiting is
+  defined in environment variables beginning in `RATE_LIMITING`.
+* To better understand the configuration definitions, refer to the classes in the `Configuration/` folder of the
+  `Common.RateLimiting` project
 
 # Testing
 

@@ -3,6 +3,12 @@ services:
     image: ministackorg/ministack:latest
     ports:
       - 4566:4566
+
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+
   api:
     build:
       context: ../..
@@ -14,16 +20,33 @@ services:
       - "9000:8080"
     environment:
       # AspNetCore
+      ##
       ASPNETCORE_ENVIRONMENT: Development # Enable swagger
       ASPNETCORE_URLS: http://*:8080
       # AWS Settings
+      ##
       AWS_SERVICE_URL: http://ministack:4566
       AWS_ACCESS_KEY_ID: foo
       AWS_SECRET_ACCESS_KEY: bar
       AWS_REGION: us-east-1
       # General
+      ##
       LOGGING__LOG_LEVEL__DEFAULT: Information
       # Core Configuration
+      ##
       CORE__IDEMPOTENCY__IDEMPOTENCY_TRACKING_TIME_MINUTES: 3
+      # Caching
+      ##
+      COMMON__REDIS__CONNECTION_STRING_PATH: /redis/connection-string
+      # Rate Limiting
+      ##
+      RATE_LIMITING__DISABLE_RATE_LIMITING: false
+      RATE_LIMITING__USE_REDIS: true
+      # RATE_LIMITING__DEFAULT_POLICY_NAME: null
+      RATE_LIMITING__POLICIES__EXAMPLE__NAME: "example"
+      RATE_LIMITING__POLICIES__EXAMPLE__REDIS_KEY_PREFIX: "example"
+      RATE_LIMITING__POLICIES__EXAMPLE__WINDOW_PERMIT_LIMIT: 30
+      RATE_LIMITING__POLICIES__EXAMPLE__LIMIT_WINDOW_MINUTES: 1
+      RATE_LIMITING__POLICIES__EXAMPLE__FAIL_CLOSED: false
       # App-specific variables
       STORAGE__EXAMPLE_ITEM__TABLE_NAME: example

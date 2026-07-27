@@ -1,6 +1,6 @@
 # Local Testing Instructions
 
-1. Bring up `ministack` container:
+1. Bring up `ministack` and `redis` containers:
 
     ```bash
     docker compose up -d ministack

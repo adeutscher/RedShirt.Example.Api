@@ -10,29 +10,6 @@ namespace RedShirt.Example.Api.ExceptionHandlers;
 /// </summary>
 internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsService) : IExceptionHandler
 {
-    public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception,
-        CancellationToken cancellationToken)
-    {
-        if (!TryMapException(exception, out var statusCode, out var title))
-        {
-            return false;
-        }
-
-        httpContext.Response.StatusCode = statusCode;
-
-        return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
-        {
-            HttpContext = httpContext,
-            Exception = exception,
-            ProblemDetails = new ProblemDetails
-            {
-                Status = statusCode,
-                Title = title,
-                Detail = string.IsNullOrWhiteSpace(exception.Message) ? null : exception.Message
-            }
-        });
-    }
-
     private static bool TryMapException(Exception exception, out int statusCode, out string title)
     {
         switch (exception)
@@ -54,5 +31,28 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsS
                 title = string.Empty;
                 return false;
         }
+    }
+
+    public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception,
+        CancellationToken cancellationToken)
+    {
+        if (!TryMapException(exception, out var statusCode, out var title))
+        {
+            return false;
+        }
+
+        httpContext.Response.StatusCode = statusCode;
+
+        return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+        {
+            HttpContext = httpContext,
+            Exception = exception,
+            ProblemDetails = new ProblemDetails
+            {
+                Status = statusCode,
+                Title = title,
+                Detail = string.IsNullOrWhiteSpace(exception.Message) ? null : exception.Message
+            }
+        });
     }
 }

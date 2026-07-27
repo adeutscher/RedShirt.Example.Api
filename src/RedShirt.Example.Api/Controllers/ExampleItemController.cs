@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
+using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.Models;
 using RedShirt.Example.Api.Core.Services.Topics.ExampleItem;
 using RedShirt.Example.Api.Models.ExampleItem;
@@ -7,6 +9,7 @@ using RedShirt.Example.Api.Models.ExampleItem;
 namespace RedShirt.Example.Api.Controllers;
 
 [ApiController]
+[EnableRateLimiting(RateLimitingConstants.PolicyHeaderExample)]
 [Route("example")]
 [ProducesJson]
 public class ExampleItemController(IExampleItemService exampleItemService) : ControllerBase

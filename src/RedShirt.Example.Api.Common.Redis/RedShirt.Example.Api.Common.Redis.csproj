@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.SecretManagers.Core\RedShirt.Example.Api.Common.SecretManagers.Core.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="DistributedLock.Redis" Version="1.1.1"/>
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.10"/>
+        <PackageReference Include="StackExchange.Redis" Version="3.0.17"/>
+    </ItemGroup>
+
+</Project>

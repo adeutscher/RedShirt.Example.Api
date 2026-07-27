@@ -8,13 +8,13 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Aws\RedShirt.Example.Api.Common.Aws.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Core\RedShirt.Example.Api.Core.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.101.3" />
-        <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.100.5" />
-        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.10" />
+        <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.101.3"/>
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.10"/>
     </ItemGroup>
 
 </Project>

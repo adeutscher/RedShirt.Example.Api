@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.OpenApi" Version="2.7.5"/>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>
         <PackageReference Include="NSwag.AspNetCore" Version="14.7.1"/>
         <PackageReference Include="NSwag.MSBuild" Version="14.7.1">
@@ -16,14 +17,17 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\RedShirt.Example.Api.Common.Shared.Core\RedShirt.Example.Api.Common.Shared.Core.csproj"/>
-        <ProjectReference Include="..\RedShirt.Example.Api.Common.Shared.Implementation.InMemory\RedShirt.Example.Api.Common.Shared.Implementation.InMemory.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Aws.SsmSecretManager\RedShirt.Example.Api.Common.Aws.SsmSecretManager.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.RateLimiting\RedShirt.Example.Api.Common.RateLimiting.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Redis\RedShirt.Example.Api.Common.Redis.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.SecretManagers.Core\RedShirt.Example.Api.Common.SecretManagers.Core.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Core\RedShirt.Example.Api.Core.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Implementations\RedShirt.Example.Api.Implementations.csproj"/>
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-        <Exec Command="$(NSwagExe_Net100) run nswag.json /variables:Configuration=$(Configuration)"/>
+        <Exec Command="$(NSwagExe_Net100) run nswag.json /variables:Configuration=$(Configuration)" EnvironmentVariables="NSWAG_RUN=1"/>
     </Target>
 
 </Project>

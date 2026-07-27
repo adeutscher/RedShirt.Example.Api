@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
-using RedShirt.Example.Api.Common.Shared.Core.Abstractions;
-using RedShirt.Example.Api.Common.Shared.Core.Services;
+using RedShirt.Example.Api.Common.Abstractions;
+using RedShirt.Example.Api.Common.Services;
 using System.Text.Json;
 
 namespace RedShirt.Example.Api.Core.Services;

@@ -1,4 +1,5 @@
 using NJsonSchema;
+using RedShirt.Example.Api.Common.RateLimiting.Extensions;
 using RedShirt.Example.Api.Extensions;
 
 /*
@@ -52,11 +53,18 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-
 app.UseAuthorization();
 
-app.MapControllerRoute(
-    "default",
-    "{controller=Home}/{action=Index}/{id?}");
+if (Environment.GetEnvironmentVariable("NSWAG_RUN") != "1")
+{
+    // Note: Must add after UseRouting is declared.
+    app.ConsiderAddingRateLimitParts();
+}
+
+app
+    .MapControllerRoute(
+        "default",
+        "{controller=Home}/{action=Index}/{id?}")
+    .ConsiderRequiringRateLimiting(app.Configuration);
 
 await app.RunAsync();

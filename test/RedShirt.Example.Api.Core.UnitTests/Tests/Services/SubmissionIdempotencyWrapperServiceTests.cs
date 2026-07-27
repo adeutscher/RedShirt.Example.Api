@@ -1,5 +1,5 @@
 using Moq;
-using RedShirt.Example.Api.Common.Shared.Core.Abstractions;
+using RedShirt.Example.Api.Common.Abstractions;
 using RedShirt.Example.Api.Core.Exceptions;
 using RedShirt.Example.Api.Core.Services;
 
@@ -76,7 +76,7 @@ public class CacheBasedIdempotencyWrapperServiceTests
     [Fact]
     public async Task RunIdempotentlyAsync_ReturnsCachedResponse_AndUnlocks()
     {
-        var lockHandle = CreateLock(false);
+        var lockHandle = CreateLock(true);
         var cached = new SampleResult("cached");
         var idempotency = new Mock<ICacheBasedIdempotencyService>();
         idempotency
@@ -96,12 +96,11 @@ public class CacheBasedIdempotencyWrapperServiceTests
 
         Assert.Same(cached, result);
         Assert.False(callbackInvoked);
-        idempotency.Verify(
-            s => s.GetLockAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+        idempotency.Verify(s => s.GetLockAsync("idem-1", TestContext.Current.CancellationToken), Times.Once);
         idempotency.Verify(
             s => s.SetRecordAsync(It.IsAny<string>(), It.IsAny<SampleResult>(), It.IsAny<CancellationToken>()),
-            Times.Once);
+            Times.Never);
+        lockHandle.Verify(l => l.Unlock(), Times.Once);
     }
 
     [Fact]
