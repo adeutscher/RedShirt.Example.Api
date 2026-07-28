@@ -5,6 +5,8 @@ using RedShirt.Example.Api.Core.UseCases.ExampleItem.Services;
 
 namespace RedShirt.Example.Api.Core.UseCases.ExampleItem.Commands.Create;
 
+public interface ICreateExampleItemCommandHandler : ICqrsHandler<CreateExampleItemCommand, ExampleItemModel>;
+
 internal class CreateExampleItemCommandHandler(
     IExampleItemRepository repository,
     ICacheBasedIdempotencyWrapperService idempotencyWrapperService,

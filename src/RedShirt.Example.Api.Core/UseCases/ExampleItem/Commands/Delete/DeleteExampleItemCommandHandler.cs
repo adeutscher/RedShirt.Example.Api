@@ -3,6 +3,8 @@ using RedShirt.Example.Api.Core.UseCases.ExampleItem.Services;
 
 namespace RedShirt.Example.Api.Core.UseCases.ExampleItem.Commands.Delete;
 
+public interface IDeleteExampleItemCommandHandler : ICqrsHandler<DeleteExampleItemCommand>;
+
 internal class DeleteExampleItemCommandHandler(
     IExampleItemRepository repository,
     ICoreRequestValidator coreRequestValidator)

@@ -4,6 +4,8 @@ using RedShirt.Example.Api.Core.UseCases.ExampleItem.Services;
 
 namespace RedShirt.Example.Api.Core.UseCases.ExampleItem.Queries.GetRecord;
 
+public interface IGetExampleItemRecordQueryHandler : ICqrsHandler<GetExampleItemRecordQuery, ExampleItemModel>;
+
 internal class GetExampleItemRecordQueryHandler(
     IExampleItemRepository repository,
     ICoreRequestValidator coreRequestValidator)
