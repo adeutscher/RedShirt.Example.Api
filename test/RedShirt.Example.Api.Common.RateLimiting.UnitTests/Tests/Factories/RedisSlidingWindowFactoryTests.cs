@@ -19,7 +19,7 @@ public class RedisSlidingWindowFactoryTests
             services.AddSingleton(Mock.Of<IHttpContextAccessor>());
             var provider = services.BuildServiceProvider();
 
-            var redis = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
+            var redis = new Mock<IDatabase>(MockBehavior.Strict);
             var factory = new RedisSlidingWindowFactory(provider);
             factory.Initialize("policy-b", redis.Object);
 
@@ -66,7 +66,7 @@ public class RedisSlidingWindowFactoryTests
             services.AddSingleton(Mock.Of<IHttpContextAccessor>());
             var provider = services.BuildServiceProvider();
 
-            var redis = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
+            var redis = new Mock<IDatabase>(MockBehavior.Strict);
             var factory = new RedisSlidingWindowFactory(provider);
             factory.Initialize("policy-c", redis.Object);
 

@@ -1,0 +1,6 @@
+<Project>
+    <PropertyGroup>
+        <!-- Avoid NETSDK1188 under DOTNET_SYSTEM_GLOBALIZATION_INVARIANT (e.g. chiseled images). -->
+        <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    </PropertyGroup>
+</Project>

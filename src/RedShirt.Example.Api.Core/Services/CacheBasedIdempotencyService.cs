@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
-using RedShirt.Example.Api.Common.Abstractions;
-using RedShirt.Example.Api.Common.Services;
+using RedShirt.Example.Api.Common.Distributed.Models;
+using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
 using System.Text.Json;
 
 namespace RedShirt.Example.Api.Core.Services;
@@ -16,7 +16,7 @@ public interface ICacheBasedIdempotencyService
 }
 
 public class CacheBasedIdempotencyService(
-    IDataCacheService dataCacheService,
+    IRemoteCacheService dataCacheService,
     IAbstractedLockService lockService,
     IOptions<CacheBasedIdempotencyService.ConfigurationModel> config) : ICacheBasedIdempotencyService
 {

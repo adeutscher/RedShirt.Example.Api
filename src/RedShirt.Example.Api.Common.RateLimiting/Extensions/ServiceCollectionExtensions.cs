@@ -7,7 +7,6 @@ using RedShirt.Example.Api.Common.RateLimiting.Constants;
 using RedShirt.Example.Api.Common.RateLimiting.Factories;
 using RedShirt.Example.Api.Common.RateLimiting.Services;
 using RedShirt.Example.Api.Common.RateLimiting.Utility;
-using RedShirt.Example.Api.Common.Redis.Extensions;
 using System.Threading.RateLimiting;
 
 namespace RedShirt.Example.Api.Common.RateLimiting.Extensions;
@@ -28,7 +27,6 @@ public static class ServiceCollectionExtensions
 
         services
             .AddHttpContextAccessor()
-            .AddRedisImplementations(configuration)
             .Configure<GeneralRateLimiterOptions>(
                 configuration.GetSection(ConfigurationConstants.ConfigurationSectionName))
             .AddSingleton<ISlidingWindowRateLimiterFactoryFactory, SlidingWindowRateLimiterFactoryFactory>()

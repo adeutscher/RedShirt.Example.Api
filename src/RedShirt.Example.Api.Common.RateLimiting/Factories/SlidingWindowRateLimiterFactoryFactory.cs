@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using RedShirt.Example.Api.Common.Distributed.Services.Redis;
 using RedShirt.Example.Api.Common.RateLimiting.Configuration;
-using RedShirt.Example.Api.Common.Redis.Services;
 
 namespace RedShirt.Example.Api.Common.RateLimiting.Factories;
 
@@ -13,7 +13,7 @@ internal interface ISlidingWindowRateLimiterFactoryFactory
 
 internal class SlidingWindowRateLimiterFactoryFactory(
     IServiceProvider serviceProvider,
-    IRedisSharedConnectionService redisSharedConnectionService,
+    IRedisConnectionCacheService redisSharedConnectionService,
     IOptions<GeneralRateLimiterOptions> options) : ISlidingWindowRateLimiterFactoryFactory
 {
     public async Task<ISlidingWindowRateLimiterFactory> GetFactoryAsync(string? policyName,
@@ -27,7 +27,7 @@ internal class SlidingWindowRateLimiterFactoryFactory(
         }
 
         var factory = serviceProvider.GetRequiredService<IRedisSlidingWindowRateLimiterFactory>();
-        factory.Initialize(policyName, await redisSharedConnectionService.GetConnectionAsync(cancellationToken));
+        factory.Initialize(policyName, await redisSharedConnectionService.GetDatabaseAsync(cancellationToken));
         return factory;
     }
 }

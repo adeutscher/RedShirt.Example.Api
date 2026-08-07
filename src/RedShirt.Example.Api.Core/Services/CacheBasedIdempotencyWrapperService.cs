@@ -64,7 +64,7 @@ public class CacheBasedIdempotencyWrapperService(ICacheBasedIdempotencyService i
         }
         finally
         {
-            concurrentAttemptLock.Unlock();
+            await concurrentAttemptLock.UnlockAsync(cancellationToken);
         }
     }
 }

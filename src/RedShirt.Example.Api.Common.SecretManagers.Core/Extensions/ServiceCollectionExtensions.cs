@@ -13,7 +13,7 @@ public static class ServiceCollectionExtensions
     /// <param name="configuration"></param>
     /// <returns></returns>
     public static IServiceCollection AddSecretManagerCore(this IServiceCollection services,
-        IConfiguration configuration)
+        IConfigurationRoot configuration)
     {
         return services
             .Configure<SecretManagerCacheService.ConfigurationModel>(configuration.GetSection("Common:Secrets:Cache"))

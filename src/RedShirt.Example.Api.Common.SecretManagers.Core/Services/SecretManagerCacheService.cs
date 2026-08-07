@@ -63,7 +63,7 @@ public interface ISecretManagerCacheService
 /// <summary>
 ///     Centralized in-memory cache for secrets
 /// </summary>
-internal class SecretManagerCacheService(
+internal sealed class SecretManagerCacheService(
     ISecretManagerService secretManagerService,
     IOptions<SecretManagerCacheService.ConfigurationModel> options) : ISecretManagerCacheService
 {
@@ -162,7 +162,7 @@ internal class SecretManagerCacheService(
         return result;
     }
 
-    private sealed class CacheEntry(string value, DateTimeOffset? absoluteExpiration, DateTimeOffset fetchedAt)
+    internal sealed class CacheEntry(string value, DateTimeOffset? absoluteExpiration, DateTimeOffset fetchedAt)
     {
         private DateTimeOffset? AbsoluteExpiration { get; } = absoluteExpiration;
         private DateTimeOffset FetchedAt { get; } = fetchedAt;

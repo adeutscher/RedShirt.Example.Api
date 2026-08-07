@@ -1,6 +1,7 @@
 using RedShirt.Example.Api.Common.Aws.SsmSecretManager.Extensions;
+using RedShirt.Example.Api.Common.Distributed.Extensions;
+using RedShirt.Example.Api.Common.Extensions;
 using RedShirt.Example.Api.Common.RateLimiting.Extensions;
-using RedShirt.Example.Api.Common.Redis.Extensions;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Extensions;
 using RedShirt.Example.Api.ExceptionHandlers;
 using RedShirt.Example.Api.Implementations.ExampleItem.Extensions;
@@ -10,18 +11,27 @@ namespace RedShirt.Example.Api.Extensions;
 internal static class ServiceCollectionExtensions
 {
     internal static IServiceCollection ConfigureApiServices(this IServiceCollection serviceCollection,
-        IConfiguration configuration)
+        IConfigurationRoot configuration)
     {
         return serviceCollection
             .AddLogging()
             .AddProblemDetails()
             .AddExceptionHandler<ApiExceptionHandler>()
-            // Rate Limiting
-            .ConsiderAddingRateLimitingPolicies(configuration)
             // Common
+            ////
+            .AddCommonServices()
             .AddSecretManagerCore(configuration)
-            .AddSecretManagerSsm() // AWS binding
-            .AddRedisImplementations(configuration)
+            // Secret Manager
+            ////
+            // If you wish to swap out SSM for Azure Key Vault as your secret manager provider, adjust the below code
+            //.AddSecretManagerAzureKeyVault(configuration)
+            .AddSecretManagerSsm(configuration)
+            // Add distributed services (read: Redis). Note that Redis requires a secret manager for the connection string
+            ////
+            .AddDistributedServices(configuration)
+            // Rate Limiting
+            ////
+            .ConsiderAddingRateLimitingPolicies(configuration)
             // App-specific
             .ConfigureApiImplementations(configuration);
     }

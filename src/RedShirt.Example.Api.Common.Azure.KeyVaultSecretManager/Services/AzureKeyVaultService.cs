@@ -1,0 +1,91 @@
+using RedShirt.Example.Api.Common.Azure.Exceptions;
+using RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.Factories;
+using RedShirt.Example.Api.Common.Azure.Services.Resilience;
+using RedShirt.Example.Api.Common.SecretManagers.Core.Exceptions;
+using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
+using System.Text.RegularExpressions;
+
+namespace RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.Services;
+
+internal sealed partial class AzureKeyVaultService(
+    IAzureRetryWrapperService retryWrapperService,
+    IAzureKeyVaultClientSource clientSource) : ISecretManagerService
+{
+    private static void ThrowIfInvalidKey(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key) || !ValidKeyRegex().IsMatch(key))
+        {
+            throw new WorkerSecretManagerException($"Invalid secret path: {key}")
+                {CouldBeTransient = false, IsHandled = false, CouldBeExternallySolvable = false};
+        }
+    }
+
+    /// <summary>
+    ///     Regular expression for Azure Key Vault resources.
+    ///     An Azure Key Vault key name must be a 1 to 127 character string containing only alphanumeric characters (0-9, a-z,
+    ///     A-Z) and hyphens (-)
+    ///     Source: https://learn.microsoft.com/en-us/azure/key-vault/general/about-keys-secrets-certificates
+    /// </summary>
+    /// <returns></returns>
+    [GeneratedRegex(@"^[a-zA-Z0-9-]{1,127}$")]
+    private static partial Regex ValidKeyRegex();
+
+    public async Task<string> GetSecretAsync(string key, CancellationToken cancellationToken = default)
+    {
+        ThrowIfInvalidKey(key);
+
+        try
+        {
+            return await retryWrapperService.RunAsync(ct =>
+            {
+                var client = clientSource.GetKeyVaultClient();
+                return client.GetSecretAsync(key, ct);
+            }, cancellationToken);
+        }
+        catch (WorkerAzureException e)
+        {
+            // Translate
+            throw new WorkerSecretManagerException(e)
+            {
+                CouldBeTransient = e.CouldBeTransient,
+                IsHandled = e.IsHandled,
+                CouldBeExternallySolvable = e.CouldBeExternallySolvable
+            };
+        }
+    }
+
+    public async Task<Dictionary<string, string>> GetSecretsAsync(List<string> keys,
+        CancellationToken cancellationToken = default)
+    {
+        foreach (var key in keys)
+        {
+            ThrowIfInvalidKey(key);
+        }
+
+        var items = new Dictionary<string, string>();
+
+        try
+        {
+            var source = await retryWrapperService.RunAsync(_ => Task.FromResult(clientSource.GetKeyVaultClient()),
+                cancellationToken);
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            foreach (var key in keys.Distinct())
+            {
+                items.Add(key,
+                    await retryWrapperService.RunAsync(ct => source.GetSecretAsync(key, ct), cancellationToken));
+            }
+        }
+        catch (WorkerAzureException e)
+        {
+            // Translate
+            throw new WorkerSecretManagerException(e)
+            {
+                CouldBeTransient = e.CouldBeTransient,
+                IsHandled = e.IsHandled,
+                CouldBeExternallySolvable = e.CouldBeExternallySolvable
+            };
+        }
+
+        return items;
+    }
+}

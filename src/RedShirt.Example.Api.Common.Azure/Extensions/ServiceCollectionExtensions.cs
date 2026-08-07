@@ -1,0 +1,14 @@
+using Microsoft.Extensions.DependencyInjection;
+using RedShirt.Example.Api.Common.Azure.Services.Resilience;
+
+namespace RedShirt.Example.Api.Common.Azure.Extensions;
+
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddCommonAzureServices(this IServiceCollection services)
+    {
+        return services
+            .AddSingleton<IAzureExceptionArbiterService, AzureExceptionArbiterService>()
+            .AddSingleton<IAzureRetryWrapperService, AzureRetryWrapperService>();
+    }
+}

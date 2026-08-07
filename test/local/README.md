@@ -6,10 +6,10 @@
     docker compose up -d ministack
     ```
 
-2. Run `make-local-resources.sh` script to create ministack resources:
+2. Run `make-local-aws-resources.sh` script to create ministack resources:
 
     ```bash
-    ./make-local-resources.sh
+    ./make-local-aws-resources.sh
     ```
 
 3. Bring up the `api` container
