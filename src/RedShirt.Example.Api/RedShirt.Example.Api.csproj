@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.OpenApi" Version="3.9.0" />
+        <PackageReference Include="Microsoft.OpenApi" Version="3.9.0"/>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>
         <PackageReference Include="NSwag.AspNetCore" Version="14.7.1"/>
         <PackageReference Include="NSwag.MSBuild" Version="14.7.1">
@@ -18,6 +18,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Aws.SsmSecretManager\RedShirt.Example.Api.Common.Aws.SsmSecretManager.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager\RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Distributed\RedShirt.Example.Api.Common.Distributed.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.RateLimiting\RedShirt.Example.Api.Common.RateLimiting.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.SecretManagers.Core\RedShirt.Example.Api.Common.SecretManagers.Core.csproj"/>

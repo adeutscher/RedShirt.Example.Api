@@ -18,11 +18,19 @@ internal static class ServiceCollectionExtensions
             .AddProblemDetails()
             .AddExceptionHandler<ApiExceptionHandler>()
             // Common
+            ////
             .AddCommonServices()
             .AddSecretManagerCore(configuration)
+            // Secret Manager
+            ////
+            // If you wish to swap out SSM for Azure Key Vault as your secret manager provider, adjust the below code
+            //.AddSecretManagerAzureKeyVault(configuration)
             .AddSecretManagerSsm(configuration)
+            // Add distributed services (read: Redis). Note that Redis requires a secret manager for the connection string
+            ////
             .AddDistributedServices(configuration)
             // Rate Limiting
+            ////
             .ConsiderAddingRateLimitingPolicies(configuration)
             // App-specific
             .ConfigureApiImplementations(configuration);
