@@ -19,7 +19,6 @@
     <ItemGroup>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Aws.SsmSecretManager\RedShirt.Example.Api.Common.Aws.SsmSecretManager.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.RateLimiting\RedShirt.Example.Api.Common.RateLimiting.csproj"/>
-        <ProjectReference Include="..\RedShirt.Example.Api.Common.Redis\RedShirt.Example.Api.Common.Redis.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.SecretManagers.Core\RedShirt.Example.Api.Common.SecretManagers.Core.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Core\RedShirt.Example.Api.Core.csproj"/>
