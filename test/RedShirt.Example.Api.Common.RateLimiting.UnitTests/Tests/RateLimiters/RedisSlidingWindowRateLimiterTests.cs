@@ -50,13 +50,11 @@ public class RedisSlidingWindowRateLimiterTests
                     It.IsAny<CommandFlags>()))
                 .ReturnsAsync(CreateScriptResult(1, 4, 0));
 
-            var redis = new Mock<IDatabase>(MockBehavior.Strict);
-
             var httpContext = new DefaultHttpContext();
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             accessor.SetupGet(a => a.HttpContext).Returns(httpContext);
 
-            var limiter = CreateLimiter(redis.Object, accessor.Object, 5, true);
+            var limiter = CreateLimiter(database.Object, accessor.Object, 5, true);
 
             using var lease = await limiter.AcquireAsync(1, TestContext.Current.CancellationToken);
 
@@ -81,12 +79,10 @@ public class RedisSlidingWindowRateLimiterTests
                     It.IsAny<CommandFlags>()))
                 .ReturnsAsync(CreateScriptResult(0, 0, 1500));
 
-            var redis = new Mock<IDatabase>(MockBehavior.Strict);
-
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             accessor.SetupGet(a => a.HttpContext).Returns((HttpContext?) null);
 
-            var limiter = CreateLimiter(redis.Object, accessor.Object, 2, true);
+            var limiter = CreateLimiter(database.Object, accessor.Object, 2, true);
 
             using var lease = await limiter.AcquireAsync(1, TestContext.Current.CancellationToken);
 
@@ -107,14 +103,12 @@ public class RedisSlidingWindowRateLimiterTests
                     It.IsAny<RedisKey[]>(),
                     It.IsAny<RedisValue[]>(),
                     It.IsAny<CommandFlags>()))
-                .ThrowsAsync(new RedisTimeoutException("timeout", CommandStatus.Unknown));
-
-            var redis = new Mock<IDatabase>(MockBehavior.Strict);
+                .ThrowsAsync(new RedisTimeoutException(CommandFlags.None, "timeout", CommandStatus.Unknown));
 
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             accessor.SetupGet(a => a.HttpContext).Returns((HttpContext?) null);
 
-            var limiter = CreateLimiter(redis.Object, accessor.Object, 3, true);
+            var limiter = CreateLimiter(database.Object, accessor.Object, 3, true);
 
             using var lease = await limiter.AcquireAsync(1, TestContext.Current.CancellationToken);
 
@@ -139,12 +133,10 @@ public class RedisSlidingWindowRateLimiterTests
                     RedisResult.Create(2)
                 ]));
 
-            var redis = new Mock<IDatabase>(MockBehavior.Strict);
-
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             accessor.SetupGet(a => a.HttpContext).Returns((HttpContext?) null);
 
-            var limiter = CreateLimiter(redis.Object, accessor.Object, 3, true);
+            var limiter = CreateLimiter(database.Object, accessor.Object, 3, true);
 
             using var lease = await limiter.AcquireAsync(1, TestContext.Current.CancellationToken);
 
@@ -163,12 +155,10 @@ public class RedisSlidingWindowRateLimiterTests
                     It.IsAny<CommandFlags>()))
                 .ThrowsAsync(new RedisException("boom"));
 
-            var redis = new Mock<IDatabase>(MockBehavior.Strict);
-
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             accessor.SetupGet(a => a.HttpContext).Returns((HttpContext?) null);
 
-            var limiter = CreateLimiter(redis.Object, accessor.Object, 3, false);
+            var limiter = CreateLimiter(database.Object, accessor.Object, 3, false);
 
             using var lease = await limiter.AcquireAsync(1, TestContext.Current.CancellationToken);
 
@@ -202,12 +192,10 @@ public class RedisSlidingWindowRateLimiterTests
                     It.IsAny<CommandFlags>()))
                 .ReturnsAsync(CreateScriptResult(1, 2, 0));
 
-            var redis = new Mock<IDatabase>(MockBehavior.Strict);
-
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             accessor.SetupGet(a => a.HttpContext).Returns((HttpContext?) null);
 
-            var limiter = CreateLimiter(redis.Object, accessor.Object, 5, true);
+            var limiter = CreateLimiter(database.Object, accessor.Object, 5, true);
 
             using var lease = await limiter.AcquireAsync(1, TestContext.Current.CancellationToken);
 
@@ -240,12 +228,10 @@ public class RedisSlidingWindowRateLimiterTests
                     It.IsAny<CommandFlags>()))
                 .ReturnsAsync(CreateScriptResult(1, 1, 0));
 
-            var redis = new Mock<IDatabase>(MockBehavior.Strict);
-
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             accessor.SetupGet(a => a.HttpContext).Returns((HttpContext?) null);
 
-            var limiter = CreateLimiter(redis.Object, accessor.Object, 5, true);
+            var limiter = CreateLimiter(database.Object, accessor.Object, 5, true);
 
             Assert.Equal(5, limiter.GetStatistics()!.CurrentAvailablePermits);
 

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
+using RedShirt.Example.Api.Common.Distributed.Services.Redis;
 using RedShirt.Example.Api.Common.RateLimiting.Configuration;
 using RedShirt.Example.Api.Common.RateLimiting.Extensions;
 using RedShirt.Example.Api.Common.RateLimiting.Factories;
@@ -28,7 +29,7 @@ public class ServiceCollectionExtensionsTests
                     ["RateLimiting:Policies:default:WindowPermitLimit"] = "10",
                     ["RateLimiting:Policies:default:LimitWindowMinutes"] = "1",
                     ["RateLimiting:Policies:default:FailClosed"] = "false",
-                    ["Common:Redis:ConnectionStringPath"] = "secrets/redis"
+                    ["Common:Distributed:Redis:ConnectionStringPath"] = "secrets/redis"
                 })
                 .Build();
         }
@@ -39,6 +40,7 @@ public class ServiceCollectionExtensionsTests
             var configuration = BuildEnabledConfiguration();
             var services = new ServiceCollection();
             services.AddSingleton(new Mock<ISecretManagerCacheService>(MockBehavior.Strict).Object);
+            services.AddSingleton(new Mock<IRedisConnectionCacheService>(MockBehavior.Strict).Object);
             services.AddLogging();
 
             services.ConsiderAddingRateLimitingPolicies(configuration);
@@ -62,6 +64,7 @@ public class ServiceCollectionExtensionsTests
             var configuration = BuildEnabledConfiguration();
             var services = new ServiceCollection();
             services.AddSingleton(new Mock<ISecretManagerCacheService>(MockBehavior.Strict).Object);
+            services.AddSingleton(new Mock<IRedisConnectionCacheService>(MockBehavior.Strict).Object);
 
             services.ConsiderAddingRateLimitingPolicies(configuration);
 
