@@ -1,6 +1,5 @@
 {
   "runtime": "Net100",
-  "defaultVariables": "Configuration=Debug",
   "documentGenerator": {
     "aspNetCoreToOpenApi": {
       "project": null,
