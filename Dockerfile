@@ -13,7 +13,7 @@ COPY *.slnx .
 COPY global.json .
 
 RUN dotnet restore
-RUN dotnet build
+RUN dotnet build -c $BUILD_CONFIGURATION
 ARG TESTS_ENABLE=1
 RUN \[ ${TESTS_ENABLE} -ne 1 \] \
   || \

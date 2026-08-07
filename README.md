@@ -30,8 +30,7 @@ For configuration examples, see the `api` section of the `test/local/docker-comp
 ## Rate Limiting Configuration
 
 This API is built with the option for rate limiting, using a sliding window system backed either by Redis or an
-in-memory
-system.
+in-memory system.
 
 To make use of rate limiting, you must either:
 

@@ -1,12 +1,11 @@
 {
   "runtime": "Net100",
-  "defaultVariables": "Configuration=Debug",
   "documentGenerator": {
     "aspNetCoreToOpenApi": {
       "project": null,
       "documentName": "v1",
       "msBuildProjectExtensionsPath": null,
-      "configuration": null,
+      "configuration": "$(Configuration)",
       "runtime": null,
       "targetFramework": null,
       "noBuild": true,
