@@ -15,10 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Services\Topics\"/>
-    </ItemGroup>
-
-    <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Distributed\RedShirt.Example.Api.Common.Distributed.csproj" />
         <ProjectReference Include="..\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>
     </ItemGroup>
 

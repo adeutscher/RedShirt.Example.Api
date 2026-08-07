@@ -9,7 +9,7 @@ namespace RedShirt.Example.Api.Common.RateLimiting.RateLimiters;
 ///     Distributed sliding-window limiter backed by a Redis sorted set (request timestamps as scores).
 /// </summary>
 internal sealed class RedisSlidingWindowRateLimiter(
-    IConnectionMultiplexer redis,
+    IDatabase redisDatabase,
     string redisKey,
     int permitLimit,
     TimeSpan window,
@@ -75,12 +75,11 @@ internal sealed class RedisSlidingWindowRateLimiter(
 
         try
         {
-            var db = redis.GetDatabase();
             var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var member = $"{now}-{Guid.NewGuid():N}";
 
             var result = (RedisResult[]?) await Script.EvaluateAsync(
-                db,
+                redisDatabase,
                 new
                 {
                     key = (RedisKey) redisKey,

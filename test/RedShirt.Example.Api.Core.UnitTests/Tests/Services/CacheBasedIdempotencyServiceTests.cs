@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using Moq;
-using RedShirt.Example.Api.Common.Abstractions;
-using RedShirt.Example.Api.Common.Services;
+using RedShirt.Example.Api.Common.Distributed.Models;
+using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
 using RedShirt.Example.Api.Core.Services;
 using System.Text.Json;
 
@@ -10,12 +10,12 @@ namespace RedShirt.Example.Api.Core.UnitTests.Tests.Services;
 public class CacheBasedIdempotencyServiceTests
 {
     private static CacheBasedIdempotencyService CreateService(
-        IDataCacheService? dataCacheService = null,
+        IRemoteCacheService? dataCacheService = null,
         IAbstractedLockService? lockService = null,
         int idempotencyTimeMinutes = 10)
     {
         return new CacheBasedIdempotencyService(
-            dataCacheService ?? new Mock<IDataCacheService>(MockBehavior.Strict).Object,
+            dataCacheService ?? new Mock<IRemoteCacheService>(MockBehavior.Strict).Object,
             lockService ?? new Mock<IAbstractedLockService>(MockBehavior.Strict).Object,
             Options.Create(new CacheBasedIdempotencyService.ConfigurationModel
             {
@@ -72,7 +72,7 @@ public class CacheBasedIdempotencyServiceTests
         public async Task DeserializesStoredJson()
         {
             var payload = new SampleRecord("alpha", 3);
-            var cache = new Mock<IDataCacheService>(MockBehavior.Strict);
+            var cache = new Mock<IRemoteCacheService>(MockBehavior.Strict);
             cache
                 .Setup(c => c.GetStringAsync("key", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(JsonSerializer.Serialize(payload));
@@ -89,7 +89,7 @@ public class CacheBasedIdempotencyServiceTests
         [Fact]
         public async Task ReturnsDefault_WhenCacheMisses()
         {
-            var cache = new Mock<IDataCacheService>(MockBehavior.Strict);
+            var cache = new Mock<IRemoteCacheService>(MockBehavior.Strict);
             cache
                 .Setup(c => c.GetStringAsync("missing", It.IsAny<CancellationToken>()))
                 .ReturnsAsync((string?) null);
@@ -106,7 +106,7 @@ public class CacheBasedIdempotencyServiceTests
         [Fact]
         public async Task ReturnsDefault_WhenStoredJsonIsInvalid()
         {
-            var cache = new Mock<IDataCacheService>(MockBehavior.Strict);
+            var cache = new Mock<IRemoteCacheService>(MockBehavior.Strict);
             cache
                 .Setup(c => c.GetStringAsync("key", It.IsAny<CancellationToken>()))
                 .ReturnsAsync("{not-json");
@@ -127,7 +127,7 @@ public class CacheBasedIdempotencyServiceTests
         public async Task SerializesValue_AndUsesConfiguredExpiration()
         {
             var payload = new SampleRecord("beta", 9);
-            var cache = new Mock<IDataCacheService>(MockBehavior.Strict);
+            var cache = new Mock<IRemoteCacheService>(MockBehavior.Strict);
             cache
                 .Setup(c => c.SetStringAsync(
                     "key",
@@ -154,7 +154,7 @@ public class CacheBasedIdempotencyServiceTests
         public async Task UsesMinimumOneMinuteExpiration_WhenConfiguredBelowOne(int idempotencyTimeMinutes)
         {
             var payload = new SampleRecord("gamma", 1);
-            var cache = new Mock<IDataCacheService>(MockBehavior.Strict);
+            var cache = new Mock<IRemoteCacheService>(MockBehavior.Strict);
             cache
                 .Setup(c => c.SetStringAsync(
                     "key",

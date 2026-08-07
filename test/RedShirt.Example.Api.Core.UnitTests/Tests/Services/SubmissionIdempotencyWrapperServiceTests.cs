@@ -1,5 +1,5 @@
 using Moq;
-using RedShirt.Example.Api.Common.Abstractions;
+using RedShirt.Example.Api.Common.Distributed.Models;
 using RedShirt.Example.Api.Core.Exceptions;
 using RedShirt.Example.Api.Core.Services;
 
@@ -38,7 +38,7 @@ public class CacheBasedIdempotencyWrapperServiceTests
         idempotency.Verify(
             s => s.SetRecordAsync(It.IsAny<string>(), It.IsAny<SampleResult>(), It.IsAny<CancellationToken>()),
             Times.Never);
-        lockHandle.Verify(l => l.Unlock(), Times.Once);
+        lockHandle.Verify(l => l.UnlockAsync(), Times.Once);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class CacheBasedIdempotencyWrapperServiceTests
         idempotency.Verify(
             s => s.SetRecordAsync("idem-1", produced, TestContext.Current.CancellationToken),
             Times.Once);
-        lockHandle.Verify(l => l.Unlock(), Times.Once);
+        lockHandle.Verify(l => l.UnlockAsync(), Times.Once);
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public class CacheBasedIdempotencyWrapperServiceTests
         idempotency.Verify(
             s => s.SetRecordAsync(It.IsAny<string>(), It.IsAny<SampleResult>(), It.IsAny<CancellationToken>()),
             Times.Never);
-        lockHandle.Verify(l => l.Unlock(), Times.Once);
+        lockHandle.Verify(l => l.UnlockAsync(), Times.Once);
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public class CacheBasedIdempotencyWrapperServiceTests
         idempotency.Verify(
             s => s.SetRecordAsync(It.IsAny<string>(), It.IsAny<SampleResult>(), It.IsAny<CancellationToken>()),
             Times.Never);
-        lockHandle.Verify(l => l.Unlock(), Times.Never);
+        lockHandle.Verify(l => l.UnlockAsync(), Times.Never);
     }
 
     private sealed class SampleResult(string value)

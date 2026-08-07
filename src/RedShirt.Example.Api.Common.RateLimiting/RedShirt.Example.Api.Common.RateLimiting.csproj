@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Distributed\RedShirt.Example.Api.Common.Distributed.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Redis\RedShirt.Example.Api.Common.Redis.csproj"/>
     </ItemGroup>
 

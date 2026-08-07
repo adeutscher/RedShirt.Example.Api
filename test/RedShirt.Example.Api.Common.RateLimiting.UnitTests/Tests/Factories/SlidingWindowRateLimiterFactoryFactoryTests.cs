@@ -1,9 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
+using RedShirt.Example.Api.Common.Distributed.Services.Redis;
 using RedShirt.Example.Api.Common.RateLimiting.Configuration;
 using RedShirt.Example.Api.Common.RateLimiting.Factories;
-using RedShirt.Example.Api.Common.Redis.Services;
 using StackExchange.Redis;
 
 namespace RedShirt.Example.Api.Common.RateLimiting.UnitTests.Tests.Factories;
@@ -15,14 +15,14 @@ public class SlidingWindowRateLimiterFactoryFactoryTests
         [Fact]
         public async Task InitializesRedisFactory_WhenUseRedisTrue()
         {
-            var connection = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
+            var connection = new Mock<IDatabase>(MockBehavior.Strict);
             var redisFactory = new Mock<IRedisSlidingWindowRateLimiterFactory>(MockBehavior.Strict);
             redisFactory
                 .Setup(f => f.Initialize("policy-x", connection.Object));
 
-            var redisConnection = new Mock<IRedisSharedConnectionService>(MockBehavior.Strict);
+            var redisConnection = new Mock<IRedisConnectionCacheService>(MockBehavior.Strict);
             redisConnection
-                .Setup(s => s.GetConnectionAsync(TestContext.Current.CancellationToken))
+                .Setup(s => s.GetDatabaseAsync(TestContext.Current.CancellationToken))
                 .ReturnsAsync(connection.Object);
 
             var services = new ServiceCollection();
@@ -43,7 +43,7 @@ public class SlidingWindowRateLimiterFactoryFactoryTests
 
             Assert.Same(redisFactory.Object, factory);
             redisFactory.Verify(f => f.Initialize("policy-x", connection.Object), Times.Once);
-            redisConnection.Verify(s => s.GetConnectionAsync(TestContext.Current.CancellationToken), Times.Once);
+            redisConnection.Verify(s => s.GetDatabaseAsync(TestContext.Current.CancellationToken), Times.Once);
         }
 
         [Fact]
@@ -55,7 +55,7 @@ public class SlidingWindowRateLimiterFactoryFactoryTests
             services.AddSingleton(inMemory.Object);
             var provider = services.BuildServiceProvider();
 
-            var redisConnection = new Mock<IRedisSharedConnectionService>(MockBehavior.Strict);
+            var redisConnection = new Mock<IRedisConnectionCacheService>(MockBehavior.Strict);
             var options = Options.Create(new GeneralRateLimiterOptions
             {
                 DisableRateLimiting = false,

@@ -14,41 +14,12 @@ namespace RedShirt.Example.Api.Core.UnitTests.Tests.Cqrs;
 /// </summary>
 public class CqrsServiceCollectionExtensionsTests
 {
-    /// <summary>
-    /// Silly little manual test to address a warning in sample fixtures.
-    /// A little testing-your-tests-y, but it's a 2-liner. It's fine.
-    /// </summary>
-    [Fact]
-    public void TestSampleCqrsResult()
+    private static void AssertRegisteredTransient<TService, TImplementation>(IServiceCollection services)
     {
-        var result = new SampleResult("foo");
-        Assert.Equal("foo", result.Name);
-    }
-    
-    [Fact]
-    public void AddCqrsHandlers_ThrowsArgumentNullException_WhenServicesIsNull()
-    {
-        Assert.Throws<ArgumentNullException>(() =>
-            CqrsServiceCollectionExtensions.AddCqrsHandlers(null!, typeof(CqrsServiceCollectionExtensions).Assembly));
-    }
-
-    [Fact]
-    public void AddCqrsHandlers_ThrowsArgumentNullException_WhenAssemblyIsNull()
-    {
-        var services = new ServiceCollection();
-
-        Assert.Throws<ArgumentNullException>(() => services.AddCqrsHandlers(null!));
-    }
-
-    [Fact]
-    public void AddCqrsHandlers_RegistersIntermediateCqrsHandlerInterfaces_FromAssembly()
-    {
-        var services = new ServiceCollection();
-
-        services.AddCqrsHandlers(typeof(SampleCommandHandler).Assembly);
-
-        AssertRegisteredTransient<ISampleCommandHandler, SampleCommandHandler>(services);
-        AssertRegisteredTransient<ISampleVoidCommandHandler, SampleVoidCommandHandler>(services);
+        Assert.Contains(services, descriptor =>
+            descriptor.ServiceType == typeof(TService)
+            && descriptor.ImplementationType == typeof(TImplementation)
+            && descriptor.Lifetime == ServiceLifetime.Transient);
     }
 
     [Fact]
@@ -62,31 +33,6 @@ public class CqrsServiceCollectionExtensionsTests
             descriptor => descriptor.ServiceType == typeof(ICqrsHandler<SampleCommand>));
         Assert.DoesNotContain(services,
             descriptor => descriptor.ServiceType == typeof(ICqrsHandler<SampleCommand, SampleResult>));
-    }
-
-    [Fact]
-    public void AddCqrsHandlers_SkipsAbstractClasses()
-    {
-        var services = new ServiceCollection();
-
-        services.AddCqrsHandlers(typeof(AbstractSampleCommandHandler).Assembly);
-
-        Assert.DoesNotContain(services,
-            descriptor => descriptor.ImplementationType == typeof(AbstractSampleCommandHandler));
-    }
-
-    [Fact]
-    public void AddCqrsHandlers_RegistersKnownHandlers_FromCoreAssembly()
-    {
-        var services = new ServiceCollection();
-
-        services.AddCqrsHandlers(typeof(CqrsServiceCollectionExtensions).Assembly);
-
-        AssertRegisteredTransient<ICreateExampleItemCommandHandler, CreateExampleItemCommandHandler>(services);
-        AssertRegisteredTransient<IDeleteExampleItemCommandHandler, DeleteExampleItemCommandHandler>(services);
-        AssertRegisteredTransient<IGetExampleItemRecordQueryHandler, GetExampleItemRecordQueryHandler>(services);
-        AssertRegisteredTransient<IListExampleItemRecordsQueryHandler, ListExampleItemRecordsQueryHandler>(
-            services);
     }
 
     [Fact]
@@ -105,13 +51,28 @@ public class CqrsServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddCqrsHandlers_ReturnsSameServiceCollection()
+    public void AddCqrsHandlers_RegistersIntermediateCqrsHandlerInterfaces_FromAssembly()
     {
         var services = new ServiceCollection();
 
-        var result = services.AddCqrsHandlers(typeof(SampleCommandHandler).Assembly);
+        services.AddCqrsHandlers(typeof(SampleCommandHandler).Assembly);
 
-        Assert.Same(services, result);
+        AssertRegisteredTransient<ISampleCommandHandler, SampleCommandHandler>(services);
+        AssertRegisteredTransient<ISampleVoidCommandHandler, SampleVoidCommandHandler>(services);
+    }
+
+    [Fact]
+    public void AddCqrsHandlers_RegistersKnownHandlers_FromCoreAssembly()
+    {
+        var services = new ServiceCollection();
+
+        services.AddCqrsHandlers(typeof(CqrsServiceCollectionExtensions).Assembly);
+
+        AssertRegisteredTransient<ICreateExampleItemCommandHandler, CreateExampleItemCommandHandler>(services);
+        AssertRegisteredTransient<IDeleteExampleItemCommandHandler, DeleteExampleItemCommandHandler>(services);
+        AssertRegisteredTransient<IGetExampleItemRecordQueryHandler, GetExampleItemRecordQueryHandler>(services);
+        AssertRegisteredTransient<IListExampleItemRecordsQueryHandler, ListExampleItemRecordsQueryHandler>(
+            services);
     }
 
     [Fact]
@@ -126,11 +87,50 @@ public class CqrsServiceCollectionExtensionsTests
         Assert.IsType<SampleCommandHandler>(handler);
     }
 
-    private static void AssertRegisteredTransient<TService, TImplementation>(IServiceCollection services)
+    [Fact]
+    public void AddCqrsHandlers_ReturnsSameServiceCollection()
     {
-        Assert.Contains(services, descriptor =>
-            descriptor.ServiceType == typeof(TService)
-            && descriptor.ImplementationType == typeof(TImplementation)
-            && descriptor.Lifetime == ServiceLifetime.Transient);
+        var services = new ServiceCollection();
+
+        var result = services.AddCqrsHandlers(typeof(SampleCommandHandler).Assembly);
+
+        Assert.Same(services, result);
+    }
+
+    [Fact]
+    public void AddCqrsHandlers_SkipsAbstractClasses()
+    {
+        var services = new ServiceCollection();
+
+        services.AddCqrsHandlers(typeof(AbstractSampleCommandHandler).Assembly);
+
+        Assert.DoesNotContain(services,
+            descriptor => descriptor.ImplementationType == typeof(AbstractSampleCommandHandler));
+    }
+
+    [Fact]
+    public void AddCqrsHandlers_ThrowsArgumentNullException_WhenAssemblyIsNull()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<ArgumentNullException>(() => services.AddCqrsHandlers(null!));
+    }
+
+    [Fact]
+    public void AddCqrsHandlers_ThrowsArgumentNullException_WhenServicesIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            CqrsServiceCollectionExtensions.AddCqrsHandlers(null!, typeof(CqrsServiceCollectionExtensions).Assembly));
+    }
+
+    /// <summary>
+    ///     Silly little manual test to address a warning in sample fixtures.
+    ///     A little testing-your-tests-y, but it's a 2-liner. It's fine.
+    /// </summary>
+    [Fact]
+    public void TestSampleCqrsResult()
+    {
+        var result = new SampleResult("foo");
+        Assert.Equal("foo", result.Name);
     }
 }

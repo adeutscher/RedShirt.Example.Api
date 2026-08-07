@@ -10,17 +10,17 @@ namespace RedShirt.Example.Api.Common.RateLimiting.Factories;
 
 internal interface IRedisSlidingWindowRateLimiterFactory : ISlidingWindowRateLimiterFactory
 {
-    void Initialize(string? policyName, IConnectionMultiplexer? connectionMultiplexer);
+    void Initialize(string? policyName, IDatabase? redisDatabase);
 }
 
 internal class RedisSlidingWindowFactory(IServiceProvider serviceProvider) : IRedisSlidingWindowRateLimiterFactory
 {
-    private IConnectionMultiplexer? _connectionMultiplexer;
     private string? _policyName;
+    private IDatabase? _redisDatabase;
 
     public RateLimitPartition<string> GetRateLimiter(string partitionKey, RateLimitingPolicyOptions policyOptions)
     {
-        if (_connectionMultiplexer is null)
+        if (_redisDatabase is null)
         {
             throw new InvalidOperationException(
                 "Attempting to produce rate limiter without initialization. Developer error.");
@@ -36,7 +36,7 @@ internal class RedisSlidingWindowFactory(IServiceProvider serviceProvider) : IRe
         return RateLimitPartition.Get(
             partitionKey,
             key => new RedisSlidingWindowRateLimiter(
-                _connectionMultiplexer,
+                _redisDatabase,
                 $"{prefix}:{_policyName ?? prefix}:{key}",
                 policyOptions.WindowPermitLimit,
                 policyOptions.Window,
@@ -45,9 +45,9 @@ internal class RedisSlidingWindowFactory(IServiceProvider serviceProvider) : IRe
                 logger));
     }
 
-    public void Initialize(string? policyName, IConnectionMultiplexer? connectionMultiplexer)
+    public void Initialize(string? policyName, IDatabase? redisDatabase)
     {
         _policyName = policyName;
-        _connectionMultiplexer = connectionMultiplexer;
+        _redisDatabase = redisDatabase;
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Testing.Platform.Extensions.Messages;
 using Moq;
 using RedShirt.Example.Api.Common.RateLimiting.Constants;
 using RedShirt.Example.Api.Common.RateLimiting.RateLimiters;
@@ -11,7 +12,7 @@ namespace RedShirt.Example.Api.Common.RateLimiting.UnitTests.Tests.RateLimiters;
 public class RedisSlidingWindowRateLimiterTests
 {
     private static RedisSlidingWindowRateLimiter CreateLimiter(
-        IConnectionMultiplexer redis,
+        IDatabase redis,
         IHttpContextAccessor accessor,
         int permitLimit,
         bool failClosed)
@@ -50,8 +51,7 @@ public class RedisSlidingWindowRateLimiterTests
                     It.IsAny<CommandFlags>()))
                 .ReturnsAsync(CreateScriptResult(1, 4, 0));
 
-            var redis = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
-            redis.Setup(r => r.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(database.Object);
+            var redis = new Mock<IDatabase>(MockBehavior.Strict);
 
             var httpContext = new DefaultHttpContext();
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
@@ -82,8 +82,7 @@ public class RedisSlidingWindowRateLimiterTests
                     It.IsAny<CommandFlags>()))
                 .ReturnsAsync(CreateScriptResult(0, 0, 1500));
 
-            var redis = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
-            redis.Setup(r => r.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(database.Object);
+            var redis = new Mock<IDatabase>(MockBehavior.Strict);
 
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             accessor.SetupGet(a => a.HttpContext).Returns((HttpContext?) null);
@@ -111,8 +110,7 @@ public class RedisSlidingWindowRateLimiterTests
                     It.IsAny<CommandFlags>()))
                 .ThrowsAsync(new RedisTimeoutException("timeout", CommandStatus.Unknown));
 
-            var redis = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
-            redis.Setup(r => r.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(database.Object);
+            var redis = new Mock<IDatabase>(MockBehavior.Strict);
 
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             accessor.SetupGet(a => a.HttpContext).Returns((HttpContext?) null);
@@ -142,8 +140,7 @@ public class RedisSlidingWindowRateLimiterTests
                     RedisResult.Create(2)
                 ]));
 
-            var redis = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
-            redis.Setup(r => r.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(database.Object);
+            var redis = new Mock<IDatabase>(MockBehavior.Strict);
 
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             accessor.SetupGet(a => a.HttpContext).Returns((HttpContext?) null);
@@ -167,8 +164,7 @@ public class RedisSlidingWindowRateLimiterTests
                     It.IsAny<CommandFlags>()))
                 .ThrowsAsync(new RedisException("boom"));
 
-            var redis = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
-            redis.Setup(r => r.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(database.Object);
+            var redis = new Mock<IDatabase>(MockBehavior.Strict);
 
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             accessor.SetupGet(a => a.HttpContext).Returns((HttpContext?) null);
@@ -183,7 +179,7 @@ public class RedisSlidingWindowRateLimiterTests
         [Fact]
         public async Task Rejects_WhenPermitCountGreaterThanOne()
         {
-            var redis = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
+            var redis = new Mock<IDatabase>(MockBehavior.Strict);
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
 
             var limiter = CreateLimiter(redis.Object, accessor.Object, 5, true);
@@ -193,7 +189,6 @@ public class RedisSlidingWindowRateLimiterTests
             Assert.False(lease.IsAcquired);
             Assert.True(lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter));
             Assert.Equal(TimeSpan.Zero, retryAfter);
-            redis.Verify(r => r.GetDatabase(It.IsAny<int>(), It.IsAny<object>()), Times.Never);
         }
 
         [Fact]
@@ -208,8 +203,7 @@ public class RedisSlidingWindowRateLimiterTests
                     It.IsAny<CommandFlags>()))
                 .ReturnsAsync(CreateScriptResult(1, 2, 0));
 
-            var redis = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
-            redis.Setup(r => r.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(database.Object);
+            var redis = new Mock<IDatabase>(MockBehavior.Strict);
 
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             accessor.SetupGet(a => a.HttpContext).Returns((HttpContext?) null);
@@ -224,7 +218,7 @@ public class RedisSlidingWindowRateLimiterTests
         [Fact]
         public async Task Throws_WhenPermitCountLessThanOne()
         {
-            var redis = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
+            var redis = new Mock<IDatabase>(MockBehavior.Strict);
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             var limiter = CreateLimiter(redis.Object, accessor.Object, 5, true);
 
@@ -247,8 +241,7 @@ public class RedisSlidingWindowRateLimiterTests
                     It.IsAny<CommandFlags>()))
                 .ReturnsAsync(CreateScriptResult(1, 1, 0));
 
-            var redis = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
-            redis.Setup(r => r.GetDatabase(It.IsAny<int>(), It.IsAny<object>())).Returns(database.Object);
+            var redis = new Mock<IDatabase>(MockBehavior.Strict);
 
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             accessor.SetupGet(a => a.HttpContext).Returns((HttpContext?) null);
@@ -270,7 +263,7 @@ public class RedisSlidingWindowRateLimiterTests
         [Fact]
         public void IsNull()
         {
-            var redis = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
+            var redis = new Mock<IDatabase>(MockBehavior.Strict);
             var accessor = new Mock<IHttpContextAccessor>(MockBehavior.Strict);
             var limiter = CreateLimiter(redis.Object, accessor.Object, 1, true);
 
