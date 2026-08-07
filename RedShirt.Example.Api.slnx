@@ -29,9 +29,16 @@
         <Project
                 Path="test/RedShirt.Example.Api.Common.Aws.UnitTests/RedShirt.Example.Api.Common.Aws.UnitTests.csproj"/>
         <Project
+                Path="test/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.UnitTests/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.UnitTests.csproj"/>
+        <Project
+                Path="test/RedShirt.Example.Api.Common.Azure.UnitTests/RedShirt.Example.Api.Common.Azure.UnitTests.csproj"/>
+        <Project
+                Path="test/RedShirt.Example.Api.Common.Distributed.UnitTests/RedShirt.Example.Api.Common.Distributed.UnitTests.csproj"/>
+        <Project
                 Path="test/RedShirt.Example.Api.Common.RateLimiting.UnitTests/RedShirt.Example.Api.Common.RateLimiting.UnitTests.csproj"/>
         <Project
                 Path="test/RedShirt.Example.Api.Common.SecretManagers.Core.UnitTests/RedShirt.Example.Api.Common.SecretManagers.Core.UnitTests.csproj"/>
+        <Project Path="test/RedShirt.Example.Api.Common.UnitTests/RedShirt.Example.Api.Common.UnitTests.csproj"/>
         <Project Path="test/RedShirt.Example.Api.Core.UnitTests/RedShirt.Example.Api.Core.UnitTests.csproj"/>
         <Project Path="test/RedShirt.Example.Api.IntegrationTests/RedShirt.Example.Api.IntegrationTests.csproj"/>
         <Project Path="test/RedShirt.Example.Api.UnitTests/RedShirt.Example.Api.UnitTests.csproj"/>
