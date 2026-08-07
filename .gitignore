@@ -24,11 +24,24 @@
 
 *.suo
 *.user
+*.rsuser
 .vs/
 [Bb]in/
 [Oo]bj/
 _UpgradeReport_Files/
 [Pp]ackages/
+*.nupkg
+*.snupkg
+artifacts/
+[Tt]est[Rr]esults/
+**/coverage*
+*.coverage
+*.coveragexml
+**/BenchmarkDotNet.Artifacts/
+
+.env
+.env.*
+appsettings.*.local.json
 
 Thumbs.db
 Desktop.ini
