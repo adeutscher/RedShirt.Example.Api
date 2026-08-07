@@ -36,9 +36,14 @@ services:
       # Core Configuration
       ##
       CORE__IDEMPOTENCY__IDEMPOTENCY_TRACKING_TIME_MINUTES: 3
-      # Caching
+      # Secrets
       ##
-      COMMON__REDIS__CONNECTION_STRING_PATH: /redis/connection-string
+      COMMON__SECRETS__CACHE__FORCE_COOLDOWN_SECONDS: 30
+      # Distributed (Redis cache / locks)
+      ##
+      COMMON__DISTRIBUTED__REDIS__CONNECTION_STRING_PATH: /redis/connection-string
+      COMMON__DISTRIBUTED__LOCKS__TIMEOUT_SECONDS: 10
+      COMMON__DISTRIBUTED__SAFETY__DISGRACE_PERIOD_SECONDS: 30
       # Rate Limiting
       ##
       RATE_LIMITING__DISABLE_RATE_LIMITING: false
