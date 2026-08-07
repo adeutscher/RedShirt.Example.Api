@@ -23,9 +23,12 @@ RUN \[ ${TESTS_ENABLE} -ne 1 \] \
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN rm -rf swagger test/ *slnx global.json \
- && dotnet publish "src/RedShirt.Example.Api/RedShirt.Example.Api.csproj" --self-contained -c $BUILD_CONFIGURATION -o /app/publish
+ && dotnet publish "src/RedShirt.Example.Api/RedShirt.Example.Api.csproj" --self-contained -c $BUILD_CONFIGURATION -o /app/publish \
+ && find /app/publish -type d -exec chmod 500 {} + \
+ && find /app/publish -type f -exec chmod 400 {} + \
+ && chmod 500 /app/publish/RedShirt.Example.Api
 
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=publish --chown=$APP_UID:$APP_UID /app/publish .
 ENTRYPOINT ["./RedShirt.Example.Api"]
