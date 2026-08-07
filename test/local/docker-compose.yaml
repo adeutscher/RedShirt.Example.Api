@@ -39,6 +39,10 @@ services:
       # Secrets
       ##
       COMMON__SECRETS__CACHE__FORCE_COOLDOWN_SECONDS: "${COMMON__SECRETS__CACHE__FORCE_COOLDOWN_SECONDS-30}"
+      # Azure Key Vault (when AddSecretManagerAzureKeyVault is used instead of SSM)
+      ##
+      COMMON__SECRETS__AZURE_KEY_VAULT__KEY_VAULT_URL: "${COMMON__SECRETS__AZURE_KEY_VAULT__KEY_VAULT_URL-https://localhost:8443/}"
+      COMMON__SECRETS__AZURE_KEY_VAULT__GENERATE_LOCAL_TESTING_TOKEN: true
       # Distributed (Redis cache / locks)
       ##
       COMMON__DISTRIBUTED__REDIS__CONNECTION_STRING_PATH: "${COMMON__DISTRIBUTED__REDIS__CONNECTION_STRING_PATH-/redis/connection-string}"
