@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.Testing.Platform.Extensions.Messages;
 using Moq;
 using RedShirt.Example.Api.Common.RateLimiting.Constants;
 using RedShirt.Example.Api.Common.RateLimiting.RateLimiters;
