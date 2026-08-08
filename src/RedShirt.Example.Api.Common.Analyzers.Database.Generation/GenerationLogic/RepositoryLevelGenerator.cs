@@ -77,9 +77,9 @@ public static class RepositoryLevelGenerator
                                      + $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(genericDtoStorage.GetTableName())"
                                      + "} /**where**/ /**orderby**/ LIMIT @paramTake\", @params);")
             // Declare and act on SQL connection
-            .AppendLineWithIndent(2, "using var dbConnection = await sqlConnectionFactory.GetConnectionAsync();")
+            .AppendLineWithIndent(2, $"using var dbConnection = await sqlConnectionFactory.GetMySqlConnectionAsync(\"{classSummaryModel.ConnectionStringName}\", cancellationToken);")
             .AppendLineWithIndent(2,
-                $"var policy = {classSummaryModel.BaseNamespace}.Common.Database.Utility.PolicyHelper.GetRetryPolicy(logger);")
+                $"var policy = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.PolicyHelper.GetRetryPolicy(logger);")
             .AppendLineWithIndent(2,
                 "// Note: Generated code needs to use extension method directly as we aren't importing any using directives")
             .AppendLineWithIndent(2,

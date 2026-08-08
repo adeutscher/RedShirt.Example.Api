@@ -31,7 +31,7 @@ public static class DependencyInjectionGenerator
                 $"serviceCollection = Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions.AddSingleton<{classSummaryModel.RepositoryInterfaceName}, {classSummaryModel.RepositoryName}>(serviceCollection);")
             // Generic DTO Storage for DTO
             .AppendLineWithIndent(2,
-                $"serviceCollection = {classSummaryModel.BaseNamespace}.Common.Database.Extensions.ServiceCollectionExtensions.AddGenericDtoHandler<{classSummaryModel.FullDtoName}, {classSummaryModel.Key.Type}>(serviceCollection);")
+                $"serviceCollection = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Extensions.ServiceCollectionExtensions.AddGenericMysqlDtoHandler<{classSummaryModel.FullDtoName}, {classSummaryModel.Key.Type}>(serviceCollection);")
             .AppendLineWithIndent(2, "return serviceCollection;")
             .CloseBracket()
             .CloseBracket(0);

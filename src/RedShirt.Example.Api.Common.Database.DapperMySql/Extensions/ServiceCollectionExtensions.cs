@@ -15,7 +15,7 @@ public static class ServiceCollectionExtensions
             .AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
     }
 
-    public static IServiceCollection AddGenericDtoHandler<TDto, TKey>(this IServiceCollection services)
+    public static IServiceCollection AddGenericMysqlDtoHandler<TDto, TKey>(this IServiceCollection services)
         where TDto : class
     {
         return services
