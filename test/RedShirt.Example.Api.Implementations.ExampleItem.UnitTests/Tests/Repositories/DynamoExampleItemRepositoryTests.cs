@@ -8,8 +8,8 @@ using RedShirt.Example.Api.Core.UseCases.ExampleItem.Models;
 using RedShirt.Example.Api.Implementations.ExampleItem.Domain;
 using RedShirt.Example.Api.Implementations.ExampleItem.Repositories;
 using System.Text.Json;
-using BadRequestException = RedShirt.Example.Api.Core.Exceptions.Responses.BadRequestException;
-using ResourceNotFoundException = RedShirt.Example.Api.Core.Exceptions.Responses.ResourceNotFoundException;
+using BadRequestException = RedShirt.Example.Api.Common.Exceptions.Responses.BadRequestException;
+using ResourceNotFoundException = RedShirt.Example.Api.Common.Exceptions.Responses.ResourceNotFoundException;
 
 namespace RedShirt.Example.Api.Implementations.ExampleItem.UnitTests.Tests.Repositories;
 
