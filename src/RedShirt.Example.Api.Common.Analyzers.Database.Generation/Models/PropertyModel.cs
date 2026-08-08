@@ -76,7 +76,8 @@ public class PropertyModel
                     "long",
                     "ulong",
                     "float",
-                    "double"
+                    "double",
+                    "decimal"
                 }.Contains(Type))
             {
                 return PropertyCategory.Integer;
