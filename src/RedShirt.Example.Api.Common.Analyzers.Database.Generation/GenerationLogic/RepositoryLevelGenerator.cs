@@ -145,21 +145,21 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(
                 $"public {Helper.Taskify("bool")} DeleteAsync({typeof(Guid).FullName} id, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
-            .AppendLineWithIndent(2, "return genericDtoStorage.DeleteByKeyAsync(id, cancellationToken);")
+            .AppendLineWithIndent(2, $"return genericDtoStorage.DeleteByKeyAsync(\"{classSummaryModel.ConnectionStringName}\", id, cancellationToken);")
             .CloseBracket()
             .AppendLine()
             // GetById
             .AppendLineWithIndent(
                 $"public {Helper.Taskify(classSummaryModel.FullDtoName + "?")} GetByIdAsync({typeof(Guid).FullName} id, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
-            .AppendLineWithIndent(2, "return genericDtoStorage.GetByKeyAsync(id, cancellationToken);")
+            .AppendLineWithIndent(2, $"return genericDtoStorage.GetByKeyAsync(\"{classSummaryModel.ConnectionStringName}\", id, cancellationToken);")
             .CloseBracket()
             .AppendLine()
             // Upsert
             .AppendLineWithIndent(
                 $"public {Helper.Taskify(classSummaryModel.FullDtoName)} UpsertAsync({classSummaryModel.FullDtoName} item, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
-            .AppendLineWithIndent(2, "return genericDtoStorage.UpsertAsync(item, cancellationToken);")
+            .AppendLineWithIndent(2, $"return genericDtoStorage.UpsertAsync(\"{classSummaryModel.ConnectionStringName}\", item, cancellationToken);")
             .CloseBracket();
     }
 

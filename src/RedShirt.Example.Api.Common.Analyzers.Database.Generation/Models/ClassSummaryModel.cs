@@ -26,6 +26,8 @@ public class ClassSummaryModel
     /// </summary>
     public string TableName { get; set; }
 
+    public string ConnectionStringName { get; set; }
+    
     /// <summary>
     ///     DataType Object (DTO) name
     /// </summary>

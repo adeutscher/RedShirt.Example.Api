@@ -22,7 +22,8 @@ public static class CentralContentGenerator
         }
 
         var tableName = dbTableAttribute.ConstructorArguments[0].Value!.ToString();
-        var keySearchable = dbTableAttribute.ConstructorArguments[1].Value!.ToString().ToLower() == "true";
+        var connectionStringName = dbTableAttribute.ConstructorArguments[0].Value?.ToString() ?? "boo";
+        var keySearchable = dbTableAttribute.ConstructorArguments[2].Value!.ToString().ToLower() == "true";
 
         var maxPageSize = (uint) 100; // Default
         if (classAttributes.FirstOrDefault(attr => attr.AttributeClass!.Name == nameof(DbMaxPageSizeAttribute)) is
@@ -37,6 +38,7 @@ public static class CentralContentGenerator
         return new TableProperties
         {
             TableName = tableName,
+            ConnectionStringName = connectionStringName,
             KeySearchable = keySearchable,
             MaxPageSize = maxPageSize
         };
@@ -113,6 +115,7 @@ public static class CentralContentGenerator
         {
             Namespace = ns,
             TableName = tableProperties.TableName,
+            ConnectionStringName = tableProperties.ConnectionStringName,
             MaxSearchPageSize = tableProperties.MaxPageSize,
             SearchableByKey = tableProperties.KeySearchable,
             DtoName = className,
@@ -184,6 +187,7 @@ public static class CentralContentGenerator
     private class TableProperties
     {
         public string TableName { get; set; }
+        public string ConnectionStringName { get; set; }
         public bool KeySearchable { get; set; }
         public uint MaxPageSize { get; set; }
     }
