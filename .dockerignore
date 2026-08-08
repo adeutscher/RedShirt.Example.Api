@@ -29,6 +29,7 @@
 **/secrets.dev.yaml
 **/TestResults
 **/values.dev.yaml
+**/*.log
 init-repo.sh
 LICENSE
 README.md

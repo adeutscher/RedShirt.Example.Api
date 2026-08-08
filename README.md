@@ -46,6 +46,36 @@ Resources:
 * To better understand the configuration definitions, refer to the classes in the `Configuration/` folder of the
   `Common.RateLimiting` project
 
+# Development
+
+Tips for local development.
+
+## Debugging Source Generation
+
+If you are developing new features for source generation, you may find that the standard build for solution or the
+ASP.NET subproject does not express errors in the generation very well. Generally, it shall only print the exception
+message with no further context.
+
+The way around this is to print out the compiler's SARIF logs:
+
+```bash
+dotnet build src/RedShirt.Example.Api.Implementations.Orders/RedShirt.Example.Api.Implementations.Orders.csproj \
+  /p:ErrorLog=compiler-diagnostics.sarif.log
+find . -name '*sarif.log'
+```
+
+The stack trace should be in the logs for the project that you targeted:
+
+```bash
+less ./src/RedShirt.Example.Api.Implementations.Orders/compiler-diagnostics.sarif.log
+```
+
+If the build does not show up, run `dotnet clean` to ensure a fresh build:
+
+```bash
+dotnet clean
+```
+
 # Testing
 
 For local testing, see the `test/local` folder.

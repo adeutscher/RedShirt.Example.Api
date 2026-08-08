@@ -51,3 +51,6 @@ Desktop.ini
 
 # Vim Swapfiles
 .*.swp
+
+# Generic logs
+*.log

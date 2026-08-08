@@ -9,7 +9,7 @@ public interface ISqlConnectionFactory
     Task<IDbConnection> GetMySqlConnectionAsync(string name, CancellationToken cancellationToken = default);
 }
 
-internal class SqlConnectionFactory(IConnectionStringSource connectionStringSource, string connectionStringPath)
+internal class SqlConnectionFactory(IConnectionStringSource connectionStringSource)
     : ISqlConnectionFactory
 {
     public async Task<IDbConnection> GetMySqlConnectionAsync(string name, CancellationToken cancellationToken = default)
