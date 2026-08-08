@@ -82,7 +82,7 @@ public static class ServiceLevelGenerator
                         .AppendLineWithIndent(2, $"if(string.IsNullOrWhiteSpace(request.{property.Name}))")
                         .OpenBracket(2)
                         .AppendLineWithIndent(3,
-                            $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.BadRequestException(\"{property.Name} cannot be empty.\");")
+                            $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.BadRequestException(\"{property.Name} cannot be empty.\");")
                         .CloseBracket(2);
 
                     break;
@@ -112,7 +112,7 @@ public static class ServiceLevelGenerator
             .AppendLineWithIndent("if (!await repository.DeleteAsync(id, cancellationToken))", 2)
             .OpenBracket(2)
             .AppendLineWithIndent(
-                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.ResourceNotFoundException();", 3)
+                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.ResourceNotFoundException();", 3)
             .CloseBracket(2)
             .CloseBracket();
 
@@ -123,7 +123,7 @@ public static class ServiceLevelGenerator
             .AppendLineWithIndent("if (await repository.GetByIdAsync(id, cancellationToken) is not { } entry)", 2)
             .OpenBracket(2)
             .AppendLineWithIndent(
-                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.ResourceNotFoundException();", 3)
+                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.ResourceNotFoundException();", 3)
             .CloseBracket(2)
             .AppendLineWithIndent(2, "return entry;")
             .CloseBracket();
@@ -135,14 +135,14 @@ public static class ServiceLevelGenerator
             .AppendLineWithIndent(2, "if (!request.AreChangesRequested())")
             .OpenBracket(2)
             .AppendLineWithIndent(
-                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.NoChangesToModifyException();", 2)
+                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.NoChangesToModifyException();", 2)
             .CloseBracket(2)
             .AppendLineWithIndent(
                 $"if (await repository.GetByIdAsync(request.{classSummaryModel.Key.Name}, cancellationToken) is not " +
                 " { } existing)", 2)
             .OpenBracket(2)
             .AppendLineWithIndent(
-                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.ResourceNotFoundException();", 3)
+                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.ResourceNotFoundException();", 3)
             .CloseBracket(2)
             .AppendLineWithIndent(2, $"var candidate = new {classSummaryModel.FullDtoName}")
             .OpenBracket(2)
@@ -174,7 +174,7 @@ public static class ServiceLevelGenerator
         sb.AppendLineWithIndent(2, "if (candidate.IsTheSameAs(existing))")
             .OpenBracket(2)
             .AppendLineWithIndent(
-                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.NoChangesToModifyException();", 2)
+                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.NoChangesToModifyException();", 2)
             .CloseBracket(2);
 
         sb.AppendLineWithIndent(2, "return await repository.UpsertAsync(candidate, cancellationToken);");
@@ -242,7 +242,7 @@ public static class ServiceLevelGenerator
             .AppendLineWithIndent(2, "if (existing is not null && existing.IsTheSameAs(dto))")
             .OpenBracket(2)
             .AppendLineWithIndent(3,
-                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.NoChangesToModifyException();")
+                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.NoChangesToModifyException();")
             .CloseBracket(2)
             .AppendLineWithIndent(2, "return await repository.UpsertAsync(dto, cancellationToken);")
             .CloseBracket();

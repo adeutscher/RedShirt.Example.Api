@@ -32,7 +32,7 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(2, "[")
             .AppendLineWithIndent(3,
                 "$\"{" +
-                $"{classSummaryModel.BaseNamespace}.Common.Database.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullDtoName}.{classSummaryModel.UpdatedAt.Name}))" +
+                $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullDtoName}.{classSummaryModel.UpdatedAt.Name}))" +
                 "} DESC\"")
             .AppendLineWithIndent(2, "];")
             .AppendLine()
@@ -52,9 +52,9 @@ public static class RepositoryLevelGenerator
             .OpenBracket(2)
             .AppendLineWithIndent(3, "queryBuilder = queryBuilder.Where(")
             .AppendLineWithIndent(4, "$\"{"
-                                     + $"{classSummaryModel.BaseNamespace}.Common.Database.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullDtoName}.{classSummaryModel.UpdatedAt.Name}))"
+                                     + $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullDtoName}.{classSummaryModel.UpdatedAt.Name}))"
                                      + "} <= @checkpoint AND {"
-                                     + $"{classSummaryModel.BaseNamespace}.Common.Database.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullDtoName}.{classSummaryModel.Key.Name}))"
+                                     + $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullDtoName}.{classSummaryModel.Key.Name}))"
                                      + "} != @id\",")
             .AppendLineWithIndent(4, "new")
             .OpenBracket(4)
@@ -74,7 +74,7 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(2, "/* Declare SQL Command */")
             .AppendLineWithIndent(2, "var @params = new { paramTake = pageSize };")
             .AppendLineWithIndent(2, "var template = queryBuilder.AddTemplate($\"SELECT * FROM {"
-                                     + $"{classSummaryModel.BaseNamespace}.Common.Database.Utility.DatabaseUtility.QuoteResource(genericDtoStorage.GetTableName())"
+                                     + $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(genericDtoStorage.GetTableName())"
                                      + "} /**where**/ /**orderby**/ LIMIT @paramTake\", @params);")
             // Declare and act on SQL connection
             .AppendLineWithIndent(2, "using var dbConnection = await sqlConnectionFactory.GetConnectionAsync();")
@@ -537,7 +537,7 @@ public static class RepositoryLevelGenerator
     {
         var subSb = new StringBuilder();
         subSb.Append(
-            "$\"{" + baseNamespace + ".Common.Database.Utility.DatabaseUtility.QuoteResource(nameof(" + dtoPath);
+            "$\"{" + baseNamespace + ".Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof(" + dtoPath);
         subSb.Append($".{propertyName}))" + "} " + comparison);
 
         return subSb
@@ -550,9 +550,9 @@ public static class RepositoryLevelGenerator
     {
         var subSb = new StringBuilder();
         subSb.Append(
-            "$\"{" + baseNamespace + ".Common.Database.Utility.DatabaseUtility.QuoteResource(nameof(" + dtoPath);
+            "$\"{" + baseNamespace + ".Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof(" + dtoPath);
         subSb.Append($".{propertyName}))" + "} IS NOT NULL");
-        subSb.Append(" AND {" + baseNamespace + ".Common.Database.Utility.DatabaseUtility.QuoteResource(nameof(" +
+        subSb.Append(" AND {" + baseNamespace + ".Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof(" +
                      dtoPath);
         subSb.Append($".{propertyName}))" + "} " + comparison);
 
@@ -567,13 +567,13 @@ public static class RepositoryLevelGenerator
         sb
             .AppendLine()
             .AppendLine($"internal class {classSummaryModel.RepositoryName}(")
-            .AppendLineWithIndent($"{baseNamespace}.Common.Cache.Services.ICacheService cacheService,")
+            .AppendLineWithIndent($"{baseNamespace}.Common.Distributed.Services.Abstractions.IRemoteCacheService cacheService,")
             .AppendLineWithIndent(
-                $"{baseNamespace}.Common.Database.Services.IGenericDtoStorage<{classSummaryModel.FullDtoName}, {classSummaryModel.Key.Type}> genericDtoStorage,")
+                $"{baseNamespace}.Common.Database.DapperMySql.Services.IGenericMySqlDtoStorage<{classSummaryModel.FullDtoName}, {classSummaryModel.Key.Type}> genericDtoStorage,")
             .AppendLineWithIndent(
                 $"Microsoft.Extensions.Logging.ILogger<{classSummaryModel.RepositoryName}> logger,")
             .AppendLineWithIndent(
-                $"{baseNamespace}.Common.Database.Services.ISqlConnectionFactory sqlConnectionFactory) : {classSummaryModel.RepositoryInterfaceName}")
+                $"{baseNamespace}.Common.Database.DapperMySql.Factories.ISqlConnectionFactory sqlConnectionFactory) : {classSummaryModel.RepositoryInterfaceName}")
             .OpenBracket(0)
             .AppendLineWithIndent($"private const int MaxPageSize = {classSummaryModel.MaxSearchPageSize};");
 

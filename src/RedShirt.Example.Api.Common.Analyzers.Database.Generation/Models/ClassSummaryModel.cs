@@ -1,3 +1,4 @@
+using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Constants;
 using System.Collections.Generic;
 
 namespace RedShirt.Example.Api.Common.Analyzers.Database.Generation.Models;
@@ -8,17 +9,15 @@ public class ClassSummaryModel
 
     /// <summary>
     ///     Root namespace for project.
-    ///     Making a BIG assumption that an API using this analyzer will always have a 3-part root namespace (e.g.
-    ///     RedShirt.Adventure.Realm, RedShirt.Adventure.World)
+    ///     In the original version of this generator, there was a BIG assumption that an API using this analyzer will always have a 3-part root namespace (e.g.
+    ///     RedShirt.Adventure.Realm, RedShirt.Adventure.World).
+    ///     Since that cannot be counted on, this implementation instead assumes a common base declared in a constant.
+    ///     The value of this constant is updated with the template's `init-repo.sh` initialization script.
     /// </summary>
-    public string BaseNamespace
-    {
-        get
-        {
-            var parts = Namespace.Split('.');
-            return $"{parts[0]}.{parts[1]}.{parts[2]}";
-        }
-    }
+#pragma warning disable S2325
+    // ReSharper disable once MemberCanBeMadeStatic.Global
+    public string BaseNamespace => NamespaceConstants.BaseNamespace;
+#pragma warning restore S2325
 
     public string GeneratedNamespace => Namespace + ".Generated";
 

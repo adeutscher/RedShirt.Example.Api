@@ -76,6 +76,14 @@ If the build does not show up, run `dotnet clean` to ensure a fresh build:
 dotnet clean
 ```
 
+## Debugging Source Generation Not Appearing (Rider)
+
+Generated files typically show up in a C# project under **Dependencies / .NET <VERSION> / Source Generators**. If this
+**Source Generators** folder is not showing up and the source generator phase of the build appears to be working, then
+you may need to click the UI button for **Restart Roslyn Analyzers and Source Generators**. In JetBrains Rider, it can
+be found at It can be found as an item in the Rosalyn Analyzers menu in the bottom-right of the main window. I can only
+describe the Rosalyn logo as "a weird branch-y thing".
+
 # Testing
 
 For local testing, see the `test/local` folder.
