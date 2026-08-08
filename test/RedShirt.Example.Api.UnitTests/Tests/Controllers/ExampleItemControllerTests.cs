@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using RedShirt.Example.Api.Controllers;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
+using RedShirt.Example.Api.Controllers;
 using RedShirt.Example.Api.Core.UseCases.ExampleItem.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.ExampleItem.Commands.Delete;
 using RedShirt.Example.Api.Core.UseCases.ExampleItem.Models;

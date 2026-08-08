@@ -1,6 +1,5 @@
 using MySql.Data.MySqlClient;
 using RedShirt.Example.Api.Common.Database.Services;
-using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
 using System.Data;
 
 namespace RedShirt.Example.Api.Common.Database.DapperMySql.Factories;
@@ -15,7 +14,7 @@ internal class SqlConnectionFactory(IConnectionStringSource connectionStringSour
 {
     public async Task<IDbConnection> GetMySqlConnectionAsync(string name, CancellationToken cancellationToken = default)
     {
-        var connectionString = await connectionStringSource.GetConnectionStringAsync(name, cancellationToken); 
+        var connectionString = await connectionStringSource.GetConnectionStringAsync(name, cancellationToken);
         var connection = new MySqlConnection(connectionString);
         return connection;
     }

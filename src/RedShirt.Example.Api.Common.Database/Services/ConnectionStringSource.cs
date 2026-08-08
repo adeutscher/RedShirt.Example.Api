@@ -8,7 +8,9 @@ public interface IConnectionStringSource
     Task<string> GetConnectionStringAsync(string name, CancellationToken cancellationToken = default);
 }
 
-public class ConnectionStringSource(ISecretManagerCacheService secretManagerCacheService, IConfigurationRoot configurationRoot) : IConnectionStringSource
+public class ConnectionStringSource(
+    ISecretManagerCacheService secretManagerCacheService,
+    IConfigurationRoot configurationRoot) : IConnectionStringSource
 {
     public Task<string> GetConnectionStringAsync(string name, CancellationToken cancellationToken = default)
     {
@@ -18,6 +20,7 @@ public class ConnectionStringSource(ISecretManagerCacheService secretManagerCach
         {
             throw new InvalidOperationException($"No connection string found for '{name}'.");
         }
+
         return secretManagerCacheService.GetSecretAsync(path, cancellationToken: cancellationToken);
     }
 }

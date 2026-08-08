@@ -1,6 +1,5 @@
-namespace RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes
+namespace RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes;
+
+public class DoNotGenerateServiceAttribute : Attribute
 {
-    public class DoNotGenerateServiceAttribute : Attribute
-    {
-    }
 }

@@ -1,5 +1,5 @@
-using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Models;
 using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Extensions;
+using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Models;
 using System.Text;
 
 namespace RedShirt.Example.Api.Common.Analyzers.Database.Generation.GenerationLogic;

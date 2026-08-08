@@ -1,6 +1,6 @@
+using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Extensions;
 using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Models;
 using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Utility;
-using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Text;

@@ -144,10 +144,12 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
                ?? typeof(TDto).Name;
     }
 
-    public async Task<bool> DeleteByKeyAsync(string connectionStringName, TKey key, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteByKeyAsync(string connectionStringName, TKey key,
+        CancellationToken cancellationToken = default)
     {
         var policy = PolicyHelper.GetRetryPolicy(logger);
-        using var dbConnection = await sqlConnectionFactory.GetMySqlConnectionAsync(connectionStringName, cancellationToken);
+        using var dbConnection =
+            await sqlConnectionFactory.GetMySqlConnectionAsync(connectionStringName, cancellationToken);
 
         var builder = new SqlBuilder();
         builder.Where($"{GetKeyFieldName()}=@key", new {key});
@@ -156,9 +158,11 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
         return result == 1;
     }
 
-    public async Task<TDto?> GetByKeyAsync(string connectionStringName, TKey entryId, CancellationToken cancellationToken = default)
+    public async Task<TDto?> GetByKeyAsync(string connectionStringName, TKey entryId,
+        CancellationToken cancellationToken = default)
     {
-        using var dbConnection = await sqlConnectionFactory.GetMySqlConnectionAsync(connectionStringName, cancellationToken);
+        using var dbConnection =
+            await sqlConnectionFactory.GetMySqlConnectionAsync(connectionStringName, cancellationToken);
         return await GetByKeyAsync(dbConnection, entryId, cancellationToken);
     }
 
@@ -166,7 +170,8 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
         TDto dto,
         CancellationToken cancellationToken = default)
     {
-        using var dbConnection = await sqlConnectionFactory.GetMySqlConnectionAsync(connectionStringName, cancellationToken);
+        using var dbConnection =
+            await sqlConnectionFactory.GetMySqlConnectionAsync(connectionStringName, cancellationToken);
 
         var existingItem = await GetByKeyAsync(dbConnection, GetKeyFieldValue(dto), cancellationToken);
         if (existingItem is null)
