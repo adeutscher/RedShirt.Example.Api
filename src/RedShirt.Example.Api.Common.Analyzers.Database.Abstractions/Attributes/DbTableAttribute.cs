@@ -7,11 +7,14 @@ namespace RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes
     public class DbTableAttribute : Attribute
     {
         public string TableName { get; private set; }
+        public string ConnectionStringName { get; private set; }
         public bool CanSearchInKey { get; private set; }
+        
 
-        public DbTableAttribute(string tableName, bool canSearchInKey = false)
+        public DbTableAttribute(string tableName, string connectionStringName = null, bool canSearchInKey = false)
         {
             TableName = tableName;
+            ConnectionStringName = connectionStringName;
             CanSearchInKey = canSearchInKey;
         }
     }

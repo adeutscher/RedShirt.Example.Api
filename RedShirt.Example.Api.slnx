@@ -5,8 +5,8 @@
     </Folder>
     <Folder Name="/src/">
         <Project Path="src/RedShirt.Example.Api.Core/RedShirt.Example.Api.Core.csproj" />
+        <Project Path="src/RedShirt.Example.Api.Implementations.Constants/RedShirt.Example.Api.Implementations.Constants.csproj" />
         <Project Path="src/RedShirt.Example.Api/RedShirt.Example.Api.csproj" />
-        <Project Path="src\RedShirt.Example.Api.Implementations.ExampleItem\RedShirt.Example.Api.Implementations.ExampleItem.csproj" />
     </Folder>
     <Folder Name="/src/common/">
         <Project Path="src/RedShirt.Example.Api.Common.Aws.SsmSecretManager/RedShirt.Example.Api.Common.Aws.SsmSecretManager.csproj" />
@@ -24,6 +24,10 @@
     <Folder Name="/src/common/analyzers/">
         <Project Path="src\RedShirt.Example.Api.Common.Analyzers.Database.Abstractions\RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.csproj" />
         <Project Path="src\RedShirt.Example.Api.Common.Analyzers.Database.Generation\RedShirt.Example.Api.Common.Analyzers.Database.Generation.csproj" />
+    </Folder>
+    <Folder Name="/src/data-implementations/">
+        <Project Path="src/RedShirt.Example.Api.Implementations.Orders/RedShirt.Example.Api.Implementations.Orders.csproj" />
+        <Project Path="src\RedShirt.Example.Api.Implementations.ExampleItem\RedShirt.Example.Api.Implementations.ExampleItem.csproj" />
     </Folder>
     <Folder Name="/swagger/">
         <Project Path="swagger/RedShirt.Example.Api.Interop/RedShirt.Example.Api.Interop.csproj" />
