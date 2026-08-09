@@ -29,7 +29,8 @@ public class MariaDbOrderRepositoryTests
             UpdatedAtUtc = updated,
             CustomerId = Guid.NewGuid(),
             Status = "Pending",
-            TotalAmount = "10.00"
+            TotalAmount = "10.00",
+            TotalPrice = null
         };
     }
 
@@ -51,7 +52,11 @@ public class MariaDbOrderRepositoryTests
             StatusContains = null,
             TotalAmount = totalAmount,
             TotalAmountGreaterThan = null,
-            TotalAmountLessThan = null
+            TotalAmountLessThan = null,
+            TotalPrice = null,
+            TotalPriceGreaterThan = null,
+            TotalPriceLessThan = null,
+            TotalPriceIsNull = false
         };
     }
 

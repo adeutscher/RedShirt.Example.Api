@@ -573,6 +573,41 @@
             "x-position": 11
           },
           {
+            "name": "TotalPrice",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 12
+          },
+          {
+            "name": "TotalPriceGreaterThan",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 13
+          },
+          {
+            "name": "TotalPriceLessThan",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 14
+          },
+          {
+            "name": "TotalPriceIsNull",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "x-position": 15
+          },
+          {
             "name": "ContinuationToken",
             "in": "query",
             "schema": {
@@ -580,7 +615,7 @@
               "format": "guid",
               "nullable": true
             },
-            "x-position": 12
+            "x-position": 16
           }
         ],
         "responses": {
@@ -1093,7 +1128,8 @@
           "updatedAtUtc",
           "customerId",
           "status",
-          "totalAmount"
+          "totalAmount",
+          "totalPrice"
         ],
         "properties": {
           "id": {
@@ -1117,6 +1153,10 @@
           },
           "totalAmount": {
             "type": "string"
+          },
+          "totalPrice": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -1136,6 +1176,14 @@
           "totalAmount": {
             "type": "string",
             "nullable": true
+          },
+          "totalPrice": {
+            "type": "string",
+            "nullable": true
+          },
+          "clearTotalPrice": {
+            "type": "boolean",
+            "nullable": true
           }
         }
       },
@@ -1152,6 +1200,10 @@
           },
           "totalAmount": {
             "type": "string"
+          },
+          "totalPrice": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -1168,6 +1220,10 @@
           },
           "totalAmount": {
             "type": "string"
+          },
+          "totalPrice": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

@@ -28,7 +28,7 @@ public class CqrsValidatorLifetimeTests
 
         var coreRequestValidator = provider.GetRequiredService<ICoreRequestValidator>();
         await coreRequestValidator.ValidateAsync(
-            new CreateOrderCommand(Guid.NewGuid(), "Pending", "12.34", "idem-1"),
+            new CreateOrderCommand(Guid.NewGuid(), "Pending", "12.34", null, "idem-1"),
             TestContext.Current.CancellationToken);
     }
 
@@ -50,7 +50,7 @@ public class CqrsValidatorLifetimeTests
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             coreRequestValidator.ValidateAsync(
-                new CreateOrderCommand(Guid.NewGuid(), "Pending", "12.34", "idem-1"),
+                new CreateOrderCommand(Guid.NewGuid(), "Pending", "12.34", null, "idem-1"),
                 TestContext.Current.CancellationToken));
 
         Assert.Contains("Cannot resolve scoped service", exception.Message);

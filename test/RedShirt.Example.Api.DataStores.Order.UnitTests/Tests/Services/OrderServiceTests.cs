@@ -15,6 +15,7 @@ public class OrderServiceTests
         Guid? customerId = null,
         string status = "Pending",
         string totalAmount = "10.00",
+        string? totalPrice = null,
         DateTime? createdAtUtc = null,
         DateTime? updatedAtUtc = null)
     {
@@ -26,7 +27,8 @@ public class OrderServiceTests
             UpdatedAtUtc = updatedAtUtc ?? created,
             CustomerId = customerId ?? Guid.NewGuid(),
             Status = status,
-            TotalAmount = totalAmount
+            TotalAmount = totalAmount,
+            TotalPrice = totalPrice
         };
     }
 
@@ -111,7 +113,9 @@ public class OrderServiceTests
             Id = existing.Id,
             CustomerId = null,
             Status = "Shipped",
-            TotalAmount = null
+            TotalAmount = null,
+            TotalPrice = null,
+            ClearTotalPrice = null
         }, TestContext.Current.CancellationToken);
 
         Assert.Equal("Shipped", result.Status);
@@ -131,7 +135,9 @@ public class OrderServiceTests
                 Id = Guid.NewGuid(),
                 CustomerId = null,
                 Status = null,
-                TotalAmount = null
+                TotalAmount = null,
+                TotalPrice = null,
+                ClearTotalPrice = null
             }, TestContext.Current.CancellationToken));
     }
 
@@ -151,7 +157,9 @@ public class OrderServiceTests
                 Id = id,
                 CustomerId = null,
                 Status = "Cancelled",
-                TotalAmount = null
+                TotalAmount = null,
+                TotalPrice = null,
+                ClearTotalPrice = null
             }, TestContext.Current.CancellationToken));
     }
 
@@ -165,7 +173,8 @@ public class OrderServiceTests
             {
                 CustomerId = Guid.NewGuid(),
                 Status = " ",
-                TotalAmount = "1.00"
+                TotalAmount = "1.00",
+                TotalPrice = null
             }, TestContext.Current.CancellationToken));
 
         Assert.Equal("Status cannot be empty.", exception.Message);
@@ -181,7 +190,8 @@ public class OrderServiceTests
             {
                 CustomerId = Guid.NewGuid(),
                 Status = "Pending",
-                TotalAmount = ""
+                TotalAmount = "",
+                TotalPrice = null
             }, TestContext.Current.CancellationToken));
 
         Assert.Equal("TotalAmount cannot be empty.", exception.Message);
@@ -201,7 +211,8 @@ public class OrderServiceTests
         {
             CustomerId = customerId,
             Status = "Pending",
-            TotalAmount = "42.00"
+            TotalAmount = "42.00",
+            TotalPrice = null
         }, TestContext.Current.CancellationToken);
 
         Assert.NotEqual(Guid.Empty, result.Id);
@@ -229,7 +240,8 @@ public class OrderServiceTests
             Id = existing.Id,
             CustomerId = existing.CustomerId,
             Status = "Shipped",
-            TotalAmount = "99.00"
+            TotalAmount = "99.00",
+            TotalPrice = existing.TotalPrice
         }, TestContext.Current.CancellationToken);
 
         Assert.Equal(createdAt, result.CreatedAtUtc);
@@ -253,7 +265,8 @@ public class OrderServiceTests
                 Id = existing.Id,
                 CustomerId = existing.CustomerId,
                 Status = existing.Status,
-                TotalAmount = existing.TotalAmount
+                TotalAmount = existing.TotalAmount,
+                TotalPrice = existing.TotalPrice
             }, TestContext.Current.CancellationToken));
 
         repository.Verify(r => r.UpsertAsync(It.IsAny<OrderDto>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -274,7 +287,11 @@ public class OrderServiceTests
             StatusContains = null,
             TotalAmount = null,
             TotalAmountGreaterThan = null,
-            TotalAmountLessThan = null
+            TotalAmountLessThan = null,
+            TotalPrice = null,
+            TotalPriceGreaterThan = null,
+            TotalPriceLessThan = null,
+            TotalPriceIsNull = false
         };
         var continuation = Guid.NewGuid();
         var expected = new OrderSearchResponse

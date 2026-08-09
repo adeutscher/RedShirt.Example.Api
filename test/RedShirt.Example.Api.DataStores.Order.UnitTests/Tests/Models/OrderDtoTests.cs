@@ -46,4 +46,13 @@ public class OrderDtoTests
         Assert.NotNull(property);
         Assert.NotNull(property!.GetCustomAttribute<StoredAsDecimalAttribute>());
     }
+
+    [Fact]
+    public void OrderDto_MarksTotalPriceAsStoredAsDecimal()
+    {
+        var property = typeof(OrderDto).GetProperty(nameof(OrderDto.TotalPrice));
+
+        Assert.NotNull(property);
+        Assert.NotNull(property!.GetCustomAttribute<StoredAsDecimalAttribute>());
+    }
 }

@@ -13,5 +13,9 @@ public class OrderSearchRequest
     public string? TotalAmount { get; set; }
     public string? TotalAmountGreaterThan { get; set; }
     public string? TotalAmountLessThan { get; set; }
+    public string? TotalPrice { get; set; }
+    public string? TotalPriceGreaterThan { get; set; }
+    public string? TotalPriceLessThan { get; set; }
+    public bool TotalPriceIsNull { get; set; }
     public Guid? ContinuationToken { get; set; }
 }

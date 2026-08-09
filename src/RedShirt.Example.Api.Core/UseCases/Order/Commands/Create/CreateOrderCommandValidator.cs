@@ -20,5 +20,8 @@ public class CreateOrderCommandValidator : AbstractValidator<CreateOrderCommand>
             .Must(totalAmount => !string.IsNullOrWhiteSpace(totalAmount))
             .WithMessage("TotalAmount is required")
             .MustBeValidStoredDecimal();
+
+        RuleFor(command => command.TotalPrice)
+            .MustBeValidStoredDecimalWhenPresent();
     }
 }

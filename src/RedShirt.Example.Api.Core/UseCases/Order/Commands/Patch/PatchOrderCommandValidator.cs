@@ -13,5 +13,8 @@ public class PatchOrderCommandValidator : AbstractValidator<PatchOrderCommand>
 
         RuleFor(command => command.TotalAmount)
             .MustBeValidStoredDecimalWhenPresent();
+
+        RuleFor(command => command.TotalPrice)
+            .MustBeValidStoredDecimalWhenPresent();
     }
 }

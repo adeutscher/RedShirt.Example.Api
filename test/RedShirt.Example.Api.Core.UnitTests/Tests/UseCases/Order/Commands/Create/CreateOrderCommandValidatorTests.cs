@@ -15,7 +15,7 @@ public class CreateOrderCommandValidatorTests
     public async Task Validate_Fails_WhenTotalAmountIsNotAValidDecimal(string totalAmount)
     {
         var result = await _validator.ValidateAsync(
-            new CreateOrderCommand(Guid.NewGuid(), "Pending", totalAmount, "idem-1"),
+            new CreateOrderCommand(Guid.NewGuid(), "Pending", totalAmount, null, "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.False(result.IsValid);
@@ -27,7 +27,7 @@ public class CreateOrderCommandValidatorTests
     public async Task Validate_Succeeds_WhenTotalAmountIsAValidDecimal()
     {
         var result = await _validator.ValidateAsync(
-            new CreateOrderCommand(Guid.NewGuid(), "Pending", "42.00", "idem-1"),
+            new CreateOrderCommand(Guid.NewGuid(), "Pending", "42.00", null, "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsValid);

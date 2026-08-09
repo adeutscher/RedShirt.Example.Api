@@ -21,7 +21,9 @@ internal class PatchOrderCommandHandler(
             Id = command.Id,
             CustomerId = command.CustomerId,
             Status = command.Status,
-            TotalAmount = command.TotalAmount
+            TotalAmount = command.TotalAmount,
+            TotalPrice = command.TotalPrice,
+            ClearTotalPrice = command.ClearTotalPrice
         }, cancellationToken);
     }
 }

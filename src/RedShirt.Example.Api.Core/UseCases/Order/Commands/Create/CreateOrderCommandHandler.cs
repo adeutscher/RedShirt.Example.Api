@@ -23,7 +23,8 @@ internal class CreateOrderCommandHandler(
             {
                 CustomerId = command.CustomerId,
                 Status = command.Status,
-                TotalAmount = command.TotalAmount
+                TotalAmount = command.TotalAmount,
+                TotalPrice = command.TotalPrice
             }, cancellationToken), cancellationToken);
     }
 }

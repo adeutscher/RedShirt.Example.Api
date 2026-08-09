@@ -64,7 +64,13 @@ public class OrderController : ControllerBase
         CancellationToken cancellationToken)
     {
         var model = await patchOrderCommandHandler.Handle(
-            new PatchOrderCommand(id, request.CustomerId, request.Status, request.TotalAmount),
+            new PatchOrderCommand(
+                id,
+                request.CustomerId,
+                request.Status,
+                request.TotalAmount,
+                request.TotalPrice,
+                request.ClearTotalPrice),
             cancellationToken);
         return Ok(model);
     }
@@ -87,6 +93,7 @@ public class OrderController : ControllerBase
                 request.CustomerId,
                 request.Status,
                 request.TotalAmount,
+                request.TotalPrice,
                 string.IsNullOrWhiteSpace(idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey),
             cancellationToken);
 
@@ -106,7 +113,12 @@ public class OrderController : ControllerBase
         CancellationToken cancellationToken)
     {
         var model = await updateOrderCommandHandler.Handle(
-            new UpdateOrderCommand(id, request.CustomerId, request.Status, request.TotalAmount),
+            new UpdateOrderCommand(
+                id,
+                request.CustomerId,
+                request.Status,
+                request.TotalAmount,
+                request.TotalPrice),
             cancellationToken);
         return Ok(model);
     }
@@ -134,7 +146,11 @@ public class OrderController : ControllerBase
                     StatusContains = request.StatusContains,
                     TotalAmount = request.TotalAmount,
                     TotalAmountGreaterThan = request.TotalAmountGreaterThan,
-                    TotalAmountLessThan = request.TotalAmountLessThan
+                    TotalAmountLessThan = request.TotalAmountLessThan,
+                    TotalPrice = request.TotalPrice,
+                    TotalPriceGreaterThan = request.TotalPriceGreaterThan,
+                    TotalPriceLessThan = request.TotalPriceLessThan,
+                    TotalPriceIsNull = request.TotalPriceIsNull
                 },
                 request.ContinuationToken),
             cancellationToken);
