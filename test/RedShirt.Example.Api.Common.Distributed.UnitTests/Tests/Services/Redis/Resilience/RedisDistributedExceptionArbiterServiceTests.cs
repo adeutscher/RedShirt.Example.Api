@@ -10,6 +10,73 @@ public class RedisDistributedExceptionArbiterServiceTests
 {
     private readonly RedisDistributedExceptionArbiterService _sut = new();
 
+    [Theory]
+    [InlineData(true, true, false, true)]
+    [InlineData(true, false, false, false)]
+    [InlineData(false, true, true, true)]
+    [InlineData(false, false, false, false)]
+    public void GetReport_ApiDistributedException_IsAlreadyHandledWithFlags(
+        bool isHandled,
+        bool couldBeTransient,
+        bool expectedTransient,
+        bool couldBeExternallySolvable)
+    {
+        var exception = new ApiDistributedException("wrapped")
+        {
+            IsHandled = isHandled,
+            CouldBeTransient = couldBeTransient,
+            CouldBeExternallySolvable = couldBeExternallySolvable
+        };
+
+        var report = _sut.GetReport(exception);
+
+        Assert.True(report.AlreadyHandled);
+        Assert.True(report.IsExpected);
+        Assert.Equal(expectedTransient, report.CouldBeTransient);
+        Assert.Equal(couldBeExternallySolvable, report.CouldBeExternallySolvable);
+    }
+
+    [Theory]
+    [InlineData(true, true, false, true)]
+    [InlineData(true, false, false, false)]
+    [InlineData(false, true, true, true)]
+    [InlineData(false, false, false, false)]
+    public void GetReport_ApiSecretManagerException_IsAlreadyHandledWithFlags(
+        bool isHandled,
+        bool couldBeTransient,
+        bool expectedTransient,
+        bool couldBeExternallySolvable)
+    {
+        var exception = new ApiSecretManagerException("secret failure")
+        {
+            IsHandled = isHandled,
+            CouldBeTransient = couldBeTransient,
+            CouldBeExternallySolvable = couldBeExternallySolvable
+        };
+
+        var report = _sut.GetReport(exception);
+
+        Assert.True(report.AlreadyHandled);
+        Assert.True(report.IsExpected);
+        // Unhandled ApiSecretManagerException may still be retried upstream when transient.
+        Assert.Equal(expectedTransient, report.CouldBeTransient);
+        Assert.Equal(couldBeExternallySolvable, report.CouldBeExternallySolvable);
+    }
+
+    [Fact]
+    public void GetReport_ApiSecretManagerException_WhenAlreadyHandled_IsNotTransientForUpstream()
+    {
+        var exception = new ApiSecretManagerException("secret failure")
+            {IsHandled = true, CouldBeTransient = true, CouldBeExternallySolvable = true};
+
+        var report = _sut.GetReport(exception);
+
+        Assert.True(report.AlreadyHandled);
+        Assert.True(report.IsExpected);
+        Assert.False(report.CouldBeTransient);
+        Assert.True(report.CouldBeExternallySolvable);
+    }
+
     [Fact]
     public void GetReport_ArgumentException_IsExpectedAndNotTransient()
     {
@@ -171,72 +238,5 @@ public class RedisDistributedExceptionArbiterServiceTests
         Assert.False(report.IsExpected);
         Assert.False(report.CouldBeTransient);
         Assert.False(report.CouldBeExternallySolvable);
-    }
-
-    [Theory]
-    [InlineData(true, true, false, true)]
-    [InlineData(true, false, false, false)]
-    [InlineData(false, true, true, true)]
-    [InlineData(false, false, false, false)]
-    public void GetReport_ApiDistributedException_IsAlreadyHandledWithFlags(
-        bool isHandled,
-        bool couldBeTransient,
-        bool expectedTransient,
-        bool couldBeExternallySolvable)
-    {
-        var exception = new ApiDistributedException("wrapped")
-        {
-            IsHandled = isHandled,
-            CouldBeTransient = couldBeTransient,
-            CouldBeExternallySolvable = couldBeExternallySolvable
-        };
-
-        var report = _sut.GetReport(exception);
-
-        Assert.True(report.AlreadyHandled);
-        Assert.True(report.IsExpected);
-        Assert.Equal(expectedTransient, report.CouldBeTransient);
-        Assert.Equal(couldBeExternallySolvable, report.CouldBeExternallySolvable);
-    }
-
-    [Theory]
-    [InlineData(true, true, false, true)]
-    [InlineData(true, false, false, false)]
-    [InlineData(false, true, true, true)]
-    [InlineData(false, false, false, false)]
-    public void GetReport_ApiSecretManagerException_IsAlreadyHandledWithFlags(
-        bool isHandled,
-        bool couldBeTransient,
-        bool expectedTransient,
-        bool couldBeExternallySolvable)
-    {
-        var exception = new ApiSecretManagerException("secret failure")
-        {
-            IsHandled = isHandled,
-            CouldBeTransient = couldBeTransient,
-            CouldBeExternallySolvable = couldBeExternallySolvable
-        };
-
-        var report = _sut.GetReport(exception);
-
-        Assert.True(report.AlreadyHandled);
-        Assert.True(report.IsExpected);
-        // Unhandled ApiSecretManagerException may still be retried upstream when transient.
-        Assert.Equal(expectedTransient, report.CouldBeTransient);
-        Assert.Equal(couldBeExternallySolvable, report.CouldBeExternallySolvable);
-    }
-
-    [Fact]
-    public void GetReport_ApiSecretManagerException_WhenAlreadyHandled_IsNotTransientForUpstream()
-    {
-        var exception = new ApiSecretManagerException("secret failure")
-            {IsHandled = true, CouldBeTransient = true, CouldBeExternallySolvable = true};
-
-        var report = _sut.GetReport(exception);
-
-        Assert.True(report.AlreadyHandled);
-        Assert.True(report.IsExpected);
-        Assert.False(report.CouldBeTransient);
-        Assert.True(report.CouldBeExternallySolvable);
     }
 }

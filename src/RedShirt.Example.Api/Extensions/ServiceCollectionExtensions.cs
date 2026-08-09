@@ -3,9 +3,9 @@ using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Extensions;
 using RedShirt.Example.Api.Common.RateLimiting.Extensions;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Extensions;
-using RedShirt.Example.Api.ExceptionHandlers;
 using RedShirt.Example.Api.DataStores.ExampleItem.Extensions;
 using RedShirt.Example.Api.DataStores.Product.Implementation.Extensions;
+using RedShirt.Example.Api.ExceptionHandlers;
 
 namespace RedShirt.Example.Api.Extensions;
 

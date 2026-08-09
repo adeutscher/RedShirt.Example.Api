@@ -8,6 +8,7 @@
 **/.toolstarget
 **/.vs
 **/.vscode
+**/.cursor
 **/.idea
 **/*.*proj.user
 **/*.DotSettings*

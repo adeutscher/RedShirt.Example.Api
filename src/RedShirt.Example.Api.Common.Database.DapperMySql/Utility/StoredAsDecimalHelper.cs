@@ -12,22 +12,6 @@ namespace RedShirt.Example.Api.Common.Database.DapperMySql.Utility;
 /// </summary>
 public static class StoredAsDecimalHelper
 {
-    public static bool IsStoredAsDecimal(PropertyInfo property)
-    {
-        return property.GetCustomAttribute<StoredAsDecimalAttribute>() is not null;
-    }
-
-    public static string GetColumnName(PropertyInfo property)
-    {
-        var columnAttribute = property.GetCustomAttribute<ColumnAttribute>();
-        if (columnAttribute is not null && !string.IsNullOrWhiteSpace(columnAttribute.Name))
-        {
-            return columnAttribute.Name;
-        }
-
-        return property.Name;
-    }
-
     /// <summary>
     ///     Builds a SELECT list that CASTs <see cref="StoredAsDecimalAttribute" /> columns to CHAR
     ///     so Dapper can populate string DTO properties.
@@ -55,6 +39,33 @@ public static class StoredAsDecimalHelper
         }));
     }
 
+    public static string GetColumnName(PropertyInfo property)
+    {
+        var columnAttribute = property.GetCustomAttribute<ColumnAttribute>();
+        if (columnAttribute is not null && !string.IsNullOrWhiteSpace(columnAttribute.Name))
+        {
+            return columnAttribute.Name;
+        }
+
+        return property.Name;
+    }
+
+    public static bool IsStoredAsDecimal(PropertyInfo property)
+    {
+        return property.GetCustomAttribute<StoredAsDecimalAttribute>() is not null;
+    }
+
+    public static decimal ParseRequiredDecimal(string? value, string propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(value)
+            || !decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed))
+        {
+            throw new BadRequestException($"Invalid decimal value for '{propertyName}'.");
+        }
+
+        return parsed;
+    }
+
     /// <summary>
     ///     Creates write parameters for a DTO, parsing <see cref="StoredAsDecimalAttribute" /> strings as
     ///     <see cref="decimal" /> with invariant culture.
@@ -77,16 +88,5 @@ public static class StoredAsDecimalHelper
         }
 
         return parameters;
-    }
-
-    public static decimal ParseRequiredDecimal(string? value, string propertyName)
-    {
-        if (string.IsNullOrWhiteSpace(value)
-            || !decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed))
-        {
-            throw new BadRequestException($"Invalid decimal value for '{propertyName}'.");
-        }
-
-        return parsed;
     }
 }

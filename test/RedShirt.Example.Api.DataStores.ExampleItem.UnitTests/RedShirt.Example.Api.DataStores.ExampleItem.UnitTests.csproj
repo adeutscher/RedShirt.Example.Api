@@ -28,7 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\RedShirt.Example.Api.DataStores.ExampleItem\RedShirt.Example.Api.DataStores.ExampleItem.csproj" />
+        <ProjectReference Include="..\..\src\RedShirt.Example.Api.DataStores.ExampleItem\RedShirt.Example.Api.DataStores.ExampleItem.csproj"/>
     </ItemGroup>
 
 </Project>

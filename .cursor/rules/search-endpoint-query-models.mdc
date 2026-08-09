@@ -1,0 +1,21 @@
+---
+description: Search endpoints bind filters via a single [FromQuery] request object
+globs: src/RedShirt.Example.Api/Controllers/**/*.cs
+alwaysApply: false
+---
+
+# Search endpoint query models
+
+For parameter-heavy Search (list/filter) actions, bind one query object with `[FromQuery]` instead of many individual parameters.
+
+```csharp
+[HttpGet]
+public async Task<IActionResult> Search(
+    [FromQuery] ProductSearchRequest request,
+    [FromServices] ISearchProductRecordsQueryHandler handler,
+    CancellationToken cancellationToken)
+```
+
+- Place the model under `Models/{Resource}/` (e.g. `ProductSearchRequest`).
+- Include pagination/continuation on the same object when it is query-string driven.
+- Prefer GET + query object; use POST body only when filters cannot reasonably be query strings.

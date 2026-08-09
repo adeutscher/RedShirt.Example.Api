@@ -9,6 +9,59 @@ public class MySqlExceptionArbiterServiceTests
 {
     private readonly MySqlExceptionArbiterService _sut = new();
 
+    [Theory]
+    // Only unhandled + transient Worker* exceptions remain retryable for outer layers.
+    [InlineData(false, true, true, true)]
+    [InlineData(true, true, true, false)]
+    [InlineData(false, false, true, false)]
+    [InlineData(true, false, false, false)]
+    public void GetReport_ApiDatabaseException_UsesHandledFlags(
+        bool isHandled,
+        bool couldBeTransient,
+        bool couldBeExternallySolvable,
+        bool expectedTransientForRetry)
+    {
+        var exception = new ApiDatabaseException("already wrapped")
+        {
+            IsHandled = isHandled,
+            CouldBeTransient = couldBeTransient,
+            CouldBeExternallySolvable = couldBeExternallySolvable
+        };
+
+        var report = _sut.GetReport(exception);
+
+        Assert.True(report.AlreadyHandled);
+        Assert.True(report.IsExpected);
+        Assert.Equal(expectedTransientForRetry, report.CouldBeTransient);
+        Assert.Equal(couldBeExternallySolvable, report.CouldBeExternallySolvable);
+    }
+
+    [Theory]
+    [InlineData(false, true, true, true)]
+    [InlineData(true, true, true, false)]
+    [InlineData(false, false, true, false)]
+    [InlineData(true, false, false, false)]
+    public void GetReport_ApiSecretManagerException_UsesHandledFlags(
+        bool isHandled,
+        bool couldBeTransient,
+        bool couldBeExternallySolvable,
+        bool expectedTransientForRetry)
+    {
+        var exception = new ApiSecretManagerException("secret failure")
+        {
+            IsHandled = isHandled,
+            CouldBeTransient = couldBeTransient,
+            CouldBeExternallySolvable = couldBeExternallySolvable
+        };
+
+        var report = _sut.GetReport(exception);
+
+        Assert.True(report.AlreadyHandled);
+        Assert.True(report.IsExpected);
+        Assert.Equal(expectedTransientForRetry, report.CouldBeTransient);
+        Assert.Equal(couldBeExternallySolvable, report.CouldBeExternallySolvable);
+    }
+
     [Fact]
     public void GetReport_ArgumentException_IsExpectedAndNotTransient()
     {
@@ -27,6 +80,21 @@ public class MySqlExceptionArbiterServiceTests
 
         Assert.False(report.AlreadyHandled);
         Assert.True(report.IsExpected);
+        Assert.False(report.CouldBeTransient);
+        Assert.False(report.CouldBeExternallySolvable);
+    }
+
+    [Fact]
+    public void GetReport_MultiInnerAggregateException_IsNotExpected()
+    {
+        var exception = new AggregateException(
+            MySqlExceptionFactory.Create("deadlock", 1213),
+            new SocketException((int) SocketError.TimedOut));
+
+        var report = _sut.GetReport(exception);
+
+        Assert.False(report.AlreadyHandled);
+        Assert.False(report.IsExpected);
         Assert.False(report.CouldBeTransient);
         Assert.False(report.CouldBeExternallySolvable);
     }
@@ -62,21 +130,6 @@ public class MySqlExceptionArbiterServiceTests
         Assert.True(report.IsExpected);
         Assert.Equal(expectedTransient, report.CouldBeTransient);
         Assert.Equal(expectedExternallySolvable, report.CouldBeExternallySolvable);
-    }
-
-    [Fact]
-    public void GetReport_MultiInnerAggregateException_IsNotExpected()
-    {
-        var exception = new AggregateException(
-            MySqlExceptionFactory.Create("deadlock", 1213),
-            new SocketException((int) SocketError.TimedOut));
-
-        var report = _sut.GetReport(exception);
-
-        Assert.False(report.AlreadyHandled);
-        Assert.False(report.IsExpected);
-        Assert.False(report.CouldBeTransient);
-        Assert.False(report.CouldBeExternallySolvable);
     }
 
     [Fact]
@@ -152,58 +205,5 @@ public class MySqlExceptionArbiterServiceTests
         Assert.False(report.IsExpected);
         Assert.False(report.CouldBeTransient);
         Assert.False(report.CouldBeExternallySolvable);
-    }
-
-    [Theory]
-    // Only unhandled + transient Worker* exceptions remain retryable for outer layers.
-    [InlineData(false, true, true, true)]
-    [InlineData(true, true, true, false)]
-    [InlineData(false, false, true, false)]
-    [InlineData(true, false, false, false)]
-    public void GetReport_ApiDatabaseException_UsesHandledFlags(
-        bool isHandled,
-        bool couldBeTransient,
-        bool couldBeExternallySolvable,
-        bool expectedTransientForRetry)
-    {
-        var exception = new ApiDatabaseException("already wrapped")
-        {
-            IsHandled = isHandled,
-            CouldBeTransient = couldBeTransient,
-            CouldBeExternallySolvable = couldBeExternallySolvable
-        };
-
-        var report = _sut.GetReport(exception);
-
-        Assert.True(report.AlreadyHandled);
-        Assert.True(report.IsExpected);
-        Assert.Equal(expectedTransientForRetry, report.CouldBeTransient);
-        Assert.Equal(couldBeExternallySolvable, report.CouldBeExternallySolvable);
-    }
-
-    [Theory]
-    [InlineData(false, true, true, true)]
-    [InlineData(true, true, true, false)]
-    [InlineData(false, false, true, false)]
-    [InlineData(true, false, false, false)]
-    public void GetReport_ApiSecretManagerException_UsesHandledFlags(
-        bool isHandled,
-        bool couldBeTransient,
-        bool couldBeExternallySolvable,
-        bool expectedTransientForRetry)
-    {
-        var exception = new ApiSecretManagerException("secret failure")
-        {
-            IsHandled = isHandled,
-            CouldBeTransient = couldBeTransient,
-            CouldBeExternallySolvable = couldBeExternallySolvable
-        };
-
-        var report = _sut.GetReport(exception);
-
-        Assert.True(report.AlreadyHandled);
-        Assert.True(report.IsExpected);
-        Assert.Equal(expectedTransientForRetry, report.CouldBeTransient);
-        Assert.Equal(couldBeExternallySolvable, report.CouldBeExternallySolvable);
     }
 }

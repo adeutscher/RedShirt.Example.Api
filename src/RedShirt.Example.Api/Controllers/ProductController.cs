@@ -49,61 +49,6 @@ public class ProductController : ControllerBase
         return Ok(model);
     }
 
-    [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSearchResponse))]
-    public async Task<IActionResult> Search(
-        [FromQuery]
-        int pageSize,
-        [FromQuery]
-        DateTime? createdBeforeUtc,
-        [FromQuery]
-        DateTime? createdAfterUtc,
-        [FromQuery]
-        DateTime? updatedBeforeUtc,
-        [FromQuery]
-        DateTime? updatedAfterUtc,
-        [FromQuery]
-        string? sku,
-        [FromQuery]
-        string? skuContains,
-        [FromQuery]
-        string? name,
-        [FromQuery]
-        string? nameContains,
-        [FromQuery]
-        string? price,
-        [FromQuery]
-        string? priceGreaterThan,
-        [FromQuery]
-        string? priceLessThan,
-        [FromQuery]
-        Guid? continuationToken,
-        [FromServices]
-        ISearchProductRecordsQueryHandler searchProductRecordsQueryHandler,
-        CancellationToken cancellationToken)
-    {
-        var model = await searchProductRecordsQueryHandler.Handle(
-            new SearchProductRecordsQuery(
-                new ProductServiceSearchRequest
-                {
-                    PageSize = pageSize,
-                    CreatedBeforeUtc = createdBeforeUtc,
-                    CreatedAfterUtc = createdAfterUtc,
-                    UpdatedBeforeUtc = updatedBeforeUtc,
-                    UpdatedAfterUtc = updatedAfterUtc,
-                    Sku = sku,
-                    SkuContains = skuContains,
-                    Name = name,
-                    NameContains = nameContains,
-                    Price = price,
-                    PriceGreaterThan = priceGreaterThan,
-                    PriceLessThan = priceLessThan
-                },
-                continuationToken),
-            cancellationToken);
-        return Ok(model);
-    }
-
     [HttpPatch("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -161,6 +106,37 @@ public class ProductController : ControllerBase
     {
         var model = await updateProductCommandHandler.Handle(
             new UpdateProductCommand(id, request.Sku, request.Name, request.Price),
+            cancellationToken);
+        return Ok(model);
+    }
+
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSearchResponse))]
+    public async Task<IActionResult> Search(
+        [FromQuery]
+        ProductSearchRequest request,
+        [FromServices]
+        ISearchProductRecordsQueryHandler searchProductRecordsQueryHandler,
+        CancellationToken cancellationToken)
+    {
+        var model = await searchProductRecordsQueryHandler.Handle(
+            new SearchProductRecordsQuery(
+                new ProductServiceSearchRequest
+                {
+                    PageSize = request.PageSize,
+                    CreatedBeforeUtc = request.CreatedBeforeUtc,
+                    CreatedAfterUtc = request.CreatedAfterUtc,
+                    UpdatedBeforeUtc = request.UpdatedBeforeUtc,
+                    UpdatedAfterUtc = request.UpdatedAfterUtc,
+                    Sku = request.Sku,
+                    SkuContains = request.SkuContains,
+                    Name = request.Name,
+                    NameContains = request.NameContains,
+                    Price = request.Price,
+                    PriceGreaterThan = request.PriceGreaterThan,
+                    PriceLessThan = request.PriceLessThan
+                },
+                request.ContinuationToken),
             cancellationToken);
         return Ok(model);
     }

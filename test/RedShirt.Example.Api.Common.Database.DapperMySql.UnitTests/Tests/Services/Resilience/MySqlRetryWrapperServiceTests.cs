@@ -59,6 +59,22 @@ public class MySqlRetryWrapperServiceTests
     }
 
     [Fact]
+    public async Task RunAsync_NonGeneric_WhenFuncSucceeds_CompletesWithoutSleeping()
+    {
+        var arbiter = new Mock<IMySqlExceptionArbiterService>(MockBehavior.Strict);
+        var sleepService = CreateSleepService();
+        var wrapper = new MySqlRetryWrapperService(arbiter.Object, NullLogger<MySqlRetryWrapperService>.Instance,
+            sleepService.Object);
+
+        await wrapper.RunAsync(_ => Task.CompletedTask, TestContext.Current.CancellationToken);
+
+        sleepService.Verify(
+            s => s.DelayAsync(It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        arbiter.VerifyNoOtherCalls();
+    }
+
+    [Fact]
     public async Task RunAsync_PassesCancellationTokenToFuncAndRetryDelay()
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
@@ -107,19 +123,33 @@ public class MySqlRetryWrapperServiceTests
     }
 
     [Fact]
-    public async Task RunAsync_NonGeneric_WhenFuncSucceeds_CompletesWithoutSleeping()
+    public async Task RunAsync_WhenAlreadyHandledApiDatabaseException_DoesNotRewrap()
     {
+        var inner = new ApiDatabaseException("already handled")
+        {
+            IsHandled = true,
+            CouldBeTransient = false,
+            CouldBeExternallySolvable = false
+        };
+
         var arbiter = new Mock<IMySqlExceptionArbiterService>(MockBehavior.Strict);
+        arbiter.Setup(a => a.GetReport(inner)).Returns(new MySqlExceptionArbiterReport
+        {
+            AlreadyHandled = true,
+            IsExpected = true,
+            CouldBeTransient = false,
+            CouldBeExternallySolvable = false
+        });
+
         var sleepService = CreateSleepService();
         var wrapper = new MySqlRetryWrapperService(arbiter.Object, NullLogger<MySqlRetryWrapperService>.Instance,
             sleepService.Object);
 
-        await wrapper.RunAsync(_ => Task.CompletedTask, TestContext.Current.CancellationToken);
+        var thrown = await Assert.ThrowsAsync<ApiDatabaseException>(() => wrapper.RunAsync<int>(
+            _ => throw inner,
+            TestContext.Current.CancellationToken));
 
-        sleepService.Verify(
-            s => s.DelayAsync(It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        arbiter.VerifyNoOtherCalls();
+        Assert.Same(inner, thrown);
     }
 
     [Fact]
@@ -372,35 +402,5 @@ public class MySqlRetryWrapperServiceTests
         sleepService.Verify(
             s => s.DelayAsync(It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()),
             Times.Never);
-    }
-
-    [Fact]
-    public async Task RunAsync_WhenAlreadyHandledApiDatabaseException_DoesNotRewrap()
-    {
-        var inner = new ApiDatabaseException("already handled")
-        {
-            IsHandled = true,
-            CouldBeTransient = false,
-            CouldBeExternallySolvable = false
-        };
-
-        var arbiter = new Mock<IMySqlExceptionArbiterService>(MockBehavior.Strict);
-        arbiter.Setup(a => a.GetReport(inner)).Returns(new MySqlExceptionArbiterReport
-        {
-            AlreadyHandled = true,
-            IsExpected = true,
-            CouldBeTransient = false,
-            CouldBeExternallySolvable = false
-        });
-
-        var sleepService = CreateSleepService();
-        var wrapper = new MySqlRetryWrapperService(arbiter.Object, NullLogger<MySqlRetryWrapperService>.Instance,
-            sleepService.Object);
-
-        var thrown = await Assert.ThrowsAsync<ApiDatabaseException>(() => wrapper.RunAsync<int>(
-            _ => throw inner,
-            TestContext.Current.CancellationToken));
-
-        Assert.Same(inner, thrown);
     }
 }

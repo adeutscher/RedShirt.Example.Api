@@ -9,7 +9,8 @@ public class ClassSummaryModel
 
     /// <summary>
     ///     Root namespace for project.
-    ///     In the original version of this generator, there was a BIG assumption that an API using this analyzer will always have a 3-part root namespace (e.g.
+    ///     In the original version of this generator, there was a BIG assumption that an API using this analyzer will always
+    ///     have a 3-part root namespace (e.g.
     ///     RedShirt.Adventure.Realm, RedShirt.Adventure.World).
     ///     Since that cannot be counted on, this implementation instead assumes a common base declared in a constant.
     ///     The value of this constant is updated with the template's `init-repo.sh` initialization script.
@@ -27,7 +28,7 @@ public class ClassSummaryModel
     public string TableName { get; set; }
 
     public string ConnectionStringName { get; set; }
-    
+
     /// <summary>
     ///     DataType Object (DTO) name
     /// </summary>

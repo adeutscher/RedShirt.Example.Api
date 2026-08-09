@@ -43,6 +43,29 @@ public class SsmExceptionArbiterServiceTests
     }
 
     [Fact]
+    public void GetReport_ApiSecretManagerException_Handled_RespectsIsHandled()
+    {
+        var unhandled = new ApiSecretManagerException("retryable")
+            {IsHandled = false, CouldBeTransient = true, CouldBeExternallySolvable = true};
+        var handled = new ApiSecretManagerException("exhausted")
+            {IsHandled = true, CouldBeTransient = true, CouldBeExternallySolvable = false};
+
+        var unhandledReport = _sut.GetReport(unhandled);
+        var handledReport = _sut.GetReport(handled);
+
+        Assert.True(unhandledReport.AlreadyHandled);
+        Assert.True(unhandledReport.IsExpected);
+        Assert.True(unhandledReport.CouldBeTransient);
+        Assert.True(unhandledReport.CouldBeExternallySolvable);
+
+        Assert.True(handledReport.AlreadyHandled);
+        Assert.True(handledReport.IsExpected);
+        Assert.False(handledReport.CouldBeTransient);
+        Assert.False(handledReport.CouldBeExternallySolvable);
+        _awsArbiter.VerifyNoOtherCalls();
+    }
+
+    [Fact]
     public void GetReport_InternalServerErrorException_IsExpectedTransientAndExternallySolvable()
     {
         var report = _sut.GetReport(new InternalServerErrorException("ssm 500"));
@@ -105,29 +128,6 @@ public class SsmExceptionArbiterServiceTests
         Assert.False(report.IsExpected);
         Assert.False(report.CouldBeTransient);
         Assert.False(report.CouldBeExternallySolvable);
-        _awsArbiter.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public void GetReport_ApiSecretManagerException_Handled_RespectsIsHandled()
-    {
-        var unhandled = new ApiSecretManagerException("retryable")
-            {IsHandled = false, CouldBeTransient = true, CouldBeExternallySolvable = true};
-        var handled = new ApiSecretManagerException("exhausted")
-            {IsHandled = true, CouldBeTransient = true, CouldBeExternallySolvable = false};
-
-        var unhandledReport = _sut.GetReport(unhandled);
-        var handledReport = _sut.GetReport(handled);
-
-        Assert.True(unhandledReport.AlreadyHandled);
-        Assert.True(unhandledReport.IsExpected);
-        Assert.True(unhandledReport.CouldBeTransient);
-        Assert.True(unhandledReport.CouldBeExternallySolvable);
-
-        Assert.True(handledReport.AlreadyHandled);
-        Assert.True(handledReport.IsExpected);
-        Assert.False(handledReport.CouldBeTransient);
-        Assert.False(handledReport.CouldBeExternallySolvable);
         _awsArbiter.VerifyNoOtherCalls();
     }
 }

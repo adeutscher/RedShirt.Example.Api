@@ -401,148 +401,6 @@
       }
     },
     "/products": {
-      "get": {
-        "tags": [
-          "Product"
-        ],
-        "operationId": "Product_Search",
-        "parameters": [
-          {
-            "name": "pageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "createdBeforeUtc",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time",
-              "nullable": true
-            },
-            "x-position": 2
-          },
-          {
-            "name": "createdAfterUtc",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time",
-              "nullable": true
-            },
-            "x-position": 3
-          },
-          {
-            "name": "updatedBeforeUtc",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time",
-              "nullable": true
-            },
-            "x-position": 4
-          },
-          {
-            "name": "updatedAfterUtc",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "date-time",
-              "nullable": true
-            },
-            "x-position": 5
-          },
-          {
-            "name": "sku",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 6
-          },
-          {
-            "name": "skuContains",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 7
-          },
-          {
-            "name": "name",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 8
-          },
-          {
-            "name": "nameContains",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 9
-          },
-          {
-            "name": "price",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 10
-          },
-          {
-            "name": "priceGreaterThan",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 11
-          },
-          {
-            "name": "priceLessThan",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 12
-          },
-          {
-            "name": "continuationToken",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "guid",
-              "nullable": true
-            },
-            "x-position": 13
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProductSearchResponse"
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "tags": [
           "Product"
@@ -598,6 +456,148 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Product"
+        ],
+        "operationId": "Product_Search",
+        "parameters": [
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "CreatedBeforeUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 2
+          },
+          {
+            "name": "CreatedAfterUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 3
+          },
+          {
+            "name": "UpdatedBeforeUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 4
+          },
+          {
+            "name": "UpdatedAfterUtc",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 5
+          },
+          {
+            "name": "Sku",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 6
+          },
+          {
+            "name": "SkuContains",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 7
+          },
+          {
+            "name": "Name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 8
+          },
+          {
+            "name": "NameContains",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 9
+          },
+          {
+            "name": "Price",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 10
+          },
+          {
+            "name": "PriceGreaterThan",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 11
+          },
+          {
+            "name": "PriceLessThan",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 12
+          },
+          {
+            "name": "ContinuationToken",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "guid",
+              "nullable": true
+            },
+            "x-position": 13
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductSearchResponse"
                 }
               }
             }
@@ -713,27 +713,6 @@
           }
         }
       },
-      "ProductSearchResponse": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "continuationToken",
-          "records"
-        ],
-        "properties": {
-          "continuationToken": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "records": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ProductDto"
-            }
-          }
-        }
-      },
       "ProductPatchRequest": {
         "type": "object",
         "additionalProperties": false,
@@ -779,6 +758,27 @@
           },
           "price": {
             "type": "string"
+          }
+        }
+      },
+      "ProductSearchResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "continuationToken",
+          "records"
+        ],
+        "properties": {
+          "continuationToken": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductDto"
+            }
           }
         }
       }
