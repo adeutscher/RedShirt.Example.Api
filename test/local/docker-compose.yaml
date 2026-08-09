@@ -9,6 +9,15 @@ services:
     ports:
       - '6379:6379'
 
+  mariadb:
+    image: mariadb:latest
+    ports:
+      - '3306:3306'
+    environment:
+      MARIADB_ROOT_PASSWORD: ${LOCAL_SQL_PASSWORD}
+    volumes:
+      - ./data/mariadb-data:/var/lib/mysql
+
   api:
     build:
       context: ../..
