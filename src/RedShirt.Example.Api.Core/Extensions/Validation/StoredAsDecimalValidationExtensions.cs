@@ -9,7 +9,7 @@ namespace RedShirt.Example.Api.Core.Extensions.Validation;
 /// </summary>
 internal static class StoredAsDecimalValidationExtensions
 {
-    public static bool IsValidStoredDecimal(string? value)
+    private static bool IsValidStoredDecimal(string? value)
     {
         return !string.IsNullOrWhiteSpace(value)
                && decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out _);
