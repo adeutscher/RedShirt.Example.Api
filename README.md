@@ -7,10 +7,24 @@ Repo features:
 * Initialisation script for quick namespace adjustment.
 * Use of [NSwag](https://github.com/RicoSuter/NSwag) to automatically document endpoints and to generate client code for
   an interop package.
-    * Recommended next step: Exporting the interop package as a NuGet for use in other projects.
+  * Recommended next step: Exporting the interop package as a NuGet for use in other projects.
+* [Roslyn](https://github.com/dotnet/roslyn) source generation for MariaDB/Dapper data-access scaffolding (services,
+  repositories, search requests, and related DI) from annotated DTO models.
+  * This is demonstrated in the implementation for accessing the `Order` data store.
 * Configurable rate limiting using a sliding window system:
     * Uses either Redis or in-memory for storing limits.
 * Configuration is based on environment variables.
+
+## Related: Schema
+
+Database DDL for this API lives in a separate repository:
+[RedShirt.Example.Schema](https://github.com/adeutscher/RedShirt.Example.Schema).
+
+That project owns MariaDB/MySQL schema versioning (using the DbUp library to apply incremental SQL scripts). This API
+assumes those tables already exist and does not create or migrate them. The intent of this dedicated schema was to
+enforce separation of concerns and prevent the API from having the power to affect the schema on a fundamental level.
+When developing against the local Compose stack, apply schema updates from the Schema repo before starting the API (see
+`test/local/`).
 
 # Initialisation
 
@@ -46,9 +60,48 @@ Resources:
 * To better understand the configuration definitions, refer to the classes in the `Configuration/` folder of the
   `Common.RateLimiting` project
 
+# Development
+
+Tips for local development.
+
+## Debugging Source Generation
+
+If you are developing new features for source generation, you may find that the standard build for solution or the
+ASP.NET subproject does not express errors in the generation very well. Generally, it shall only print the exception
+message with no further context.
+
+The way around this is to print out the compiler's SARIF logs:
+
+```bash
+dotnet build src/RedShirt.Example.Api.Implementations.Orders/RedShirt.Example.Api.Implementations.Orders.csproj \
+  /p:ErrorLog=compiler-diagnostics.sarif.log
+find . -name '*sarif.log'
+```
+
+The stack trace should be in the logs for the project that you targeted:
+
+```bash
+less ./src/RedShirt.Example.Api.Implementations.Orders/compiler-diagnostics.sarif.log
+```
+
+If the build does not show up, run `dotnet clean` to ensure a fresh build:
+
+```bash
+dotnet clean
+```
+
+## Debugging Source Generation Not Appearing (Rider)
+
+Generated files typically show up in a C# project under **Dependencies / .NET <VERSION> / Source Generators**. If this
+**Source Generators** folder is not showing up and the source generator phase of the build appears to be working, then
+you may need to click the UI button for **Restart Roslyn Analyzers and Source Generators**. In JetBrains Rider, it can
+be found at It can be found as an item in the Rosalyn Analyzers menu in the bottom-right of the main window. I can only
+describe the Rosalyn logo as "a weird branch-y thing".
+
 # Testing
 
-For local testing, see the `test/local` folder.
+For local testing, see the `test/local` folder. That guide covers bringing up MariaDB and applying schema updates via
+[RedShirt.Example.Schema](https://github.com/adeutscher/RedShirt.Example.Schema).
 
 # Citations
 

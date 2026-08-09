@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Moq;
+using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.Controllers;
-using RedShirt.Example.Api.Core.Exceptions;
-using RedShirt.Example.Api.Core.Exceptions.Responses;
 using RedShirt.Example.Api.Core.UseCases.ExampleItem.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.ExampleItem.Commands.Delete;
 using RedShirt.Example.Api.Core.UseCases.ExampleItem.Models;
@@ -149,15 +148,16 @@ public class ExampleItemControllerTests
     }
 
     [Fact]
-    public async Task Put_PropagatesIdempotentConcurrencyException()
+    public async Task Put_PropagatesConflictException()
     {
         var createHandler = new Mock<ICreateExampleItemCommandHandler>();
         createHandler
             .Setup(h => h.Handle(It.IsAny<CreateExampleItemCommand>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new IdempotentConcurrencyException());
+            .ThrowsAsync(new ConflictException(
+                "An idempotent operation was requested while a previous instance of the same operation was in motion."));
         var request = new ExampleItemPutRequest {Name = "widget"};
 
-        await Assert.ThrowsAsync<IdempotentConcurrencyException>(() =>
+        await Assert.ThrowsAsync<ConflictException>(() =>
             _controller.Put(request, "idem-1", createHandler.Object, TestContext.Current.CancellationToken));
     }
 

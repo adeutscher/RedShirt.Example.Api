@@ -8,8 +8,8 @@ namespace RedShirt.Example.Api.Common.Aws.SsmSecretManager.Services.Resilience;
 
 /// <summary>
 ///     Retries SSM operations that fail with expected transient exceptions,
-///     then surfaces remaining failures as <see cref="WorkerSecretManagerException" /> with
-///     <see cref="WorkerSecretManagerException.IsHandled" /> set.
+///     then surfaces remaining failures as <see cref="ApiSecretManagerException" /> with
+///     <see cref="ApiSecretManagerException.IsHandled" /> set.
 /// </summary>
 internal interface ISsmRetryWrapperService
 {
@@ -68,7 +68,7 @@ internal sealed class SsmRetryWrapperService(
         var report = exceptionArbiterService.GetReport(exception);
 
         // ReSharper disable once DuplicatedSequentialIfBodies
-        if (report.AlreadyHandled && exception is WorkerSecretManagerException)
+        if (report.AlreadyHandled && exception is ApiSecretManagerException)
         {
             return exception;
         }
@@ -82,7 +82,7 @@ internal sealed class SsmRetryWrapperService(
             return exception;
         }
 
-        return new WorkerSecretManagerException(exception)
+        return new ApiSecretManagerException(exception)
         {
             CouldBeTransient = report.CouldBeTransient,
             IsHandled = true,

@@ -39,7 +39,7 @@ public class AzureKeyVaultServiceTests
 
             var service = new AzureKeyVaultService(retry.Object, source.Object);
 
-            var thrown = await Assert.ThrowsAsync<WorkerSecretManagerException>(() =>
+            var thrown = await Assert.ThrowsAsync<ApiSecretManagerException>(() =>
                 service.GetSecretAsync(key, TestContext.Current.CancellationToken));
 
             Assert.Equal($"Invalid secret path: {key}", thrown.Message);
@@ -58,7 +58,7 @@ public class AzureKeyVaultServiceTests
             var retry = new Mock<IAzureRetryWrapperService>(MockBehavior.Strict);
             var service = new AzureKeyVaultService(retry.Object, source.Object);
 
-            var thrown = await Assert.ThrowsAsync<WorkerSecretManagerException>(() =>
+            var thrown = await Assert.ThrowsAsync<ApiSecretManagerException>(() =>
                 service.GetSecretAsync(key, TestContext.Current.CancellationToken));
 
             Assert.Equal($"Invalid secret path: {key}", thrown.Message);
@@ -156,13 +156,13 @@ public class AzureKeyVaultServiceTests
         [InlineData(true, false, false)]
         [InlineData(false, true, true)]
         [InlineData(false, false, false)]
-        public async Task WhenRetryWrapperThrowsWorkerAzureException_WrapsAsSecretManagerException(
+        public async Task WhenRetryWrapperThrowsApiAzureException_WrapsAsSecretManagerException(
             bool isTransient,
             bool isHandled,
             bool couldBeExternallySolvable)
         {
             var key = Guid.NewGuid().ToString("N");
-            var inner = new WorkerAzureException("vault unavailable")
+            var inner = new ApiAzureException("vault unavailable")
             {
                 CouldBeTransient = isTransient, IsHandled = isHandled,
                 CouldBeExternallySolvable = couldBeExternallySolvable
@@ -177,7 +177,7 @@ public class AzureKeyVaultServiceTests
 
             var service = new AzureKeyVaultService(retry.Object, source.Object);
 
-            var thrown = await Assert.ThrowsAsync<WorkerSecretManagerException>(() =>
+            var thrown = await Assert.ThrowsAsync<ApiSecretManagerException>(() =>
                 service.GetSecretAsync(key, TestContext.Current.CancellationToken));
 
             Assert.Same(inner, thrown.InnerException);
@@ -246,7 +246,7 @@ public class AzureKeyVaultServiceTests
             var retry = new Mock<IAzureRetryWrapperService>(MockBehavior.Strict);
             var service = new AzureKeyVaultService(retry.Object, source.Object);
 
-            var thrown = await Assert.ThrowsAsync<WorkerSecretManagerException>(() =>
+            var thrown = await Assert.ThrowsAsync<ApiSecretManagerException>(() =>
                 service.GetSecretsAsync(["ok-key", "bad key", "also bad!"], TestContext.Current.CancellationToken));
 
             Assert.Equal("Invalid secret path: bad key", thrown.Message);
@@ -265,7 +265,7 @@ public class AzureKeyVaultServiceTests
             var retry = new Mock<IAzureRetryWrapperService>(MockBehavior.Strict);
             var service = new AzureKeyVaultService(retry.Object, source.Object);
 
-            var thrown = await Assert.ThrowsAsync<WorkerSecretManagerException>(() =>
+            var thrown = await Assert.ThrowsAsync<ApiSecretManagerException>(() =>
                 service.GetSecretsAsync([validKey, badKey], TestContext.Current.CancellationToken));
 
             Assert.Equal($"Invalid secret path: {badKey}", thrown.Message);
@@ -356,13 +356,49 @@ public class AzureKeyVaultServiceTests
         [InlineData(true, false, false)]
         [InlineData(false, true, true)]
         [InlineData(false, false, false)]
-        public async Task WhenSecretFetchThrowsWorkerAzureException_WrapsAsSecretManagerException(
+        public async Task WhenApiAzureException_WrapsAsSecretManagerException(
             bool isTransient,
             bool isHandled,
             bool couldBeExternallySolvable)
         {
             var key = Guid.NewGuid().ToString("N");
-            var azureException = new WorkerAzureException("get failed")
+            var azureException = new ApiAzureException("vault unavailable")
+            {
+                CouldBeTransient = isTransient, IsHandled = isHandled,
+                CouldBeExternallySolvable = couldBeExternallySolvable
+            };
+
+            var source = new Mock<IAzureKeyVaultClientSource>(MockBehavior.Strict);
+            var retry = new Mock<IAzureRetryWrapperService>(MockBehavior.Strict);
+            retry
+                .Setup(r => r.RunAsync(It.IsAny<Func<CancellationToken, Task<IAzureKeyVaultClientWrapper>>>(),
+                    TestContext.Current.CancellationToken))
+                .ThrowsAsync(azureException);
+
+            var service = new AzureKeyVaultService(retry.Object, source.Object);
+
+            var thrown = await Assert.ThrowsAsync<ApiSecretManagerException>(() =>
+                service.GetSecretsAsync([key], TestContext.Current.CancellationToken));
+
+            Assert.Same(azureException, thrown.InnerException);
+            Assert.Equal(isTransient, thrown.CouldBeTransient);
+            Assert.Equal(isHandled, thrown.IsHandled);
+            Assert.Equal(couldBeExternallySolvable, thrown.CouldBeExternallySolvable);
+            source.VerifyNoOtherCalls();
+        }
+
+        [Theory]
+        [InlineData(true, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(false, true, true)]
+        [InlineData(false, false, false)]
+        public async Task WhenSecretFetchThrowsApiAzureException_WrapsAsSecretManagerException(
+            bool isTransient,
+            bool isHandled,
+            bool couldBeExternallySolvable)
+        {
+            var key = Guid.NewGuid().ToString("N");
+            var azureException = new ApiAzureException("get failed")
             {
                 CouldBeTransient = isTransient, IsHandled = isHandled,
                 CouldBeExternallySolvable = couldBeExternallySolvable
@@ -384,49 +420,13 @@ public class AzureKeyVaultServiceTests
 
             var service = new AzureKeyVaultService(retry.Object, source.Object);
 
-            var thrown = await Assert.ThrowsAsync<WorkerSecretManagerException>(() =>
+            var thrown = await Assert.ThrowsAsync<ApiSecretManagerException>(() =>
                 service.GetSecretsAsync([key], TestContext.Current.CancellationToken));
 
             Assert.Same(azureException, thrown.InnerException);
             Assert.Equal(isTransient, thrown.CouldBeTransient);
             Assert.Equal(isHandled, thrown.IsHandled);
             Assert.Equal(couldBeExternallySolvable, thrown.CouldBeExternallySolvable);
-        }
-
-        [Theory]
-        [InlineData(true, true, true)]
-        [InlineData(true, false, false)]
-        [InlineData(false, true, true)]
-        [InlineData(false, false, false)]
-        public async Task WhenWorkerAzureException_WrapsAsSecretManagerException(
-            bool isTransient,
-            bool isHandled,
-            bool couldBeExternallySolvable)
-        {
-            var key = Guid.NewGuid().ToString("N");
-            var azureException = new WorkerAzureException("vault unavailable")
-            {
-                CouldBeTransient = isTransient, IsHandled = isHandled,
-                CouldBeExternallySolvable = couldBeExternallySolvable
-            };
-
-            var source = new Mock<IAzureKeyVaultClientSource>(MockBehavior.Strict);
-            var retry = new Mock<IAzureRetryWrapperService>(MockBehavior.Strict);
-            retry
-                .Setup(r => r.RunAsync(It.IsAny<Func<CancellationToken, Task<IAzureKeyVaultClientWrapper>>>(),
-                    TestContext.Current.CancellationToken))
-                .ThrowsAsync(azureException);
-
-            var service = new AzureKeyVaultService(retry.Object, source.Object);
-
-            var thrown = await Assert.ThrowsAsync<WorkerSecretManagerException>(() =>
-                service.GetSecretsAsync([key], TestContext.Current.CancellationToken));
-
-            Assert.Same(azureException, thrown.InnerException);
-            Assert.Equal(isTransient, thrown.CouldBeTransient);
-            Assert.Equal(isHandled, thrown.IsHandled);
-            Assert.Equal(couldBeExternallySolvable, thrown.CouldBeExternallySolvable);
-            source.VerifyNoOtherCalls();
         }
     }
 }

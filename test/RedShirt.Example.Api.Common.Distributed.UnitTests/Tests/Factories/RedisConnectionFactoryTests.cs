@@ -40,11 +40,11 @@ public class RedisConnectionFactoryTests
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(false, false)]
-    public async Task GetConnectionAsync_WrapsSecretManagerExceptionAsWorkerDistributedException(
+    public async Task GetConnectionAsync_WrapsSecretManagerExceptionAsApiDistributedException(
         bool isTransient, bool couldBeExternallySolvable)
     {
         const string connectionStringPath = "redis/connection-string";
-        var secretException = new WorkerSecretManagerException("secret lookup failed")
+        var secretException = new ApiSecretManagerException("secret lookup failed")
         {
             CouldBeTransient = isTransient, IsHandled = false, CouldBeExternallySolvable = couldBeExternallySolvable
         };
@@ -61,7 +61,7 @@ public class RedisConnectionFactoryTests
                 ConnectionStringPath = connectionStringPath
             }));
 
-        var thrown = await Assert.ThrowsAsync<WorkerDistributedException>(() =>
+        var thrown = await Assert.ThrowsAsync<ApiDistributedException>(() =>
             factory.GetConnectionAsync(TestContext.Current.CancellationToken));
 
         Assert.Equal(secretException.Message, thrown.Message);

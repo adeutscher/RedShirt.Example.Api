@@ -9,6 +9,18 @@ services:
     ports:
       - '6379:6379'
 
+  mariadb:
+    image: mariadb:latest
+    ports:
+      - '3306:3306'
+    environment:
+      MARIADB_ROOT_PASSWORD: ${LOCAL_SQL_PASSWORD}
+      MARIADB_DATABASE: example
+      MARIADB_USER: example-user
+      MARIADB_PASSWORD: example-password
+    volumes:
+      - ./data/mariadb-data:/var/lib/mysql
+
   api:
     build:
       context: ../..
@@ -17,6 +29,7 @@ services:
     depends_on:
       - ministack
       - redis
+      - mariadb
     ports:
       - "9000:8080"
     environment:
@@ -52,7 +65,12 @@ services:
       ##
       RATE_LIMITING__DISABLE_RATE_LIMITING: false
       RATE_LIMITING__USE_REDIS: true
-      # RATE_LIMITING__DEFAULT_POLICY_NAME: null
+      RATE_LIMITING__DEFAULT_POLICY_NAME: "default"
+      RATE_LIMITING__POLICIES__DEFAULT__NAME: "default"
+      RATE_LIMITING__POLICIES__DEFAULT__REDIS_KEY_PREFIX: "default"
+      RATE_LIMITING__POLICIES__DEFAULT__WINDOW_PERMIT_LIMIT: 60
+      RATE_LIMITING__POLICIES__DEFAULT__LIMIT_WINDOW_MINUTES: 1
+      RATE_LIMITING__POLICIES__DEFAULT__FAIL_CLOSED: false
       RATE_LIMITING__POLICIES__EXAMPLE__NAME: "example"
       RATE_LIMITING__POLICIES__EXAMPLE__REDIS_KEY_PREFIX: "example"
       RATE_LIMITING__POLICIES__EXAMPLE__WINDOW_PERMIT_LIMIT: 30
@@ -60,3 +78,6 @@ services:
       RATE_LIMITING__POLICIES__EXAMPLE__FAIL_CLOSED: false
       # App-specific variables
       STORAGE__EXAMPLE_ITEM__TABLE_NAME: example
+      # Database (MariaDB) — path to SSM secret holding the MySql.Data connection string
+      ##
+      CONNECTION_STRINGS__PRIMARY: "/mysql/connection-string"

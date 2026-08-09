@@ -63,7 +63,7 @@ internal sealed class SsmExceptionArbiterService(IAwsExceptionArbiterService aws
             // Already classified/wrapped by an earlier secret-manager layer — do not wrap again.
             // Only allow further retry when the prior wrapper has not already exhausted retries.
             // Propagate the inner wrapper's own externally-solvable classification.
-            WorkerSecretManagerException workerSecretManager =>
+            ApiSecretManagerException workerSecretManager =>
                 Handled(
                     true,
                     workerSecretManager is {IsHandled: false, CouldBeTransient: true},

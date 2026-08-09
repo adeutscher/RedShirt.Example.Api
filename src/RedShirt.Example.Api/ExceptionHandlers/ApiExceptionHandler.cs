@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using RedShirt.Example.Api.Core.Exceptions;
-using RedShirt.Example.Api.Core.Exceptions.Responses;
+using RedShirt.Example.Api.Common.Exceptions.Responses;
 
 namespace RedShirt.Example.Api.ExceptionHandlers;
 
@@ -22,12 +21,16 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsS
                 statusCode = StatusCodes.Status404NotFound;
                 title = "Not Found";
                 return true;
-            case IdempotentConcurrencyException:
+            case ConflictException:
                 statusCode = StatusCodes.Status409Conflict;
                 title = "Conflict";
                 return true;
+            case NoChangesToModifyException:
+                statusCode = StatusCodes.Status304NotModified;
+                title = "Not Modified";
+                return true;
             default:
-                statusCode = default;
+                statusCode = 0;
                 title = string.Empty;
                 return false;
         }

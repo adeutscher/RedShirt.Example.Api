@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Analyzers.Database.Abstractions\RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation\RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+        <ProjectReference Include="../RedShirt.Example.Api.Common.Analyzers.Database.Abstractions\RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.csproj"
+                          OutputItemType="Analyzer"
+                          ReferenceOutputAssembly="false"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Database.DapperMySql\RedShirt.Example.Api.Common.Database.DapperMySql.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Distributed\RedShirt.Example.Api.Common.Distributed.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Constants\RedShirt.Example.Api.DataStores.Constants.csproj"/>
+    </ItemGroup>
+
+</Project>

@@ -84,7 +84,7 @@ public class RedisDistributedRetryWrapperServiceTests
     [Fact]
     public async Task RunAsync_NonGeneric_WhenAlreadyHandled_RethrowsWithoutWrapping()
     {
-        var inner = new WorkerDistributedException("already wrapped")
+        var inner = new ApiDistributedException("already wrapped")
             {CouldBeTransient = false, IsHandled = true, CouldBeExternallySolvable = false};
 
         var arbiter = new Mock<IRedisDistributedExceptionArbiterService>(MockBehavior.Strict);
@@ -94,7 +94,7 @@ public class RedisDistributedRetryWrapperServiceTests
         var wrapper = new RedisDistributedRetryWrapperService(arbiter.Object,
             NullLogger<RedisDistributedRetryWrapperService>.Instance, sleepService.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerDistributedException>(() => wrapper.RunAsync(
+        var thrown = await Assert.ThrowsAsync<ApiDistributedException>(() => wrapper.RunAsync(
             _ => throw inner,
             TestContext.Current.CancellationToken));
 
@@ -161,7 +161,7 @@ public class RedisDistributedRetryWrapperServiceTests
         var wrapper = new RedisDistributedRetryWrapperService(arbiter.Object,
             NullLogger<RedisDistributedRetryWrapperService>.Instance, sleepService.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerDistributedException>(() => wrapper.RunAsync(
+        var thrown = await Assert.ThrowsAsync<ApiDistributedException>(() => wrapper.RunAsync(
             _ =>
             {
                 attempts++;
@@ -234,7 +234,7 @@ public class RedisDistributedRetryWrapperServiceTests
     public async Task RunAsync_WhenAlreadyHandled_RethrowsWithoutWrapping()
     {
         var attempts = 0;
-        var inner = new WorkerDistributedException("already wrapped")
+        var inner = new ApiDistributedException("already wrapped")
             {CouldBeTransient = false, IsHandled = true, CouldBeExternallySolvable = false};
 
         var arbiter = new Mock<IRedisDistributedExceptionArbiterService>(MockBehavior.Strict);
@@ -244,7 +244,7 @@ public class RedisDistributedRetryWrapperServiceTests
         var wrapper = new RedisDistributedRetryWrapperService(arbiter.Object,
             NullLogger<RedisDistributedRetryWrapperService>.Instance, sleepService.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerDistributedException>(() => wrapper.RunAsync<int>(
+        var thrown = await Assert.ThrowsAsync<ApiDistributedException>(() => wrapper.RunAsync<int>(
             _ =>
             {
                 attempts++;
@@ -319,7 +319,7 @@ public class RedisDistributedRetryWrapperServiceTests
         var wrapper = new RedisDistributedRetryWrapperService(arbiter.Object,
             NullLogger<RedisDistributedRetryWrapperService>.Instance, sleepService.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerDistributedException>(() => wrapper.RunAsync<int>(
+        var thrown = await Assert.ThrowsAsync<ApiDistributedException>(() => wrapper.RunAsync<int>(
             _ =>
             {
                 attempts++;
@@ -367,7 +367,7 @@ public class RedisDistributedRetryWrapperServiceTests
         var wrapper = new RedisDistributedRetryWrapperService(arbiter.Object,
             NullLogger<RedisDistributedRetryWrapperService>.Instance, sleepService.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerDistributedException>(() => wrapper.RunAsync<string>(
+        var thrown = await Assert.ThrowsAsync<ApiDistributedException>(() => wrapper.RunAsync<string>(
             _ => throw inner,
             TestContext.Current.CancellationToken));
 
@@ -390,7 +390,7 @@ public class RedisDistributedRetryWrapperServiceTests
         var wrapper = new RedisDistributedRetryWrapperService(arbiter.Object,
             NullLogger<RedisDistributedRetryWrapperService>.Instance, sleepService.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerDistributedException>(() => wrapper.RunAsync<string>(
+        var thrown = await Assert.ThrowsAsync<ApiDistributedException>(() => wrapper.RunAsync<string>(
             _ =>
             {
                 attempts++;
@@ -407,7 +407,7 @@ public class RedisDistributedRetryWrapperServiceTests
     }
 
     [Fact]
-    public async Task RunAsync_WhenTransientFailuresExhaustRetries_ThrowsWorkerDistributedException()
+    public async Task RunAsync_WhenTransientFailuresExhaustRetries_ThrowsApiDistributedException()
     {
         var attempts = 0;
         var delays = new List<TimeSpan>();
@@ -420,7 +420,7 @@ public class RedisDistributedRetryWrapperServiceTests
         var wrapper = new RedisDistributedRetryWrapperService(arbiter.Object,
             NullLogger<RedisDistributedRetryWrapperService>.Instance, sleepService.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerDistributedException>(() => wrapper.RunAsync<string>(
+        var thrown = await Assert.ThrowsAsync<ApiDistributedException>(() => wrapper.RunAsync<string>(
             _ =>
             {
                 attempts++;

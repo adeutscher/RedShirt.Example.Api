@@ -24,7 +24,9 @@
         <ProjectReference Include="..\RedShirt.Example.Api.Common.SecretManagers.Core\RedShirt.Example.Api.Common.SecretManagers.Core.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Core\RedShirt.Example.Api.Core.csproj"/>
-        <ProjectReference Include="..\RedShirt.Example.Api.Implementations.ExampleItem\RedShirt.Example.Api.Implementations.ExampleItem.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.ExampleItem\RedShirt.Example.Api.DataStores.ExampleItem.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Order\RedShirt.Example.Api.DataStores.Order.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Product.Implementation\RedShirt.Example.Api.DataStores.Product.Implementation.csproj"/>
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">

@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using RedShirt.Example.Api.Core.Exceptions;
-using RedShirt.Example.Api.Core.Exceptions.Responses;
+using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.ExceptionHandlers;
 
 namespace RedShirt.Example.Api.UnitTests.Tests.ExceptionHandlers;
@@ -64,15 +63,27 @@ public class ApiExceptionHandlerTests
     }
 
     [Fact]
-    public async Task TryHandleAsync_MapsIdempotentConcurrencyException_To409ProblemDetails()
+    public async Task TryHandleAsync_MapsConflictException_To409ProblemDetails()
     {
-        var written = await HandleAsync(new IdempotentConcurrencyException());
+        var written = await HandleAsync(new ConflictException("Resource is locked"));
 
         Assert.True(written.Handled);
         Assert.Equal(StatusCodes.Status409Conflict, written.StatusCode);
         Assert.Equal("Conflict", written.ProblemDetails?.Title);
-        Assert.Null(written.ProblemDetails?.Detail);
+        Assert.Equal("Resource is locked", written.ProblemDetails?.Detail);
         Assert.Equal(StatusCodes.Status409Conflict, written.ProblemDetails?.Status);
+    }
+
+    [Fact]
+    public async Task TryHandleAsync_MapsNoChangesToModifyException_To304ProblemDetails()
+    {
+        var written = await HandleAsync(new NoChangesToModifyException());
+
+        Assert.True(written.Handled);
+        Assert.Equal(StatusCodes.Status304NotModified, written.StatusCode);
+        Assert.Equal("Not Modified", written.ProblemDetails?.Title);
+        Assert.Null(written.ProblemDetails?.Detail);
+        Assert.Equal(StatusCodes.Status304NotModified, written.ProblemDetails?.Status);
     }
 
     [Fact]

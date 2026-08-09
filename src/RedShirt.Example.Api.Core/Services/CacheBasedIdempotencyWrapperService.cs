@@ -1,4 +1,4 @@
-using RedShirt.Example.Api.Core.Exceptions;
+using RedShirt.Example.Api.Common.Exceptions.Responses;
 
 namespace RedShirt.Example.Api.Core.Services;
 
@@ -11,7 +11,7 @@ public interface ICacheBasedIdempotencyWrapperService
     /// <param name="idempotencyKey"></param>
     /// <param name="callback"></param>
     /// <param name="cancellationToken"></param>
-    /// <exception cref="RedShirt.Example.Api.Core.Exceptions.IdempotentConcurrencyException">
+    /// <exception cref="ConflictException">
     ///     Thrown if another instance of an
     ///     idempotent operation is currently running.
     /// </exception>
@@ -32,7 +32,7 @@ public class CacheBasedIdempotencyWrapperService(ICacheBasedIdempotencyService i
     /// <param name="cancellationToken"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    /// <exception cref="IdempotentConcurrencyException"></exception>
+    /// <exception cref="ConflictException"></exception>
     public async Task<T> RunIdempotentlyAsync<T>(string idempotencyKey, Func<Task<T>> callback,
         CancellationToken cancellationToken = default) where T : class
     {
@@ -42,7 +42,8 @@ public class CacheBasedIdempotencyWrapperService(ICacheBasedIdempotencyService i
         if (!concurrentAttemptLock.IsAcquired)
         {
             // Another instance of the handler is currently trying to process this same request
-            throw new IdempotentConcurrencyException();
+            throw new ConflictException(
+                "An idempotent operation was requested while a previous instance of the same operation was in motion.");
         }
 
         try

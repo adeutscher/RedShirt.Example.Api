@@ -43,6 +43,9 @@ artifacts/
 .env.*
 appsettings.*.local.json
 
+# Local Docker persistence
+test/local/data/mariadb-data/
+
 Thumbs.db
 Desktop.ini
 .DS_Store
@@ -51,3 +54,9 @@ Desktop.ini
 
 # Vim Swapfiles
 .*.swp
+
+# Generic logs
+*.log
+
+# Just in case anyone took the test/local/ documentation very literally:
+**/RedShirt.Example.Schema

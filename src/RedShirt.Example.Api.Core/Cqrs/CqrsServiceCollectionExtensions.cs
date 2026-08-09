@@ -67,6 +67,8 @@ internal static class CqrsServiceCollectionExtensions
         }
 
         return services
-            .AddValidatorsFromAssembly(typeof(CqrsServiceCollectionExtensions).Assembly);
+            .AddValidatorsFromAssembly(
+                typeof(CqrsServiceCollectionExtensions).Assembly,
+                ServiceLifetime.Transient);
     }
 }

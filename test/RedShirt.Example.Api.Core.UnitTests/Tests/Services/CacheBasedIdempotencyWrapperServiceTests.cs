@@ -1,6 +1,6 @@
 using Moq;
 using RedShirt.Example.Api.Common.Distributed.Models;
-using RedShirt.Example.Api.Core.Exceptions;
+using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.Core.Services;
 
 namespace RedShirt.Example.Api.Core.UnitTests.Tests.Services;
@@ -104,7 +104,7 @@ public class CacheBasedIdempotencyWrapperServiceTests
     }
 
     [Fact]
-    public async Task RunIdempotentlyAsync_ThrowsIdempotentConcurrency_WhenLockIsNotAcquired()
+    public async Task RunIdempotentlyAsync_ThrowsConflict_WhenLockIsNotAcquired()
     {
         var lockHandle = CreateLock(false);
         var idempotency = new Mock<ICacheBasedIdempotencyService>();
@@ -117,7 +117,7 @@ public class CacheBasedIdempotencyWrapperServiceTests
         var callbackInvoked = false;
         var service = new CacheBasedIdempotencyWrapperService(idempotency.Object);
 
-        await Assert.ThrowsAsync<IdempotentConcurrencyException>(() =>
+        await Assert.ThrowsAsync<ConflictException>(() =>
             service.RunIdempotentlyAsync("idem-1", () =>
             {
                 callbackInvoked = true;

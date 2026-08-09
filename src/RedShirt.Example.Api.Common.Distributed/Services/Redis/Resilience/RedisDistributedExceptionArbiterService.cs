@@ -76,9 +76,9 @@ internal sealed class RedisDistributedExceptionArbiterService : IRedisDistribute
         return exception switch
         {
             // Already classified/wrapped by an earlier Distributed layer — do not wrap again.
-            WorkerDistributedException w =>
+            ApiDistributedException w =>
                 Handled(true, w is {IsHandled: false, CouldBeTransient: true}, w.CouldBeExternallySolvable),
-            WorkerSecretManagerException w =>
+            ApiSecretManagerException w =>
                 Handled(true, w is {IsHandled: false, CouldBeTransient: true}, w.CouldBeExternallySolvable),
             // Command / connection timeouts from StackExchange.Redis — a slow/overloaded server can be
             // fixed externally (scaling, restarting) without touching this worker.

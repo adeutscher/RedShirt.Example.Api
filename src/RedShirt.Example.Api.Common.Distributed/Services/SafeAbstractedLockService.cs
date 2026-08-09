@@ -69,7 +69,7 @@ internal sealed class SafeAbstractedLockService(
         {
             throw;
         }
-        catch (WorkerDistributedException e)
+        catch (ApiDistributedException e)
         {
             logger.LogWarning(e, "Failure to communicate with lock service: {EMessage}", e.Message);
             safetyDisgraceStateService.EnterDisgracePeriod();

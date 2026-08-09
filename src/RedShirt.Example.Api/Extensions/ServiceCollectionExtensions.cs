@@ -1,10 +1,14 @@
 using RedShirt.Example.Api.Common.Aws.SsmSecretManager.Extensions;
+using RedShirt.Example.Api.Common.Database.DapperMySql.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Extensions;
 using RedShirt.Example.Api.Common.RateLimiting.Extensions;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Extensions;
+using RedShirt.Example.Api.Core.Extensions;
+using RedShirt.Example.Api.DataStores.ExampleItem.Extensions;
+using RedShirt.Example.Api.DataStores.Order.Extensions;
+using RedShirt.Example.Api.DataStores.Product.Implementation.Extensions;
 using RedShirt.Example.Api.ExceptionHandlers;
-using RedShirt.Example.Api.Implementations.ExampleItem.Extensions;
 
 namespace RedShirt.Example.Api.Extensions;
 
@@ -15,6 +19,7 @@ internal static class ServiceCollectionExtensions
     {
         return serviceCollection
             .AddLogging()
+            .AddSingleton(configuration)
             .AddProblemDetails()
             .AddExceptionHandler<ApiExceptionHandler>()
             // Common
@@ -33,6 +38,12 @@ internal static class ServiceCollectionExtensions
             ////
             .ConsiderAddingRateLimitingPolicies(configuration)
             // App-specific
-            .ConfigureApiImplementations(configuration);
+            ////
+            .ConfigureApiCore(configuration)
+            // Data Stores
+            .AddExampleItem(configuration)
+            .AddDapperMySql(configuration) // Add Dapper support for MySQL-based database servers. 
+            .AddOrders()
+            .AddProducts(configuration);
     }
 }

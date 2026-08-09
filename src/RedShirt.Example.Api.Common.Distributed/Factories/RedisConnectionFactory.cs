@@ -27,9 +27,9 @@ internal sealed class RedisConnectionFactory(
                     opts.ConnectRetry = 0;
                 });
         }
-        catch (WorkerSecretManagerException e)
+        catch (ApiSecretManagerException e)
         {
-            throw new WorkerDistributedException(e)
+            throw new ApiDistributedException(e)
             {
                 CouldBeTransient = e.CouldBeTransient,
                 IsHandled = e.IsHandled,

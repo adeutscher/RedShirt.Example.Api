@@ -80,7 +80,7 @@ public class RedisLockServiceTests
     {
         var source = new Mock<IRedisConnectionCacheService>(MockBehavior.Strict);
         var retry = new Mock<IDistributedRetryWrapperService>(MockBehavior.Strict);
-        var expected = new WorkerDistributedException("redis unavailable")
+        var expected = new ApiDistributedException("redis unavailable")
             {CouldBeTransient = true, IsHandled = false, CouldBeExternallySolvable = true};
         retry
             .Setup(r => r.RunAsync(It.IsAny<Func<CancellationToken, Task<IDatabase>>>(),
@@ -90,7 +90,7 @@ public class RedisLockServiceTests
         var locker = new RedisLockService(retry.Object, source.Object,
             Options.Create(new LockConfigurationModel {TimeoutSeconds = 1}));
 
-        var thrown = await Assert.ThrowsAsync<WorkerDistributedException>(() =>
+        var thrown = await Assert.ThrowsAsync<ApiDistributedException>(() =>
             locker.GetLockAsync("lock-a", TestContext.Current.CancellationToken));
 
         Assert.Same(expected, thrown);

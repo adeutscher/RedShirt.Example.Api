@@ -95,6 +95,30 @@ public class DistributedLockTests
         retry.VerifyNoOtherCalls();
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task UnlockAsync_WhenRetryThrowsApiDistributedException_Swallows(bool isTransient)
+    {
+        var retry = new Mock<IDistributedRetryWrapperService>(MockBehavior.Strict);
+        retry
+            .Setup(r => r.RunAsync(It.IsAny<Func<CancellationToken, Task>>(),
+                TestContext.Current.CancellationToken))
+            .ThrowsAsync(new ApiDistributedException("unlock failed")
+            {
+                CouldBeTransient = isTransient, IsHandled = false, CouldBeExternallySolvable = isTransient
+            });
+
+        var @lock = new RedisLockService.DistributedLock(retry.Object, CreateOpaqueHandle());
+
+        await @lock.UnlockAsync(TestContext.Current.CancellationToken);
+
+        retry.Verify(
+            r => r.RunAsync(It.IsAny<Func<CancellationToken, Task>>(),
+                TestContext.Current.CancellationToken),
+            Times.Once);
+    }
+
     [Fact]
     public async Task UnlockAsync_WhenRetryThrowsUnexpectedException_Propagates()
     {
@@ -111,29 +135,5 @@ public class DistributedLockTests
             @lock.UnlockAsync(TestContext.Current.CancellationToken));
 
         Assert.Same(expected, thrown);
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task UnlockAsync_WhenRetryThrowsWorkerDistributedException_Swallows(bool isTransient)
-    {
-        var retry = new Mock<IDistributedRetryWrapperService>(MockBehavior.Strict);
-        retry
-            .Setup(r => r.RunAsync(It.IsAny<Func<CancellationToken, Task>>(),
-                TestContext.Current.CancellationToken))
-            .ThrowsAsync(new WorkerDistributedException("unlock failed")
-            {
-                CouldBeTransient = isTransient, IsHandled = false, CouldBeExternallySolvable = isTransient
-            });
-
-        var @lock = new RedisLockService.DistributedLock(retry.Object, CreateOpaqueHandle());
-
-        await @lock.UnlockAsync(TestContext.Current.CancellationToken);
-
-        retry.Verify(
-            r => r.RunAsync(It.IsAny<Func<CancellationToken, Task>>(),
-                TestContext.Current.CancellationToken),
-            Times.Once);
     }
 }

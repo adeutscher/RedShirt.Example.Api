@@ -1,6 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using RedShirt.Example.Api.Core.Exceptions.Responses;
+using RedShirt.Example.Api.Common.Exceptions.Responses;
 
 namespace RedShirt.Example.Api.Core.Cqrs;
 
