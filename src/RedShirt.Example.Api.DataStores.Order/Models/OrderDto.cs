@@ -20,4 +20,7 @@ public class OrderDto
 
     [StoredAsDecimal]
     public required string TotalAmount { get; init; }
+
+    [StoredAsDecimal]
+    public required string? TotalPrice { get; init; }
 }
