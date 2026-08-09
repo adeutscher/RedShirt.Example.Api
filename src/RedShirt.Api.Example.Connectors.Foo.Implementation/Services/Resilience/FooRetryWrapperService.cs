@@ -1,16 +1,16 @@
 using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
-using RedShirt.Api.Example.Connectors.Foo.Implementation.Exceptions;
+using RedShirt.Api.Example.Connectors.Foo.Core.Exceptions;
 using RedShirt.Example.Api.Common.Services.Utility;
 
 namespace RedShirt.Api.Example.Connectors.Foo.Implementation.Services.Resilience;
 
 /// <summary>
 ///     Retries Foo connector operations that fail with expected transient exceptions,
-///     then surfaces remaining failures as <see cref="ApiFooConnectorException" />.
+///     then surfaces remaining failures as <see cref="FooConnectorException" />.
 /// </summary>
-public interface IFooRetryWrapperService
+internal interface IFooRetryWrapperService
 {
     /// <summary>
     ///     Executes <paramref name="func" /> with retry for expected transient Foo failures.
@@ -79,7 +79,8 @@ internal sealed class FooRetryWrapperService(
     {
         var report = exceptionArbiterService.GetReport(exception);
 
-        if (report.AlreadyHandled && exception is ApiFooConnectorException)
+        // ReSharper disable once DuplicatedSequentialIfBodies
+        if (report.AlreadyHandled && exception is FooConnectorException)
         {
             return exception;
         }
@@ -89,7 +90,7 @@ internal sealed class FooRetryWrapperService(
             return exception;
         }
 
-        return new ApiFooConnectorException(exception)
+        return new FooConnectorException(exception)
         {
             CouldBeTransient = report.CouldBeTransient,
             IsHandled = true,

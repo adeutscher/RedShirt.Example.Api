@@ -12,7 +12,7 @@ internal interface IFooApiClient
 }
 
 /// <summary>
-///     HTTP transport for the Foo dependency. Failures are surfaced as <see cref="FooConnectorException" />.
+///     HTTP transport for the Foo dependency. Failures are surfaced as <see cref="ApiFooConnectorException" />.
 /// </summary>
 internal sealed class FooApiClient(HttpClient httpClient, string baseUrl) : IFooApiClient
 {
@@ -31,7 +31,7 @@ internal sealed class FooApiClient(HttpClient httpClient, string baseUrl) : IFoo
 
             if (!response.IsSuccessStatusCode)
             {
-                throw new FooConnectorException((int) response.StatusCode);
+                throw new ApiFooConnectorException((int) response.StatusCode);
             }
 
             var stringResponse = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -41,7 +41,7 @@ internal sealed class FooApiClient(HttpClient httpClient, string baseUrl) : IFoo
                 var responseObject = JsonSerializer.Deserialize<InternalFooCreateResponse>(stringResponse);
                 if (responseObject is null)
                 {
-                    throw new FooConnectorException((int) response.StatusCode);
+                    throw new ApiFooConnectorException((int) response.StatusCode);
                 }
 
                 return new FooApiCreateResponse
@@ -52,20 +52,20 @@ internal sealed class FooApiClient(HttpClient httpClient, string baseUrl) : IFoo
             }
             catch (JsonException ex)
             {
-                throw new FooConnectorException((int) response.StatusCode, ex);
+                throw new ApiFooConnectorException((int) response.StatusCode, ex);
             }
         }
-        catch (FooConnectorException)
+        catch (ApiFooConnectorException)
         {
             throw;
         }
         catch (HttpRequestException ex)
         {
-            throw new FooConnectorException(ex);
+            throw new ApiFooConnectorException(ex);
         }
         catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
         {
-            throw new FooConnectorException(ex);
+            throw new ApiFooConnectorException(ex);
         }
     }
 }

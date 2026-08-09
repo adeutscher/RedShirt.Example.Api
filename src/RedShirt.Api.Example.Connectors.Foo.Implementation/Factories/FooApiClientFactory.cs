@@ -26,7 +26,7 @@ internal sealed class FooApiClientFactory(
         return new FooApiClient(httpClient, configuration.Value.BaseUrl);
     }
 
-    public sealed class ConfigurationModel
+    internal sealed class ConfigurationModel
     {
         public required string BaseUrl { get; init; }
         public string? ApiKey { get; init; }

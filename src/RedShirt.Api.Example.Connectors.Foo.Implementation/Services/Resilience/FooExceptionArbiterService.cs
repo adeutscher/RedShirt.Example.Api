@@ -1,3 +1,4 @@
+using RedShirt.Api.Example.Connectors.Foo.Core.Exceptions;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Exceptions;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Models;
 using System.Net.Sockets;
@@ -54,7 +55,7 @@ internal sealed class FooExceptionArbiterService : IFooExceptionArbiterService
         };
     }
 
-    private static FooExceptionArbiterReport ClassifyFooException(FooConnectorException exception)
+    private static FooExceptionArbiterReport ClassifyApiException(ApiFooConnectorException exception)
     {
         // No HTTP response (DNS, connection refused, timeout wrapped earlier) — treat as transient infra.
         if (exception.StatusCode is null)
@@ -89,9 +90,9 @@ internal sealed class FooExceptionArbiterService : IFooExceptionArbiterService
 
         return exception switch
         {
-            ApiFooConnectorException w =>
+            FooConnectorException w =>
                 Handled(true, w is {IsHandled: false, CouldBeTransient: true}, w.CouldBeExternallySolvable),
-            FooConnectorException foo => ClassifyFooException(foo),
+            ApiFooConnectorException api => ClassifyApiException(api),
             HttpRequestException
                 or SocketException
                 or TimeoutException => Fresh(true, true, true),
