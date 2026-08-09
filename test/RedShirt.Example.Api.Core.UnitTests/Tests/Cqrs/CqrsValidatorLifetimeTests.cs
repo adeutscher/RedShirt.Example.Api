@@ -38,8 +38,7 @@ public class CqrsValidatorLifetimeTests
         var services = new ServiceCollection();
         services.AddSingleton<ICoreRequestValidator, CoreRequestValidator>();
         services.AddValidatorsFromAssembly(
-            typeof(CreateOrderCommandValidator).Assembly,
-            ServiceLifetime.Scoped);
+            typeof(CreateOrderCommandValidator).Assembly);
 
         await using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {

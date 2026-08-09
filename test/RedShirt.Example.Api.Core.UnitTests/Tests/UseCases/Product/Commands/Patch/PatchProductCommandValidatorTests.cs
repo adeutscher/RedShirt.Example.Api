@@ -10,16 +10,6 @@ public class PatchProductCommandValidatorTests
     private readonly PatchProductCommandValidator _validator = new();
 
     [Fact]
-    public async Task Validate_Succeeds_WhenPriceIsOmitted()
-    {
-        var result = await _validator.ValidateAsync(
-            new PatchProductCommand(Guid.NewGuid(), null, "Renamed", null),
-            TestContext.Current.CancellationToken);
-
-        Assert.True(result.IsValid);
-    }
-
-    [Fact]
     public async Task Validate_Fails_WhenPriceIsPresentButInvalid()
     {
         var result = await _validator.ValidateAsync(
@@ -29,5 +19,15 @@ public class PatchProductCommandValidatorTests
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors,
             error => error.ErrorMessage == "'Price' must be a valid decimal number");
+    }
+
+    [Fact]
+    public async Task Validate_Succeeds_WhenPriceIsOmitted()
+    {
+        var result = await _validator.ValidateAsync(
+            new PatchProductCommand(Guid.NewGuid(), null, "Renamed", null),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsValid);
     }
 }

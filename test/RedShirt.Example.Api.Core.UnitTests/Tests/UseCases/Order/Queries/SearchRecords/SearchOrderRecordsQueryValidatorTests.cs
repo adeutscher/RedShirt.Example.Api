@@ -10,6 +10,34 @@ public class SearchOrderRecordsQueryValidatorTests
 {
     private readonly SearchOrderRecordsQueryValidator _validator = new();
 
+    private static SearchOrderRecordsQuery CreateQuery(string propertyName, string? value)
+    {
+        return new SearchOrderRecordsQuery(
+            new OrderServiceSearchRequest
+            {
+                PageSize = 10,
+                CreatedBeforeUtc = null,
+                CreatedAfterUtc = null,
+                UpdatedBeforeUtc = null,
+                UpdatedAfterUtc = null,
+                CustomerId = null,
+                Status = null,
+                StatusContains = null,
+                TotalAmount = propertyName == nameof(OrderServiceSearchRequest.TotalAmount) ? value : null,
+                TotalAmountGreaterThan =
+                    propertyName == nameof(OrderServiceSearchRequest.TotalAmountGreaterThan) ? value : null,
+                TotalAmountLessThan =
+                    propertyName == nameof(OrderServiceSearchRequest.TotalAmountLessThan) ? value : null,
+                TotalPrice = propertyName == nameof(OrderServiceSearchRequest.TotalPrice) ? value : null,
+                TotalPriceGreaterThan =
+                    propertyName == nameof(OrderServiceSearchRequest.TotalPriceGreaterThan) ? value : null,
+                TotalPriceLessThan =
+                    propertyName == nameof(OrderServiceSearchRequest.TotalPriceLessThan) ? value : null,
+                TotalPriceIsNull = false
+            },
+            null);
+    }
+
     [Theory]
     [InlineData(nameof(OrderServiceSearchRequest.TotalAmount), "not-a-decimal")]
     [InlineData(nameof(OrderServiceSearchRequest.TotalAmountGreaterThan), "12.34.56")]
@@ -44,33 +72,5 @@ public class SearchOrderRecordsQueryValidatorTests
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsValid);
-    }
-
-    private static SearchOrderRecordsQuery CreateQuery(string propertyName, string? value)
-    {
-        return new SearchOrderRecordsQuery(
-            new OrderServiceSearchRequest
-            {
-                PageSize = 10,
-                CreatedBeforeUtc = null,
-                CreatedAfterUtc = null,
-                UpdatedBeforeUtc = null,
-                UpdatedAfterUtc = null,
-                CustomerId = null,
-                Status = null,
-                StatusContains = null,
-                TotalAmount = propertyName == nameof(OrderServiceSearchRequest.TotalAmount) ? value : null,
-                TotalAmountGreaterThan =
-                    propertyName == nameof(OrderServiceSearchRequest.TotalAmountGreaterThan) ? value : null,
-                TotalAmountLessThan =
-                    propertyName == nameof(OrderServiceSearchRequest.TotalAmountLessThan) ? value : null,
-                TotalPrice = propertyName == nameof(OrderServiceSearchRequest.TotalPrice) ? value : null,
-                TotalPriceGreaterThan =
-                    propertyName == nameof(OrderServiceSearchRequest.TotalPriceGreaterThan) ? value : null,
-                TotalPriceLessThan =
-                    propertyName == nameof(OrderServiceSearchRequest.TotalPriceLessThan) ? value : null,
-                TotalPriceIsNull = false
-            },
-            null);
     }
 }

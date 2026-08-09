@@ -10,6 +10,29 @@ public class SearchProductRecordsQueryValidatorTests
 {
     private readonly SearchProductRecordsQueryValidator _validator = new();
 
+    private static SearchProductRecordsQuery CreateQuery(string propertyName, string? value)
+    {
+        return new SearchProductRecordsQuery(
+            new ProductServiceSearchRequest
+            {
+                PageSize = 10,
+                CreatedBeforeUtc = null,
+                CreatedAfterUtc = null,
+                UpdatedBeforeUtc = null,
+                UpdatedAfterUtc = null,
+                Sku = null,
+                SkuContains = null,
+                Name = null,
+                NameContains = null,
+                Price = propertyName == nameof(ProductServiceSearchRequest.Price) ? value : null,
+                PriceGreaterThan = propertyName == nameof(ProductServiceSearchRequest.PriceGreaterThan)
+                    ? value
+                    : null,
+                PriceLessThan = propertyName == nameof(ProductServiceSearchRequest.PriceLessThan) ? value : null
+            },
+            null);
+    }
+
     [Theory]
     [InlineData(nameof(ProductServiceSearchRequest.Price), "not-a-decimal")]
     [InlineData(nameof(ProductServiceSearchRequest.PriceGreaterThan), "12.34.56")]
@@ -37,28 +60,5 @@ public class SearchProductRecordsQueryValidatorTests
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsValid);
-    }
-
-    private static SearchProductRecordsQuery CreateQuery(string propertyName, string? value)
-    {
-        return new SearchProductRecordsQuery(
-            new ProductServiceSearchRequest
-            {
-                PageSize = 10,
-                CreatedBeforeUtc = null,
-                CreatedAfterUtc = null,
-                UpdatedBeforeUtc = null,
-                UpdatedAfterUtc = null,
-                Sku = null,
-                SkuContains = null,
-                Name = null,
-                NameContains = null,
-                Price = propertyName == nameof(ProductServiceSearchRequest.Price) ? value : null,
-                PriceGreaterThan = propertyName == nameof(ProductServiceSearchRequest.PriceGreaterThan)
-                    ? value
-                    : null,
-                PriceLessThan = propertyName == nameof(ProductServiceSearchRequest.PriceLessThan) ? value : null
-            },
-            null);
     }
 }

@@ -145,7 +145,7 @@ public class MariaDbOrderRepositoryTests
         var repository = CreateRepository(retryWrapperService: CreateRetryReturning(records).Object);
 
         var result = await repository.SearchAsync(
-            CreateSearchRequest(10),
+            CreateSearchRequest(),
             null,
             TestContext.Current.CancellationToken);
 
@@ -177,7 +177,7 @@ public class MariaDbOrderRepositoryTests
             retryWrapperService: CreateRetryReturning(records).Object);
 
         var result = await repository.SearchAsync(
-            CreateSearchRequest(10, status: "Pending"),
+            CreateSearchRequest(status: "Pending"),
             null,
             TestContext.Current.CancellationToken);
 
