@@ -75,7 +75,7 @@ public class ProductController : ControllerBase
     public async Task<IActionResult> Post(
         [FromBody]
         ProductPostRequest request,
-        [FromHeader(Name = "Idempotency-Key")]
+        [FromHeader(Name = EndpointConstants.IdempotencyKeyHeader)]
         string idempotencyKey,
         [FromServices]
         ICreateProductCommandHandler createProductCommandHandler,

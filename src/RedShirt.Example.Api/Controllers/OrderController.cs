@@ -82,7 +82,7 @@ public class OrderController : ControllerBase
     public async Task<IActionResult> Post(
         [FromBody]
         OrderPostRequest request,
-        [FromHeader(Name = "Idempotency-Key")]
+        [FromHeader(Name = EndpointConstants.IdempotencyKeyHeader)]
         string idempotencyKey,
         [FromServices]
         ICreateOrderCommandHandler createOrderCommandHandler,
