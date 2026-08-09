@@ -1,13 +1,13 @@
+using RedShirt.Api.Example.Connectors.Foo.Core.Models;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Models.Requests;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Models.Responses;
-using System.Net;
 using System.Text.Json;
 
 namespace RedShirt.Api.Example.Connectors.Foo.Implementation.Clients;
 
 internal interface IFooApiClient
 {
-    Task<FooApiCreateResponse> CreateFooAsync(FooApiCreateRequest request,
+    Task<CreateFooConnectorResponse> CreateFooAsync(CreateFooConnectorRequest request,
         CancellationToken cancellationToken = default);
 }
 
@@ -17,7 +17,7 @@ internal interface IFooApiClient
 /// </summary>
 internal sealed class FooApiClient(HttpClient httpClient, string baseUrl) : IFooApiClient
 {
-    public async Task<FooApiCreateResponse> CreateFooAsync(FooApiCreateRequest request,
+    public async Task<CreateFooConnectorResponse> CreateFooAsync(CreateFooConnectorRequest request,
         CancellationToken cancellationToken = default)
     {
         using var message = new HttpRequestMessage(HttpMethod.Post, new Uri($"{baseUrl.TrimEnd('/')}/api/foo"));
@@ -43,7 +43,7 @@ internal sealed class FooApiClient(HttpClient httpClient, string baseUrl) : IFoo
             throw new JsonException("Foo API response body deserialized to null.");
         }
 
-        return new FooApiCreateResponse
+        return new CreateFooConnectorResponse
         {
             Id = responseObject.Id,
             Name = responseObject.Name

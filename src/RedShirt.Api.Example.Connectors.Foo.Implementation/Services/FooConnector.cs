@@ -1,7 +1,6 @@
 using RedShirt.Api.Example.Connectors.Foo.Core.Models;
 using RedShirt.Api.Example.Connectors.Foo.Core.Services;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Factories;
-using RedShirt.Api.Example.Connectors.Foo.Implementation.Models.Requests;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Services.Resilience;
 
 namespace RedShirt.Api.Example.Connectors.Foo.Implementation.Services;
@@ -21,16 +20,7 @@ internal sealed class FooConnector(
         return retryWrapperService.RunAsync(async token =>
         {
             var client = fooApiClientFactory.CreateFooApiClient();
-            var apiResponse = await client.CreateFooAsync(new FooApiCreateRequest
-            {
-                Name = request.Name
-            }, token);
-
-            return new CreateFooConnectorResponse
-            {
-                Id = apiResponse.Id,
-                Name = apiResponse.Name
-            };
+            return await client.CreateFooAsync(request, token);
         }, cancellationToken);
     }
 }
