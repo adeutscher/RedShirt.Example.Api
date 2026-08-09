@@ -12,6 +12,17 @@ Repo features:
     * Uses either Redis or in-memory for storing limits.
 * Configuration is based on environment variables.
 
+## Related: Schema
+
+Database DDL for this API lives in a separate repository:
+[RedShirt.Example.Schema](https://github.com/adeutscher/RedShirt.Example.Schema).
+
+That project owns MariaDB/MySQL schema versioning (using the DbUp library to apply incremental SQL scripts). This API
+assumes those tables already exist and does not create or migrate them. The intent of this dedicated schema was to
+enforce separation of concerns and prevent the API from having the power to affect the schema on a fundamental level.
+When developing against the local Compose stack, apply schema updates from the Schema repo before starting the API (see
+`test/local`).
+
 # Initialisation
 
 To change the namespace of the API en-masse for your purposes, use the `init-repo.sh` script:
@@ -86,7 +97,8 @@ describe the Rosalyn logo as "a weird branch-y thing".
 
 # Testing
 
-For local testing, see the `test/local` folder.
+For local testing, see the `test/local` folder. That guide covers bringing up MariaDB and applying schema updates via
+[RedShirt.Example.Schema](https://github.com/adeutscher/RedShirt.Example.Schema).
 
 # Citations
 
