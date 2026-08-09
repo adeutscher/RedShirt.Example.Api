@@ -15,7 +15,7 @@ using RedShirt.Example.Api.Models.Order;
 namespace RedShirt.Example.Api.Controllers;
 
 [ApiController]
-[EnableRateLimiting(RateLimitingConstants.PolicyHeaderExample)]
+[EnableRateLimiting(RateLimitingConstants.PolicyHeaderDefault)]
 [Route("orders")]
 [ProducesJson]
 public class OrderController : ControllerBase

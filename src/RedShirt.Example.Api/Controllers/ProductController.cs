@@ -14,7 +14,7 @@ using RedShirt.Example.Api.Models.Product;
 namespace RedShirt.Example.Api.Controllers;
 
 [ApiController]
-[EnableRateLimiting(RateLimitingConstants.PolicyHeaderExample)]
+[EnableRateLimiting(RateLimitingConstants.PolicyHeaderDefault)]
 [Route("products")]
 [ProducesJson]
 public class ProductController : ControllerBase
