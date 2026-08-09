@@ -22,6 +22,7 @@ public static class ServiceCollectionExtensions
             .Configure<FooApiClientHandler.ConfigurationModel>(
                 configuration.GetSection(ConfigurationSectionName))
             .AddTransient<FooApiClientHandler>()
+            .AddSingleton<IFooApiRequestHandlerRetryPolicySource, FooApiRequestHandlerRetryPolicySource>()
             .AddSingleton<IFooExceptionArbiterService, FooExceptionArbiterService>()
             .AddSingleton<IFooRetryWrapperService, FooRetryWrapperService>()
             .AddSingleton<IFooApiClientFactory, FooApiClientFactory>()
