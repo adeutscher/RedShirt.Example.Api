@@ -197,21 +197,23 @@ public static class RepositoryLevelGenerator
 
             sb.AppendLineWithIndent(2, $"/** Examining Property: {dtoProperty.Name} **/");
 
-            var baseIndentLevel = 2;
-            
+            var baseIndentLevel = 2u;
+
             if (dtoProperty.IsNullable)
             {
-                sb.AppendLineWithIndent(2,
+                sb.AppendLineWithIndent(baseIndentLevel,
                         $"if(parameters.{dtoProperty.Name}IsNull)")
-                    .OpenBracket(2)
-                    .AppendLineWithIndent(3, "builder = builder.Where(")
-                    .AppendLineWithIndent(4,
+                    .OpenBracket(baseIndentLevel)
+                    .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                    .AppendLineWithIndent(baseIndentLevel + 2,
                         WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                             dtoProperty.Name, "IS NULL"))
-                    .AppendLineWithIndent(3, ");")
-                    .CloseBracket(2)
-                    .AppendLineWithIndent(2, "else")
-                    .OpenBracket(2);
+                    .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                    .CloseBracket(baseIndentLevel)
+                    .AppendLineWithIndent(baseIndentLevel, "else")
+                    .OpenBracket(baseIndentLevel)
+                    .AppendLineWithIndent(baseIndentLevel,
+                        "// Comparison of other fields only matters when we haven't already asserted that the field should be null.");
 
                 baseIndentLevel++;
             }
@@ -228,16 +230,16 @@ public static class RepositoryLevelGenerator
                         throw new NullableSearchNotSupportedException();
                     }
 
-                    sb.AppendLineWithIndent(2, $"if(parameters.{dtoProperty.Name}.HasValue)")
-                        .OpenBracket(2)
-                        .AppendLineWithIndent(3, "builder = builder.Where(")
-                        .AppendLineWithIndent(4,
+                    sb.AppendLineWithIndent(baseIndentLevel, $"if(parameters.{dtoProperty.Name}.HasValue)")
+                        .OpenBracket(baseIndentLevel)
+                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                                 dtoProperty.Name, $"= @{paramName}") + ",")
-                        .AppendLineWithIndent(4,
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName + $" = parameters.{dtoProperty.Name}.Value" + "}")
-                        .AppendLineWithIndent(3, ");")
-                        .CloseBracket(2);
+                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                        .CloseBracket(baseIndentLevel);
                     break;
                 case PropertyModel.PropertyCategory.Guid:
                 case PropertyModel.PropertyCategory.Enum:
@@ -246,30 +248,30 @@ public static class RepositoryLevelGenerator
                     if (dtoProperty.IsRangeSearchable)
                     {
                         // Multiple
-                        sb.AppendLineWithIndent(2, $"if(parameters.{dtoProperty.Name}Range.Length > 0)")
-                            .OpenBracket(2)
-                            .AppendLineWithIndent(3, "builder = builder.Where(")
-                            .AppendLineWithIndent(4,
+                        sb.AppendLineWithIndent(baseIndentLevel, $"if(parameters.{dtoProperty.Name}Range.Length > 0)")
+                            .OpenBracket(baseIndentLevel)
+                            .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                            .AppendLineWithIndent(baseIndentLevel + 2,
                                 WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                                     dtoProperty.Name, $"IN @{paramName}") + ",")
-                            .AppendLineWithIndent(4,
+                            .AppendLineWithIndent(baseIndentLevel + 2,
                                 "new {" + paramName + $" = parameters.{dtoProperty.Name}Range" + "}")
-                            .AppendLineWithIndent(3, ");")
-                            .CloseBracket(2);
+                            .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                            .CloseBracket(baseIndentLevel);
                     }
                     else
                     {
                         // Singular
-                        sb.AppendLineWithIndent(2, $"if(parameters.{dtoProperty.Name}.HasValue)")
-                            .OpenBracket(2)
-                            .AppendLineWithIndent(3, "builder = builder.Where(")
-                            .AppendLineWithIndent(4,
+                        sb.AppendLineWithIndent(baseIndentLevel, $"if(parameters.{dtoProperty.Name}.HasValue)")
+                            .OpenBracket(baseIndentLevel)
+                            .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                            .AppendLineWithIndent(baseIndentLevel + 2,
                                 WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                                     dtoProperty.Name, $"= @{paramName}") + ",")
-                            .AppendLineWithIndent(4,
+                            .AppendLineWithIndent(baseIndentLevel + 2,
                                 "new {" + paramName + $" = parameters.{dtoProperty.Name}.Value" + "}")
-                            .AppendLineWithIndent(3, ");")
-                            .CloseBracket(2);
+                            .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                            .CloseBracket(baseIndentLevel);
                     }
 
                     break;
@@ -279,94 +281,95 @@ public static class RepositoryLevelGenerator
 
                     if (dtoProperty.Category == PropertyModel.PropertyCategory.Integer)
                     {
-                        sb.AppendLineWithIndent(2, $"if(parameters.{dtoProperty.Name}.HasValue)")
-                            .OpenBracket(2)
-                            .AppendLineWithIndent(3, "builder = builder.Where(")
-                            .AppendLineWithIndent(4,
+                        sb.AppendLineWithIndent(baseIndentLevel, $"if(parameters.{dtoProperty.Name}.HasValue)")
+                            .OpenBracket(baseIndentLevel)
+                            .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                            .AppendLineWithIndent(baseIndentLevel + 2,
                                 WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                                     dtoProperty.Name, $"= @{paramName}") + ",")
-                            .AppendLineWithIndent(4,
+                            .AppendLineWithIndent(baseIndentLevel + 2,
                                 "new {" + paramName + $" = parameters.{dtoProperty.Name}.Value" + "}")
-                            .AppendLineWithIndent(3, ");")
-                            .CloseBracket(2);
+                            .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                            .CloseBracket(baseIndentLevel);
                     }
 
                     /* Greater Than / Less Than */
 
                     // Greater Than
-                    sb.AppendLineWithIndent(2, $"if(parameters.{dtoProperty.Name}GreaterThan.HasValue)")
-                        .OpenBracket(2)
-                        .AppendLineWithIndent(3, "builder = builder.Where(")
-                        .AppendLineWithIndent(4,
+                    sb.AppendLineWithIndent(baseIndentLevel, $"if(parameters.{dtoProperty.Name}GreaterThan.HasValue)")
+                        .OpenBracket(baseIndentLevel)
+                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                                 dtoProperty.Name, $"> @{paramName}") + ",")
-                        .AppendLineWithIndent(4,
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName + $" = parameters.{dtoProperty.Name}GreaterThan.Value" + "}")
-                        .AppendLineWithIndent(3, ");")
-                        .CloseBracket(2);
+                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                        .CloseBracket(baseIndentLevel);
 
                     // Less Than
-                    sb.AppendLineWithIndent(2, $"if(parameters.{dtoProperty.Name}LessThan.HasValue)")
-                        .OpenBracket(2)
-                        .AppendLineWithIndent(3, "builder = builder.Where(")
-                        .AppendLineWithIndent(4,
+                    sb.AppendLineWithIndent(baseIndentLevel, $"if(parameters.{dtoProperty.Name}LessThan.HasValue)")
+                        .OpenBracket(baseIndentLevel)
+                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                                 dtoProperty.Name, $"< @{paramName}LessThan") + ",")
-                        .AppendLineWithIndent(4,
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName + $"LessThan = parameters.{dtoProperty.Name}LessThan.Value" + "}")
-                        .AppendLineWithIndent(3, ");")
-                        .CloseBracket(2);
+                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                        .CloseBracket(baseIndentLevel);
 
                     break;
                 case PropertyModel.PropertyCategory.String when dtoProperty.IsStoredAsDecimal:
 
                     /* Equals */
 
-                    sb.AppendLineWithIndent(2, $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}))")
-                        .OpenBracket(2)
-                        .AppendLineWithIndent(3, "builder = builder.Where(")
-                        .AppendLineWithIndent(4,
+                    sb.AppendLineWithIndent(baseIndentLevel,
+                            $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}))")
+                        .OpenBracket(baseIndentLevel)
+                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                                 dtoProperty.Name, $"= @{paramName}") + ",")
-                        .AppendLineWithIndent(4,
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName +
                             $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}))" +
                             "}")
-                        .AppendLineWithIndent(3, ");")
-                        .CloseBracket(2);
+                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                        .CloseBracket(baseIndentLevel);
 
                     /* Greater Than / Less Than */
 
                     // Greater Than
 
-                    sb.AppendLineWithIndent(2,
+                    sb.AppendLineWithIndent(baseIndentLevel,
                             $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}GreaterThan))")
-                        .OpenBracket(2)
-                        .AppendLineWithIndent(3, "builder = builder.Where(")
-                        .AppendLineWithIndent(4,
+                        .OpenBracket(baseIndentLevel)
+                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                                 dtoProperty.Name, $"> @{paramName}") + ",")
-                        .AppendLineWithIndent(4,
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName +
                             $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}GreaterThan, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}GreaterThan))" +
                             "}")
-                        .AppendLineWithIndent(3, ");")
-                        .CloseBracket(2);
+                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                        .CloseBracket(baseIndentLevel);
 
                     // Less Than
-                    sb.AppendLineWithIndent(2,
+                    sb.AppendLineWithIndent(baseIndentLevel,
                             $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}LessThan))")
-                        .OpenBracket(2)
-                        .AppendLineWithIndent(3, "builder = builder.Where(")
-                        .AppendLineWithIndent(4,
+                        .OpenBracket(baseIndentLevel)
+                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                                 dtoProperty.Name, $"< @{paramName}") + ",")
-                        .AppendLineWithIndent(4,
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName +
                             $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}LessThan, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}LessThan))" +
                             "}")
-                        .AppendLineWithIndent(3, ");")
-                        .CloseBracket(2);
+                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                        .CloseBracket(baseIndentLevel);
 
                     break;
 
@@ -382,60 +385,64 @@ public static class RepositoryLevelGenerator
                     var restoreUtc = hadUtc ? "Utc" : string.Empty;
 
                     // Before
-                    sb.AppendLineWithIndent(2, $"if(parameters.{malleableName}Before{restoreUtc}.HasValue)")
-                        .OpenBracket(2)
-                        .AppendLineWithIndent(3, "builder = builder.Where(")
-                        .AppendLineWithIndent(4,
+                    sb.AppendLineWithIndent(baseIndentLevel,
+                            $"if(parameters.{malleableName}Before{restoreUtc}.HasValue)")
+                        .OpenBracket(baseIndentLevel)
+                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                                 dtoProperty.Name, $"< @{malleableName.ToLower()}Before") + ",")
-                        .AppendLineWithIndent(4,
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + malleableName.ToLower() +
                             $"Before = parameters.{malleableName}Before{restoreUtc}.Value" +
                             "}")
-                        .AppendLineWithIndent(3, ");")
-                        .CloseBracket(2);
+                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                        .CloseBracket(baseIndentLevel);
 
                     // After
-                    sb.AppendLineWithIndent(2, $"if(parameters.{malleableName}After{restoreUtc}.HasValue)")
-                        .OpenBracket(2)
-                        .AppendLineWithIndent(3, "builder = builder.Where(")
-                        .AppendLineWithIndent(4,
+                    sb.AppendLineWithIndent(baseIndentLevel,
+                            $"if(parameters.{malleableName}After{restoreUtc}.HasValue)")
+                        .OpenBracket(baseIndentLevel)
+                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                                 dtoProperty.Name, $"> @{malleableName.ToLower()}After") + ",")
-                        .AppendLineWithIndent(4,
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + malleableName.ToLower() +
                             $"After = parameters.{malleableName}After{restoreUtc}.Value" +
                             "}")
-                        .AppendLineWithIndent(3, ");")
-                        .CloseBracket(2);
+                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                        .CloseBracket(baseIndentLevel);
 
                     break;
                 // Regular string
                 case PropertyModel.PropertyCategory.String:
 
                     /* Equals */
-                    sb.AppendLineWithIndent(2, $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}))")
-                        .OpenBracket(2)
-                        .AppendLineWithIndent(3, "builder = builder.Where(")
-                        .AppendLineWithIndent(4,
+                    sb.AppendLineWithIndent(baseIndentLevel,
+                            $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}))")
+                        .OpenBracket(baseIndentLevel)
+                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                                 dtoProperty.Name, $"= @{paramName}") + ",")
-                        .AppendLineWithIndent(4, "new {" + paramName + $" = parameters.{dtoProperty.Name}" + "}")
-                        .AppendLineWithIndent(3, ");")
-                        .CloseBracket(2);
+                        .AppendLineWithIndent(baseIndentLevel + 2,
+                            "new {" + paramName + $" = parameters.{dtoProperty.Name}" + "}")
+                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                        .CloseBracket(baseIndentLevel);
 
                     /* Contains */
-                    sb.AppendLineWithIndent(2,
+                    sb.AppendLineWithIndent(baseIndentLevel,
                             $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}Contains))")
-                        .OpenBracket(2)
-                        .AppendLineWithIndent(3, "builder = builder.Where(")
-                        .AppendLineWithIndent(4,
+                        .OpenBracket(baseIndentLevel)
+                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
                                 dtoProperty.Name, $"LIKE @{paramName}") + ",")
-                        .AppendLineWithIndent(4,
+                        .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName + $" = parameters.{dtoProperty.Name}Contains" + "}")
-                        .AppendLineWithIndent(3, ");")
-                        .CloseBracket(2);
+                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
+                        .CloseBracket(baseIndentLevel);
 
                     break;
                 default:
@@ -445,7 +452,7 @@ public static class RepositoryLevelGenerator
             if (dtoProperty.IsNullable)
             {
                 sb
-                    .CloseBracket(2);
+                    .CloseBracket(baseIndentLevel - 1);
             }
         } // end foreach
 
