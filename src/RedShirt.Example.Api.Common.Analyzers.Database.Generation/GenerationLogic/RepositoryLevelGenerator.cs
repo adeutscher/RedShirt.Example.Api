@@ -19,8 +19,13 @@ public static class RepositoryLevelGenerator
                 + $" {typeof(Guid).FullName}? continuationToken, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
             // Load continuation parameters
-            .AppendLineWithIndent(2,
-                "var continuationParameters = continuationToken.HasValue ? await cacheService.GetAsync<ContinuationParameters>(continuationToken.Value, cancellationToken) : null;")
+            .AppendLineWithIndent(2, "ContinuationParameters? continuationParameters = null;")
+            .AppendLineWithIndent(2, "if (continuationToken is not null)")
+            .OpenBracket(2)
+            .AppendLineWithIndent(3, "var continuationParametersKey = $\"continuation:{continuationToken.Value}\";")
+            .AppendLineWithIndent(3,
+                $"continuationParameters = await {classSummaryModel.BaseNamespace}.Common.Distributed.Extensions.RemoteCacheExtensions.GetObjectAsync<ContinuationParameters>(cacheService, continuationParametersKey, cancellationToken);")
+            .CloseBracket(2)
             .AppendLineWithIndent(2, "if (continuationParameters is not null)")
             .OpenBracket(2)
             .AppendLineWithIndent(3, "// Override parameters with stored parameters for continuation token")
@@ -77,7 +82,8 @@ public static class RepositoryLevelGenerator
                                      + $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(genericDtoStorage.GetTableName())"
                                      + "} /**where**/ /**orderby**/ LIMIT @paramTake\", @params);")
             // Declare and act on SQL connection
-            .AppendLineWithIndent(2, $"using var dbConnection = await sqlConnectionFactory.GetMySqlConnectionAsync(\"{classSummaryModel.ConnectionStringName}\", cancellationToken);")
+            .AppendLineWithIndent(2,
+                $"using var dbConnection = await sqlConnectionFactory.GetMySqlConnectionAsync(\"{classSummaryModel.ConnectionStringName}\", cancellationToken);")
             .AppendLineWithIndent(2,
                 $"var policy = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.PolicyHelper.GetRetryPolicy(logger);")
             .AppendLineWithIndent(2,
@@ -93,14 +99,15 @@ public static class RepositoryLevelGenerator
             .OpenBracket(2)
             .AppendLineWithIndent(3, "// Reason to suspect that there's more to get")
             .AppendLineWithIndent(3, "var lastRecord = records[^1]; // Last element")
-            .AppendLineWithIndent(3, "await cacheService.SetAsync(continuationToken.Value, new ContinuationParameters")
+            .AppendLineWithIndent(3,
+                $"await {classSummaryModel.BaseNamespace}.Common.Distributed.Extensions.RemoteCacheExtensions.SetObjectAsync(cacheService, $\"continuation:{{continuationToken.Value}}\", new ContinuationParameters")
             .OpenBracket(3)
             .AppendLineWithIndent(4, "OrderBys = orderBys,")
             .AppendLineWithIndent(4, "SearchParameters = parameters,")
             .AppendLineWithIndent(4, $"Last{classSummaryModel.Key.Name} = lastRecord.{classSummaryModel.Key.Name},")
             .AppendLineWithIndent(4,
                 $"Last{classSummaryModel.UpdatedAt.Name} = lastRecord.{classSummaryModel.UpdatedAt.Name}")
-            .AppendLineWithIndent(3, "}, cancellationToken);")
+            .AppendLineWithIndent(3, "}, TimeSpan.FromMinutes(5), cancellationToken);")
             .CloseBracket(2)
             // Send response
             .AppendLineWithIndent(2,
@@ -145,21 +152,24 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(
                 $"public {Helper.Taskify("bool")} DeleteAsync({typeof(Guid).FullName} id, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
-            .AppendLineWithIndent(2, $"return genericDtoStorage.DeleteByKeyAsync(\"{classSummaryModel.ConnectionStringName}\", id, cancellationToken);")
+            .AppendLineWithIndent(2,
+                $"return genericDtoStorage.DeleteByKeyAsync(\"{classSummaryModel.ConnectionStringName}\", id, cancellationToken);")
             .CloseBracket()
             .AppendLine()
             // GetById
             .AppendLineWithIndent(
                 $"public {Helper.Taskify(classSummaryModel.FullDtoName + "?")} GetByIdAsync({typeof(Guid).FullName} id, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
-            .AppendLineWithIndent(2, $"return genericDtoStorage.GetByKeyAsync(\"{classSummaryModel.ConnectionStringName}\", id, cancellationToken);")
+            .AppendLineWithIndent(2,
+                $"return genericDtoStorage.GetByKeyAsync(\"{classSummaryModel.ConnectionStringName}\", id, cancellationToken);")
             .CloseBracket()
             .AppendLine()
             // Upsert
             .AppendLineWithIndent(
                 $"public {Helper.Taskify(classSummaryModel.FullDtoName)} UpsertAsync({classSummaryModel.FullDtoName} item, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
-            .AppendLineWithIndent(2, $"return genericDtoStorage.UpsertAsync(\"{classSummaryModel.ConnectionStringName}\", item, cancellationToken);")
+            .AppendLineWithIndent(2,
+                $"return genericDtoStorage.UpsertAsync(\"{classSummaryModel.ConnectionStringName}\", item, cancellationToken);")
             .CloseBracket();
     }
 
@@ -537,7 +547,8 @@ public static class RepositoryLevelGenerator
     {
         var subSb = new StringBuilder();
         subSb.Append(
-            "$\"{" + baseNamespace + ".Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof(" + dtoPath);
+            "$\"{" + baseNamespace + ".Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof(" +
+            dtoPath);
         subSb.Append($".{propertyName}))" + "} " + comparison);
 
         return subSb
@@ -550,9 +561,11 @@ public static class RepositoryLevelGenerator
     {
         var subSb = new StringBuilder();
         subSb.Append(
-            "$\"{" + baseNamespace + ".Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof(" + dtoPath);
+            "$\"{" + baseNamespace + ".Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof(" +
+            dtoPath);
         subSb.Append($".{propertyName}))" + "} IS NOT NULL");
-        subSb.Append(" AND {" + baseNamespace + ".Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof(" +
+        subSb.Append(" AND {" + baseNamespace +
+                     ".Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof(" +
                      dtoPath);
         subSb.Append($".{propertyName}))" + "} " + comparison);
 
@@ -567,7 +580,8 @@ public static class RepositoryLevelGenerator
         sb
             .AppendLine()
             .AppendLine($"internal class {classSummaryModel.RepositoryName}(")
-            .AppendLineWithIndent($"{baseNamespace}.Common.Distributed.Services.Abstractions.IRemoteCacheService cacheService,")
+            .AppendLineWithIndent(
+                $"{baseNamespace}.Common.Distributed.Services.Abstractions.IRemoteCacheService cacheService,")
             .AppendLineWithIndent(
                 $"{baseNamespace}.Common.Database.DapperMySql.Services.IGenericMySqlDtoStorage<{classSummaryModel.FullDtoName}, {classSummaryModel.Key.Type}> genericDtoStorage,")
             .AppendLineWithIndent(
