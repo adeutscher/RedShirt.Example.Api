@@ -3,6 +3,7 @@ using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Extensions;
 using RedShirt.Example.Api.Common.RateLimiting.Extensions;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Extensions;
+using RedShirt.Example.Api.Core.Extensions;
 using RedShirt.Example.Api.DataStores.ExampleItem.Extensions;
 using RedShirt.Example.Api.DataStores.Product.Implementation.Extensions;
 using RedShirt.Example.Api.ExceptionHandlers;
@@ -16,6 +17,7 @@ internal static class ServiceCollectionExtensions
     {
         return serviceCollection
             .AddLogging()
+            .AddSingleton(configuration)
             .AddProblemDetails()
             .AddExceptionHandler<ApiExceptionHandler>()
             // Common
@@ -34,7 +36,10 @@ internal static class ServiceCollectionExtensions
             ////
             .ConsiderAddingRateLimitingPolicies(configuration)
             // App-specific
-            .ConfigureApiImplementations(configuration)
+            ////
+            .ConfigureApiCore(configuration)
+            // Data Stores
+            .AddExampleItem(configuration)
             .AddProducts(configuration);
     }
 }
