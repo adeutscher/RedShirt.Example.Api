@@ -1191,6 +1191,10 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "totalPrice": {
+            "type": "string",
+            "nullable": true
+          },
           "customerId": {
             "type": "string",
             "format": "guid"
@@ -1200,10 +1204,6 @@
           },
           "totalAmount": {
             "type": "string"
-          },
-          "totalPrice": {
-            "type": "string",
-            "nullable": true
           }
         }
       },
@@ -1211,6 +1211,10 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "totalPrice": {
+            "type": "string",
+            "nullable": true
+          },
           "customerId": {
             "type": "string",
             "format": "guid"
@@ -1220,10 +1224,6 @@
           },
           "totalAmount": {
             "type": "string"
-          },
-          "totalPrice": {
-            "type": "string",
-            "nullable": true
           }
         }
       },
