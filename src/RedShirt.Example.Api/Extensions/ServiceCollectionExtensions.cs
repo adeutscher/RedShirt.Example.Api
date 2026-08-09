@@ -5,6 +5,7 @@ using RedShirt.Example.Api.Common.RateLimiting.Extensions;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Extensions;
 using RedShirt.Example.Api.Core.Extensions;
 using RedShirt.Example.Api.DataStores.ExampleItem.Extensions;
+using RedShirt.Example.Api.DataStores.Order.Extensions;
 using RedShirt.Example.Api.DataStores.Product.Implementation.Extensions;
 using RedShirt.Example.Api.ExceptionHandlers;
 
@@ -40,6 +41,7 @@ internal static class ServiceCollectionExtensions
             .ConfigureApiCore(configuration)
             // Data Stores
             .AddExampleItem(configuration)
+            .AddOrders()
             .AddProducts(configuration);
     }
 }

@@ -30,7 +30,7 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsS
                 title = "Not Modified";
                 return true;
             default:
-                statusCode = default;
+                statusCode = 0;
                 title = string.Empty;
                 return false;
         }
