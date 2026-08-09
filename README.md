@@ -24,7 +24,7 @@ That project owns MariaDB/MySQL schema versioning (using the DbUp library to app
 assumes those tables already exist and does not create or migrate them. The intent of this dedicated schema was to
 enforce separation of concerns and prevent the API from having the power to affect the schema on a fundamental level.
 When developing against the local Compose stack, apply schema updates from the Schema repo before starting the API (see
-`test/local`).
+`test/local/`).
 
 # Initialisation
 
