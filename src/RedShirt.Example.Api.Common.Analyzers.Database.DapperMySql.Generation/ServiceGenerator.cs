@@ -2,9 +2,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes;
-using RedShirt.Example.Api.Common.Analyzers.Database.Generation.GenerationLogic;
+using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.GenerationLogic;
 
-namespace RedShirt.Example.Api.Common.Analyzers.Database.Generation;
+namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation;
 
 [Generator]
 public class ServiceGenerator : IIncrementalGenerator

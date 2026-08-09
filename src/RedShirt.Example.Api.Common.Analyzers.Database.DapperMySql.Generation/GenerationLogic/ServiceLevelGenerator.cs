@@ -1,6 +1,6 @@
-using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Extensions;
-using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Models;
-using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Utility;
+using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Extensions;
+using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Models;
+using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Utility;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RedShirt.Example.Api.Common.Analyzers.Database.Generation.GenerationLogic;
+namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.GenerationLogic;
 
 public static class ServiceLevelGenerator
 {

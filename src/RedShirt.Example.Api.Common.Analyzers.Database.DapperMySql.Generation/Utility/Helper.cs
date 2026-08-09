@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace RedShirt.Example.Api.Common.Analyzers.Database.Generation.Utility;
+namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Utility;
 
 public static class Helper
 {

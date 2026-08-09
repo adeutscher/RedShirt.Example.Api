@@ -1,14 +1,14 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes;
-using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Exceptions;
-using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Models;
+using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Exceptions;
+using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Models;
 using RedShirt.Example.Api.DataStores.Constants;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace RedShirt.Example.Api.Common.Analyzers.Database.Generation.GenerationLogic;
+namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.GenerationLogic;
 
 public static class CentralContentGenerator
 {

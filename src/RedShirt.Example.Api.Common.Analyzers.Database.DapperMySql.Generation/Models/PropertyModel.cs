@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace RedShirt.Example.Api.Common.Analyzers.Database.Generation.Models;
+namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Models;
 
 public class PropertyModel
 {

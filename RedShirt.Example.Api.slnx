@@ -28,7 +28,7 @@
         <Project
                 Path="src\RedShirt.Example.Api.Common.Analyzers.Database.Abstractions\RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.csproj"/>
         <Project
-                Path="src\RedShirt.Example.Api.Common.Analyzers.Database.Generation\RedShirt.Example.Api.Common.Analyzers.Database.Generation.csproj"/>
+                Path="src\RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation\RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.csproj"/>
     </Folder>
     <Folder Name="/src/data-stores/">
         <Project Path="src\RedShirt.Example.Api.DataStores.Constants\RedShirt.Example.Api.DataStores.Constants.csproj"/>

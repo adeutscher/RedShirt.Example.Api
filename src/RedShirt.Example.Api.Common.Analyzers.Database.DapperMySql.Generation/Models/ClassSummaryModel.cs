@@ -1,7 +1,7 @@
-using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Constants;
+using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Constants;
 using System.Collections.Generic;
 
-namespace RedShirt.Example.Api.Common.Analyzers.Database.Generation.Models;
+namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Models;
 
 public class ClassSummaryModel
 {

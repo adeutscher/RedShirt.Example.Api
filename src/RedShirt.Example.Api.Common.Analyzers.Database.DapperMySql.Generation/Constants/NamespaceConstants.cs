@@ -1,4 +1,4 @@
-namespace RedShirt.Example.Api.Common.Analyzers.Database.Generation.Constants;
+namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Constants;
 
 public static class NamespaceConstants
 {

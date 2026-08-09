@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace RedShirt.Example.Api.Common.Analyzers.Database.Generation.Extensions;
+namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Extensions;
 
 public static class StringBuilderExtensions
 {

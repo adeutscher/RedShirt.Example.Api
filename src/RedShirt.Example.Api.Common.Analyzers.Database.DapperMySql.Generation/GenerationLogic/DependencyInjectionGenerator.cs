@@ -1,8 +1,8 @@
-using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Extensions;
-using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Models;
+using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Extensions;
+using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Models;
 using System.Text;
 
-namespace RedShirt.Example.Api.Common.Analyzers.Database.Generation.GenerationLogic;
+namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.GenerationLogic;
 
 public static class DependencyInjectionGenerator
 {
