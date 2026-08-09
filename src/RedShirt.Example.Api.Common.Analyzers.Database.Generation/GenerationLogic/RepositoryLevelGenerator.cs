@@ -446,7 +446,7 @@ public static class RepositoryLevelGenerator
                             .AppendLineWithIndent(3, "builder = builder.Where(")
                             .AppendLineWithIndent(4,
                                 WrapCheckNullDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
-                                    dtoProperty.Name, $"> @{paramName}GreaterThan") + ",")
+                                    dtoProperty.Name, $"> @{paramName}") + ",")
                             .AppendLineWithIndent(4,
                                 "new {" + paramName +
                                 $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}GreaterThan, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}GreaterThan))" +
@@ -464,7 +464,7 @@ public static class RepositoryLevelGenerator
                             .AppendLineWithIndent(3, "builder = builder.Where(")
                             .AppendLineWithIndent(4,
                                 WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
-                                    dtoProperty.Name, $"< @{paramName}LessThan") + ",")
+                                    dtoProperty.Name, $"< @{paramName}") + ",")
                             .AppendLineWithIndent(4,
                                 "new {" + paramName +
                                 $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}LessThan, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}LessThan))" +
@@ -480,7 +480,7 @@ public static class RepositoryLevelGenerator
                             .AppendLineWithIndent(3, "builder = builder.Where(")
                             .AppendLineWithIndent(4,
                                 WrapCheckNullDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
-                                    dtoProperty.Name, $"< @{paramName}LessThan") + ",")
+                                    dtoProperty.Name, $"< @{paramName}") + ",")
                             .AppendLineWithIndent(4,
                                 "new {" + paramName +
                                 $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}LessThan, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}LessThan))" +
