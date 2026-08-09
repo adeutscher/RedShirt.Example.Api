@@ -1,5 +1,6 @@
 using RedShirt.Api.Example.Connectors.Foo.Core.Exceptions;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Models;
+using RedShirt.Example.Api.Common.SecretManagers.Core.Exceptions;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
@@ -94,6 +95,9 @@ internal sealed class FooExceptionArbiterService : IFooExceptionArbiterService
         return exception switch
         {
             FooConnectorException w =>
+                Handled(true, w is {IsHandled: false, CouldBeTransient: true}, w.CouldBeExternallySolvable),
+            // API key comes from the secret manager; honour prior classification.
+            ApiSecretManagerException w =>
                 Handled(true, w is {IsHandled: false, CouldBeTransient: true}, w.CouldBeExternallySolvable),
             HttpRequestException http => ClassifyHttpRequestException(http),
             SocketException

@@ -19,7 +19,7 @@ internal sealed class FooConnector(
 
         return retryWrapperService.RunAsync(async token =>
         {
-            var client = fooApiClientFactory.CreateFooApiClient();
+            var client = await fooApiClientFactory.CreateFooApiClientAsync(token);
             return await client.CreateFooAsync(request, token);
         }, cancellationToken);
     }
