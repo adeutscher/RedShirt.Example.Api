@@ -77,25 +77,25 @@ internal sealed class MariaDbProductRepository(
                 new {name = parameters.NameContains});
         }
 
-        if (parameters.Price.HasValue)
+        if (!string.IsNullOrWhiteSpace(parameters.Price))
         {
             builder = builder.Where(
                 $"{DatabaseUtility.QuoteResource(nameof(ProductDto.Price))} = @price",
-                new {price = parameters.Price.Value});
+                new {price = parameters.Price});
         }
 
-        if (parameters.PriceGreaterThan.HasValue)
+        if (!string.IsNullOrWhiteSpace(parameters.PriceGreaterThan))
         {
             builder = builder.Where(
                 $"{DatabaseUtility.QuoteResource(nameof(ProductDto.Price))} > @price",
-                new {price = parameters.PriceGreaterThan.Value});
+                new {price = parameters.PriceGreaterThan});
         }
 
-        if (parameters.PriceLessThan.HasValue)
+        if (!string.IsNullOrWhiteSpace(parameters.PriceLessThan))
         {
             builder = builder.Where(
                 $"{DatabaseUtility.QuoteResource(nameof(ProductDto.Price))} < @priceLessThan",
-                new {priceLessThan = parameters.PriceLessThan.Value});
+                new {priceLessThan = parameters.PriceLessThan});
         }
 
         return builder;
@@ -172,7 +172,7 @@ internal sealed class MariaDbProductRepository(
         using var dbConnection =
             await sqlConnectionFactory.GetMySqlConnectionAsync(ConnectionStringName, cancellationToken);
         var response = await retryWrapperService.RunAsync(
-            _ => dbConnection.QueryAsync<ProductDto>(sql: template.RawSql, param: template.Parameters),
+            _ => dbConnection.QueryAsync<ProductDto>(template.RawSql, template.Parameters),
             cancellationToken);
         var records = response.ToList();
 
