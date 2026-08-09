@@ -13,7 +13,6 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddProducts(this IServiceCollection services, IConfigurationRoot configuration)
     {
         return services
-            .AddDapperMySql(configuration)
             .AddSingleton<IProductService, ProductService>()
             .AddSingleton<IProductRepository, MariaDbProductRepository>()
             .AddGenericMysqlDtoHandler<ProductDto, Guid>();
