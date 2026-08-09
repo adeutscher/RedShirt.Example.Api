@@ -69,7 +69,7 @@ public class ExampleItemController : ControllerBase
     public async Task<IActionResult> Put(
         [FromBody]
         ExampleItemPutRequest request,
-        [FromHeader(Name = "Idempotency-Key")]
+        [FromHeader(Name = EndpointConstants.IdempotencyKeyHeader)]
         string idempotencyKey,
         [FromServices]
         ICreateExampleItemCommandHandler createExampleItemCommandHandler,
