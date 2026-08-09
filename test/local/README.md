@@ -3,7 +3,7 @@
 1. Bring up `ministack` and `redis` containers:
 
     ```bash
-    docker compose up -d ministack
+    docker compose up -d ministack redis
     ```
 
 2. Run `make-local-aws-resources.sh` script to create ministack resources:
