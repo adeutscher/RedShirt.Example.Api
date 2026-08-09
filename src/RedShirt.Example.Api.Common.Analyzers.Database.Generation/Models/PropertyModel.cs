@@ -21,6 +21,7 @@ public class PropertyModel
     public string EffectiveName => string.IsNullOrEmpty(ColumnName) ? Name : ColumnName;
     public string Type { get; set; }
     public bool IsNullable { get; set; }
+    public bool IsStoredAsDecimal { get; set; }
     public bool IsInternallyManaged { get; set; }
     public bool IsRangeSearchable { get; set; }
     public bool CannotFilterBy { get; set; }

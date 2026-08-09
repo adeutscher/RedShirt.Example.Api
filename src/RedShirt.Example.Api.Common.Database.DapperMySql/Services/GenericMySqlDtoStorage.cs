@@ -3,6 +3,7 @@ using RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Exceptions;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Factories;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Services.Resilience;
+using RedShirt.Example.Api.Common.Database.DapperMySql.Utility;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -28,36 +29,28 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
     : IGenericMySqlDtoStorage<TDto, TKey> where TDto : class
 
 {
-    private IEnumerable<string> GetFieldNames(bool excludeKey = false)
+    private static IEnumerable<PropertyInfo> GetMappedProperties(bool excludeKey = false)
     {
-        var keyField = excludeKey ? string.Empty : GetKeyFieldName(); // Fetch once, if needed at all
+        var keyField = excludeKey ? string.Empty : GetKeyFieldName();
 
         return typeof(TDto).GetProperties()
-            .Where(p => !excludeKey || !keyField.Equals(p.Name))
-            .Select(p =>
-            {
-                var columnAttribute = p.GetCustomAttribute<ColumnAttribute>();
-                if (columnAttribute is not null && !string.IsNullOrWhiteSpace(columnAttribute.Name))
-                {
-                    // Return name as specified in Column attribute
-                    return columnAttribute.Name;
-                }
-
-                return p.Name;
-            });
+            .Where(p => !excludeKey || !keyField.Equals(p.Name));
     }
 
     private async Task<TDto> InsertAsync(IDbConnection dbConnection, TDto itemTemplate,
         CancellationToken cancellationToken = default)
     {
-        var fields = GetFieldNames().ToList();
+        var properties = GetMappedProperties().ToList();
 
-        var fieldFields = string.Join(",", fields.Select(f => $"`{f}`"));
-        var valueFields = string.Join(",", fields.Select(f => $"@{f}"));
+        var fieldFields = string.Join(",",
+            properties.Select(p => DatabaseUtility.QuoteResource(StoredAsDecimalHelper.GetColumnName(p))));
+        var valueFields = string.Join(",", properties.Select(p => $"@{p.Name}"));
 
         var query = $"INSERT INTO `{GetTableName()}` ({fieldFields}) VALUES ({valueFields});";
 
-        await retryWrapperService.RunAsync(_ => dbConnection.ExecuteAsync(query, itemTemplate), cancellationToken);
+        await retryWrapperService.RunAsync(
+            _ => dbConnection.ExecuteAsync(query, StoredAsDecimalHelper.ToWriteParameters(itemTemplate)),
+            cancellationToken);
 
         return itemTemplate;
     }
@@ -86,13 +79,11 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
             }
 
             changed = true;
-            builder.Set($"{property.Name}=@{property.Name}", newDto);
+            var columnName = StoredAsDecimalHelper.GetColumnName(property);
+            builder.Set($"{DatabaseUtility.QuoteResource(columnName)}=@{property.Name}");
         }
 
-        builder.Where($"{keyName}=@key", new
-        {
-            key = GetKeyFieldValue(oldDto)
-        });
+        builder.Where($"{DatabaseUtility.QuoteResource(keyName)}=@key");
 
         if (!changed)
         {
@@ -100,7 +91,10 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
         }
 
         var template = builder.AddTemplate($"UPDATE `{GetTableName()}` /**set**/ /**where**/");
-        await retryWrapperService.RunAsync(_ => dbConnection.ExecuteAsync(template.RawSql, template.Parameters),
+        var parameters = StoredAsDecimalHelper.ToWriteParameters(newDto);
+        parameters.Add("key", GetKeyFieldValue(oldDto));
+
+        await retryWrapperService.RunAsync(_ => dbConnection.ExecuteAsync(template.RawSql, parameters),
             cancellationToken);
 
         return (await GetByKeyAsync(dbConnection, GetKeyFieldValue(newDto), cancellationToken))!;
@@ -114,7 +108,9 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
     private async Task<TDto?> GetByKeyAsync(IDbConnection dbConnection, TKey entryId,
         CancellationToken cancellationToken = default)
     {
-        var query = $"SELECT * FROM `{GetTableName()}` WHERE `{GetKeyFieldName()}` = @entryId";
+        var selectList = StoredAsDecimalHelper.BuildSelectClause(typeof(TDto));
+        var query =
+            $"SELECT {selectList} FROM `{GetTableName()}` WHERE `{GetKeyFieldName()}` = @entryId";
         var response = await retryWrapperService.RunAsync(_ => dbConnection.QueryFirstOrDefaultAsync<TDto>(query, new
         {
             entryId

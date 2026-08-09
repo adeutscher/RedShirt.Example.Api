@@ -151,6 +151,8 @@ public static class CentralContentGenerator
             ColumnName = string.Empty,
             IsNullable = prop.Type.ToDisplayString().Contains("?"),
             Type = prop.Type.ToDisplayString().Replace("?", string.Empty),
+            IsStoredAsDecimal = prop.GetAttributes()
+                .FirstOrDefault(attr => attr.AttributeClass!.Name == nameof(StoredAsDecimalAttribute)) is not null,
             FilterPriorityWeight = filterWeight,
             CannotFilterBy = prop.GetAttributes()
                 .FirstOrDefault(attr => attr.AttributeClass!.Name == nameof(CannotFilterByAttribute)) is not null,

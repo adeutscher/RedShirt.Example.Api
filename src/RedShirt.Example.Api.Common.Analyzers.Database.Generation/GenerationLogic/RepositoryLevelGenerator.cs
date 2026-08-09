@@ -383,6 +383,114 @@ public static class RepositoryLevelGenerator
                     }
 
                     break;
+                case PropertyModel.PropertyCategory.String when dtoProperty.IsStoredAsDecimal:
+
+                    /* Equals */
+
+                    if (!dtoProperty.IsNullable)
+                    {
+                        sb.AppendLineWithIndent(2, $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}))")
+                            .OpenBracket(2)
+                            .AppendLineWithIndent(3, "builder = builder.Where(")
+                            .AppendLineWithIndent(4,
+                                WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                                    dtoProperty.Name, $"= @{paramName}") + ",")
+                            .AppendLineWithIndent(4,
+                                "new {" + paramName +
+                                $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}))" +
+                                "}")
+                            .AppendLineWithIndent(3, ");")
+                            .CloseBracket(2);
+                    }
+                    else
+                    {
+                        sb.AppendLineWithIndent(2, $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}))")
+                            .OpenBracket(2)
+                            .AppendLineWithIndent(3, "builder = builder.Where(")
+                            .AppendLineWithIndent(4,
+                                WrapCheckNullDatabaseUtilityQuoteString(baseNamespace,
+                                    classSummaryModel.FullDtoName,
+                                    dtoProperty.Name, $"= @{paramName}") + ",")
+                            .AppendLineWithIndent(4,
+                                "new {" + paramName +
+                                $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}))" +
+                                "}")
+                            .AppendLineWithIndent(3, ");")
+                            .CloseBracket(2);
+                    }
+
+                    /* Greater Than / Less Than */
+
+                    // Greater Than
+                    if (!dtoProperty.IsNullable)
+                    {
+                        sb.AppendLineWithIndent(2,
+                                $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}GreaterThan))")
+                            .OpenBracket(2)
+                            .AppendLineWithIndent(3, "builder = builder.Where(")
+                            .AppendLineWithIndent(4,
+                                WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                                    dtoProperty.Name, $"> @{paramName}") + ",")
+                            .AppendLineWithIndent(4,
+                                "new {" + paramName +
+                                $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}GreaterThan, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}GreaterThan))" +
+                                "}")
+                            .AppendLineWithIndent(3, ");")
+                            .CloseBracket(2);
+                    }
+                    else
+                    {
+                        sb.AppendLineWithIndent(2,
+                                $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}GreaterThan))")
+                            .OpenBracket(2)
+                            .AppendLineWithIndent(3, "builder = builder.Where(")
+                            .AppendLineWithIndent(4,
+                                WrapCheckNullDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                                    dtoProperty.Name, $"> @{paramName}GreaterThan") + ",")
+                            .AppendLineWithIndent(4,
+                                "new {" + paramName +
+                                $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}GreaterThan, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}GreaterThan))" +
+                                "}")
+                            .AppendLineWithIndent(3, ");")
+                            .CloseBracket(2);
+                    }
+
+                    // Less Than
+                    if (!dtoProperty.IsNullable)
+                    {
+                        sb.AppendLineWithIndent(2,
+                                $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}LessThan))")
+                            .OpenBracket(2)
+                            .AppendLineWithIndent(3, "builder = builder.Where(")
+                            .AppendLineWithIndent(4,
+                                WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                                    dtoProperty.Name, $"< @{paramName}LessThan") + ",")
+                            .AppendLineWithIndent(4,
+                                "new {" + paramName +
+                                $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}LessThan, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}LessThan))" +
+                                "}")
+                            .AppendLineWithIndent(3, ");")
+                            .CloseBracket(2);
+                    }
+                    else
+                    {
+                        sb.AppendLineWithIndent(2,
+                                $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}LessThan))")
+                            .OpenBracket(2)
+                            .AppendLineWithIndent(3, "builder = builder.Where(")
+                            .AppendLineWithIndent(4,
+                                WrapCheckNullDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                                    dtoProperty.Name, $"< @{paramName}LessThan") + ",")
+                            .AppendLineWithIndent(4,
+                                "new {" + paramName +
+                                $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}LessThan, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}LessThan))" +
+                                "}")
+                            .AppendLineWithIndent(3, ");")
+                            .CloseBracket(2);
+                    }
+
+                    break;
+
                 case PropertyModel.PropertyCategory.DateTime:
 
                     /*
@@ -458,6 +566,7 @@ public static class RepositoryLevelGenerator
                     }
 
                     break;
+                // Regular string
                 case PropertyModel.PropertyCategory.String:
 
                     /* Equals */

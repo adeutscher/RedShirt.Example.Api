@@ -81,21 +81,33 @@ internal sealed class MariaDbProductRepository(
         {
             builder = builder.Where(
                 $"{DatabaseUtility.QuoteResource(nameof(ProductDto.Price))} = @price",
-                new {price = parameters.Price});
+                new
+                {
+                    price = StoredAsDecimalHelper.ParseRequiredDecimal(parameters.Price,
+                        nameof(ProductServiceSearchRequest.Price))
+                });
         }
 
         if (!string.IsNullOrWhiteSpace(parameters.PriceGreaterThan))
         {
             builder = builder.Where(
                 $"{DatabaseUtility.QuoteResource(nameof(ProductDto.Price))} > @price",
-                new {price = parameters.PriceGreaterThan});
+                new
+                {
+                    price = StoredAsDecimalHelper.ParseRequiredDecimal(parameters.PriceGreaterThan,
+                        nameof(ProductServiceSearchRequest.PriceGreaterThan))
+                });
         }
 
         if (!string.IsNullOrWhiteSpace(parameters.PriceLessThan))
         {
             builder = builder.Where(
                 $"{DatabaseUtility.QuoteResource(nameof(ProductDto.Price))} < @priceLessThan",
-                new {priceLessThan = parameters.PriceLessThan});
+                new
+                {
+                    priceLessThan = StoredAsDecimalHelper.ParseRequiredDecimal(parameters.PriceLessThan,
+                        nameof(ProductServiceSearchRequest.PriceLessThan))
+                });
         }
 
         return builder;
@@ -165,8 +177,9 @@ internal sealed class MariaDbProductRepository(
         pageSize = Math.Min(MaxPageSize, pageSize);
 
         var @params = new {paramTake = pageSize};
+        var selectList = StoredAsDecimalHelper.BuildSelectClause(typeof(ProductDto));
         var template = queryBuilder.AddTemplate(
-            $"SELECT * FROM {DatabaseUtility.QuoteResource(genericDtoStorage.GetTableName())} /**where**/ /**orderby**/ LIMIT @paramTake",
+            $"SELECT {selectList} FROM {DatabaseUtility.QuoteResource(genericDtoStorage.GetTableName())} /**where**/ /**orderby**/ LIMIT @paramTake",
             @params);
 
         using var dbConnection =

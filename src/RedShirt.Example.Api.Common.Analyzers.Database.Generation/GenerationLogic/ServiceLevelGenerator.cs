@@ -112,7 +112,8 @@ public static class ServiceLevelGenerator
             .AppendLineWithIndent("if (!await repository.DeleteAsync(id, cancellationToken))", 2)
             .OpenBracket(2)
             .AppendLineWithIndent(
-                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.ResourceNotFoundException();", 3)
+                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.ResourceNotFoundException();",
+                3)
             .CloseBracket(2)
             .CloseBracket();
 
@@ -123,7 +124,8 @@ public static class ServiceLevelGenerator
             .AppendLineWithIndent("if (await repository.GetByIdAsync(id, cancellationToken) is not { } entry)", 2)
             .OpenBracket(2)
             .AppendLineWithIndent(
-                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.ResourceNotFoundException();", 3)
+                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.ResourceNotFoundException();",
+                3)
             .CloseBracket(2)
             .AppendLineWithIndent(2, "return entry;")
             .CloseBracket();
@@ -135,14 +137,16 @@ public static class ServiceLevelGenerator
             .AppendLineWithIndent(2, "if (!request.AreChangesRequested())")
             .OpenBracket(2)
             .AppendLineWithIndent(
-                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.NoChangesToModifyException();", 2)
+                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.NoChangesToModifyException();",
+                2)
             .CloseBracket(2)
             .AppendLineWithIndent(
                 $"if (await repository.GetByIdAsync(request.{classSummaryModel.Key.Name}, cancellationToken) is not " +
                 " { } existing)", 2)
             .OpenBracket(2)
             .AppendLineWithIndent(
-                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.ResourceNotFoundException();", 3)
+                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.ResourceNotFoundException();",
+                3)
             .CloseBracket(2)
             .AppendLineWithIndent(2, $"var candidate = new {classSummaryModel.FullDtoName}")
             .OpenBracket(2)
@@ -174,7 +178,8 @@ public static class ServiceLevelGenerator
         sb.AppendLineWithIndent(2, "if (candidate.IsTheSameAs(existing))")
             .OpenBracket(2)
             .AppendLineWithIndent(
-                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.NoChangesToModifyException();", 2)
+                $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.NoChangesToModifyException();",
+                2)
             .CloseBracket(2);
 
         sb.AppendLineWithIndent(2, "return await repository.UpsertAsync(candidate, cancellationToken);");
@@ -426,7 +431,7 @@ public static class ServiceLevelGenerator
             // Add special filters by type (e.g. text contains, greater-than/less-than)
             switch (property.Category)
             {
-                case PropertyModel.PropertyCategory.String:
+                case PropertyModel.PropertyCategory.String when !property.IsStoredAsDecimal:
                 {
                     var contains = new PropertyModel
                     {
@@ -466,6 +471,7 @@ public static class ServiceLevelGenerator
                 }
                 case PropertyModel.PropertyCategory.FloatingPointNumber:
                 case PropertyModel.PropertyCategory.Integer:
+                case PropertyModel.PropertyCategory.String when property.IsStoredAsDecimal:
                 {
                     var greaterThan = new PropertyModel
                     {
@@ -485,6 +491,7 @@ public static class ServiceLevelGenerator
                 }
             } // end switch
 
+            // ReSharper disable once InvertIf
             if (property.IsNullable)
             {
                 var isNull = new PropertyModel
