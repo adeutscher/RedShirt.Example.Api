@@ -1,4 +1,4 @@
-namespace RedShirt.Example.Api.Implementations.Constants;
+namespace RedShirt.Example.Api.DataStores.Constants;
 
 public class DatabaseConstants
 {

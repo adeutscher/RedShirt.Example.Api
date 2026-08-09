@@ -1,5 +1,5 @@
 using RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes;
-using RedShirt.Example.Api.Implementations.Constants;
+using RedShirt.Example.Api.DataStores.Constants;
 
 namespace RedShirt.Example.Api.DataStores.Product.Core.Models;
 

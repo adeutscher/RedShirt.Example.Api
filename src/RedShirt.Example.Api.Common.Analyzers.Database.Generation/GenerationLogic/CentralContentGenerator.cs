@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.Text;
 using RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes;
 using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Exceptions;
 using RedShirt.Example.Api.Common.Analyzers.Database.Generation.Models;
+using RedShirt.Example.Api.DataStores.Constants;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -22,7 +23,7 @@ public static class CentralContentGenerator
         }
 
         var tableName = dbTableAttribute.ConstructorArguments[0].Value!.ToString();
-        var connectionStringName = dbTableAttribute.ConstructorArguments[0].Value?.ToString() ?? "boo";
+        var connectionStringName = dbTableAttribute.ConstructorArguments[1].Value?.ToString() ?? DatabaseConstants.PrimaryDatabaseConnectionStringName;
         var keySearchable = dbTableAttribute.ConstructorArguments[2].Value!.ToString().ToLower() == "true";
 
         var maxPageSize = (uint) 100; // Default
