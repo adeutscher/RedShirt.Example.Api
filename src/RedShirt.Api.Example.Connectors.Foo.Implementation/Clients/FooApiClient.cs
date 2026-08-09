@@ -1,6 +1,6 @@
-using RedShirt.Api.Example.Connectors.Foo.Implementation.Exceptions;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Models.Requests;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Models.Responses;
+using System.Net;
 using System.Text.Json;
 
 namespace RedShirt.Api.Example.Connectors.Foo.Implementation.Clients;
@@ -12,60 +12,41 @@ internal interface IFooApiClient
 }
 
 /// <summary>
-///     HTTP transport for the Foo dependency. Failures are surfaced as <see cref="ApiFooConnectorException" />.
+///     HTTP transport for the Foo dependency. Failures surface as raw framework exceptions
+///     (<see cref="HttpRequestException" />, <see cref="JsonException" />, timeouts, etc.).
 /// </summary>
 internal sealed class FooApiClient(HttpClient httpClient, string baseUrl) : IFooApiClient
 {
     public async Task<FooApiCreateResponse> CreateFooAsync(FooApiCreateRequest request,
         CancellationToken cancellationToken = default)
     {
-        try
+        using var message = new HttpRequestMessage(HttpMethod.Post, new Uri($"{baseUrl.TrimEnd('/')}/api/foo"));
+        message.Content = new StringContent(JsonSerializer.Serialize(new InternalFooCreateRequest
         {
-            using var message = new HttpRequestMessage(HttpMethod.Post, new Uri($"{baseUrl.TrimEnd('/')}/api/foo"));
-            message.Content = new StringContent(JsonSerializer.Serialize(new InternalFooCreateRequest
-            {
-                Name = request.Name
-            }), System.Text.Encoding.UTF8, "application/json");
+            Name = request.Name
+        }), System.Text.Encoding.UTF8, "application/json");
 
-            using var response = await httpClient.SendAsync(message, cancellationToken);
+        using var response = await httpClient.SendAsync(message, cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new ApiFooConnectorException((int) response.StatusCode);
-            }
-
-            var stringResponse = await response.Content.ReadAsStringAsync(cancellationToken);
-
-            try
-            {
-                var responseObject = JsonSerializer.Deserialize<InternalFooCreateResponse>(stringResponse);
-                if (responseObject is null)
-                {
-                    throw new ApiFooConnectorException((int) response.StatusCode);
-                }
-
-                return new FooApiCreateResponse
-                {
-                    Id = responseObject.Id,
-                    Name = responseObject.Name
-                };
-            }
-            catch (JsonException ex)
-            {
-                throw new ApiFooConnectorException((int) response.StatusCode, ex);
-            }
-        }
-        catch (ApiFooConnectorException)
+        if (!response.IsSuccessStatusCode)
         {
-            throw;
+            throw new HttpRequestException(
+                $"Response status code does not indicate success: {(int) response.StatusCode} ({response.StatusCode}).",
+                null,
+                response.StatusCode);
         }
-        catch (HttpRequestException ex)
+
+        var stringResponse = await response.Content.ReadAsStringAsync(cancellationToken);
+        var responseObject = JsonSerializer.Deserialize<InternalFooCreateResponse>(stringResponse);
+        if (responseObject is null)
         {
-            throw new ApiFooConnectorException(ex);
+            throw new JsonException("Foo API response body deserialized to null.");
         }
-        catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+
+        return new FooApiCreateResponse
         {
-            throw new ApiFooConnectorException(ex);
-        }
+            Id = responseObject.Id,
+            Name = responseObject.Name
+        };
     }
 }

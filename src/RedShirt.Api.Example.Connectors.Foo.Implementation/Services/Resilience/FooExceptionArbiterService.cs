@@ -1,7 +1,8 @@
 using RedShirt.Api.Example.Connectors.Foo.Core.Exceptions;
-using RedShirt.Api.Example.Connectors.Foo.Implementation.Exceptions;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Models;
+using System.Net;
 using System.Net.Sockets;
+using System.Text.Json;
 
 namespace RedShirt.Api.Example.Connectors.Foo.Implementation.Services.Resilience;
 
@@ -55,22 +56,24 @@ internal sealed class FooExceptionArbiterService : IFooExceptionArbiterService
         };
     }
 
-    private static FooExceptionArbiterReport ClassifyApiException(ApiFooConnectorException exception)
+    private static FooExceptionArbiterReport ClassifyHttpRequestException(HttpRequestException exception)
     {
-        // No HTTP response (DNS, connection refused, timeout wrapped earlier) — treat as transient infra.
+        // No HTTP response (DNS, connection refused, TLS errors, etc.) — treat as transient infra.
         if (exception.StatusCode is null)
         {
             return Fresh(true, true, true);
         }
 
-        var status = exception.StatusCode.Value;
+        var status = (int) exception.StatusCode.Value;
         if (TransientHttpStatuses.Contains(status))
         {
             return Fresh(true, true, true);
         }
 
         // Auth / not-found style failures can be fixed externally; do not retry locally.
-        if (status is 401 or 403 or 404)
+        if (exception.StatusCode is HttpStatusCode.Unauthorized
+            or HttpStatusCode.Forbidden
+            or HttpStatusCode.NotFound)
         {
             return Fresh(true, false, true);
         }
@@ -92,10 +95,11 @@ internal sealed class FooExceptionArbiterService : IFooExceptionArbiterService
         {
             FooConnectorException w =>
                 Handled(true, w is {IsHandled: false, CouldBeTransient: true}, w.CouldBeExternallySolvable),
-            ApiFooConnectorException api => ClassifyApiException(api),
-            HttpRequestException
-                or SocketException
+            HttpRequestException http => ClassifyHttpRequestException(http),
+            SocketException
                 or TimeoutException => Fresh(true, true, true),
+            // Malformed / unexpected payload — expected from a bad response, not retryable.
+            JsonException => Fresh(true, false, false),
             // HttpClient timeouts commonly surface as TaskCanceledException.
             // Must be matched before OperationCanceledException (TCE derives from OCE).
             TaskCanceledException => Fresh(true, true, true),
