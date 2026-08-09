@@ -1,9 +1,8 @@
 using Dapper;
-using Microsoft.Extensions.Logging;
 using RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Exceptions;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Factories;
-using RedShirt.Example.Api.Common.Database.DapperMySql.Utility;
+using RedShirt.Example.Api.Common.Database.DapperMySql.Services.Resilience;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -25,7 +24,7 @@ public interface IGenericMySqlDtoStorage<TDto, in TKey> where TDto : class
 
 public class GenericMySqlDtoStorage<TDto, TKey>(
     ISqlConnectionFactory sqlConnectionFactory,
-    ILogger<GenericMySqlDtoStorage<TDto, TKey>> logger)
+    IMySqlRetryWrapperService retryWrapperService)
     : IGenericMySqlDtoStorage<TDto, TKey> where TDto : class
 
 {
@@ -51,8 +50,6 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
     private async Task<TDto> InsertAsync(IDbConnection dbConnection, TDto itemTemplate,
         CancellationToken cancellationToken = default)
     {
-        var policy = PolicyHelper.GetRetryPolicy(logger);
-
         var fields = GetFieldNames().ToList();
 
         var fieldFields = string.Join(",", fields.Select(f => $"`{f}`"));
@@ -60,7 +57,7 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
 
         var query = $"INSERT INTO `{GetTableName()}` ({fieldFields}) VALUES ({valueFields});";
 
-        await policy.ExecuteAsync(() => dbConnection.ExecuteAsync(query, itemTemplate));
+        await retryWrapperService.RunAsync(_ => dbConnection.ExecuteAsync(query, itemTemplate), cancellationToken);
 
         return itemTemplate;
     }
@@ -102,9 +99,9 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
             throw new NoChangesToModifyException();
         }
 
-        var policy = PolicyHelper.GetRetryPolicy(logger);
         var template = builder.AddTemplate($"UPDATE `{GetTableName()}` /**set**/ /**where**/");
-        await policy.ExecuteAsync(() => dbConnection.ExecuteAsync(template.RawSql, template.Parameters));
+        await retryWrapperService.RunAsync(_ => dbConnection.ExecuteAsync(template.RawSql, template.Parameters),
+            cancellationToken);
 
         return (await GetByKeyAsync(dbConnection, GetKeyFieldValue(newDto), cancellationToken))!;
     }
@@ -117,13 +114,11 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
     private async Task<TDto?> GetByKeyAsync(IDbConnection dbConnection, TKey entryId,
         CancellationToken cancellationToken = default)
     {
-        var policy = PolicyHelper.GetRetryPolicy(logger);
-
         var query = $"SELECT * FROM `{GetTableName()}` WHERE `{GetKeyFieldName()}` = @entryId";
-        var response = await policy.ExecuteAsync(() => dbConnection.QueryFirstOrDefaultAsync<TDto>(query, new
+        var response = await retryWrapperService.RunAsync(_ => dbConnection.QueryFirstOrDefaultAsync<TDto>(query, new
         {
             entryId
-        }));
+        }), cancellationToken);
 
         return response;
     }
@@ -147,14 +142,15 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
     public async Task<bool> DeleteByKeyAsync(string connectionStringName, TKey key,
         CancellationToken cancellationToken = default)
     {
-        var policy = PolicyHelper.GetRetryPolicy(logger);
         using var dbConnection =
             await sqlConnectionFactory.GetMySqlConnectionAsync(connectionStringName, cancellationToken);
 
         var builder = new SqlBuilder();
         builder.Where($"{GetKeyFieldName()}=@key", new {key});
         var template = builder.AddTemplate($"DELETE FROM `{GetTableName()}` /**where**/");
-        var result = await policy.ExecuteAsync(() => dbConnection.ExecuteAsync(template.RawSql, template.Parameters));
+        var result =
+            await retryWrapperService.RunAsync(_ => dbConnection.ExecuteAsync(template.RawSql, template.Parameters),
+                cancellationToken);
         return result == 1;
     }
 

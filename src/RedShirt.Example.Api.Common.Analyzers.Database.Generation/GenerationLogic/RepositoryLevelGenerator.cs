@@ -85,11 +85,9 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(2,
                 $"using var dbConnection = await sqlConnectionFactory.GetMySqlConnectionAsync(\"{classSummaryModel.ConnectionStringName}\", cancellationToken);")
             .AppendLineWithIndent(2,
-                $"var policy = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.PolicyHelper.GetRetryPolicy(logger);")
-            .AppendLineWithIndent(2,
                 "// Note: Generated code needs to use extension method directly as we aren't importing any using directives")
             .AppendLineWithIndent(2,
-                $"var response = await policy.ExecuteAsync(() => Dapper.SqlMapper.QueryAsync<{classSummaryModel.FullDtoName}>(dbConnection, sql: template.RawSql, param: template.Parameters));")
+                $"var response = await retryWrapperService.RunAsync(_ => Dapper.SqlMapper.QueryAsync<{classSummaryModel.FullDtoName}>(dbConnection, sql: template.RawSql, param: template.Parameters), cancellationToken);")
             .AppendLineWithIndent(2, "var records = response.ToList();")
             .AppendLine()
             // Store continuation parameters
@@ -580,14 +578,16 @@ public static class RepositoryLevelGenerator
         sb
             .AppendLine()
             .AppendLine($"internal class {classSummaryModel.RepositoryName}(")
-            .AppendLineWithIndent(
+            .AppendLineWithIndent(2,
                 $"{baseNamespace}.Common.Distributed.Services.Abstractions.IRemoteCacheService cacheService,")
-            .AppendLineWithIndent(
+            .AppendLineWithIndent(2,
                 $"{baseNamespace}.Common.Database.DapperMySql.Services.IGenericMySqlDtoStorage<{classSummaryModel.FullDtoName}, {classSummaryModel.Key.Type}> genericDtoStorage,")
+            .AppendLineWithIndent(2,
+                $"{baseNamespace}.Common.Database.DapperMySql.Factories.ISqlConnectionFactory sqlConnectionFactory,")
+            .AppendLineWithIndent(2,
+                $"{baseNamespace}.Common.Database.DapperMySql.Services.Resilience.IMySqlRetryWrapperService retryWrapperService")
             .AppendLineWithIndent(
-                $"Microsoft.Extensions.Logging.ILogger<{classSummaryModel.RepositoryName}> logger,")
-            .AppendLineWithIndent(
-                $"{baseNamespace}.Common.Database.DapperMySql.Factories.ISqlConnectionFactory sqlConnectionFactory) : {classSummaryModel.RepositoryInterfaceName}")
+                $") : {classSummaryModel.RepositoryInterfaceName}")
             .OpenBracket(0)
             .AppendLineWithIndent($"private const int MaxPageSize = {classSummaryModel.MaxSearchPageSize};");
 
