@@ -36,6 +36,8 @@
         <Project
                 Path="src/RedShirt.Example.Api.Implementations.Orders/RedShirt.Example.Api.Implementations.Orders.csproj"/>
         <Project
+                Path="src/RedShirt.Example.Api.Implementations.Products/RedShirt.Example.Api.Implementations.Products.csproj"/>
+        <Project
                 Path="src\RedShirt.Example.Api.Implementations.ExampleItem\RedShirt.Example.Api.Implementations.ExampleItem.csproj"/>
     </Folder>
     <Folder Name="/swagger/">
