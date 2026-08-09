@@ -57,3 +57,6 @@ Desktop.ini
 
 # Generic logs
 *.log
+
+# Just in case anyone took the test/local/ documentation very literally:
+**/RedShirt.Example.Schema
