@@ -87,7 +87,7 @@ public class SsmExceptionArbiterServiceTests
     [Fact]
     public void GetReport_SingleInnerAggregateException_JudgesUnwrappedInner()
     {
-        var inner = new WorkerSecretManagerException("wrapped")
+        var inner = new ApiSecretManagerException("wrapped")
             {IsHandled = true, CouldBeTransient = true, CouldBeExternallySolvable = true};
         var report = _sut.GetReport(new AggregateException(inner));
 
@@ -109,11 +109,11 @@ public class SsmExceptionArbiterServiceTests
     }
 
     [Fact]
-    public void GetReport_WorkerSecretManagerException_Handled_RespectsIsHandled()
+    public void GetReport_ApiSecretManagerException_Handled_RespectsIsHandled()
     {
-        var unhandled = new WorkerSecretManagerException("retryable")
+        var unhandled = new ApiSecretManagerException("retryable")
             {IsHandled = false, CouldBeTransient = true, CouldBeExternallySolvable = true};
-        var handled = new WorkerSecretManagerException("exhausted")
+        var handled = new ApiSecretManagerException("exhausted")
             {IsHandled = true, CouldBeTransient = true, CouldBeExternallySolvable = false};
 
         var unhandledReport = _sut.GetReport(unhandled);

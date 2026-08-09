@@ -178,13 +178,13 @@ public class RedisDistributedExceptionArbiterServiceTests
     [InlineData(true, false, false, false)]
     [InlineData(false, true, true, true)]
     [InlineData(false, false, false, false)]
-    public void GetReport_WorkerDistributedException_IsAlreadyHandledWithFlags(
+    public void GetReport_ApiDistributedException_IsAlreadyHandledWithFlags(
         bool isHandled,
         bool couldBeTransient,
         bool expectedTransient,
         bool couldBeExternallySolvable)
     {
-        var exception = new WorkerDistributedException("wrapped")
+        var exception = new ApiDistributedException("wrapped")
         {
             IsHandled = isHandled,
             CouldBeTransient = couldBeTransient,
@@ -204,13 +204,13 @@ public class RedisDistributedExceptionArbiterServiceTests
     [InlineData(true, false, false, false)]
     [InlineData(false, true, true, true)]
     [InlineData(false, false, false, false)]
-    public void GetReport_WorkerSecretManagerException_IsAlreadyHandledWithFlags(
+    public void GetReport_ApiSecretManagerException_IsAlreadyHandledWithFlags(
         bool isHandled,
         bool couldBeTransient,
         bool expectedTransient,
         bool couldBeExternallySolvable)
     {
-        var exception = new WorkerSecretManagerException("secret failure")
+        var exception = new ApiSecretManagerException("secret failure")
         {
             IsHandled = isHandled,
             CouldBeTransient = couldBeTransient,
@@ -221,15 +221,15 @@ public class RedisDistributedExceptionArbiterServiceTests
 
         Assert.True(report.AlreadyHandled);
         Assert.True(report.IsExpected);
-        // Unhandled WorkerSecretManagerException may still be retried upstream when transient.
+        // Unhandled ApiSecretManagerException may still be retried upstream when transient.
         Assert.Equal(expectedTransient, report.CouldBeTransient);
         Assert.Equal(couldBeExternallySolvable, report.CouldBeExternallySolvable);
     }
 
     [Fact]
-    public void GetReport_WorkerSecretManagerException_WhenAlreadyHandled_IsNotTransientForUpstream()
+    public void GetReport_ApiSecretManagerException_WhenAlreadyHandled_IsNotTransientForUpstream()
     {
-        var exception = new WorkerSecretManagerException("secret failure")
+        var exception = new ApiSecretManagerException("secret failure")
             {IsHandled = true, CouldBeTransient = true, CouldBeExternallySolvable = true};
 
         var report = _sut.GetReport(exception);

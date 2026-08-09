@@ -46,7 +46,7 @@ internal sealed class RedisLockService(
             {
                 await retryWrapper.RunAsync(_ => lockHandle.DisposeAsync().AsTask(), cancellationToken);
             }
-            catch (WorkerDistributedException)
+            catch (ApiDistributedException)
             {
                 /*
                  * Pass if the retry fails

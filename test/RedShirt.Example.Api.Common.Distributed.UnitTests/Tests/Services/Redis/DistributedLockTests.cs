@@ -116,13 +116,13 @@ public class DistributedLockTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task UnlockAsync_WhenRetryThrowsWorkerDistributedException_Swallows(bool isTransient)
+    public async Task UnlockAsync_WhenRetryThrowsApiDistributedException_Swallows(bool isTransient)
     {
         var retry = new Mock<IDistributedRetryWrapperService>(MockBehavior.Strict);
         retry
             .Setup(r => r.RunAsync(It.IsAny<Func<CancellationToken, Task>>(),
                 TestContext.Current.CancellationToken))
-            .ThrowsAsync(new WorkerDistributedException("unlock failed")
+            .ThrowsAsync(new ApiDistributedException("unlock failed")
             {
                 CouldBeTransient = isTransient, IsHandled = false, CouldBeExternallySolvable = isTransient
             });

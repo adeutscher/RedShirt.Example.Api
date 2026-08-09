@@ -108,7 +108,7 @@ internal sealed class MySqlExceptionArbiterService : IMySqlExceptionArbiterServi
             ApiDatabaseException w =>
                 Handled(true, w is {IsHandled: false, CouldBeTransient: true}, w.CouldBeExternallySolvable),
             // Connection strings often come from a secret manager; honour prior classification.
-            WorkerSecretManagerException w =>
+            ApiSecretManagerException w =>
                 Handled(true, w is {IsHandled: false, CouldBeTransient: true}, w.CouldBeExternallySolvable),
             MySqlException mySql => ClassifyMySqlException(mySql),
             TimeoutException

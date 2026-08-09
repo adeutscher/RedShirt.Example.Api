@@ -22,7 +22,7 @@ internal sealed class RedisConnectionCacheService(IRedisConnectionFactory redisC
     {
         if (_connectionMultiplexer?.IsConnected == false)
         {
-            throw new WorkerDistributedException("Not currently connected")
+            throw new ApiDistributedException("Not currently connected")
             {
                 CouldBeTransient = true,
                 IsHandled = false,

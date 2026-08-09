@@ -134,7 +134,7 @@ public class AzureRetryWrapperServiceTests
         var wrapper = new AzureRetryWrapperService(arbiter.Object, NullLogger<AzureRetryWrapperService>.Instance,
             sleepService.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerAzureException>(() => wrapper.RunAsync<int>(
+        var thrown = await Assert.ThrowsAsync<ApiAzureException>(() => wrapper.RunAsync<int>(
             _ =>
             {
                 attempts++;
@@ -216,7 +216,7 @@ public class AzureRetryWrapperServiceTests
         var wrapper = new AzureRetryWrapperService(arbiter.Object, NullLogger<AzureRetryWrapperService>.Instance,
             sleepService.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerAzureException>(() => wrapper.RunAsync<string>(
+        var thrown = await Assert.ThrowsAsync<ApiAzureException>(() => wrapper.RunAsync<string>(
             _ => throw inner,
             TestContext.Current.CancellationToken));
 
@@ -240,7 +240,7 @@ public class AzureRetryWrapperServiceTests
         var wrapper = new AzureRetryWrapperService(arbiter.Object, NullLogger<AzureRetryWrapperService>.Instance,
             sleepService.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerAzureException>(() => wrapper.RunAsync<string>(
+        var thrown = await Assert.ThrowsAsync<ApiAzureException>(() => wrapper.RunAsync<string>(
             _ =>
             {
                 attempts++;
@@ -270,7 +270,7 @@ public class AzureRetryWrapperServiceTests
         var wrapper = new AzureRetryWrapperService(arbiter.Object, NullLogger<AzureRetryWrapperService>.Instance,
             sleepService.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerAzureException>(() => wrapper.RunAsync<string>(
+        var thrown = await Assert.ThrowsAsync<ApiAzureException>(() => wrapper.RunAsync<string>(
             _ =>
             {
                 attempts++;

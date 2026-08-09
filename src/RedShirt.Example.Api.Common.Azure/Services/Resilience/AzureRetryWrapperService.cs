@@ -8,7 +8,7 @@ namespace RedShirt.Example.Api.Common.Azure.Services.Resilience;
 
 /// <summary>
 ///     Retries Azure client operations that fail with expected transient exceptions,
-///     then surfaces remaining failures as <see cref="WorkerAzureException" />.
+///     then surfaces remaining failures as <see cref="ApiAzureException" />.
 /// </summary>
 public interface IAzureRetryWrapperService
 {
@@ -26,8 +26,8 @@ public interface IAzureRetryWrapperService
     /// <exception cref="OperationCanceledException">
     ///     Propagated when <paramref name="cancellationToken" /> is cancelled.
     /// </exception>
-    /// <exception cref="WorkerAzureException">
-    ///     Thrown when <paramref name="func" /> ultimately fails. <see cref="WorkerAzureException.CouldBeTransient" />
+    /// <exception cref="ApiAzureException">
+    ///     Thrown when <paramref name="func" /> ultimately fails. <see cref="ApiAzureException.CouldBeTransient" />
     ///     reflects the arbiter report for the final exception.
     /// </exception>
     Task<T> RunAsync<T>(Func<CancellationToken, Task<T>> func, CancellationToken cancellationToken = default);
@@ -110,7 +110,7 @@ internal sealed class AzureRetryWrapperService(
             return exception;
         }
 
-        return new WorkerAzureException(exception)
+        return new ApiAzureException(exception)
         {
             CouldBeTransient = report.CouldBeTransient,
             IsHandled = true,

@@ -15,7 +15,7 @@ internal sealed partial class AzureKeyVaultService(
     {
         if (string.IsNullOrWhiteSpace(key) || !ValidKeyRegex().IsMatch(key))
         {
-            throw new WorkerSecretManagerException($"Invalid secret path: {key}")
+            throw new ApiSecretManagerException($"Invalid secret path: {key}")
                 {CouldBeTransient = false, IsHandled = false, CouldBeExternallySolvable = false};
         }
     }
@@ -42,10 +42,10 @@ internal sealed partial class AzureKeyVaultService(
                 return client.GetSecretAsync(key, ct);
             }, cancellationToken);
         }
-        catch (WorkerAzureException e)
+        catch (ApiAzureException e)
         {
             // Translate
-            throw new WorkerSecretManagerException(e)
+            throw new ApiSecretManagerException(e)
             {
                 CouldBeTransient = e.CouldBeTransient,
                 IsHandled = e.IsHandled,
@@ -75,10 +75,10 @@ internal sealed partial class AzureKeyVaultService(
                     await retryWrapperService.RunAsync(ct => source.GetSecretAsync(key, ct), cancellationToken));
             }
         }
-        catch (WorkerAzureException e)
+        catch (ApiAzureException e)
         {
             // Translate
-            throw new WorkerSecretManagerException(e)
+            throw new ApiSecretManagerException(e)
             {
                 CouldBeTransient = e.CouldBeTransient,
                 IsHandled = e.IsHandled,

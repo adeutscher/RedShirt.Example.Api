@@ -191,7 +191,7 @@ public class SafeAbstractedLockServiceTests
     {
         var lockName = $"lock-cache-ex-transient-{isTransient}";
         var inner = new Exception("cache unavailable");
-        var exception = new WorkerDistributedException(inner)
+        var exception = new ApiDistributedException(inner)
             {CouldBeTransient = isTransient, IsHandled = false, CouldBeExternallySolvable = isTransient};
 
         var disgraceState = CreateDisgraceState(false);
@@ -250,7 +250,7 @@ public class SafeAbstractedLockServiceTests
         GetLockAsync_WhenUnhandledNonTransientDistributedException_EntersDisgraceAndReturnsPermissiveLock()
     {
         const string lockName = "lock-critical";
-        var exception = new WorkerDistributedException(new Exception("auth failed"))
+        var exception = new ApiDistributedException(new Exception("auth failed"))
         {
             CouldBeTransient = false, IsHandled = false, CouldBeExternallySolvable = false
         };

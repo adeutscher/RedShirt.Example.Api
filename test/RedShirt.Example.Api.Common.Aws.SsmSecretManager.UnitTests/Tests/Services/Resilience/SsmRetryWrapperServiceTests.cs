@@ -67,7 +67,7 @@ public class SsmRetryWrapperServiceTests
     [Fact]
     public async Task RunAsync_WhenAlreadyHandled_RethrowsWithoutWrapping()
     {
-        var inner = new WorkerSecretManagerException("already wrapped")
+        var inner = new ApiSecretManagerException("already wrapped")
             {CouldBeTransient = false, IsHandled = true, CouldBeExternallySolvable = true};
 
         var arbiter = new Mock<ISsmExceptionArbiterService>(MockBehavior.Strict);
@@ -77,7 +77,7 @@ public class SsmRetryWrapperServiceTests
         var wrapper =
             new SsmRetryWrapperService(arbiter.Object, NullLogger<SsmRetryWrapperService>.Instance, sleep.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerSecretManagerException>(() =>
+        var thrown = await Assert.ThrowsAsync<ApiSecretManagerException>(() =>
             wrapper.RunAsync<string>(_ => throw inner, TestContext.Current.CancellationToken));
 
         Assert.Same(inner, thrown);
@@ -129,7 +129,7 @@ public class SsmRetryWrapperServiceTests
         var wrapper =
             new SsmRetryWrapperService(arbiter.Object, NullLogger<SsmRetryWrapperService>.Instance, sleep.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerSecretManagerException>(() => wrapper.RunAsync<string>(
+        var thrown = await Assert.ThrowsAsync<ApiSecretManagerException>(() => wrapper.RunAsync<string>(
             _ =>
             {
                 attempts++;
@@ -146,7 +146,7 @@ public class SsmRetryWrapperServiceTests
     }
 
     [Fact]
-    public async Task RunAsync_WhenTransientFailuresExhaustRetries_WrapsAsWorkerSecretManagerException()
+    public async Task RunAsync_WhenTransientFailuresExhaustRetries_WrapsAsApiSecretManagerException()
     {
         var attempts = 0;
         var delays = new List<TimeSpan>();
@@ -159,7 +159,7 @@ public class SsmRetryWrapperServiceTests
         var wrapper =
             new SsmRetryWrapperService(arbiter.Object, NullLogger<SsmRetryWrapperService>.Instance, sleep.Object);
 
-        var thrown = await Assert.ThrowsAsync<WorkerSecretManagerException>(() => wrapper.RunAsync<string>(
+        var thrown = await Assert.ThrowsAsync<ApiSecretManagerException>(() => wrapper.RunAsync<string>(
             _ =>
             {
                 attempts++;

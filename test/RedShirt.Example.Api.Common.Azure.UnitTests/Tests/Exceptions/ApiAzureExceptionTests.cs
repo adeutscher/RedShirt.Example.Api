@@ -2,14 +2,14 @@ using RedShirt.Example.Api.Common.Azure.Exceptions;
 
 namespace RedShirt.Example.Api.Common.Azure.UnitTests.Tests.Exceptions;
 
-public class WorkerAzureExceptionTests
+public class ApiAzureExceptionTests
 {
     [Fact]
     public void Constructor_WithInnerException_PreservesMessageAndInner()
     {
         var inner = new InvalidOperationException("boom");
 
-        var exception = new WorkerAzureException(inner)
+        var exception = new ApiAzureException(inner)
             {CouldBeTransient = false, IsHandled = false, CouldBeExternallySolvable = false};
 
         Assert.False(exception.CouldBeTransient);
@@ -29,7 +29,7 @@ public class WorkerAzureExceptionTests
     {
         var inner = new TimeoutException("timed out talking to azure");
 
-        var exception = new WorkerAzureException(inner)
+        var exception = new ApiAzureException(inner)
         {
             CouldBeTransient = isTransient,
             IsHandled = isHandled,
@@ -46,7 +46,7 @@ public class WorkerAzureExceptionTests
     [Fact]
     public void Constructor_WithMessage_SetsMessageAndFlags()
     {
-        var exception = new WorkerAzureException("azure failure")
+        var exception = new ApiAzureException("azure failure")
             {CouldBeTransient = false, IsHandled = false, CouldBeExternallySolvable = false};
 
         Assert.Equal("azure failure", exception.Message);
@@ -66,7 +66,7 @@ public class WorkerAzureExceptionTests
         bool isHandled,
         string message)
     {
-        var exception = new WorkerAzureException(message)
+        var exception = new ApiAzureException(message)
             {CouldBeTransient = isTransient, IsHandled = isHandled, CouldBeExternallySolvable = isTransient};
 
         Assert.Equal(message, exception.Message);
@@ -79,7 +79,7 @@ public class WorkerAzureExceptionTests
     [Fact]
     public void IsException()
     {
-        var exception = new WorkerAzureException("boom")
+        var exception = new ApiAzureException("boom")
             {CouldBeTransient = false, IsHandled = false, CouldBeExternallySolvable = false};
 
         Assert.IsAssignableFrom<Exception>(exception);

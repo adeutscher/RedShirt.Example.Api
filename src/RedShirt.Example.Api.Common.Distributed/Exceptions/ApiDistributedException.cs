@@ -1,13 +1,13 @@
-namespace RedShirt.Example.Api.Common.SecretManagers.Core.Exceptions;
+namespace RedShirt.Example.Api.Common.Distributed.Exceptions;
 
 /// <summary>
-///     Classified failure from a secret-manager operation.
+///     Classified failure from a distributed (cache / lock) operation.
 /// </summary>
-public sealed class WorkerSecretManagerException : Exception
+public sealed class ApiDistributedException : Exception
 {
     /// <summary>
-    ///     When <c>true</c>, a retry wrapper inside the secret-manager layer has already exhausted retries
-    ///     for the underlying cause; outer retry layers should not retry again.
+    ///     When <c>true</c>, a retry wrapper inside the distributed layer has already exhausted retries for
+    ///     the underlying cause; outer retry layers should not retry again.
     /// </summary>
     public required bool IsHandled { get; init; }
 
@@ -23,11 +23,11 @@ public sealed class WorkerSecretManagerException : Exception
     /// </summary>
     public required bool CouldBeExternallySolvable { get; init; }
 
-    public WorkerSecretManagerException(Exception innerException) : base(innerException.Message, innerException)
+    public ApiDistributedException(Exception innerException) : base(innerException.Message, innerException)
     {
     }
 
-    public WorkerSecretManagerException(string message) : base(message)
+    public ApiDistributedException(string message) : base(message)
     {
     }
 }

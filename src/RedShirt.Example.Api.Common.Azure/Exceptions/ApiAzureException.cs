@@ -1,13 +1,13 @@
-namespace RedShirt.Example.Api.Common.Distributed.Exceptions;
+namespace RedShirt.Example.Api.Common.Azure.Exceptions;
 
 /// <summary>
-///     Classified failure from a distributed (cache / lock) operation.
+///     Classified failure from an Azure client operation.
 /// </summary>
-public sealed class WorkerDistributedException : Exception
+public sealed class ApiAzureException : Exception
 {
     /// <summary>
-    ///     When <c>true</c>, a retry wrapper inside the distributed layer has already exhausted retries for
-    ///     the underlying cause; outer retry layers should not retry again.
+    ///     When <c>true</c>, a retry wrapper inside the Azure layer has already exhausted retries for the
+    ///     underlying cause; outer retry layers should not retry again.
     /// </summary>
     public required bool IsHandled { get; init; }
 
@@ -23,11 +23,11 @@ public sealed class WorkerDistributedException : Exception
     /// </summary>
     public required bool CouldBeExternallySolvable { get; init; }
 
-    public WorkerDistributedException(Exception innerException) : base(innerException.Message, innerException)
+    public ApiAzureException(Exception innerException) : base(innerException.Message, innerException)
     {
     }
 
-    public WorkerDistributedException(string message) : base(message)
+    public ApiAzureException(string message) : base(message)
     {
     }
 }

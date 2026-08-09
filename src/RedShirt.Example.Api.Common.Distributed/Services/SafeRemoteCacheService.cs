@@ -38,7 +38,7 @@ internal sealed class SafeRemoteCacheService(
         {
             throw;
         }
-        catch (WorkerDistributedException e)
+        catch (ApiDistributedException e)
         {
             logger.LogWarning(e, "Failure to communicate with cache service: {EMessage}", e.Message);
             safetyDisgraceStateService.EnterDisgracePeriod();
@@ -76,7 +76,7 @@ internal sealed class SafeRemoteCacheService(
         {
             throw;
         }
-        catch (WorkerDistributedException e)
+        catch (ApiDistributedException e)
         {
             logger.LogWarning(e, "Failure to communicate with cache service: {EMessage}", e.Message);
             safetyDisgraceStateService.EnterDisgracePeriod();

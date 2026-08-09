@@ -7,7 +7,7 @@ namespace RedShirt.Example.Api.Common.Distributed.Services.Redis.Resilience;
 
 /// <summary>
 ///     Retries Distributed client operations that fail with expected transient exceptions,
-///     then surfaces remaining failures as <see cref="WorkerDistributedException" />.
+///     then surfaces remaining failures as <see cref="ApiDistributedException" />.
 /// </summary>
 internal interface IDistributedRetryWrapperService
 {
@@ -25,8 +25,8 @@ internal interface IDistributedRetryWrapperService
     /// <exception cref="OperationCanceledException">
     ///     Propagated when <paramref name="cancellationToken" /> is cancelled.
     /// </exception>
-    /// <exception cref="WorkerDistributedException">
-    ///     Thrown when <paramref name="func" /> ultimately fails. <see cref="WorkerDistributedException.CouldBeTransient" />
+    /// <exception cref="ApiDistributedException">
+    ///     Thrown when <paramref name="func" /> ultimately fails. <see cref="ApiDistributedException.CouldBeTransient" />
     ///     reflects the arbiter judgement for the final exception.
     /// </exception>
     Task<T> RunAsync<T>(Func<CancellationToken, Task<T>> func, CancellationToken cancellationToken = default);
@@ -43,8 +43,8 @@ internal interface IDistributedRetryWrapperService
     /// <exception cref="OperationCanceledException">
     ///     Propagated when <paramref name="cancellationToken" /> is cancelled.
     /// </exception>
-    /// <exception cref="WorkerDistributedException">
-    ///     Thrown when <paramref name="func" /> ultimately fails. <see cref="WorkerDistributedException.CouldBeTransient" />
+    /// <exception cref="ApiDistributedException">
+    ///     Thrown when <paramref name="func" /> ultimately fails. <see cref="ApiDistributedException.CouldBeTransient" />
     ///     reflects the arbiter judgement for the final exception.
     /// </exception>
     Task RunAsync(Func<CancellationToken, Task> func, CancellationToken cancellationToken = default);
@@ -119,7 +119,7 @@ internal sealed class RedisDistributedRetryWrapperService(
         var report = exceptionArbiterService.GetReport(exception);
 
         // ReSharper disable once DuplicatedSequentialIfBodies
-        if (report.AlreadyHandled && exception is WorkerDistributedException)
+        if (report.AlreadyHandled && exception is ApiDistributedException)
         {
             return exception;
         }
@@ -133,7 +133,7 @@ internal sealed class RedisDistributedRetryWrapperService(
             return exception;
         }
 
-        return new WorkerDistributedException(exception)
+        return new ApiDistributedException(exception)
         {
             CouldBeTransient = report.CouldBeTransient,
             IsHandled = true,

@@ -186,13 +186,13 @@ public class MySqlExceptionArbiterServiceTests
     [InlineData(true, true, true, false)]
     [InlineData(false, false, true, false)]
     [InlineData(true, false, false, false)]
-    public void GetReport_WorkerSecretManagerException_UsesHandledFlags(
+    public void GetReport_ApiSecretManagerException_UsesHandledFlags(
         bool isHandled,
         bool couldBeTransient,
         bool couldBeExternallySolvable,
         bool expectedTransientForRetry)
     {
-        var exception = new WorkerSecretManagerException("secret failure")
+        var exception = new ApiSecretManagerException("secret failure")
         {
             IsHandled = isHandled,
             CouldBeTransient = couldBeTransient,

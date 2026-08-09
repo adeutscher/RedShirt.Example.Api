@@ -32,7 +32,7 @@ public class SafeRemoteCacheServiceTests
         var key = Guid.NewGuid().ToString();
 
         remoteCache.SetupSequence(c => c.GetStringAsync(key, TestContext.Current.CancellationToken))
-            .ThrowsAsync(new WorkerDistributedException(new TimeoutException("slow"))
+            .ThrowsAsync(new ApiDistributedException(new TimeoutException("slow"))
             {
                 CouldBeTransient = false, IsHandled = false, CouldBeExternallySolvable = false
             })
@@ -58,7 +58,7 @@ public class SafeRemoteCacheServiceTests
         var expiry = TimeSpan.FromMinutes(1);
 
         remoteCache.Setup(c => c.GetStringAsync(key, TestContext.Current.CancellationToken))
-            .ThrowsAsync(new WorkerDistributedException(new Exception("offline"))
+            .ThrowsAsync(new ApiDistributedException(new Exception("offline"))
             {
                 CouldBeTransient = false, IsHandled = false, CouldBeExternallySolvable = false
             });
@@ -133,7 +133,7 @@ public class SafeRemoteCacheServiceTests
         var remoteCache = new Mock<IRemoteCacheService>(MockBehavior.Strict);
         var key = Guid.NewGuid().ToString();
         var inner = new Exception("boom");
-        var exception = new WorkerDistributedException(inner)
+        var exception = new ApiDistributedException(inner)
             {CouldBeTransient = isTransient, IsHandled = false, CouldBeExternallySolvable = isTransient};
 
         remoteCache.Setup(c => c.GetStringAsync(key, TestContext.Current.CancellationToken))
@@ -198,7 +198,7 @@ public class SafeRemoteCacheServiceTests
     {
         var remoteCache = new Mock<IRemoteCacheService>(MockBehavior.Strict);
         var key = Guid.NewGuid().ToString();
-        var exception = new WorkerDistributedException(new Exception("auth failed"))
+        var exception = new ApiDistributedException(new Exception("auth failed"))
         {
             CouldBeTransient = false, IsHandled = false, CouldBeExternallySolvable = false
         };
@@ -280,7 +280,7 @@ public class SafeRemoteCacheServiceTests
         var value = Guid.NewGuid().ToString();
         var expiry = TimeSpan.FromSeconds(30);
         var inner = new Exception("boom");
-        var exception = new WorkerDistributedException(inner)
+        var exception = new ApiDistributedException(inner)
             {CouldBeTransient = isTransient, IsHandled = false, CouldBeExternallySolvable = isTransient};
 
         remoteCache.Setup(c => c.SetStringAsync(key, value, expiry, TestContext.Current.CancellationToken))
@@ -329,7 +329,7 @@ public class SafeRemoteCacheServiceTests
         var key = Guid.NewGuid().ToString();
         var value = Guid.NewGuid().ToString();
         var expiry = TimeSpan.FromSeconds(30);
-        var exception = new WorkerDistributedException(new Exception("auth failed"))
+        var exception = new ApiDistributedException(new Exception("auth failed"))
         {
             CouldBeTransient = false, IsHandled = false, CouldBeExternallySolvable = false
         };
