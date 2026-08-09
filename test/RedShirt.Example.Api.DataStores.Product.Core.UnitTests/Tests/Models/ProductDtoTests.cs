@@ -1,7 +1,6 @@
 using RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes;
 using RedShirt.Example.Api.DataStores.Constants;
 using RedShirt.Example.Api.DataStores.Product.Core.Models;
-using RedShirt.Example.Api.DataStores.Product.Core.Services;
 using System.Reflection;
 
 namespace RedShirt.Example.Api.DataStores.Product.Core.UnitTests.Tests.Models;
@@ -11,36 +10,6 @@ namespace RedShirt.Example.Api.DataStores.Product.Core.UnitTests.Tests.Models;
 /// </summary>
 public class ProductDtoTests
 {
-    [Fact]
-    public void ProductDto_HasExpectedTableMetadata()
-    {
-        var attribute = typeof(ProductDto).GetCustomAttribute<DbTableAttribute>();
-
-        Assert.NotNull(attribute);
-        Assert.Equal("Product", attribute!.TableName);
-        Assert.Equal(DatabaseConstants.PrimaryDatabaseConnectionStringName, attribute.ConnectionStringName);
-    }
-
-    [Fact]
-    public void ProductDto_MarksPriceAsStoredAsDecimal()
-    {
-        var property = typeof(ProductDto).GetProperty(nameof(ProductDto.Price));
-
-        Assert.NotNull(property);
-        Assert.NotNull(property!.GetCustomAttribute<StoredAsDecimalAttribute>());
-    }
-
-    [Fact]
-    public void ProductDto_MarksKeyAndTimestamps()
-    {
-        Assert.NotNull(typeof(ProductDto).GetProperty(nameof(ProductDto.Id))!
-            .GetCustomAttribute<DbKeyAttribute>());
-        Assert.NotNull(typeof(ProductDto).GetProperty(nameof(ProductDto.CreatedAtUtc))!
-            .GetCustomAttribute<CreatedAtPropertyAttribute>());
-        Assert.NotNull(typeof(ProductDto).GetProperty(nameof(ProductDto.UpdatedAtUtc))!
-            .GetCustomAttribute<UpdatedAtPropertyAttribute>());
-    }
-
     [Fact]
     public void ProductDto_CanBeConstructedWithRequiredFields()
     {
@@ -64,5 +33,35 @@ public class ProductDtoTests
         Assert.Equal("SKU-1", dto.Sku);
         Assert.Equal("Widget", dto.Name);
         Assert.Equal("12.34", dto.Price);
+    }
+
+    [Fact]
+    public void ProductDto_HasExpectedTableMetadata()
+    {
+        var attribute = typeof(ProductDto).GetCustomAttribute<DbTableAttribute>();
+
+        Assert.NotNull(attribute);
+        Assert.Equal("Product", attribute!.TableName);
+        Assert.Equal(DatabaseConstants.PrimaryDatabaseConnectionStringName, attribute.ConnectionStringName);
+    }
+
+    [Fact]
+    public void ProductDto_MarksKeyAndTimestamps()
+    {
+        Assert.NotNull(typeof(ProductDto).GetProperty(nameof(ProductDto.Id))!
+            .GetCustomAttribute<DbKeyAttribute>());
+        Assert.NotNull(typeof(ProductDto).GetProperty(nameof(ProductDto.CreatedAtUtc))!
+            .GetCustomAttribute<CreatedAtPropertyAttribute>());
+        Assert.NotNull(typeof(ProductDto).GetProperty(nameof(ProductDto.UpdatedAtUtc))!
+            .GetCustomAttribute<UpdatedAtPropertyAttribute>());
+    }
+
+    [Fact]
+    public void ProductDto_MarksPriceAsStoredAsDecimal()
+    {
+        var property = typeof(ProductDto).GetProperty(nameof(ProductDto.Price));
+
+        Assert.NotNull(property);
+        Assert.NotNull(property!.GetCustomAttribute<StoredAsDecimalAttribute>());
     }
 }

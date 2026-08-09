@@ -22,6 +22,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Analyzers.Database.Abstractions\RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.csproj"/>
-        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Constants\RedShirt.Example.Api.DataStores.Constants.csproj" />
+        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Constants\RedShirt.Example.Api.DataStores.Constants.csproj"/>
     </ItemGroup>
 </Project>

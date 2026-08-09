@@ -5,8 +5,8 @@ using RedShirt.Example.Api.Common.Database.DapperMySql.Services.Resilience;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Utility;
 using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
-using RedShirt.Example.Api.DataStores.Product.Core.Models;
 using RedShirt.Example.Api.DataStores.Constants;
+using RedShirt.Example.Api.DataStores.Product.Core.Models;
 
 namespace RedShirt.Example.Api.DataStores.Product.Implementation.Repositories;
 

@@ -12,6 +12,23 @@ namespace RedShirt.Example.Api.DataStores.Order.UnitTests.Tests.Models;
 public class OrderDtoTests
 {
     [Fact]
+    public void IOrderService_IsPublicContract()
+    {
+        Assert.True(typeof(IOrderService).IsInterface);
+        Assert.True(typeof(IOrderService).IsPublic);
+
+        var methods = typeof(IOrderService)
+            .GetMethods()
+            .Select(m => m.Name)
+            .OrderBy(n => n)
+            .ToArray();
+
+        Assert.Equal(
+            ["DeleteAsync", "GetByIdAsync", "PatchAsync", "PostAsync", "PutAsync", "SearchAsync"],
+            methods);
+    }
+
+    [Fact]
     public void OrderDto_HasExpectedTableMetadata()
     {
         var attribute = typeof(OrderDto).GetCustomAttribute<DbTableAttribute>();
@@ -28,22 +45,5 @@ public class OrderDtoTests
 
         Assert.NotNull(property);
         Assert.NotNull(property!.GetCustomAttribute<StoredAsDecimalAttribute>());
-    }
-
-    [Fact]
-    public void IOrderService_IsPublicContract()
-    {
-        Assert.True(typeof(IOrderService).IsInterface);
-        Assert.True(typeof(IOrderService).IsPublic);
-
-        var methods = typeof(IOrderService)
-            .GetMethods()
-            .Select(m => m.Name)
-            .OrderBy(n => n)
-            .ToArray();
-
-        Assert.Equal(
-            ["DeleteAsync", "GetByIdAsync", "PatchAsync", "PostAsync", "PutAsync", "SearchAsync"],
-            methods);
     }
 }

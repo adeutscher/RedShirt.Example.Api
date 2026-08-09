@@ -37,20 +37,6 @@ public class ProductServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_ThrowsResourceNotFound_WhenRepositoryReturnsFalse()
-    {
-        var id = Guid.NewGuid();
-        var repository = new Mock<IProductRepository>();
-        repository
-            .Setup(r => r.DeleteAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-        var service = CreateService(repository.Object);
-
-        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
-            service.DeleteAsync(id, TestContext.Current.CancellationToken));
-    }
-
-    [Fact]
     public async Task DeleteAsync_Completes_WhenRepositoryReturnsTrue()
     {
         var id = Guid.NewGuid();
@@ -66,17 +52,17 @@ public class ProductServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_ThrowsResourceNotFound_WhenMissing()
+    public async Task DeleteAsync_ThrowsResourceNotFound_WhenRepositoryReturnsFalse()
     {
         var id = Guid.NewGuid();
         var repository = new Mock<IProductRepository>();
         repository
-            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ProductDto?) null);
+            .Setup(r => r.DeleteAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
         var service = CreateService(repository.Object);
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
-            service.GetByIdAsync(id, TestContext.Current.CancellationToken));
+            service.DeleteAsync(id, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -95,92 +81,23 @@ public class ProductServiceTests
     }
 
     [Fact]
-    public async Task PostAsync_ThrowsBadRequest_WhenSkuEmpty()
+    public async Task GetByIdAsync_ThrowsResourceNotFound_WhenMissing()
     {
-        var service = CreateService();
-
-        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
-            service.PostAsync(new ProductServicePostRequest
-            {
-                Sku = " ",
-                Name = "Widget",
-                Price = "1.00"
-            }, TestContext.Current.CancellationToken));
-
-        Assert.Equal("Sku cannot be empty.", exception.Message);
-    }
-
-    [Fact]
-    public async Task PostAsync_ThrowsBadRequest_WhenNameEmpty()
-    {
-        var service = CreateService();
-
-        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
-            service.PostAsync(new ProductServicePostRequest
-            {
-                Sku = "SKU-1",
-                Name = "",
-                Price = "1.00"
-            }, TestContext.Current.CancellationToken));
-
-        Assert.Equal("Name cannot be empty.", exception.Message);
-    }
-
-    [Fact]
-    public async Task PostAsync_UpsertsNewDto()
-    {
+        var id = Guid.NewGuid();
         var repository = new Mock<IProductRepository>();
-        ProductDto? upserted = null;
         repository
-            .Setup(r => r.UpsertAsync(It.IsAny<ProductDto>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ProductDto item, CancellationToken _) =>
-            {
-                upserted = item;
-                return item;
-            });
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProductDto?) null);
         var service = CreateService(repository.Object);
 
-        var result = await service.PostAsync(new ProductServicePostRequest
-        {
-            Sku = "SKU-1",
-            Name = "Widget",
-            Price = "12.50"
-        }, TestContext.Current.CancellationToken);
-
-        Assert.NotEqual(Guid.Empty, result.Id);
-        Assert.Equal("SKU-1", result.Sku);
-        Assert.Equal("Widget", result.Name);
-        Assert.Equal("12.50", result.Price);
-        Assert.Same(upserted, result);
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
+            service.GetByIdAsync(id, TestContext.Current.CancellationToken));
     }
 
     [Fact]
-    public async Task PutAsync_ThrowsNoChanges_WhenExistingMatches()
+    public async Task PatchAsync_MergesFields_AndUpserts()
     {
         var existing = CreateDto(sku: "SKU-1", name: "Widget", price: "9.99");
-        var repository = new Mock<IProductRepository>();
-        repository
-            .Setup(r => r.GetByIdAsync(existing.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existing);
-        var service = CreateService(repository.Object);
-
-        await Assert.ThrowsAsync<NoChangesToModifyException>(() =>
-            service.PutAsync(new ProductServicePutRequest
-            {
-                Id = existing.Id,
-                Sku = existing.Sku,
-                Name = existing.Name,
-                Price = existing.Price
-            }, TestContext.Current.CancellationToken));
-
-        repository.Verify(r => r.UpsertAsync(It.IsAny<ProductDto>(), It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task PutAsync_PreservesCreatedAt_WhenUpdatingExisting()
-    {
-        var createdAt = DateTime.UtcNow.AddDays(-3);
-        var existing = CreateDto(createdAtUtc: createdAt, updatedAtUtc: createdAt);
         var repository = new Mock<IProductRepository>();
         repository
             .Setup(r => r.GetByIdAsync(existing.Id, It.IsAny<CancellationToken>()))
@@ -190,18 +107,18 @@ public class ProductServiceTests
             .ReturnsAsync((ProductDto item, CancellationToken _) => item);
         var service = CreateService(repository.Object);
 
-        var result = await service.PutAsync(new ProductServicePutRequest
+        var result = await service.PatchAsync(new ProductServicePatchRequest
         {
             Id = existing.Id,
             Sku = "SKU-2",
-            Name = "Gadget",
-            Price = "19.99"
+            Name = null,
+            Price = null
         }, TestContext.Current.CancellationToken);
 
-        Assert.Equal(createdAt, result.CreatedAtUtc);
         Assert.Equal("SKU-2", result.Sku);
-        Assert.Equal("Gadget", result.Name);
-        Assert.Equal("19.99", result.Price);
+        Assert.Equal(existing.Name, result.Name);
+        Assert.Equal(existing.Price, result.Price);
+        Assert.Equal(existing.CreatedAtUtc, result.CreatedAtUtc);
     }
 
     [Fact]
@@ -240,9 +157,70 @@ public class ProductServiceTests
     }
 
     [Fact]
-    public async Task PatchAsync_MergesFields_AndUpserts()
+    public async Task PostAsync_ThrowsBadRequest_WhenNameEmpty()
     {
-        var existing = CreateDto(sku: "SKU-1", name: "Widget", price: "9.99");
+        var service = CreateService();
+
+        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
+            service.PostAsync(new ProductServicePostRequest
+            {
+                Sku = "SKU-1",
+                Name = "",
+                Price = "1.00"
+            }, TestContext.Current.CancellationToken));
+
+        Assert.Equal("Name cannot be empty.", exception.Message);
+    }
+
+    [Fact]
+    public async Task PostAsync_ThrowsBadRequest_WhenSkuEmpty()
+    {
+        var service = CreateService();
+
+        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
+            service.PostAsync(new ProductServicePostRequest
+            {
+                Sku = " ",
+                Name = "Widget",
+                Price = "1.00"
+            }, TestContext.Current.CancellationToken));
+
+        Assert.Equal("Sku cannot be empty.", exception.Message);
+    }
+
+    [Fact]
+    public async Task PostAsync_UpsertsNewDto()
+    {
+        var repository = new Mock<IProductRepository>();
+        ProductDto? upserted = null;
+        repository
+            .Setup(r => r.UpsertAsync(It.IsAny<ProductDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProductDto item, CancellationToken _) =>
+            {
+                upserted = item;
+                return item;
+            });
+        var service = CreateService(repository.Object);
+
+        var result = await service.PostAsync(new ProductServicePostRequest
+        {
+            Sku = "SKU-1",
+            Name = "Widget",
+            Price = "12.50"
+        }, TestContext.Current.CancellationToken);
+
+        Assert.NotEqual(Guid.Empty, result.Id);
+        Assert.Equal("SKU-1", result.Sku);
+        Assert.Equal("Widget", result.Name);
+        Assert.Equal("12.50", result.Price);
+        Assert.Same(upserted, result);
+    }
+
+    [Fact]
+    public async Task PutAsync_PreservesCreatedAt_WhenUpdatingExisting()
+    {
+        var createdAt = DateTime.UtcNow.AddDays(-3);
+        var existing = CreateDto(createdAtUtc: createdAt, updatedAtUtc: createdAt);
         var repository = new Mock<IProductRepository>();
         repository
             .Setup(r => r.GetByIdAsync(existing.Id, It.IsAny<CancellationToken>()))
@@ -252,18 +230,40 @@ public class ProductServiceTests
             .ReturnsAsync((ProductDto item, CancellationToken _) => item);
         var service = CreateService(repository.Object);
 
-        var result = await service.PatchAsync(new ProductServicePatchRequest
+        var result = await service.PutAsync(new ProductServicePutRequest
         {
             Id = existing.Id,
             Sku = "SKU-2",
-            Name = null,
-            Price = null
+            Name = "Gadget",
+            Price = "19.99"
         }, TestContext.Current.CancellationToken);
 
+        Assert.Equal(createdAt, result.CreatedAtUtc);
         Assert.Equal("SKU-2", result.Sku);
-        Assert.Equal(existing.Name, result.Name);
-        Assert.Equal(existing.Price, result.Price);
-        Assert.Equal(existing.CreatedAtUtc, result.CreatedAtUtc);
+        Assert.Equal("Gadget", result.Name);
+        Assert.Equal("19.99", result.Price);
+    }
+
+    [Fact]
+    public async Task PutAsync_ThrowsNoChanges_WhenExistingMatches()
+    {
+        var existing = CreateDto(sku: "SKU-1", name: "Widget", price: "9.99");
+        var repository = new Mock<IProductRepository>();
+        repository
+            .Setup(r => r.GetByIdAsync(existing.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        var service = CreateService(repository.Object);
+
+        await Assert.ThrowsAsync<NoChangesToModifyException>(() =>
+            service.PutAsync(new ProductServicePutRequest
+            {
+                Id = existing.Id,
+                Sku = existing.Sku,
+                Name = existing.Name,
+                Price = existing.Price
+            }, TestContext.Current.CancellationToken));
+
+        repository.Verify(r => r.UpsertAsync(It.IsAny<ProductDto>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

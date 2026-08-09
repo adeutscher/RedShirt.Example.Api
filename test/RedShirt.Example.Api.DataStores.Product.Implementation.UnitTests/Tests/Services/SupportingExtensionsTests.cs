@@ -28,6 +28,31 @@ public class SupportingExtensionsTests
     }
 
     [Fact]
+    public void IsTheSameAs_ReturnsFalse_WhenBusinessFieldsDiffer()
+    {
+        var a = new ProductDto
+        {
+            Id = Guid.NewGuid(),
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+            Sku = "SKU-1",
+            Name = "Widget",
+            Price = "9.99"
+        };
+        var b = new ProductDto
+        {
+            Id = a.Id,
+            CreatedAtUtc = a.CreatedAtUtc,
+            UpdatedAtUtc = a.UpdatedAtUtc,
+            Sku = "SKU-2",
+            Name = "Widget",
+            Price = "9.99"
+        };
+
+        Assert.False(a.IsTheSameAs(b));
+    }
+
+    [Fact]
     public void IsTheSameAs_ReturnsTrue_WhenBusinessFieldsMatch()
     {
         var id = Guid.NewGuid();
@@ -51,30 +76,5 @@ public class SupportingExtensionsTests
         };
 
         Assert.True(a.IsTheSameAs(b));
-    }
-
-    [Fact]
-    public void IsTheSameAs_ReturnsFalse_WhenBusinessFieldsDiffer()
-    {
-        var a = new ProductDto
-        {
-            Id = Guid.NewGuid(),
-            CreatedAtUtc = DateTime.UtcNow,
-            UpdatedAtUtc = DateTime.UtcNow,
-            Sku = "SKU-1",
-            Name = "Widget",
-            Price = "9.99"
-        };
-        var b = new ProductDto
-        {
-            Id = a.Id,
-            CreatedAtUtc = a.CreatedAtUtc,
-            UpdatedAtUtc = a.UpdatedAtUtc,
-            Sku = "SKU-2",
-            Name = "Widget",
-            Price = "9.99"
-        };
-
-        Assert.False(a.IsTheSameAs(b));
     }
 }

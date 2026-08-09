@@ -23,7 +23,8 @@ public static class CentralContentGenerator
         }
 
         var tableName = dbTableAttribute.ConstructorArguments[0].Value!.ToString();
-        var connectionStringName = dbTableAttribute.ConstructorArguments[1].Value?.ToString() ?? DatabaseConstants.PrimaryDatabaseConnectionStringName;
+        var connectionStringName = dbTableAttribute.ConstructorArguments[1].Value?.ToString() ??
+                                   DatabaseConstants.PrimaryDatabaseConnectionStringName;
         var keySearchable = dbTableAttribute.ConstructorArguments[2].Value!.ToString().ToLower() == "true";
 
         var maxPageSize = (uint) 100; // Default

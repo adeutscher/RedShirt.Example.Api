@@ -36,6 +36,21 @@ public class OrderServiceTests
     }
 
     [Fact]
+    public async Task DeleteAsync_Completes_WhenRepositoryReturnsTrue()
+    {
+        var id = Guid.NewGuid();
+        var repository = new Mock<IOrderRepository>();
+        repository
+            .Setup(r => r.DeleteAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        var service = CreateService(repository.Object);
+
+        await service.DeleteAsync(id, TestContext.Current.CancellationToken);
+
+        repository.Verify(r => r.DeleteAsync(id, TestContext.Current.CancellationToken), Times.Once);
+    }
+
+    [Fact]
     public async Task DeleteAsync_ThrowsResourceNotFound_WhenRepositoryReturnsFalse()
     {
         var id = Guid.NewGuid();
@@ -50,18 +65,18 @@ public class OrderServiceTests
     }
 
     [Fact]
-    public async Task DeleteAsync_Completes_WhenRepositoryReturnsTrue()
+    public async Task GetByIdAsync_ReturnsDto_WhenFound()
     {
-        var id = Guid.NewGuid();
+        var dto = CreateDto();
         var repository = new Mock<IOrderRepository>();
         repository
-            .Setup(r => r.DeleteAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+            .Setup(r => r.GetByIdAsync(dto.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(dto);
         var service = CreateService(repository.Object);
 
-        await service.DeleteAsync(id, TestContext.Current.CancellationToken);
+        var result = await service.GetByIdAsync(dto.Id, TestContext.Current.CancellationToken);
 
-        repository.Verify(r => r.DeleteAsync(id, TestContext.Current.CancellationToken), Times.Once);
+        Assert.Same(dto, result);
     }
 
     [Fact]
@@ -79,18 +94,65 @@ public class OrderServiceTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_ReturnsDto_WhenFound()
+    public async Task PatchAsync_MergesFields_AndUpserts()
     {
-        var dto = CreateDto();
+        var existing = CreateDto(status: "Pending", totalAmount: "10.00");
         var repository = new Mock<IOrderRepository>();
         repository
-            .Setup(r => r.GetByIdAsync(dto.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(dto);
+            .Setup(r => r.GetByIdAsync(existing.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        repository
+            .Setup(r => r.UpsertAsync(It.IsAny<OrderDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OrderDto item, CancellationToken _) => item);
         var service = CreateService(repository.Object);
 
-        var result = await service.GetByIdAsync(dto.Id, TestContext.Current.CancellationToken);
+        var result = await service.PatchAsync(new OrderServicePatchRequest
+        {
+            Id = existing.Id,
+            CustomerId = null,
+            Status = "Shipped",
+            TotalAmount = null
+        }, TestContext.Current.CancellationToken);
 
-        Assert.Same(dto, result);
+        Assert.Equal("Shipped", result.Status);
+        Assert.Equal(existing.CustomerId, result.CustomerId);
+        Assert.Equal(existing.TotalAmount, result.TotalAmount);
+        Assert.Equal(existing.CreatedAtUtc, result.CreatedAtUtc);
+    }
+
+    [Fact]
+    public async Task PatchAsync_ThrowsNoChanges_WhenNoFieldsProvided()
+    {
+        var service = CreateService();
+
+        await Assert.ThrowsAsync<NoChangesToModifyException>(() =>
+            service.PatchAsync(new OrderServicePatchRequest
+            {
+                Id = Guid.NewGuid(),
+                CustomerId = null,
+                Status = null,
+                TotalAmount = null
+            }, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task PatchAsync_ThrowsResourceNotFound_WhenMissing()
+    {
+        var id = Guid.NewGuid();
+        var repository = new Mock<IOrderRepository>();
+        repository
+            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OrderDto?) null);
+        var service = CreateService(repository.Object);
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
+            service.PatchAsync(new OrderServicePatchRequest
+            {
+                Id = id,
+                CustomerId = null,
+                Status = "Cancelled",
+                TotalAmount = null
+            }, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -149,28 +211,6 @@ public class OrderServiceTests
     }
 
     [Fact]
-    public async Task PutAsync_ThrowsNoChanges_WhenExistingMatches()
-    {
-        var existing = CreateDto();
-        var repository = new Mock<IOrderRepository>();
-        repository
-            .Setup(r => r.GetByIdAsync(existing.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existing);
-        var service = CreateService(repository.Object);
-
-        await Assert.ThrowsAsync<NoChangesToModifyException>(() =>
-            service.PutAsync(new OrderServicePutRequest
-            {
-                Id = existing.Id,
-                CustomerId = existing.CustomerId,
-                Status = existing.Status,
-                TotalAmount = existing.TotalAmount
-            }, TestContext.Current.CancellationToken));
-
-        repository.Verify(r => r.UpsertAsync(It.IsAny<OrderDto>(), It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
     public async Task PutAsync_PreservesCreatedAt_WhenUpdatingExisting()
     {
         var createdAt = DateTime.UtcNow.AddDays(-5);
@@ -198,65 +238,25 @@ public class OrderServiceTests
     }
 
     [Fact]
-    public async Task PatchAsync_ThrowsNoChanges_WhenNoFieldsProvided()
+    public async Task PutAsync_ThrowsNoChanges_WhenExistingMatches()
     {
-        var service = CreateService();
-
-        await Assert.ThrowsAsync<NoChangesToModifyException>(() =>
-            service.PatchAsync(new OrderServicePatchRequest
-            {
-                Id = Guid.NewGuid(),
-                CustomerId = null,
-                Status = null,
-                TotalAmount = null
-            }, TestContext.Current.CancellationToken));
-    }
-
-    [Fact]
-    public async Task PatchAsync_ThrowsResourceNotFound_WhenMissing()
-    {
-        var id = Guid.NewGuid();
-        var repository = new Mock<IOrderRepository>();
-        repository
-            .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((OrderDto?) null);
-        var service = CreateService(repository.Object);
-
-        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
-            service.PatchAsync(new OrderServicePatchRequest
-            {
-                Id = id,
-                CustomerId = null,
-                Status = "Cancelled",
-                TotalAmount = null
-            }, TestContext.Current.CancellationToken));
-    }
-
-    [Fact]
-    public async Task PatchAsync_MergesFields_AndUpserts()
-    {
-        var existing = CreateDto(status: "Pending", totalAmount: "10.00");
+        var existing = CreateDto();
         var repository = new Mock<IOrderRepository>();
         repository
             .Setup(r => r.GetByIdAsync(existing.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
-        repository
-            .Setup(r => r.UpsertAsync(It.IsAny<OrderDto>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((OrderDto item, CancellationToken _) => item);
         var service = CreateService(repository.Object);
 
-        var result = await service.PatchAsync(new OrderServicePatchRequest
-        {
-            Id = existing.Id,
-            CustomerId = null,
-            Status = "Shipped",
-            TotalAmount = null
-        }, TestContext.Current.CancellationToken);
+        await Assert.ThrowsAsync<NoChangesToModifyException>(() =>
+            service.PutAsync(new OrderServicePutRequest
+            {
+                Id = existing.Id,
+                CustomerId = existing.CustomerId,
+                Status = existing.Status,
+                TotalAmount = existing.TotalAmount
+            }, TestContext.Current.CancellationToken));
 
-        Assert.Equal("Shipped", result.Status);
-        Assert.Equal(existing.CustomerId, result.CustomerId);
-        Assert.Equal(existing.TotalAmount, result.TotalAmount);
-        Assert.Equal(existing.CreatedAtUtc, result.CreatedAtUtc);
+        repository.Verify(r => r.UpsertAsync(It.IsAny<OrderDto>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

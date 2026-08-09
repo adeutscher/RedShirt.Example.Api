@@ -134,36 +134,14 @@ public class MariaDbOrderRepositoryTests
     }
 
     [Fact]
-    public async Task UpsertAsync_DelegatesToStorage_WithPrimaryConnection()
-    {
-        var dto = CreateDto();
-        var storage = new Mock<IGenericMySqlDtoStorage<OrderDto, Guid>>();
-        storage
-            .Setup(s => s.UpsertAsync(
-                DatabaseConstants.PrimaryDatabaseConnectionStringName,
-                dto,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(dto);
-        var repository = CreateRepository(storage: storage.Object);
-
-        var result = await repository.UpsertAsync(dto, TestContext.Current.CancellationToken);
-
-        Assert.Same(dto, result);
-        storage.Verify(s => s.UpsertAsync(
-            DatabaseConstants.PrimaryDatabaseConnectionStringName,
-            dto,
-            TestContext.Current.CancellationToken), Times.Once);
-    }
-
-    [Fact]
     public async Task SearchAsync_ReturnsRecords_WithoutContinuation_WhenPageNotFull()
     {
         var records = new List<OrderDto> {CreateDto(), CreateDto()};
         var repository = CreateRepository(retryWrapperService: CreateRetryReturning(records).Object);
 
         var result = await repository.SearchAsync(
-            CreateSearchRequest(pageSize: 10),
-            continuationToken: null,
+            CreateSearchRequest(10),
+            null,
             TestContext.Current.CancellationToken);
 
         Assert.Equal(2, result.Records.Count);
@@ -190,12 +168,12 @@ public class MariaDbOrderRepositoryTests
             })
             .Returns(Task.CompletedTask);
         var repository = CreateRepository(
-            cacheService: cache.Object,
+            cache.Object,
             retryWrapperService: CreateRetryReturning(records).Object);
 
         var result = await repository.SearchAsync(
-            CreateSearchRequest(pageSize: 10, status: "Pending"),
-            continuationToken: null,
+            CreateSearchRequest(10, status: "Pending"),
+            null,
             TestContext.Current.CancellationToken);
 
         Assert.Equal(10, result.Records.Count);
@@ -208,6 +186,20 @@ public class MariaDbOrderRepositoryTests
     }
 
     [Fact]
+    public async Task SearchAsync_ThrowsBadRequest_WhenTotalAmountIsInvalid()
+    {
+        var repository = CreateRepository();
+
+        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
+            repository.SearchAsync(
+                CreateSearchRequest(totalAmount: "not-a-decimal"),
+                null,
+                TestContext.Current.CancellationToken));
+
+        Assert.Equal("Invalid decimal value for 'TotalAmount'.", exception.Message);
+    }
+
+    [Fact]
     public async Task SearchAsync_UsesCachedParameters_WhenContinuationTokenProvided()
     {
         var continuationToken = Guid.NewGuid();
@@ -216,7 +208,7 @@ public class MariaDbOrderRepositoryTests
         var cachedJson = JsonSerializer.Serialize(new
         {
             OrderBys = new List<string> {"`UpdatedAtUtc` DESC"},
-            SearchParameters = CreateSearchRequest(pageSize: 5, status: "Shipped"),
+            SearchParameters = CreateSearchRequest(5, status: "Shipped"),
             LastId = lastId,
             LastUpdatedAtUtc = lastUpdatedAtUtc
         });
@@ -225,11 +217,11 @@ public class MariaDbOrderRepositoryTests
             .Setup(c => c.GetStringAsync($"continuation:{continuationToken}", It.IsAny<CancellationToken>()))
             .ReturnsAsync(cachedJson);
         var repository = CreateRepository(
-            cacheService: cache.Object,
+            cache.Object,
             retryWrapperService: CreateRetryReturning([CreateDto()]).Object);
 
         var result = await repository.SearchAsync(
-            CreateSearchRequest(pageSize: 99, status: "Ignored"),
+            CreateSearchRequest(99, status: "Ignored"),
             continuationToken,
             TestContext.Current.CancellationToken);
 
@@ -241,16 +233,24 @@ public class MariaDbOrderRepositoryTests
     }
 
     [Fact]
-    public async Task SearchAsync_ThrowsBadRequest_WhenTotalAmountIsInvalid()
+    public async Task UpsertAsync_DelegatesToStorage_WithPrimaryConnection()
     {
-        var repository = CreateRepository();
+        var dto = CreateDto();
+        var storage = new Mock<IGenericMySqlDtoStorage<OrderDto, Guid>>();
+        storage
+            .Setup(s => s.UpsertAsync(
+                DatabaseConstants.PrimaryDatabaseConnectionStringName,
+                dto,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(dto);
+        var repository = CreateRepository(storage: storage.Object);
 
-        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
-            repository.SearchAsync(
-                CreateSearchRequest(totalAmount: "not-a-decimal"),
-                continuationToken: null,
-                TestContext.Current.CancellationToken));
+        var result = await repository.UpsertAsync(dto, TestContext.Current.CancellationToken);
 
-        Assert.Equal("Invalid decimal value for 'TotalAmount'.", exception.Message);
+        Assert.Same(dto, result);
+        storage.Verify(s => s.UpsertAsync(
+            DatabaseConstants.PrimaryDatabaseConnectionStringName,
+            dto,
+            TestContext.Current.CancellationToken), Times.Once);
     }
 }

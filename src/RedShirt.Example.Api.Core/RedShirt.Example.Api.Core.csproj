@@ -18,7 +18,7 @@
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Distributed\RedShirt.Example.Api.Common.Distributed.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Exceptions\RedShirt.Example.Api.Common.Exceptions.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>
-        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Order\RedShirt.Example.Api.DataStores.Order.csproj" />
+        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Order\RedShirt.Example.Api.DataStores.Order.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Product.Core\RedShirt.Example.Api.DataStores.Product.Core.csproj"/>
     </ItemGroup>
 
