@@ -7,9 +7,10 @@ Repo features:
 * Initialisation script for quick namespace adjustment.
 * Use of [NSwag](https://github.com/RicoSuter/NSwag) to automatically document endpoints and to generate client code for
   an interop package.
-    * Recommended next step: Exporting the interop package as a NuGet for use in other projects.
+  * Recommended next step: Exporting the interop package as a NuGet for use in other projects.
 * [Roslyn](https://github.com/dotnet/roslyn) source generation for MariaDB/Dapper data-access scaffolding (services,
   repositories, search requests, and related DI) from annotated DTO models.
+  * This is demonstrated in the implementation for accessing the `Order` data store.
 * Configurable rate limiting using a sliding window system:
     * Uses either Redis or in-memory for storing limits.
 * Configuration is based on environment variables.
