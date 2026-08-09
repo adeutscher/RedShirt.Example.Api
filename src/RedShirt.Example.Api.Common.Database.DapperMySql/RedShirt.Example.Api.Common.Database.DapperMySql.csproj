@@ -18,6 +18,7 @@
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Database\RedShirt.Example.Api.Common.Database.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Exceptions\RedShirt.Example.Api.Common.Exceptions.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.SecretManagers.Core\RedShirt.Example.Api.Common.SecretManagers.Core.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>
     </ItemGroup>
 
 </Project>

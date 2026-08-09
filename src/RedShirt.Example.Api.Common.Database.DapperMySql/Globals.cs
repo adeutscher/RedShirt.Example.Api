@@ -1,3 +1,4 @@
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("RedShirt.Adventure.Realm.Common.Database.UnitTests")]
+[assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
+[assembly: InternalsVisibleTo("RedShirt.Example.Api.Common.Database.DapperMySql.UnitTests")]

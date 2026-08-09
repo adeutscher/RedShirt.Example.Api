@@ -51,6 +51,8 @@
         <Project
                 Path="test/RedShirt.Example.Api.Common.Azure.UnitTests/RedShirt.Example.Api.Common.Azure.UnitTests.csproj"/>
         <Project
+                Path="test/RedShirt.Example.Api.Common.Database.DapperMySql.UnitTests/RedShirt.Example.Api.Common.Database.DapperMySql.UnitTests.csproj"/>
+        <Project
                 Path="test/RedShirt.Example.Api.Common.Distributed.UnitTests/RedShirt.Example.Api.Common.Distributed.UnitTests.csproj"/>
         <Project
                 Path="test/RedShirt.Example.Api.Common.RateLimiting.UnitTests/RedShirt.Example.Api.Common.RateLimiting.UnitTests.csproj"/>
