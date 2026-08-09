@@ -78,7 +78,9 @@ public static class RepositoryLevelGenerator
             // Declare SQL command
             .AppendLineWithIndent(2, "/* Declare SQL Command */")
             .AppendLineWithIndent(2, "var @params = new { paramTake = pageSize };")
-            .AppendLineWithIndent(2, "var template = queryBuilder.AddTemplate($\"SELECT * FROM {"
+            .AppendLineWithIndent(2,
+                $"var selectList = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.BuildSelectClause(typeof({classSummaryModel.FullDtoName}));")
+            .AppendLineWithIndent(2, $"var template = queryBuilder.AddTemplate($\"SELECT {{selectList}} FROM {{"
                                      + $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(genericDtoStorage.GetTableName())"
                                      + "} /**where**/ /**orderby**/ LIMIT @paramTake\", @params);")
             // Declare and act on SQL connection

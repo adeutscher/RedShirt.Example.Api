@@ -30,6 +30,7 @@ public static class StoredAsDecimalHelper
                 return $"CAST({quotedColumn} AS CHAR) AS {DatabaseUtility.QuoteResource(property.Name)}";
             }
 
+            // ReSharper disable once ConvertIfStatementToReturnStatement
             if (!string.Equals(columnName, property.Name, StringComparison.Ordinal))
             {
                 return $"{quotedColumn} AS {DatabaseUtility.QuoteResource(property.Name)}";
