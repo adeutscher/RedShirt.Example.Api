@@ -11,6 +11,7 @@
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Database.DapperMySql\RedShirt.Example.Api.Common.Database.DapperMySql.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Distributed\RedShirt.Example.Api.Common.Distributed.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Exceptions\RedShirt.Example.Api.Common.Exceptions.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Core\RedShirt.Example.Api.Core.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Implementations.Constants\RedShirt.Example.Api.Implementations.Constants.csproj"/>
     </ItemGroup>
 

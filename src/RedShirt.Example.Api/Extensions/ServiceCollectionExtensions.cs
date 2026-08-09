@@ -4,7 +4,8 @@ using RedShirt.Example.Api.Common.Extensions;
 using RedShirt.Example.Api.Common.RateLimiting.Extensions;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Extensions;
 using RedShirt.Example.Api.ExceptionHandlers;
-using RedShirt.Example.Api.Implementations.ExampleItem.Extensions;
+using RedShirt.Example.Api.DataStores.ExampleItem.Extensions;
+using RedShirt.Example.Api.Implementations.Products.Extensions;
 
 namespace RedShirt.Example.Api.Extensions;
 
@@ -33,6 +34,7 @@ internal static class ServiceCollectionExtensions
             ////
             .ConsiderAddingRateLimitingPolicies(configuration)
             // App-specific
-            .ConfigureApiImplementations(configuration);
+            .ConfigureApiImplementations(configuration)
+            .AddProducts(configuration);
     }
 }

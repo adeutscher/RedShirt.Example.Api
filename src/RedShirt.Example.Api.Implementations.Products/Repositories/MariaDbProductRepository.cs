@@ -5,6 +5,8 @@ using RedShirt.Example.Api.Common.Database.DapperMySql.Services.Resilience;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Utility;
 using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
+using RedShirt.Example.Api.Core.UseCases.Product.Models;
+using RedShirt.Example.Api.Core.UseCases.Product.Services;
 using RedShirt.Example.Api.Implementations.Constants;
 using RedShirt.Example.Api.Implementations.Products.Models;
 
@@ -19,7 +21,7 @@ internal sealed class MariaDbProductRepository(
     private const int MaxPageSize = 100;
     private const string ConnectionStringName = DatabaseConstants.PrimaryDatabaseConnectionStringName;
 
-    private static SqlBuilder SetupQueryBuilder(SqlBuilder builder, ProductServiceSearchRequest parameters)
+    private static SqlBuilder SetupQueryBuilder(SqlBuilder builder, ProductSearchParameters parameters)
     {
         if (parameters.CreatedBeforeUtc.HasValue)
         {
@@ -84,7 +86,7 @@ internal sealed class MariaDbProductRepository(
                 new
                 {
                     price = StoredAsDecimalHelper.ParseRequiredDecimal(parameters.Price,
-                        nameof(ProductServiceSearchRequest.Price))
+                        nameof(ProductSearchParameters.Price))
                 });
         }
 
@@ -95,7 +97,7 @@ internal sealed class MariaDbProductRepository(
                 new
                 {
                     price = StoredAsDecimalHelper.ParseRequiredDecimal(parameters.PriceGreaterThan,
-                        nameof(ProductServiceSearchRequest.PriceGreaterThan))
+                        nameof(ProductSearchParameters.PriceGreaterThan))
                 });
         }
 
@@ -106,11 +108,37 @@ internal sealed class MariaDbProductRepository(
                 new
                 {
                     priceLessThan = StoredAsDecimalHelper.ParseRequiredDecimal(parameters.PriceLessThan,
-                        nameof(ProductServiceSearchRequest.PriceLessThan))
+                        nameof(ProductSearchParameters.PriceLessThan))
                 });
         }
 
         return builder;
+    }
+
+    private static ProductModel ToModel(ProductDto dto)
+    {
+        return new ProductModel
+        {
+            Id = dto.Id,
+            CreatedAtUtc = dto.CreatedAtUtc,
+            UpdatedAtUtc = dto.UpdatedAtUtc,
+            Sku = dto.Sku,
+            Name = dto.Name,
+            Price = dto.Price
+        };
+    }
+
+    private static ProductDto ToDto(ProductModel model)
+    {
+        return new ProductDto
+        {
+            Id = model.Id,
+            CreatedAtUtc = model.CreatedAtUtc,
+            UpdatedAtUtc = model.UpdatedAtUtc,
+            Sku = model.Sku,
+            Name = model.Name,
+            Price = model.Price
+        };
     }
 
     public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
@@ -118,17 +146,19 @@ internal sealed class MariaDbProductRepository(
         return genericDtoStorage.DeleteByKeyAsync(ConnectionStringName, id, cancellationToken);
     }
 
-    public Task<ProductDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<ProductModel?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return genericDtoStorage.GetByKeyAsync(ConnectionStringName, id, cancellationToken);
+        var dto = await genericDtoStorage.GetByKeyAsync(ConnectionStringName, id, cancellationToken);
+        return dto is null ? null : ToModel(dto);
     }
 
-    public Task<ProductDto> UpsertAsync(ProductDto item, CancellationToken cancellationToken = default)
+    public async Task<ProductModel> UpsertAsync(ProductModel item, CancellationToken cancellationToken = default)
     {
-        return genericDtoStorage.UpsertAsync(ConnectionStringName, item, cancellationToken);
+        var dto = await genericDtoStorage.UpsertAsync(ConnectionStringName, ToDto(item), cancellationToken);
+        return ToModel(dto);
     }
 
-    public async Task<ProductSearchResponse> SearchAsync(ProductServiceSearchRequest parameters,
+    public async Task<ProductListModel> SearchAsync(ProductSearchParameters parameters,
         Guid? continuationToken, CancellationToken cancellationToken = default)
     {
         ContinuationParameters? continuationParameters = null;
@@ -206,9 +236,9 @@ internal sealed class MariaDbProductRepository(
                 cancellationToken);
         }
 
-        return new ProductSearchResponse
+        return new ProductListModel
         {
-            Records = records,
+            Items = records.Select(ToModel).ToList(),
             ContinuationToken = continuationToken
         };
     }
@@ -216,7 +246,7 @@ internal sealed class MariaDbProductRepository(
     private sealed class ContinuationParameters
     {
         public required List<string> OrderBys { get; init; }
-        public required ProductServiceSearchRequest SearchParameters { get; init; }
+        public required ProductSearchParameters SearchParameters { get; init; }
         public required Guid LastId { get; init; }
         public required DateTime LastUpdatedAtUtc { get; init; }
     }
