@@ -6,9 +6,9 @@ using RedShirt.Example.Api.Core.UseCases.Product.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.Product.Commands.Delete;
 using RedShirt.Example.Api.Core.UseCases.Product.Commands.Patch;
 using RedShirt.Example.Api.Core.UseCases.Product.Commands.Update;
-using RedShirt.Example.Api.Core.UseCases.Product.Models;
 using RedShirt.Example.Api.Core.UseCases.Product.Queries.GetRecord;
 using RedShirt.Example.Api.Core.UseCases.Product.Queries.SearchRecords;
+using RedShirt.Example.Api.DataStores.Product.Core.Models;
 using RedShirt.Example.Api.Models.Product;
 
 namespace RedShirt.Example.Api.Controllers;
@@ -35,7 +35,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductModel))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(
@@ -50,7 +50,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductListModel))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSearchResponse))]
     public async Task<IActionResult> Search(
         [FromQuery]
         int pageSize,
@@ -84,7 +84,7 @@ public class ProductController : ControllerBase
     {
         var model = await searchProductRecordsQueryHandler.Handle(
             new SearchProductRecordsQuery(
-                new ProductSearchParameters
+                new ProductServiceSearchRequest
                 {
                     PageSize = pageSize,
                     CreatedBeforeUtc = createdBeforeUtc,
@@ -105,7 +105,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpPatch("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductModel))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Patch(
@@ -124,7 +124,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductModel))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Post(
@@ -148,7 +148,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductModel))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Put(
         [FromRoute]

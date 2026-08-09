@@ -1,37 +1,29 @@
 using RedShirt.Example.Api.Core.Cqrs;
 using RedShirt.Example.Api.Core.Services;
-using RedShirt.Example.Api.Core.UseCases.Product.Models;
-using RedShirt.Example.Api.Core.UseCases.Product.Services;
+using RedShirt.Example.Api.DataStores.Product.Core.Models;
+using RedShirt.Example.Api.DataStores.Product.Core.Services;
 
 namespace RedShirt.Example.Api.Core.UseCases.Product.Commands.Create;
 
-public interface ICreateProductCommandHandler : ICqrsHandler<CreateProductCommand, ProductModel>;
+public interface ICreateProductCommandHandler : ICqrsHandler<CreateProductCommand, ProductDto>;
 
 internal class CreateProductCommandHandler(
-    IProductRepository repository,
+    IProductService productService,
     ICacheBasedIdempotencyWrapperService idempotencyWrapperService,
     ICoreRequestValidator coreRequestValidator)
     : ICreateProductCommandHandler
 {
-    public async Task<ProductModel> Handle(CreateProductCommand command,
+    public async Task<ProductDto> Handle(CreateProductCommand command,
         CancellationToken cancellationToken = default)
     {
         await coreRequestValidator.ValidateAsync(command, cancellationToken);
 
         return await idempotencyWrapperService.RunIdempotentlyAsync(command.IdempotencyKey, async () =>
-        {
-            var createdAt = DateTime.UtcNow;
-            var model = new ProductModel
+            await productService.PostAsync(new ProductServicePostRequest
             {
-                Id = Guid.NewGuid(),
-                CreatedAtUtc = createdAt,
-                UpdatedAtUtc = createdAt,
                 Sku = command.Sku,
                 Name = command.Name,
                 Price = command.Price
-            };
-
-            return await repository.UpsertAsync(model, cancellationToken);
-        }, cancellationToken);
+            }, cancellationToken), cancellationToken);
     }
 }

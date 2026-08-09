@@ -1,27 +1,20 @@
-using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.Core.Cqrs;
-using RedShirt.Example.Api.Core.UseCases.Product.Models;
-using RedShirt.Example.Api.Core.UseCases.Product.Services;
+using RedShirt.Example.Api.DataStores.Product.Core.Models;
+using RedShirt.Example.Api.DataStores.Product.Core.Services;
 
 namespace RedShirt.Example.Api.Core.UseCases.Product.Queries.GetRecord;
 
-public interface IGetProductRecordQueryHandler : ICqrsHandler<GetProductRecordQuery, ProductModel>;
+public interface IGetProductRecordQueryHandler : ICqrsHandler<GetProductRecordQuery, ProductDto>;
 
 internal class GetProductRecordQueryHandler(
-    IProductRepository repository,
+    IProductService productService,
     ICoreRequestValidator coreRequestValidator)
     : IGetProductRecordQueryHandler
 {
-    public async Task<ProductModel> Handle(GetProductRecordQuery query,
+    public async Task<ProductDto> Handle(GetProductRecordQuery query,
         CancellationToken cancellationToken = default)
     {
         await coreRequestValidator.ValidateAsync(query, cancellationToken);
-
-        if (await repository.GetByIdAsync(query.Id, cancellationToken) is not { } entry)
-        {
-            throw new ResourceNotFoundException();
-        }
-
-        return entry;
+        return await productService.GetByIdAsync(query.Id, cancellationToken);
     }
 }

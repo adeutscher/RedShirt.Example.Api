@@ -258,7 +258,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProductModel"
+                  "$ref": "#/components/schemas/ProductDto"
                 }
               }
             }
@@ -320,7 +320,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProductModel"
+                  "$ref": "#/components/schemas/ProductDto"
                 }
               }
             }
@@ -382,7 +382,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProductModel"
+                  "$ref": "#/components/schemas/ProductDto"
                 }
               }
             }
@@ -536,7 +536,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProductListModel"
+                  "$ref": "#/components/schemas/ProductSearchResponse"
                 }
               }
             }
@@ -577,7 +577,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProductModel"
+                  "$ref": "#/components/schemas/ProductDto"
                 }
               }
             }
@@ -678,7 +678,7 @@
           }
         }
       },
-      "ProductModel": {
+      "ProductDto": {
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -713,12 +713,12 @@
           }
         }
       },
-      "ProductListModel": {
+      "ProductSearchResponse": {
         "type": "object",
         "additionalProperties": false,
         "required": [
           "continuationToken",
-          "items"
+          "records"
         ],
         "properties": {
           "continuationToken": {
@@ -726,10 +726,10 @@
             "format": "guid",
             "nullable": true
           },
-          "items": {
+          "records": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ProductModel"
+              "$ref": "#/components/schemas/ProductDto"
             }
           }
         }

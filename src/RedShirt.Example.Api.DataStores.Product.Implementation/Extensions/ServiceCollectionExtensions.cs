@@ -1,11 +1,12 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Extensions;
-using RedShirt.Example.Api.Core.UseCases.Product.Services;
-using RedShirt.Example.Api.Implementations.Products.Models;
-using RedShirt.Example.Api.Implementations.Products.Repositories;
+using RedShirt.Example.Api.DataStores.Product.Core.Models;
+using RedShirt.Example.Api.DataStores.Product.Core.Services;
+using RedShirt.Example.Api.DataStores.Product.Implementation.Repositories;
+using RedShirt.Example.Api.DataStores.Product.Implementation.Services;
 
-namespace RedShirt.Example.Api.Implementations.Products.Extensions;
+namespace RedShirt.Example.Api.DataStores.Product.Implementation.Extensions;
 
 public static class ServiceCollectionExtensions
 {
@@ -13,6 +14,7 @@ public static class ServiceCollectionExtensions
     {
         return services
             .AddDapperMySql(configuration)
+            .AddSingleton<IProductService, ProductService>()
             .AddSingleton<IProductRepository, MariaDbProductRepository>()
             .AddGenericMysqlDtoHandler<ProductDto, Guid>();
     }

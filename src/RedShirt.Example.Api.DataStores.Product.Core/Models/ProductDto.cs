@@ -1,7 +1,7 @@
 using RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes;
 using RedShirt.Example.Api.Implementations.Constants;
 
-namespace RedShirt.Example.Api.Implementations.Products.Models;
+namespace RedShirt.Example.Api.DataStores.Product.Core.Models;
 
 [DbTable("Product", DatabaseConstants.PrimaryDatabaseConnectionStringName)]
 public class ProductDto

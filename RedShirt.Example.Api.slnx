@@ -28,7 +28,8 @@
     <Folder Name="/src/data-stores/">
         <Project Path="src\RedShirt.Example.Api.DataStores.ExampleItem\RedShirt.Example.Api.DataStores.ExampleItem.csproj" />
         <Project Path="src\RedShirt.Example.Api.DataStores.Order\RedShirt.Example.Api.DataStores.Order.csproj" />
-        <Project Path="src\RedShirt.Example.Api.Implementations.Products\RedShirt.Example.Api.Implementations.Products.csproj" />
+        <Project Path="src\RedShirt.Example.Api.DataStores.Product.Core\RedShirt.Example.Api.DataStores.Product.Core.csproj" />
+        <Project Path="src\RedShirt.Example.Api.DataStores.Product.Implementation\RedShirt.Example.Api.DataStores.Product.Implementation.csproj" />
     </Folder>
     <Folder Name="/swagger/">
         <Project Path="swagger/RedShirt.Example.Api.Interop/RedShirt.Example.Api.Interop.csproj" />

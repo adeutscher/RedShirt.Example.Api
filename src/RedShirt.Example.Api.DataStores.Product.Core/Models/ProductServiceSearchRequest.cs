@@ -1,6 +1,6 @@
-namespace RedShirt.Example.Api.Core.UseCases.Product.Models;
+namespace RedShirt.Example.Api.DataStores.Product.Core.Models;
 
-public class ProductSearchParameters
+public class ProductServiceSearchRequest
 {
     public required int PageSize { get; init; }
     public required DateTime? CreatedBeforeUtc { get; init; }

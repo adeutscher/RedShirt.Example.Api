@@ -1,47 +1,27 @@
-using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.Core.Cqrs;
-using RedShirt.Example.Api.Core.UseCases.Product.Models;
-using RedShirt.Example.Api.Core.UseCases.Product.Services;
+using RedShirt.Example.Api.DataStores.Product.Core.Models;
+using RedShirt.Example.Api.DataStores.Product.Core.Services;
 
 namespace RedShirt.Example.Api.Core.UseCases.Product.Commands.Patch;
 
-public interface IPatchProductCommandHandler : ICqrsHandler<PatchProductCommand, ProductModel>;
+public interface IPatchProductCommandHandler : ICqrsHandler<PatchProductCommand, ProductDto>;
 
 internal class PatchProductCommandHandler(
-    IProductRepository repository,
+    IProductService productService,
     ICoreRequestValidator coreRequestValidator)
     : IPatchProductCommandHandler
 {
-    public async Task<ProductModel> Handle(PatchProductCommand command,
+    public async Task<ProductDto> Handle(PatchProductCommand command,
         CancellationToken cancellationToken = default)
     {
         await coreRequestValidator.ValidateAsync(command, cancellationToken);
 
-        if (!ProductModelExtensions.AreChangesRequested(command.Sku, command.Name, command.Price))
-        {
-            throw new NoChangesToModifyException();
-        }
-
-        if (await repository.GetByIdAsync(command.Id, cancellationToken) is not { } existing)
-        {
-            throw new ResourceNotFoundException();
-        }
-
-        var candidate = new ProductModel
+        return await productService.PatchAsync(new ProductServicePatchRequest
         {
             Id = command.Id,
-            CreatedAtUtc = existing.CreatedAtUtc,
-            UpdatedAtUtc = DateTime.UtcNow,
-            Sku = command.Sku ?? existing.Sku,
-            Name = command.Name ?? existing.Name,
-            Price = command.Price ?? existing.Price
-        };
-
-        if (candidate.IsTheSameAs(existing))
-        {
-            throw new NoChangesToModifyException();
-        }
-
-        return await repository.UpsertAsync(candidate, cancellationToken);
+            Sku = command.Sku,
+            Name = command.Name,
+            Price = command.Price
+        }, cancellationToken);
     }
 }
