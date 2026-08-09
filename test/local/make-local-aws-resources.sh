@@ -7,3 +7,7 @@ AWS_DEFAULT_REGION=us-east-1 awslocal dynamodb create-table \
     --provisioned-throughput ReadCapacityUnits=10,WriteCapacityUnits=10
 
 AWS_DEFAULT_REGION=us-east-1 awslocal ssm put-parameter --overwrite --type String --name /redis/connection-string --value "redis:6379"
+
+AWS_DEFAULT_REGION=us-east-1 awslocal ssm put-parameter --overwrite --type String \
+    --name /mysql/connection-string \
+    --value "Server=mariadb;Port=3306;Database=example;Uid=example-user;Pwd=example-password;"

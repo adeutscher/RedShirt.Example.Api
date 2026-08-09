@@ -15,6 +15,9 @@ services:
       - '3306:3306'
     environment:
       MARIADB_ROOT_PASSWORD: ${LOCAL_SQL_PASSWORD}
+      MARIADB_DATABASE: example
+      MARIADB_USER: example-user
+      MARIADB_PASSWORD: example-password
     volumes:
       - ./data/mariadb-data:/var/lib/mysql
 
@@ -26,6 +29,7 @@ services:
     depends_on:
       - ministack
       - redis
+      - mariadb
     ports:
       - "9000:8080"
     environment:
@@ -69,3 +73,6 @@ services:
       RATE_LIMITING__POLICIES__EXAMPLE__FAIL_CLOSED: false
       # App-specific variables
       STORAGE__EXAMPLE_ITEM__TABLE_NAME: example
+      # Database (MariaDB) — path to SSM secret holding the MySql.Data connection string
+      ##
+      CONNECTION_STRINGS__PRIMARY: "/mysql/connection-string"
