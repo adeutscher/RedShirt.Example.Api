@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using RedShirt.Api.Example.Connectors.Foo.Core.Exceptions;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
-using System.Net;
 
 namespace RedShirt.Example.Api.ExceptionHandlers;
 
@@ -31,10 +30,7 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsS
                 statusCode = StatusCodes.Status304NotModified;
                 title = "Not Modified";
                 return true;
-            case FooConnectorException
-            {
-                InnerException: HttpRequestException {StatusCode: HttpStatusCode.NotFound}
-            }:
+            case FooRecordNotFoundException:
                 statusCode = StatusCodes.Status404NotFound;
                 title = "Not Found";
                 return true;

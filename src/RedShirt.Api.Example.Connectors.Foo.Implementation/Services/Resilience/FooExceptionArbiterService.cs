@@ -94,6 +94,7 @@ internal sealed class FooExceptionArbiterService : IFooExceptionArbiterService
 
         return exception switch
         {
+            FooRecordNotFoundException => Fresh(true, false, false),
             FooConnectorException w =>
                 Handled(true, w is {IsHandled: false, CouldBeTransient: true}, w.CouldBeExternallySolvable),
             // API key comes from the secret manager; honour prior classification.

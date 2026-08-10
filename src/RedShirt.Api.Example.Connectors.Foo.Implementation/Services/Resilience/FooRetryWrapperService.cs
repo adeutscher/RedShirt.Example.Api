@@ -78,6 +78,12 @@ internal sealed class FooRetryWrapperService(
     private Exception WrapIfNeeded(Exception exception)
     {
         var report = exceptionArbiterService.GetReport(exception);
+        
+        // Domain not-found is a stable connector outcome; do not wrap as FooConnectorException.
+        if (exception is FooRecordNotFoundException)
+        {
+            return exception;
+        }
 
         // ReSharper disable once DuplicatedSequentialIfBodies
         if (report.AlreadyHandled && exception is FooConnectorException)

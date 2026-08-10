@@ -1,6 +1,8 @@
+using RedShirt.Api.Example.Connectors.Foo.Core.Exceptions;
 using RedShirt.Api.Example.Connectors.Foo.Core.Models;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Models.Requests;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Models.Responses;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 
@@ -16,7 +18,8 @@ internal interface IFooApiClient
 
 /// <summary>
 ///     HTTP transport for the Foo dependency. Failures surface as raw framework exceptions
-///     (<see cref="HttpRequestException" />, <see cref="JsonException" />, timeouts, etc.).
+///     (<see cref="HttpRequestException" />, <see cref="JsonException" />, timeouts, etc.),
+///     except get-by-id HTTP 404 which surfaces as <see cref="FooRecordNotFoundException" />.
 /// </summary>
 internal sealed class FooApiClient(HttpClient httpClient, string baseUrl) : IFooApiClient
 {
@@ -60,6 +63,11 @@ internal sealed class FooApiClient(HttpClient httpClient, string baseUrl) : IFoo
             new Uri($"{baseUrl.TrimEnd('/')}/api/foo/{id}"));
 
         using var response = await httpClient.SendAsync(message, cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            throw new FooRecordNotFoundException(id);
+        }
 
         if (!response.IsSuccessStatusCode)
         {
