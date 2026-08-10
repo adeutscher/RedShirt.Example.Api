@@ -2,12 +2,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
-using RedShirt.Api.Example.Connectors.Foo.Implementation.Clients;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
 
 namespace RedShirt.Api.Example.Connectors.Foo.Implementation.Services.Resilience;
 
-internal interface IFooApiRequestHandlerRetryPolicySource
+internal interface IFooApiRequestHandlerRetryWrapperService
 {
     /// <summary>
     ///     Ensures an API key is loaded (from cache or secret manager) and returns it.
@@ -15,19 +14,20 @@ internal interface IFooApiRequestHandlerRetryPolicySource
     Task<string> GetApiKeyAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///     Cached Polly v8 pipeline that force-refreshes the API key once on
+    ///     Executes <paramref name="func" /> with a one-shot retry that force-refreshes the API key on
     ///     <see cref="UnauthorizedException" />.
     /// </summary>
-    ResiliencePipeline GetRetryPipeline();
+    Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> func, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
 ///     Caches the Foo API-key refresh resilience pipeline and the current API key value.
 /// </summary>
-internal sealed class FooApiRequestHandlerRetryPolicySource(
+internal sealed class FooApiRequestHandlerRetryWrapperService(
     ISecretManagerCacheService secretManager,
-    ILogger<FooApiRequestHandlerRetryPolicySource> logger,
-    IOptions<FooApiClientHandler.ConfigurationModel> options) : IFooApiRequestHandlerRetryPolicySource
+    ILogger<FooApiRequestHandlerRetryWrapperService> logger,
+    IOptions<FooApiRequestHandlerRetryWrapperService.ConfigurationModel> options)
+    : IFooApiRequestHandlerRetryWrapperService
 {
     private string? _apiKey;
     private ResiliencePipeline? _retryPipeline;
@@ -36,15 +36,28 @@ internal sealed class FooApiRequestHandlerRetryPolicySource(
     {
         if (_apiKey is null)
         {
-            _apiKey = await secretManager.GetSecretAsync(options.Value.ApiKeyPath,
-                force: false,
-                cancellationToken: cancellationToken);
+            await RefreshApiKeyAsync(force: false, cancellationToken);
         }
 
-        return _apiKey;
+        return _apiKey!;
     }
 
-    public ResiliencePipeline GetRetryPipeline()
+    public Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> func,
+        CancellationToken cancellationToken = default)
+    {
+        return GetRetryPipeline().ExecuteAsync(
+            async token => await func(token),
+            cancellationToken).AsTask();
+    }
+
+    private async Task RefreshApiKeyAsync(bool force, CancellationToken cancellationToken)
+    {
+        _apiKey = await secretManager.GetSecretAsync(options.Value.ApiKeyPath,
+            force: force,
+            cancellationToken: cancellationToken);
+    }
+
+    private ResiliencePipeline GetRetryPipeline()
     {
         return _retryPipeline ??= new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
@@ -58,9 +71,7 @@ internal sealed class FooApiRequestHandlerRetryPolicySource(
                 {
                     logger.LogDebug("Refreshing Foo API key from secret path {ApiKeyPath}",
                         options.Value.ApiKeyPath);
-                    _apiKey = await secretManager.GetSecretAsync(options.Value.ApiKeyPath,
-                        force: true,
-                        cancellationToken: args.Context.CancellationToken);
+                    await RefreshApiKeyAsync(force: true, args.Context.CancellationToken);
                 }
             })
             .Build();
@@ -70,4 +81,12 @@ internal sealed class FooApiRequestHandlerRetryPolicySource(
     ///     Signals that the Foo API rejected the current key; the retry pipeline force-refreshes and retries.
     /// </summary>
     internal sealed class UnauthorizedException : Exception;
+
+    internal sealed class ConfigurationModel
+    {
+        /// <summary>
+        ///     Secret-manager path for the Foo API key (same pattern as connection-string paths).
+        /// </summary>
+        public required string ApiKeyPath { get; init; }
+    }
 }

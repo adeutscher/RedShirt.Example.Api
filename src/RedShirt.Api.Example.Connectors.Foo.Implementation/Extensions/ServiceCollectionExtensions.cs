@@ -19,10 +19,10 @@ public static class ServiceCollectionExtensions
             .AddCommonServices()
             .Configure<FooApiClientFactory.ConfigurationModel>(
                 configuration.GetSection(ConfigurationSectionName))
-            .Configure<FooApiClientHandler.ConfigurationModel>(
+            .Configure<FooApiRequestHandlerRetryWrapperService.ConfigurationModel>(
                 configuration.GetSection(ConfigurationSectionName))
             .AddTransient<FooApiClientHandler>()
-            .AddSingleton<IFooApiRequestHandlerRetryPolicySource, FooApiRequestHandlerRetryPolicySource>()
+            .AddSingleton<IFooApiRequestHandlerRetryWrapperService, FooApiRequestHandlerRetryWrapperService>()
             .AddSingleton<IFooExceptionArbiterService, FooExceptionArbiterService>()
             .AddSingleton<IFooRetryWrapperService, FooRetryWrapperService>()
             .AddSingleton<IFooApiClientFactory, FooApiClientFactory>()

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Options;
+using RedShirt.Api.Example.Connectors.Foo.Implementation.Constants;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Services.Resilience;
 using System.Net;
 
@@ -9,35 +9,27 @@ namespace RedShirt.Api.Example.Connectors.Foo.Implementation.Clients;
 ///     On <see cref="HttpStatusCode.Unauthorized" />, force-refreshes the key once and retries.
 /// </summary>
 internal sealed class FooApiClientHandler(
-    IFooApiRequestHandlerRetryPolicySource retryPolicySource) : DelegatingHandler
+    IFooApiRequestHandlerRetryWrapperService apiRequestRetryWrapperService) : DelegatingHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        await retryPolicySource.GetApiKeyAsync(cancellationToken);
-
-        return await retryPolicySource.GetRetryPipeline().ExecuteAsync(async token =>
+        return await apiRequestRetryWrapperService.ExecuteAsync(async ct =>
         {
-            request.Headers.Remove("x-api-key");
-            request.Headers.TryAddWithoutValidation("x-api-key", await retryPolicySource.GetApiKeyAsync(token));
+            request.Headers.Remove(FooApiHeaderNames.ApiKey);
+            request.Headers.TryAddWithoutValidation(FooApiHeaderNames.ApiKey,
+                await apiRequestRetryWrapperService.GetApiKeyAsync(ct));
 
-            var response = await base.SendAsync(request, token);
+            var response = await base.SendAsync(request, ct);
 
+            // ReSharper disable once InvertIf
             if (response.StatusCode is HttpStatusCode.Unauthorized)
             {
                 response.Dispose();
-                throw new FooApiRequestHandlerRetryPolicySource.UnauthorizedException();
+                throw new FooApiRequestHandlerRetryWrapperService.UnauthorizedException();
             }
 
             return response;
         }, cancellationToken);
-    }
-
-    internal sealed class ConfigurationModel
-    {
-        /// <summary>
-        ///     Secret-manager path for the Foo API key (same pattern as connection-string paths).
-        /// </summary>
-        public required string ApiKeyPath { get; init; }
     }
 }
