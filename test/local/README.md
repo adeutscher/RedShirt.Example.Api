@@ -22,14 +22,18 @@ If you added it to `~/.bashrc`, reload:
 
 ## Steps
 
-1. Bring up `ministack`, `redis`, and `mariadb` containers:
+1. Bring up `ministack`, `redis`, `mariadb`, and `wiremock-foo` containers:
 
     ```bash
-    docker compose up -d ministack redis mariadb
+    docker compose up -d ministack redis mariadb wiremock-foo
     ```
 
+    `wiremock-foo` stubs the Foo HTTP API (`POST /api/foo`, `GET /api/foo/{id}`) used by
+    the Foo connector. It expects `x-api-key: local-foo-api-key` (seeded as `/foo/api-key`
+    in the next step). Admin: http://localhost:9100/__admin/
+
 2. Run `make-local-aws-resources.sh` to create ministack resources (DynamoDB table and
-   SSM parameters, including `/mysql/connection-string`):
+   SSM parameters, including `/mysql/connection-string` and `/foo/api-key`):
 
     ```bash
     ./make-local-aws-resources.sh

@@ -21,6 +21,19 @@ services:
     volumes:
       - ./data/mariadb-data:/var/lib/mysql
 
+  # Mocks the Foo HTTP API consumed by Connectors.Foo.Implementation (POST/GET /api/foo).
+  # Stubs live under ./wiremock/foo/mappings. Admin UI: http://localhost:9100/__admin/
+  wiremock-foo:
+    image: wiremock/wiremock:3.13.1
+    ports:
+      - "9100:8080"
+    volumes:
+      - ./wiremock/foo:/home/wiremock
+    entrypoint:
+      - /docker-entrypoint.sh
+      - --global-response-templating
+      - --verbose
+
   api:
     build:
       context: ../..
@@ -30,6 +43,7 @@ services:
       - ministack
       - redis
       - mariadb
+      - wiremock-foo
     ports:
       - "9000:8080"
     environment:
@@ -81,3 +95,8 @@ services:
       # Database (MariaDB) — path to SSM secret holding the MySql.Data connection string
       ##
       CONNECTION_STRINGS__PRIMARY: "/mysql/connection-string"
+      # Foo connector (external HTTP dependency)
+      ##
+      CONNECTORS__FOO__BASE_URL: "${CONNECTORS__FOO__BASE_URL-http://wiremock-foo:8080}"
+      CONNECTORS__FOO__API_KEY_PATH: "${CONNECTORS__FOO__API_KEY_PATH-/foo/api-key}"
+      CONNECTORS__FOO__API_KEY_RETRY_COOLDOWN_SECONDS: "${CONNECTORS__FOO__API_KEY_RETRY_COOLDOWN_SECONDS-60}"

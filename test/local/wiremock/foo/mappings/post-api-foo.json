@@ -1,0 +1,26 @@
+{
+  "priority": 1,
+  "name": "Foo create",
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/foo",
+    "headers": {
+      "x-api-key": {
+        "equalTo": "local-foo-api-key"
+      }
+    },
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": "$.Name"
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "transformers": ["response-template"],
+    "body": "{\"Id\":{{randomInt lower=1 upper=999999}},\"Name\":\"{{jsonPath request.body '$.Name'}}\"}"
+  }
+}
