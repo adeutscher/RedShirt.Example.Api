@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using RedShirt.Api.Example.Connectors.Foo.Core.Exceptions;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Services.Resilience;
+using RedShirt.Example.Api.Common.SecretManagers.Core.Models;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
 
 namespace RedShirt.Api.Example.Connectors.Foo.Implementation.UnitTests.Tests.Services.Resilience;
@@ -28,6 +29,15 @@ public class FooApiRequestHandlerRetryWrapperServiceTests
             }));
     }
 
+    private static SecretManagerCacheSecretResponse Secret(string value, bool queried = true)
+    {
+        return new SecretManagerCacheSecretResponse
+        {
+            Value = value,
+            QueriedSecretManager = queried
+        };
+    }
+
     [Fact]
     public async Task ExecuteAsync_RefreshesKey_AndRetriesOnce_OnFooUnauthorized()
     {
@@ -35,11 +45,11 @@ public class FooApiRequestHandlerRetryWrapperServiceTests
         secrets
             .Setup(s => s.GetSecretAsync(ApiKeyPath, It.IsAny<TimeSpan?>(), false,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync("old-key");
+            .ReturnsAsync(Secret("old-key"));
         secrets
             .Setup(s => s.GetSecretAsync(ApiKeyPath, It.IsAny<TimeSpan?>(), true,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync("new-key");
+            .ReturnsAsync(Secret("new-key"));
 
         var sut = CreateSut(secrets.Object, 1);
         await sut.GetApiKeyAsync(TestContext.Current.CancellationToken);
@@ -74,7 +84,7 @@ public class FooApiRequestHandlerRetryWrapperServiceTests
         secrets
             .Setup(s => s.GetSecretAsync(ApiKeyPath, It.IsAny<TimeSpan?>(), It.IsAny<bool>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync("same-key");
+            .ReturnsAsync(Secret("same-key"));
 
         var sut = CreateSut(secrets.Object, 1);
         await sut.GetApiKeyAsync(TestContext.Current.CancellationToken);
@@ -92,7 +102,7 @@ public class FooApiRequestHandlerRetryWrapperServiceTests
         secrets
             .Setup(s => s.GetSecretAsync(ApiKeyPath, It.IsAny<TimeSpan?>(), false,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync("key-1");
+            .ReturnsAsync(Secret("key-1"));
 
         var sut = CreateSut(secrets.Object, 120);
         await sut.GetApiKeyAsync(TestContext.Current.CancellationToken);
@@ -113,7 +123,7 @@ public class FooApiRequestHandlerRetryWrapperServiceTests
         secrets
             .Setup(s => s.GetSecretAsync(ApiKeyPath, It.IsAny<TimeSpan?>(), false,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync("key-1");
+            .ReturnsAsync(Secret("key-1"));
 
         var sut = CreateSut(secrets.Object);
 

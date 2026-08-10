@@ -53,9 +53,10 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
 
     private async Task<string> RefreshAndGetApiKeyAsync(bool force, CancellationToken cancellationToken)
     {
-        _apiKey = await secretManager.GetSecretAsync(options.Value.ApiKeyPath,
+        var result = await secretManager.GetSecretAsync(options.Value.ApiKeyPath,
             force: force,
             cancellationToken: cancellationToken);
+        _apiKey = result.Value;
         _apiKeyFetchedAtUtc = DateTimeOffset.UtcNow;
         return _apiKey;
     }

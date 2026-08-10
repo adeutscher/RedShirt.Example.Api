@@ -92,8 +92,6 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
         bool forceFreshCredentials,
         CancellationToken cancellationToken)
     {
-        Console.WriteLine("ASDASDASD + " + forceFreshToken + " "+ forceFreshCredentials);
-        
         if (!forceFreshCredentials
             && _previousAttemptStatusCode != HttpStatusCode.OK
             && IsAttemptWithinTokenRefreshCooldown())

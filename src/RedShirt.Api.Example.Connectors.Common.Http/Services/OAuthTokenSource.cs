@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using RedShirt.Api.Example.Connectors.Common.Http.Exceptions;
 using RedShirt.Api.Example.Connectors.Common.Http.Models;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Exceptions;
+using RedShirt.Example.Api.Common.SecretManagers.Core.Models;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
 using System.Net;
 using System.Text.Json;
@@ -55,10 +56,10 @@ public sealed class OAuthTokenSource(
         logger.LogTrace("Requesting OAuth client-credentials token from {TokenUrl} (force: {Force})",
             request.TokenUrl, force);
 
-        Dictionary<string, string> secrets;
+        SecretManagerCacheSecretsResponse secretsResponse;
         try
         {
-            secrets = await secretManager.GetSecretsAsync(
+            secretsResponse = await secretManager.GetSecretsAsync(
                 [request.ClientIdPath, request.ClientSecretPath],
                 force: force,
                 cancellationToken: cancellationToken);
@@ -69,7 +70,7 @@ public sealed class OAuthTokenSource(
             {
                 StatusCode = null,
                 CredentialStorageProblem = true,
-                // Assume that cache layer is working correctly and that the underlying source is misbehaving
+                // Assume that cache layer is working correctly and that the underlying secret manager behind the cache is misbehaving
                 FreshCredentialCacheResult = true
             };
         }
@@ -77,8 +78,8 @@ public sealed class OAuthTokenSource(
         var parameters = new Dictionary<string, string>
         {
             ["grant_type"] = "client_credentials",
-            ["client_id"] = secrets[request.ClientIdPath],
-            ["client_secret"] = secrets[request.ClientSecretPath]
+            ["client_id"] = secretsResponse.Values[request.ClientIdPath],
+            ["client_secret"] = secretsResponse.Values[request.ClientSecretPath]
         };
 
         if (!string.IsNullOrWhiteSpace(request.ScopeLabel) && !string.IsNullOrWhiteSpace(request.ScopeValue))
@@ -102,7 +103,7 @@ public sealed class OAuthTokenSource(
             {
                 StatusCode = response.StatusCode,
                 CredentialStorageProblem = false,
-                FreshCredentialCacheResult = true // TODO: Fix
+                FreshCredentialCacheResult = secretsResponse.QueriedSecretManager
             };
         }
 

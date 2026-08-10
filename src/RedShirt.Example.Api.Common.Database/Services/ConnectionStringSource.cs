@@ -12,7 +12,7 @@ public class ConnectionStringSource(
     ISecretManagerCacheService secretManagerCacheService,
     IConfigurationRoot configurationRoot) : IConnectionStringSource
 {
-    public Task<string> GetConnectionStringAsync(string name, CancellationToken cancellationToken = default)
+    public async Task<string> GetConnectionStringAsync(string name, CancellationToken cancellationToken = default)
     {
         var path = configurationRoot.GetConnectionString(name);
         // ReSharper disable once ConvertIfStatementToReturnStatement
@@ -21,6 +21,7 @@ public class ConnectionStringSource(
             throw new InvalidOperationException($"No connection string found for '{name}'.");
         }
 
-        return secretManagerCacheService.GetSecretAsync(path, cancellationToken: cancellationToken);
+        var result = await secretManagerCacheService.GetSecretAsync(path, cancellationToken: cancellationToken);
+        return result.Value;
     }
 }
