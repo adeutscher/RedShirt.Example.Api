@@ -17,6 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Api.Example.Connectors.Bar.Implementation\RedShirt.Api.Example.Connectors.Bar.Implementation.csproj"/>
         <ProjectReference Include="..\RedShirt.Api.Example.Connectors.Foo.Implementation\RedShirt.Api.Example.Connectors.Foo.Implementation.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Aws.SsmSecretManager\RedShirt.Example.Api.Common.Aws.SsmSecretManager.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager\RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.csproj"/>

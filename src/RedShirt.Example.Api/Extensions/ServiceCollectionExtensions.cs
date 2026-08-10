@@ -1,3 +1,4 @@
+using RedShirt.Api.Example.Connectors.Bar.Implementation.Extensions;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Extensions;
 using RedShirt.Example.Api.Common.Aws.SsmSecretManager.Extensions;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Extensions;
@@ -43,6 +44,7 @@ internal static class ServiceCollectionExtensions
             .ConfigureApiCore(configuration)
             // Connectors
             .AddFooConnector(configuration)
+            .AddBarConnector(configuration)
             // Data Stores
             .AddExampleItem(configuration)
             .AddDapperMySql(configuration) // Add Dapper support for MySQL-based database servers. 
