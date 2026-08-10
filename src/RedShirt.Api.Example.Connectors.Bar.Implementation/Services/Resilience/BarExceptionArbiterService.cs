@@ -97,6 +97,7 @@ internal sealed class BarExceptionArbiterService : IBarExceptionArbiterService
         {
             BarRecordNotFoundException => Fresh(true, false, false),
             BarUnauthorizedException => Fresh(true, false, true),
+            OAuthRequestException {StatusCode: HttpStatusCode.Unauthorized} => Fresh(true, false, true),
             OAuthRequestException => Fresh(true, true, true),
             OAuthRequestJsonException => Fresh(true, false, false),
             BarConnectorException w =>
