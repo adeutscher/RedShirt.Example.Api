@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RedShirt.Api.Example.Connectors.Common.Http.Exceptions;
 using RedShirt.Api.Example.Connectors.Common.Http.Models;
+using RedShirt.Example.Api.Common.SecretManagers.Core.Exceptions;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
 using System.Net;
 using System.Text.Json;
@@ -54,10 +55,24 @@ public sealed class OAuthTokenSource(
         logger.LogTrace("Requesting OAuth client-credentials token from {TokenUrl} (force: {Force})",
             request.TokenUrl, force);
 
-        var secrets = await secretManager.GetSecretsAsync(
-            [request.ClientIdPath, request.ClientSecretPath],
-            force: force,
-            cancellationToken: cancellationToken);
+        Dictionary<string, string> secrets;
+        try
+        {
+            secrets = await secretManager.GetSecretsAsync(
+                [request.ClientIdPath, request.ClientSecretPath],
+                force: force,
+                cancellationToken: cancellationToken);
+        }
+        catch (ApiSecretManagerException e)
+        {
+            throw new OAuthRequestException(e.Message, e)
+            {
+                StatusCode = null,
+                CredentialStorageProblem = true,
+                // Assume that cache layer is working correctly and that the underlying source is misbehaving
+                FreshCredentialCacheResult = true
+            };
+        }
 
         var parameters = new Dictionary<string, string>
         {
@@ -83,8 +98,12 @@ public sealed class OAuthTokenSource(
                 "Failed to obtain OAuth token from {TokenUrl}: {StatusCodeValue} ({StatusCode})",
                 request.TokenUrl, (int) response.StatusCode, response.StatusCode);
             throw new OAuthRequestException(
-                $"Response status code does not indicate success: {(int) response.StatusCode} ({response.StatusCode}).",
-                response.StatusCode);
+                $"Response status code does not indicate success: {(int) response.StatusCode} ({response.StatusCode}).")
+            {
+                StatusCode = response.StatusCode,
+                CredentialStorageProblem = false,
+                FreshCredentialCacheResult = true // TODO: Fix
+            };
         }
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);

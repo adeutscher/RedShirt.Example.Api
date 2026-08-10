@@ -146,6 +146,11 @@ To put an invalid client secret in SSM (token endpoint will 401 once credentials
 
 Same caching caveat as Foo: a successfully obtained bearer token stays cached until it fails or expires. Setting a bad secret in SSM alone does not invalidate an already-cached token. To force WireMock to reject the current token (and exercise refresh), use the rotation script below so the API's cached token no longer matches WireMock's Authorization matcher—or restart the API after changing secrets.
 
+Local Compose defaults `COMMON__SECRETS__CACHE__FORCE_COOLDOWN_SECONDS` and
+`CONNECTORS__BAR__TOKEN_REFRESH_COOLDOWN_SECONDS` to `1` so credential rotation can
+recover on the next request. The rotate script waits briefly for those windows to
+elapse before returning.
+
 ### Testing Credential / Token Rotations
 
 To update the client secret in SSM *and* WireMock's in-memory stubs (token bodyPatterns, returned `access_token`, and API `Authorization` matchers):
@@ -156,4 +161,4 @@ To update the client secret in SSM *and* WireMock's in-memory stubs (token bodyP
 ./bar-rotate-oauth-credentials.sh 'my-new-secret' 'my-new-access-token'
 ```
 
-This only updates in-memory WireMock stubs. Restarting `wiremock-bar` restores the mapping files under `wiremock/bar/`.
+This only updates in-memory WireMock stubs. Restarting `wiremock-bar` restores the mapping files under `wiremock/bar/`. After the script finishes, call `GET /bar/{id}` or `POST /bar` again — the connector should 401 once with the old bearer, refresh client credentials + token, then succeed with the rotated bearer.

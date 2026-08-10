@@ -1,4 +1,5 @@
 using RedShirt.Api.Example.Connectors.Bar.Core.Exceptions;
+using RedShirt.Api.Example.Connectors.Bar.Implementation.Exceptions;
 using RedShirt.Api.Example.Connectors.Bar.Implementation.Models;
 using RedShirt.Api.Example.Connectors.Common.Http.Exceptions;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Exceptions;
@@ -95,11 +96,13 @@ internal sealed class BarExceptionArbiterService : IBarExceptionArbiterService
 
         return exception switch
         {
-            BarRecordNotFoundException => Fresh(true, false, false),
-            BarUnauthorizedException => Fresh(true, false, true),
             OAuthRequestException {StatusCode: HttpStatusCode.Unauthorized} => Fresh(true, false, true),
             OAuthRequestException => Fresh(true, true, true),
             OAuthRequestJsonException => Fresh(true, false, false),
+            BarRecordNotFoundException => Fresh(true, false, false),
+            // ReSharper disable once DuplicatedSwitchExpressionArms
+            BarUnauthorizedException => Fresh(true, false, true),
+            BarUnavailableException => Fresh(true, false, true),
             BarConnectorException w =>
                 Handled(true, w is {IsHandled: false, CouldBeTransient: true}, w.CouldBeExternallySolvable),
             // Client credentials come from the secret manager; honour prior classification.

@@ -91,6 +91,18 @@ if [[ "${updated_count}" -eq 0 ]]; then
     exit 1
 fi
 
+# Allow secret-manager force-cooldown and Bar token-refresh cooldown to elapse so the next
+# API call can pull the new client secret and obtain the rotated bearer token.
+SECRET_FORCE_COOLDOWN_SECONDS="${SECRET_FORCE_COOLDOWN_SECONDS:-1}"
+TOKEN_REFRESH_COOLDOWN_SECONDS="${TOKEN_REFRESH_COOLDOWN_SECONDS:-1}"
+WAIT_SECONDS="${SECRET_FORCE_COOLDOWN_SECONDS}"
+if [[ "${TOKEN_REFRESH_COOLDOWN_SECONDS}" -gt "${WAIT_SECONDS}" ]]; then
+    WAIT_SECONDS="${TOKEN_REFRESH_COOLDOWN_SECONDS}"
+fi
+WAIT_SECONDS=$((WAIT_SECONDS + 1))
+echo "Waiting ${WAIT_SECONDS}s for local secret/token refresh cooldowns…"
+sleep "${WAIT_SECONDS}"
+
 echo "Done. Rotated ${updated_count} stub(s)."
 echo "  client secret: ${NEW_SECRET}"
 echo "  access token:  ${NEW_TOKEN}"

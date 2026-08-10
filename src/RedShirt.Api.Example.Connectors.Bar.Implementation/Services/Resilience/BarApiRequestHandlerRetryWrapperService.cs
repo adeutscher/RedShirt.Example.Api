@@ -3,9 +3,12 @@ using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
 using RedShirt.Api.Example.Connectors.Bar.Core.Exceptions;
+using RedShirt.Api.Example.Connectors.Bar.Implementation.Exceptions;
 using RedShirt.Api.Example.Connectors.Common.Http.Enums;
+using RedShirt.Api.Example.Connectors.Common.Http.Exceptions;
 using RedShirt.Api.Example.Connectors.Common.Http.Models;
 using RedShirt.Api.Example.Connectors.Common.Http.Services;
+using System.Net;
 
 namespace RedShirt.Api.Example.Connectors.Bar.Implementation.Services.Resilience;
 
@@ -13,7 +16,8 @@ internal interface IBarApiRequestHandlerRetryWrapperService
 {
     /// <summary>
     ///     Executes <paramref name="func" /> with up to two retries on <see cref="BarUnauthorizedException" />:
-    ///     first forces a fresh token; second forces fresh credentials and a fresh token.
+    ///     first forces a fresh token (or escalates to fresh credentials when still inside the token
+    ///     refresh cooldown); second forces fresh credentials and a fresh token.
     /// </summary>
     Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> func, CancellationToken cancellationToken = default);
 
@@ -25,7 +29,8 @@ internal interface IBarApiRequestHandlerRetryWrapperService
 
 /// <summary>
 ///     Obtains Bar bearer tokens via <see cref="IOAuthTokenCache" /> and retries on unauthorized:
-///     attempt 1 forces a fresh token; attempt 2 forces fresh credentials and a fresh token.
+///     attempt 1 forces a fresh token (escalating to fresh credentials when inside the token refresh
+///     cooldown); attempt 2 forces fresh credentials and a fresh token.
 /// </summary>
 internal sealed class BarApiRequestHandlerRetryWrapperService(
     IOAuthTokenCache oauthTokenCache,
@@ -35,14 +40,20 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
 {
     private const int DefaultTokenRefreshCooldownSeconds = 60;
 
+    private const string PreviousAttemptInvolvedEscalation = "e";
+
     /// <summary>
     ///     Gate access to token retrieval in order to avoid a stampede on the token endpoint / secret manager.
     /// </summary>
     private readonly SemaphoreSlim _tokenGate = new(1, 1);
 
-    private string? _accessToken;
+    private HttpStatusCode? _previousAttemptStatusCode;
+
     private ResiliencePipeline? _retryPipeline;
+    private DateTimeOffset? _tokenAttemptedAtUtc;
     private DateTimeOffset? _tokenFetchedAtUtc;
+
+    private OAuthTokenCacheResponse? _tokenResult;
 
     private OAuthClientCredentialsRequest CreateOAuthRequest()
     {
@@ -64,17 +75,50 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
             return false;
         }
 
-        return DateTimeOffset.UtcNow < fetchedAtUtc + options.Value.EffectiveTokenRefreshCooldownSeconds;
+        return DateTimeOffset.UtcNow < fetchedAtUtc + options.Value.EffectiveTokenRefreshCooldown;
     }
 
-    private async Task<string> RefreshAndGetAccessTokenAsync(bool forceFreshToken, bool forceFreshCredentials,
+    private bool IsAttemptWithinTokenRefreshCooldown()
+    {
+        if (_tokenAttemptedAtUtc is not { } attemptedAtUtc)
+        {
+            return false;
+        }
+
+        return DateTimeOffset.UtcNow < attemptedAtUtc + options.Value.EffectiveTokenRefreshCooldown;
+    }
+
+    private async Task<OAuthTokenCacheResponse> RefreshAndGetAccessTokenAsync(bool forceFreshToken,
+        bool forceFreshCredentials,
         CancellationToken cancellationToken)
     {
-        var result = await oauthTokenCache.GetAsync(CreateOAuthRequest(), forceFreshToken, forceFreshCredentials,
-            cancellationToken);
-        _accessToken = result.AccessToken;
+        Console.WriteLine("ASDASDASD + " + forceFreshToken + " "+ forceFreshCredentials);
+        
+        if (!forceFreshCredentials
+            && _previousAttemptStatusCode != HttpStatusCode.OK
+            && IsAttemptWithinTokenRefreshCooldown())
+        {
+            // Assume unauthorized
+            throw new BarUnavailableException();
+        }
+
+        _tokenAttemptedAtUtc = DateTimeOffset.UtcNow;
+        OAuthTokenCacheResponse result;
+        try
+        {
+            result = await oauthTokenCache.GetAsync(CreateOAuthRequest(), forceFreshToken, forceFreshCredentials,
+                cancellationToken);
+            _previousAttemptStatusCode = HttpStatusCode.OK;
+        }
+        catch (OAuthRequestException e)
+        {
+            _previousAttemptStatusCode = e.StatusCode;
+            throw;
+        }
+
+        _tokenResult = result;
         _tokenFetchedAtUtc = DateTimeOffset.UtcNow;
-        return _accessToken;
+        return result;
     }
 
     private ResiliencePipeline GetRetryPipeline()
@@ -82,37 +126,87 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
         return _retryPipeline ??= new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
             {
-                MaxRetryAttempts = 2,
-                ShouldHandle = args => args.Outcome.Exception is BarUnauthorizedException
-                    ? PredicateResult.True()
-                    : PredicateResult.False(),
+                MaxRetryAttempts = 2, // Retry maximum of twice
+                ShouldHandle = args =>
+                {
+                    /*
+                     * An expected exception here suggests that either:
+                     *  * Token source threw a OAuthRequestException (HTTP 401), suggesting a bad secret
+                     *  * Handler threw a BarUnauthorizedException, suggesting an expired token
+                     */
+
+                    /*
+                     * An OAuthRequestException can only be handled if instigating incident was on the first attempt
+                     * (Polly v8 marks first attempt as 0)
+                     * did not involve a forced credentials pull from the secret manager.
+                     */
+                    // ReSharper disable once ConvertIfStatementToSwitchStatement
+                    if (args.AttemptNumber == 0
+                        // ReSharper disable once MergeIntoPattern
+                        && args.Outcome.Exception is OAuthRequestException
+                        {
+                            StatusCode: HttpStatusCode.Unauthorized,
+                            CredentialStorageProblem: false,
+                            FreshCredentialCacheResult: false
+                        })
+                    {
+                        return PredicateResult.True();
+                    }
+
+                    // ReSharper disable once ConvertIfStatementToReturnStatement
+                    if (args.Outcome.Exception is BarUnauthorizedException
+                        && !IsWithinTokenRefreshCooldown()
+                        && !(
+                            args.Context.Properties.TryGetValue(
+                                new ResiliencePropertyKey<bool>(PreviousAttemptInvolvedEscalation),
+                                out var previousAttemptInvolvedEscalation)
+                            && previousAttemptInvolvedEscalation
+                        )
+                       )
+                    {
+                        // A BarUnauthorizedException suggests that the HTTP handler for the remote API returned a 401. 
+                        return PredicateResult.True();
+                    }
+
+                    return PredicateResult.False();
+                },
                 DelayGenerator = static _ => new ValueTask<TimeSpan?>(TimeSpan.Zero),
                 OnRetry = async args =>
                 {
                     await _tokenGate.WaitAsync(args.Context.CancellationToken);
                     try
                     {
-                        // AttemptNumber is zero-based: 0 = first retry, 1 = second retry.
-                        var forceFreshCredentials = args.AttemptNumber >= 1;
+                        /*
+                         * Force if one of the following is true:
+                         *  * Second attempt (Polly v8 starts at 0, so attempt '1' is the second one)
+                         *  * Previous attempt was already to OAuth (suggesting a problem during the client's first attempt)
+                         *      * OAuth properties were already handled during ShouldHandle
+                         */
+                        var forceFreshCredentials = args.AttemptNumber >= 1
+                                                    || args.Outcome.Exception is OAuthRequestException;
 
-                        // Cooldown only blocks the initial token-only refresh. A second retry must still be
-                        // allowed to force credential retrieval after a recent token refresh.
-                        if (!forceFreshCredentials && IsWithinTokenRefreshCooldown())
-                        {
-                            // Token was fetched recently enough to be considered stable, so cannot recover via retry.
-                            throw new BarUnauthorizedException();
-                        }
-
-                        var previousAccessToken = _accessToken;
+                        var previousAccessToken = _tokenResult?.AccessToken;
                         logger.LogDebug(
                             "Refreshing Bar bearer token from {TokenUrl} (forceFreshCredentials: {ForceFreshCredentials})",
                             options.Value.TokenUrl, forceFreshCredentials);
 
-                        var result = await oauthTokenCache.GetAsync(CreateOAuthRequest(),
-                            true,
-                            forceFreshCredentials,
-                            args.Context.CancellationToken);
+                        OAuthTokenCacheResponse result;
+                        try
+                        {
+                            result = await RefreshAndGetAccessTokenAsync(true, forceFreshCredentials,
+                                args.Context.CancellationToken);
+                        }
+                        catch (OAuthRequestException) when (!forceFreshCredentials)
+                        {
+                            // Stale client credentials are still cached
+                            // Trying to escalate to forced credentials immediately. The alternative is
+                            // spending time on another call to the HttpHandler that we are almost certain will splatter
+                            args.Context.Properties.Set(
+                                new ResiliencePropertyKey<bool>(PreviousAttemptInvolvedEscalation), true);
+                            result = await RefreshAndGetAccessTokenAsync(true, true, args.Context.CancellationToken);
+                        }
 
+                        // ReSharper disable once ConvertIfStatementToSwitchStatement
                         if (forceFreshCredentials
                             && (string.Equals(previousAccessToken, result.AccessToken, StringComparison.Ordinal)
                                 || result.TokenCacheState != TokenCacheState.ForcedCredentialRetrieval))
@@ -120,9 +214,6 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
                             // Same token after forced credential refresh, so unauthorized cannot be recovered.
                             throw new BarUnauthorizedException();
                         }
-
-                        _accessToken = result.AccessToken;
-                        _tokenFetchedAtUtc = DateTimeOffset.UtcNow;
                     }
                     finally
                     {
@@ -135,20 +226,21 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
 
     public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken = default)
     {
-        if (_accessToken is not null)
+        if (_tokenResult is not null)
         {
-            return _accessToken;
+            return _tokenResult.AccessToken;
         }
 
         await _tokenGate.WaitAsync(cancellationToken);
         try
         {
-            if (_accessToken is not null) // Need to re-check after acquiring lock
+            if (_tokenResult is not null) // Need to re-check after acquiring lock
             {
-                return _accessToken;
+                return _tokenResult.AccessToken;
             }
 
-            return await RefreshAndGetAccessTokenAsync(false, false, cancellationToken);
+            await RefreshAndGetAccessTokenAsync(false, false, cancellationToken);
+            return _tokenResult!.AccessToken;
         }
         finally
         {
@@ -202,7 +294,7 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
         /// <summary>
         ///     Effective stability window for a token fetch.
         /// </summary>
-        public TimeSpan EffectiveTokenRefreshCooldownSeconds =>
+        public TimeSpan EffectiveTokenRefreshCooldown =>
             TimeSpan.FromSeconds(Math.Max(1, TokenRefreshCooldownSeconds ?? DefaultTokenRefreshCooldownSeconds));
     }
 }

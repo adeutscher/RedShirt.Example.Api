@@ -26,10 +26,10 @@ internal sealed class BarConnector(
 
     public Task<GetBarConnectorResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return retryWrapperService.RunAsync(async token =>
+        return retryWrapperService.RunAsync(token =>
         {
             var client = barApiClientFactory.CreateBarApiClient();
-            return await client.GetBarByIdAsync(id, token);
+            return client.GetBarByIdAsync(id, token);
         }, cancellationToken);
     }
 }
