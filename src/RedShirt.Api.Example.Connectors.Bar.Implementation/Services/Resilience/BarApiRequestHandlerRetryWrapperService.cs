@@ -3,61 +3,78 @@ using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
 using RedShirt.Api.Example.Connectors.Bar.Core.Exceptions;
-using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
+using RedShirt.Api.Example.Connectors.Common.Http.Enums;
+using RedShirt.Api.Example.Connectors.Common.Http.Models;
+using RedShirt.Api.Example.Connectors.Common.Http.Services;
 
 namespace RedShirt.Api.Example.Connectors.Bar.Implementation.Services.Resilience;
 
 internal interface IBarApiRequestHandlerRetryWrapperService
 {
     /// <summary>
-    ///     Executes <paramref name="func" /> with a one-shot retry that force-refreshes the API key on
+    ///     Executes <paramref name="func" /> with a one-shot retry that force-refreshes the bearer token on
     ///     <see cref="BarUnauthorizedException" />.
     /// </summary>
     Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> func, CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///     Ensures an API key is loaded (from cache or secret manager) and returns it.
+    ///     Ensures a bearer access token is loaded (from OAuth token cache or provider) and returns it.
     /// </summary>
-    Task<string> GetApiKeyAsync(CancellationToken cancellationToken = default);
+    Task<string> GetAccessTokenAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
-///     Caches the Bar API-key refresh resilience pipeline and the current API key value.
+///     Obtains Bar bearer tokens via <see cref="IOAuthTokenCache" /> and retries once on unauthorized,
+///     escalating from a forced token refresh to a forced credential refresh when needed.
 /// </summary>
 internal sealed class BarApiRequestHandlerRetryWrapperService(
-    ISecretManagerCacheService secretManager,
+    IOAuthTokenCache oauthTokenCache,
     ILogger<BarApiRequestHandlerRetryWrapperService> logger,
     IOptions<BarApiRequestHandlerRetryWrapperService.ConfigurationModel> options)
     : IBarApiRequestHandlerRetryWrapperService
 {
-    private const int DefaultApiKeyRefreshCooldownSeconds = 60;
+    private const int DefaultTokenRefreshCooldownSeconds = 60;
 
     /// <summary>
-    ///     Gate access to secret manager for API key in order to avoid a stampede on the secret manager.
+    ///     Gate access to token retrieval in order to avoid a stampede on the token endpoint / secret manager.
     /// </summary>
-    private readonly SemaphoreSlim _apiKeyGate = new(1, 1);
+    private readonly SemaphoreSlim _tokenGate = new(1, 1);
 
-    private string? _apiKey;
-    private DateTimeOffset? _apiKeyFetchedAtUtc;
+    private string? _accessToken;
+    private DateTimeOffset? _tokenFetchedAtUtc;
     private ResiliencePipeline? _retryPipeline;
 
-    private bool IsWithinApiKeyRefreshCooldown()
+    private OAuthClientCredentialsRequest CreateOAuthRequest()
     {
-        if (_apiKeyFetchedAtUtc is not { } fetchedAtUtc)
+        var configuration = options.Value;
+        return new OAuthClientCredentialsRequest
+        {
+            TokenUrl = configuration.TokenUrl,
+            ClientIdPath = configuration.ClientIdPath,
+            ClientSecretPath = configuration.ClientSecretPath,
+            ScopeLabel = configuration.ScopeLabel,
+            ScopeValue = configuration.ScopeValue
+        };
+    }
+
+    private bool IsWithinTokenRefreshCooldown()
+    {
+        if (_tokenFetchedAtUtc is not { } fetchedAtUtc)
         {
             return false;
         }
 
-        return DateTimeOffset.UtcNow < fetchedAtUtc + options.Value.EffectiveApiKeyRefreshCooldownSeconds;
+        return DateTimeOffset.UtcNow < fetchedAtUtc + options.Value.EffectiveTokenRefreshCooldownSeconds;
     }
 
-    private async Task<string> RefreshAndGetApiKeyAsync(bool force, CancellationToken cancellationToken)
+    private async Task<string> RefreshAndGetAccessTokenAsync(bool forceFreshToken, bool forceFreshCredentials,
+        CancellationToken cancellationToken)
     {
-        _apiKey = await secretManager.GetSecretAsync(options.Value.ApiKeyPath,
-            force: force,
-            cancellationToken: cancellationToken);
-        _apiKeyFetchedAtUtc = DateTimeOffset.UtcNow;
-        return _apiKey;
+        var result = await oauthTokenCache.GetAsync(CreateOAuthRequest(), forceFreshToken, forceFreshCredentials,
+            cancellationToken);
+        _accessToken = result.AccessToken;
+        _tokenFetchedAtUtc = DateTimeOffset.UtcNow;
+        return _accessToken;
     }
 
     private ResiliencePipeline GetRetryPipeline()
@@ -72,55 +89,72 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
                 DelayGenerator = static _ => new ValueTask<TimeSpan?>(TimeSpan.Zero),
                 OnRetry = async args =>
                 {
-                    await _apiKeyGate.WaitAsync(args.Context.CancellationToken);
+                    await _tokenGate.WaitAsync(args.Context.CancellationToken);
                     try
                     {
-                        if (IsWithinApiKeyRefreshCooldown())
+                        if (IsWithinTokenRefreshCooldown())
                         {
-                            // Key was fetched recently enough to be considered stable, so cannot recover via retry.
+                            // Token was fetched recently enough to be considered stable, so cannot recover via retry.
                             throw new BarUnauthorizedException();
                         }
 
-                        var previousApiKey = _apiKey;
-                        logger.LogDebug("Refreshing Bar API key from secret path {ApiKeyPath}",
-                            options.Value.ApiKeyPath);
-                        await RefreshAndGetApiKeyAsync(true, args.Context.CancellationToken);
+                        var previousAccessToken = _accessToken;
+                        logger.LogDebug("Refreshing Bar bearer token from {TokenUrl}", options.Value.TokenUrl);
 
-                        if (string.Equals(previousApiKey, _apiKey, StringComparison.Ordinal))
+                        var result = await oauthTokenCache.GetAsync(CreateOAuthRequest(),
+                            forceFreshToken: true,
+                            forceFreshCredentials: false,
+                            args.Context.CancellationToken);
+
+                        if (string.Equals(previousAccessToken, result.AccessToken, StringComparison.Ordinal))
                         {
-                            // Same key after force-refresh, so the unauthorized result cannot be recovered by retry.
-                            throw new BarUnauthorizedException();
+                            logger.LogDebug(
+                                "Bar bearer token unchanged after forced token refresh; forcing credential retrieval");
+                            result = await oauthTokenCache.GetAsync(CreateOAuthRequest(),
+                                forceFreshToken: true,
+                                forceFreshCredentials: true,
+                                args.Context.CancellationToken);
+
+                            if (string.Equals(previousAccessToken, result.AccessToken, StringComparison.Ordinal)
+                                || result.TokenCacheState != TokenCacheState.ForcedCredentialRetrieval)
+                            {
+                                // Same token after force-refresh, so the unauthorized result cannot be recovered by retry.
+                                throw new BarUnauthorizedException();
+                            }
                         }
+
+                        _accessToken = result.AccessToken;
+                        _tokenFetchedAtUtc = DateTimeOffset.UtcNow;
                     }
                     finally
                     {
-                        _apiKeyGate.Release();
+                        _tokenGate.Release();
                     }
                 }
             })
             .Build();
     }
 
-    public async Task<string> GetApiKeyAsync(CancellationToken cancellationToken = default)
+    public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken = default)
     {
-        if (_apiKey is not null)
+        if (_accessToken is not null)
         {
-            return _apiKey;
+            return _accessToken;
         }
 
-        await _apiKeyGate.WaitAsync(cancellationToken);
+        await _tokenGate.WaitAsync(cancellationToken);
         try
         {
-            if (_apiKey is not null) // Need to re-check after acquiring lock
+            if (_accessToken is not null) // Need to re-check after acquiring lock
             {
-                return _apiKey;
+                return _accessToken;
             }
 
-            return await RefreshAndGetApiKeyAsync(false, cancellationToken);
+            return await RefreshAndGetAccessTokenAsync(false, false, cancellationToken);
         }
         finally
         {
-            _apiKeyGate.Release();
+            _tokenGate.Release();
         }
     }
 
@@ -135,21 +169,42 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
     internal sealed class ConfigurationModel
     {
         /// <summary>
-        ///     Secret-manager path for the Bar API key (same pattern as connection-string paths).
+        ///     Absolute URL of the OAuth token endpoint used for Bar bearer tokens.
         /// </summary>
-        public required string ApiKeyPath { get; init; }
+        public required string TokenUrl { get; init; }
 
         /// <summary>
-        ///     Seconds after an API key fetch during which the key is considered stable.
+        ///     Secret-manager path for the OAuth client id.
+        /// </summary>
+        public required string ClientIdPath { get; init; }
+
+        /// <summary>
+        ///     Secret-manager path for the OAuth client secret.
+        /// </summary>
+        public required string ClientSecretPath { get; init; }
+
+        /// <summary>
+        ///     Optional form-field name used for the scope/audience-style parameter
+        ///     (for example <c>scope</c> or <c>audience</c>).
+        /// </summary>
+        public required string? ScopeLabel { get; init; }
+
+        /// <summary>
+        ///     Optional value for <see cref="ScopeLabel" />.
+        /// </summary>
+        public required string? ScopeValue { get; init; }
+
+        /// <summary>
+        ///     Seconds after a token fetch during which the token is considered stable.
         ///     When still within this window, an unauthorized response is not retried.
-        ///     When null, <see cref="DefaultApiKeyRefreshCooldownSeconds" /> is used.
+        ///     When null, <see cref="DefaultTokenRefreshCooldownSeconds" /> is used.
         /// </summary>
-        public required int? ApiKeyRefreshCooldownSeconds { get; init; }
+        public required int? TokenRefreshCooldownSeconds { get; init; }
 
         /// <summary>
-        ///     Effective stability window for an API key fetch.
+        ///     Effective stability window for a token fetch.
         /// </summary>
-        public TimeSpan EffectiveApiKeyRefreshCooldownSeconds =>
-            TimeSpan.FromSeconds(Math.Max(1, ApiKeyRefreshCooldownSeconds ?? DefaultApiKeyRefreshCooldownSeconds));
+        public TimeSpan EffectiveTokenRefreshCooldownSeconds =>
+            TimeSpan.FromSeconds(Math.Max(1, TokenRefreshCooldownSeconds ?? DefaultTokenRefreshCooldownSeconds));
     }
 }

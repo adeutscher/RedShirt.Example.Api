@@ -1,5 +1,6 @@
 using RedShirt.Api.Example.Connectors.Bar.Core.Exceptions;
 using RedShirt.Api.Example.Connectors.Bar.Implementation.Models;
+using RedShirt.Api.Example.Connectors.Common.Http.Exceptions;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Exceptions;
 using System.Net;
 using System.Net.Sockets;
@@ -96,9 +97,11 @@ internal sealed class BarExceptionArbiterService : IBarExceptionArbiterService
         {
             BarRecordNotFoundException => Fresh(true, false, false),
             BarUnauthorizedException => Fresh(true, false, true),
+            OAuthRequestException => Fresh(true, true, true),
+            OAuthRequestJsonException => Fresh(true, false, false),
             BarConnectorException w =>
                 Handled(true, w is {IsHandled: false, CouldBeTransient: true}, w.CouldBeExternallySolvable),
-            // API key comes from the secret manager; honour prior classification.
+            // Client credentials come from the secret manager; honour prior classification.
             ApiSecretManagerException w =>
                 Handled(true, w is {IsHandled: false, CouldBeTransient: true}, w.CouldBeExternallySolvable),
             HttpRequestException http => ClassifyHttpRequestException(http),

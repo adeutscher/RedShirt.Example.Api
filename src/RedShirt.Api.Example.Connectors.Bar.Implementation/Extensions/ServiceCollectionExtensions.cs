@@ -5,6 +5,7 @@ using RedShirt.Api.Example.Connectors.Bar.Implementation.Clients;
 using RedShirt.Api.Example.Connectors.Bar.Implementation.Factories;
 using RedShirt.Api.Example.Connectors.Bar.Implementation.Services;
 using RedShirt.Api.Example.Connectors.Bar.Implementation.Services.Resilience;
+using RedShirt.Api.Example.Connectors.Common.Http.Services;
 using RedShirt.Example.Api.Common.Extensions;
 
 namespace RedShirt.Api.Example.Connectors.Bar.Implementation.Extensions;
@@ -23,12 +24,19 @@ public static class ServiceCollectionExtensions
                 configuration.GetSection(ConfigurationSectionName))
             .Configure<BarRetryWrapperService.ConfigurationModel>(
                 configuration.GetSection(ConfigurationSectionName))
+            .Configure<OAuthTokenSource.ConfigurationModel>(
+                configuration.GetSection(ConfigurationSectionName))
+            .AddSingleton<IOAuthTokenSource, OAuthTokenSource>()
+            .AddSingleton<IOAuthTokenCache, OAuthTokenCache>()
             .AddTransient<BarApiClientHandler>()
             .AddSingleton<IBarApiRequestHandlerRetryWrapperService, BarApiRequestHandlerRetryWrapperService>()
             .AddSingleton<IBarExceptionArbiterService, BarExceptionArbiterService>()
             .AddSingleton<IBarRetryWrapperService, BarRetryWrapperService>()
             .AddSingleton<IBarApiClientFactory, BarApiClientFactory>()
             .AddSingleton<IBarConnector, BarConnector>();
+
+        services
+            .AddHttpClient(nameof(OAuthTokenSource));
 
         services
             .AddHttpClient(nameof(BarApiClient))

@@ -1,14 +1,14 @@
 using RedShirt.Api.Example.Connectors.Bar.Core.Exceptions;
-using RedShirt.Api.Example.Connectors.Bar.Implementation.Constants;
 using RedShirt.Api.Example.Connectors.Bar.Implementation.Services.Resilience;
 using System.Net;
+using System.Net.Http.Headers;
 
 namespace RedShirt.Api.Example.Connectors.Bar.Implementation.Clients;
 
 /// <summary>
-///     Attaches the Bar static API key (resolved from the secret manager) to outbound requests.
+///     Attaches a Bar OAuth bearer token to outbound requests.
 ///     On <see cref="HttpStatusCode.Unauthorized" />, signals <see cref="BarUnauthorizedException" />
-///     so the request handler retry wrapper can force-refresh the key and retry once.
+///     so the request handler retry wrapper can force-refresh the token and retry once.
 /// </summary>
 internal sealed class BarApiClientHandler(
     IBarApiRequestHandlerRetryWrapperService apiRequestRetryWrapperService) : DelegatingHandler
@@ -18,9 +18,8 @@ internal sealed class BarApiClientHandler(
     {
         return await apiRequestRetryWrapperService.ExecuteAsync(async ct =>
         {
-            request.Headers.Remove(BarApiHeaderNames.ApiKey);
-            request.Headers.TryAddWithoutValidation(BarApiHeaderNames.ApiKey,
-                await apiRequestRetryWrapperService.GetApiKeyAsync(ct));
+            var accessToken = await apiRequestRetryWrapperService.GetAccessTokenAsync(ct);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             var response = await base.SendAsync(request, ct);
 
