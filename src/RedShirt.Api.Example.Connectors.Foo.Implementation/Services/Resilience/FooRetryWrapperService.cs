@@ -77,13 +77,16 @@ internal sealed class FooRetryWrapperService(
 
     private Exception WrapIfNeeded(Exception exception)
     {
-        var report = exceptionArbiterService.GetReport(exception);
+        /* Handle Special Exceptions */
 
-        // Domain auth / not-found are stable connector outcomes; do not wrap as FooConnectorException.
-        if (exception is FooRecordNotFoundException or FooUnauthorizedException)
+        // Domain auth / not-found are specific connector outcomes. Do not wrap as FooConnectorException.
+        if (exception is FooRecordNotFoundException
+            or FooUnauthorizedException)
         {
             return exception;
         }
+
+        var report = exceptionArbiterService.GetReport(exception);
 
         // ReSharper disable once DuplicatedSequentialIfBodies
         if (report.AlreadyHandled && exception is FooConnectorException)
