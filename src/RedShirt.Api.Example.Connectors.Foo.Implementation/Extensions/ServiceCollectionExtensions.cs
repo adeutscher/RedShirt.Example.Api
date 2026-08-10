@@ -29,7 +29,7 @@ public static class ServiceCollectionExtensions
             .AddSingleton<IFooConnector, FooConnector>();
 
         services
-            .AddHttpClient(FooApiClientFactory.HttpClientName)
+            .AddHttpClient(nameof(FooApiClient))
             .AddHttpMessageHandler<FooApiClientHandler>();
 
         return services;

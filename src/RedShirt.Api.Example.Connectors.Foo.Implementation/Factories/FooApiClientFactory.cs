@@ -12,11 +12,9 @@ internal sealed class FooApiClientFactory(
     IHttpClientFactory httpClientFactory,
     IOptions<FooApiClientFactory.ConfigurationModel> configuration) : IFooApiClientFactory
 {
-    public const string HttpClientName = nameof(FooApiClient);
-
     public Task<IFooApiClient> CreateFooApiClientAsync(CancellationToken cancellationToken = default)
     {
-        var httpClient = httpClientFactory.CreateClient(HttpClientName);
+        var httpClient = httpClientFactory.CreateClient(nameof(FooApiClient));
         return Task.FromResult<IFooApiClient>(new FooApiClient(httpClient, configuration.Value.BaseUrl));
     }
 
