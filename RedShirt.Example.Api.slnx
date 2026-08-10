@@ -31,6 +31,9 @@
                 Path="src\RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation\RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.csproj"/>
     </Folder>
     <Folder Name="/src/connectors/">
+        <Project Path="src/RedShirt.Api.Example.Connectors.Bar.Core/RedShirt.Api.Example.Connectors.Bar.Core.csproj"/>
+        <Project
+                Path="src/RedShirt.Api.Example.Connectors.Bar.Implementation/RedShirt.Api.Example.Connectors.Bar.Implementation.csproj"/>
         <Project Path="src/RedShirt.Api.Example.Connectors.Foo.Core/RedShirt.Api.Example.Connectors.Foo.Core.csproj"/>
         <Project
                 Path="src/RedShirt.Api.Example.Connectors.Foo.Implementation/RedShirt.Api.Example.Connectors.Foo.Implementation.csproj"/>
