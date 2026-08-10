@@ -1,4 +1,4 @@
-using RedShirt.Api.Example.Connectors.Bar.Core.Exceptions;
+using RedShirt.Api.Example.Connectors.Bar.Implementation.Exceptions;
 using RedShirt.Api.Example.Connectors.Bar.Implementation.Services.Resilience;
 using System.Net;
 using System.Net.Http.Headers;

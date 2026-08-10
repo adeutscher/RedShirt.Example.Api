@@ -81,12 +81,13 @@ internal sealed class BarRetryWrapperService(
     {
         /* Handle Special Exceptions */
 
-        // Domain auth / not-found are specific connector outcomes. Do not wrap as BarConnectorException.
-        if (exception is BarRecordNotFoundException
-            or BarUnauthorizedException)
+        // Domain not-found is a specific connector outcome. Do not wrap as BarConnectorException.
+        if (exception is BarRecordNotFoundException)
         {
             return exception;
         }
+
+        /* Handle General Exceptions */
 
         var report = exceptionArbiterService.GetReport(exception);
 
@@ -98,6 +99,7 @@ internal sealed class BarRetryWrapperService(
 
         if (!report.IsExpected)
         {
+            // Throw raw unexpected exception
             return exception;
         }
 

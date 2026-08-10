@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
-using RedShirt.Api.Example.Connectors.Bar.Core.Exceptions;
 using RedShirt.Api.Example.Connectors.Bar.Implementation.Exceptions;
 using RedShirt.Api.Example.Connectors.Common.Http.Enums;
 using RedShirt.Api.Example.Connectors.Common.Http.Exceptions;
