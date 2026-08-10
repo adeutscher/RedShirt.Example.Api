@@ -57,34 +57,6 @@ public class BarRetryWrapperServiceTests
     }
 
     [Fact]
-    public async Task RunAsync_Wraps_BarUnauthorizedException_AsBarConnectorException()
-    {
-        var sut = CreateSut();
-
-        var wrapped = await Assert.ThrowsAsync<BarConnectorException>(() =>
-            sut.RunAsync<int>(_ => throw new BarUnauthorizedException(),
-                TestContext.Current.CancellationToken));
-
-        Assert.True(wrapped.IsHandled);
-        Assert.False(wrapped.CouldBeTransient);
-        Assert.True(wrapped.CouldBeExternallySolvable);
-        Assert.IsType<BarUnauthorizedException>(wrapped.InnerException);
-    }
-
-    [Fact]
-    public async Task RunAsync_Wraps_BarUnavailableException_AsBarConnectorException()
-    {
-        var sut = CreateSut();
-
-        var wrapped = await Assert.ThrowsAsync<BarConnectorException>(() =>
-            sut.RunAsync<int>(_ => throw new BarUnavailableException(),
-                TestContext.Current.CancellationToken));
-
-        Assert.True(wrapped.IsHandled);
-        Assert.IsType<BarUnavailableException>(wrapped.InnerException);
-    }
-
-    [Fact]
     public async Task RunAsync_RetriesTransientFailures_ThenSucceeds()
     {
         var attempts = 0;
@@ -135,5 +107,33 @@ public class BarRetryWrapperServiceTests
         Assert.False(wrapped.CouldBeTransient);
         Assert.True(wrapped.CouldBeExternallySolvable);
         Assert.IsType<HttpRequestException>(wrapped.InnerException);
+    }
+
+    [Fact]
+    public async Task RunAsync_Wraps_BarUnauthorizedException_AsBarConnectorException()
+    {
+        var sut = CreateSut();
+
+        var wrapped = await Assert.ThrowsAsync<BarConnectorException>(() =>
+            sut.RunAsync<int>(_ => throw new BarUnauthorizedException(),
+                TestContext.Current.CancellationToken));
+
+        Assert.True(wrapped.IsHandled);
+        Assert.False(wrapped.CouldBeTransient);
+        Assert.True(wrapped.CouldBeExternallySolvable);
+        Assert.IsType<BarUnauthorizedException>(wrapped.InnerException);
+    }
+
+    [Fact]
+    public async Task RunAsync_Wraps_BarUnavailableException_AsBarConnectorException()
+    {
+        var sut = CreateSut();
+
+        var wrapped = await Assert.ThrowsAsync<BarConnectorException>(() =>
+            sut.RunAsync<int>(_ => throw new BarUnavailableException(),
+                TestContext.Current.CancellationToken));
+
+        Assert.True(wrapped.IsHandled);
+        Assert.IsType<BarUnavailableException>(wrapped.InnerException);
     }
 }

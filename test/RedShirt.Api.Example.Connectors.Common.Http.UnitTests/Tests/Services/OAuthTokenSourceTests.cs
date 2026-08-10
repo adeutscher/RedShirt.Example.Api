@@ -20,14 +20,17 @@ public class OAuthTokenSourceTests
     private const string ClientIdPath = "/oauth/client-id";
     private const string ClientSecretPath = "/oauth/client-secret";
 
-    private static OAuthClientCredentialsRequest Request() => new()
+    private static OAuthClientCredentialsRequest Request()
     {
-        TokenUrl = "https://auth.example/oauth/token",
-        ClientIdPath = ClientIdPath,
-        ClientSecretPath = ClientSecretPath,
-        ScopeLabel = "audience",
-        ScopeValue = "https://api.example"
-    };
+        return new OAuthClientCredentialsRequest
+        {
+            TokenUrl = "https://auth.example/oauth/token",
+            ClientIdPath = ClientIdPath,
+            ClientSecretPath = ClientSecretPath,
+            ScopeLabel = "audience",
+            ScopeValue = "https://api.example"
+        };
+    }
 
     private static OAuthTokenSource CreateSut(
         ISecretManagerCacheService secrets,
@@ -49,14 +52,14 @@ public class OAuthTokenSourceTests
     }
 
     [Fact]
-    public async Task GetTokenAsync_ThrowsArgumentNull_WhenRequestIsNull()
+    public void ConfigurationModel_EffectiveFallback_FloorsAtOneMinute()
     {
-        var sut = CreateSut(
-            new Mock<ISecretManagerCacheService>(MockBehavior.Strict).Object,
-            new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)));
+        var model = new OAuthTokenSource.ConfigurationModel
+        {
+            FallbackJwtExpiryTimeMinutes = 0
+        };
 
-        await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            sut.GetTokenAsync(null!, cancellationToken: TestContext.Current.CancellationToken));
+        Assert.Equal(TimeSpan.FromMinutes(1), model.EffectiveFallbackJwtExpiryTimeMinutes);
     }
 
     [Fact]
@@ -105,56 +108,14 @@ public class OAuthTokenSourceTests
     }
 
     [Fact]
-    public async Task GetTokenAsync_UsesFallbackExpiry_WhenExpiresInMissing()
+    public async Task GetTokenAsync_ThrowsArgumentNull_WhenRequestIsNull()
     {
-        var secrets = new Mock<ISecretManagerCacheService>(MockBehavior.Strict);
-        secrets
-            .Setup(s => s.GetSecretsAsync(It.IsAny<List<string>>(), null, false, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new SecretManagerCacheSecretsResponse
-            {
-                Values = new Dictionary<string, string>
-                {
-                    [ClientIdPath] = "id",
-                    [ClientSecretPath] = "secret"
-                },
-                QueriedSecretManager = false
-            });
+        var sut = CreateSut(
+            new Mock<ISecretManagerCacheService>(MockBehavior.Strict).Object,
+            new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)));
 
-        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent("""{"access_token":"tok"}""", Encoding.UTF8, "application/json")
-        });
-
-        var before = DateTimeOffset.UtcNow;
-        var sut = CreateSut(secrets.Object, handler, fallbackMinutes: 15);
-        var result = await sut.GetTokenAsync(Request(), cancellationToken: TestContext.Current.CancellationToken);
-
-        Assert.Equal("tok", result.AccessToken);
-        Assert.InRange(result.ExpiresAtUtc, before.AddMinutes(14), before.AddMinutes(16).AddSeconds(5));
-    }
-
-    [Fact]
-    public async Task GetTokenAsync_WrapsSecretManagerFailure_AsOAuthRequestException()
-    {
-        var secrets = new Mock<ISecretManagerCacheService>(MockBehavior.Strict);
-        secrets
-            .Setup(s => s.GetSecretsAsync(It.IsAny<List<string>>(), null, true, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new ApiSecretManagerException("ssm boom")
-            {
-                IsHandled = false,
-                CouldBeTransient = true,
-                CouldBeExternallySolvable = true
-            });
-
-        var sut = CreateSut(secrets.Object, new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)));
-
-        var ex = await Assert.ThrowsAsync<OAuthRequestException>(() =>
-            sut.GetTokenAsync(Request(), force: true, cancellationToken: TestContext.Current.CancellationToken));
-
-        Assert.True(ex.CredentialStorageProblem);
-        Assert.True(ex.FreshCredentialCacheResult);
-        Assert.Null(ex.StatusCode);
-        Assert.IsType<ApiSecretManagerException>(ex.InnerException);
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            sut.GetTokenAsync(null!, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -210,14 +171,56 @@ public class OAuthTokenSourceTests
     }
 
     [Fact]
-    public void ConfigurationModel_EffectiveFallback_FloorsAtOneMinute()
+    public async Task GetTokenAsync_UsesFallbackExpiry_WhenExpiresInMissing()
     {
-        var model = new OAuthTokenSource.ConfigurationModel
-        {
-            FallbackJwtExpiryTimeMinutes = 0
-        };
+        var secrets = new Mock<ISecretManagerCacheService>(MockBehavior.Strict);
+        secrets
+            .Setup(s => s.GetSecretsAsync(It.IsAny<List<string>>(), null, false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SecretManagerCacheSecretsResponse
+            {
+                Values = new Dictionary<string, string>
+                {
+                    [ClientIdPath] = "id",
+                    [ClientSecretPath] = "secret"
+                },
+                QueriedSecretManager = false
+            });
 
-        Assert.Equal(TimeSpan.FromMinutes(1), model.EffectiveFallbackJwtExpiryTimeMinutes);
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"access_token":"tok"}""", Encoding.UTF8, "application/json")
+        });
+
+        var before = DateTimeOffset.UtcNow;
+        var sut = CreateSut(secrets.Object, handler, 15);
+        var result = await sut.GetTokenAsync(Request(), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal("tok", result.AccessToken);
+        Assert.InRange(result.ExpiresAtUtc, before.AddMinutes(14), before.AddMinutes(16).AddSeconds(5));
+    }
+
+    [Fact]
+    public async Task GetTokenAsync_WrapsSecretManagerFailure_AsOAuthRequestException()
+    {
+        var secrets = new Mock<ISecretManagerCacheService>(MockBehavior.Strict);
+        secrets
+            .Setup(s => s.GetSecretsAsync(It.IsAny<List<string>>(), null, true, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ApiSecretManagerException("ssm boom")
+            {
+                IsHandled = false,
+                CouldBeTransient = true,
+                CouldBeExternallySolvable = true
+            });
+
+        var sut = CreateSut(secrets.Object, new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)));
+
+        var ex = await Assert.ThrowsAsync<OAuthRequestException>(() =>
+            sut.GetTokenAsync(Request(), true, TestContext.Current.CancellationToken));
+
+        Assert.True(ex.CredentialStorageProblem);
+        Assert.True(ex.FreshCredentialCacheResult);
+        Assert.Null(ex.StatusCode);
+        Assert.IsType<ApiSecretManagerException>(ex.InnerException);
     }
 
     private sealed class StubHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> responder)

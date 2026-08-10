@@ -80,44 +80,6 @@ public class BarExceptionArbiterServiceTests
     }
 
     [Fact]
-    public void GetReport_OAuthUnauthorized_IsExpectedNonTransient()
-    {
-        var report = _sut.GetReport(new OAuthRequestException("bad secret")
-        {
-            StatusCode = HttpStatusCode.Unauthorized,
-            CredentialStorageProblem = false,
-            FreshCredentialCacheResult = false
-        });
-
-        Assert.True(report.IsExpected);
-        Assert.False(report.CouldBeTransient);
-        Assert.True(report.CouldBeExternallySolvable);
-    }
-
-    [Fact]
-    public void GetReport_OAuthOtherStatus_IsTransient()
-    {
-        var report = _sut.GetReport(new OAuthRequestException("token unavailable")
-        {
-            StatusCode = HttpStatusCode.ServiceUnavailable,
-            CredentialStorageProblem = false,
-            FreshCredentialCacheResult = true
-        });
-
-        Assert.True(report.IsExpected);
-        Assert.True(report.CouldBeTransient);
-    }
-
-    [Fact]
-    public void GetReport_OAuthRequestJsonException_IsExpectedNonTransient()
-    {
-        var report = _sut.GetReport(new OAuthRequestJsonException("bad payload"));
-
-        Assert.True(report.IsExpected);
-        Assert.False(report.CouldBeTransient);
-    }
-
-    [Fact]
     public void GetReport_Http404_IsExpectedNonTransient()
     {
         var report = _sut.GetReport(new HttpRequestException("missing", null, HttpStatusCode.NotFound));
@@ -153,6 +115,44 @@ public class BarExceptionArbiterServiceTests
 
         Assert.True(report.IsExpected);
         Assert.False(report.CouldBeTransient);
+    }
+
+    [Fact]
+    public void GetReport_OAuthOtherStatus_IsTransient()
+    {
+        var report = _sut.GetReport(new OAuthRequestException("token unavailable")
+        {
+            StatusCode = HttpStatusCode.ServiceUnavailable,
+            CredentialStorageProblem = false,
+            FreshCredentialCacheResult = true
+        });
+
+        Assert.True(report.IsExpected);
+        Assert.True(report.CouldBeTransient);
+    }
+
+    [Fact]
+    public void GetReport_OAuthRequestJsonException_IsExpectedNonTransient()
+    {
+        var report = _sut.GetReport(new OAuthRequestJsonException("bad payload"));
+
+        Assert.True(report.IsExpected);
+        Assert.False(report.CouldBeTransient);
+    }
+
+    [Fact]
+    public void GetReport_OAuthUnauthorized_IsExpectedNonTransient()
+    {
+        var report = _sut.GetReport(new OAuthRequestException("bad secret")
+        {
+            StatusCode = HttpStatusCode.Unauthorized,
+            CredentialStorageProblem = false,
+            FreshCredentialCacheResult = false
+        });
+
+        Assert.True(report.IsExpected);
+        Assert.False(report.CouldBeTransient);
+        Assert.True(report.CouldBeExternallySolvable);
     }
 
     [Fact]

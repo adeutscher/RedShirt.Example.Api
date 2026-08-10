@@ -10,48 +10,38 @@ namespace RedShirt.Api.Example.Connectors.Common.Http.UnitTests.Tests.Services;
 /// </summary>
 public class OAuthTokenCacheTests
 {
-    private static OAuthClientCredentialsRequest Request(string audience = "https://api.example") => new()
+    private static OAuthClientCredentialsRequest Request(string audience = "https://api.example")
     {
-        TokenUrl = "https://auth.example/oauth/token",
-        ClientIdPath = "/oauth/client-id",
-        ClientSecretPath = "/oauth/client-secret",
-        ScopeLabel = "audience",
-        ScopeValue = audience
-    };
-
-    [Fact]
-    public async Task GetAsync_ThrowsArgumentNull_WhenRequestIsNull()
-    {
-        var source = new Mock<IOAuthTokenSource>(MockBehavior.Strict);
-        var cache = new OAuthTokenCache(source.Object);
-
-        await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            cache.GetAsync(null!, false, false, TestContext.Current.CancellationToken));
+        return new OAuthClientCredentialsRequest
+        {
+            TokenUrl = "https://auth.example/oauth/token",
+            ClientIdPath = "/oauth/client-id",
+            ClientSecretPath = "/oauth/client-secret",
+            ScopeLabel = "audience",
+            ScopeValue = audience
+        };
     }
 
     [Fact]
-    public async Task GetAsync_ReturnsCachedToken_WhenStillValid()
+    public async Task GetAsync_ForceFreshCredentials_MarksForcedCredentialRetrieval()
     {
         var request = Request();
         var source = new Mock<IOAuthTokenSource>(MockBehavior.Strict);
         source
-            .Setup(s => s.GetTokenAsync(request, false, It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetTokenAsync(request, true, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new OAuthTokenResponse
             {
-                AccessToken = "tok-1",
+                AccessToken = "tok-forced",
                 ExpiresAtUtc = DateTimeOffset.UtcNow.AddHours(1)
             });
 
         var cache = new OAuthTokenCache(source.Object);
 
-        var first = await cache.GetAsync(request, false, false, TestContext.Current.CancellationToken);
-        var second = await cache.GetAsync(request, false, false, TestContext.Current.CancellationToken);
+        var result = await cache.GetAsync(request, false, true, TestContext.Current.CancellationToken);
 
-        Assert.Equal("tok-1", first.AccessToken);
-        Assert.Equal(TokenCacheState.FreshToken, first.TokenCacheState);
-        Assert.Equal("tok-1", second.AccessToken);
-        Assert.Equal(TokenCacheState.CachedToken, second.TokenCacheState);
-        source.Verify(s => s.GetTokenAsync(request, false, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal("tok-forced", result.AccessToken);
+        Assert.Equal(TokenCacheState.ForcedCredentialRetrieval, result.TokenCacheState);
+        source.Verify(s => s.GetTokenAsync(request, true, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -83,25 +73,38 @@ public class OAuthTokenCacheTests
     }
 
     [Fact]
-    public async Task GetAsync_ForceFreshCredentials_MarksForcedCredentialRetrieval()
+    public async Task GetAsync_ReturnsCachedToken_WhenStillValid()
     {
         var request = Request();
         var source = new Mock<IOAuthTokenSource>(MockBehavior.Strict);
         source
-            .Setup(s => s.GetTokenAsync(request, true, It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetTokenAsync(request, false, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new OAuthTokenResponse
             {
-                AccessToken = "tok-forced",
+                AccessToken = "tok-1",
                 ExpiresAtUtc = DateTimeOffset.UtcNow.AddHours(1)
             });
 
         var cache = new OAuthTokenCache(source.Object);
 
-        var result = await cache.GetAsync(request, false, true, TestContext.Current.CancellationToken);
+        var first = await cache.GetAsync(request, false, false, TestContext.Current.CancellationToken);
+        var second = await cache.GetAsync(request, false, false, TestContext.Current.CancellationToken);
 
-        Assert.Equal("tok-forced", result.AccessToken);
-        Assert.Equal(TokenCacheState.ForcedCredentialRetrieval, result.TokenCacheState);
-        source.Verify(s => s.GetTokenAsync(request, true, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal("tok-1", first.AccessToken);
+        Assert.Equal(TokenCacheState.FreshToken, first.TokenCacheState);
+        Assert.Equal("tok-1", second.AccessToken);
+        Assert.Equal(TokenCacheState.CachedToken, second.TokenCacheState);
+        source.Verify(s => s.GetTokenAsync(request, false, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAsync_ThrowsArgumentNull_WhenRequestIsNull()
+    {
+        var source = new Mock<IOAuthTokenSource>(MockBehavior.Strict);
+        var cache = new OAuthTokenCache(source.Object);
+
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            cache.GetAsync(null!, false, false, TestContext.Current.CancellationToken));
     }
 
     [Fact]

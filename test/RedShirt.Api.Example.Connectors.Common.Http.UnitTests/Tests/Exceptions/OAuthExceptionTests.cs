@@ -10,23 +10,6 @@ namespace RedShirt.Api.Example.Connectors.Common.Http.UnitTests.Tests.Exceptions
 public class OAuthExceptionTests
 {
     [Fact]
-    public void OAuthRequestException_MessageOnly_AllowsRequiredFlagsViaInitializer()
-    {
-        var exception = new OAuthRequestException("token failed")
-        {
-            StatusCode = HttpStatusCode.Unauthorized,
-            CredentialStorageProblem = false,
-            FreshCredentialCacheResult = true
-        };
-
-        Assert.Equal("token failed", exception.Message);
-        Assert.Equal(HttpStatusCode.Unauthorized, exception.StatusCode);
-        Assert.False(exception.CredentialStorageProblem);
-        Assert.True(exception.FreshCredentialCacheResult);
-        Assert.Null(exception.InnerException);
-    }
-
-    [Fact]
     public void OAuthRequestException_InnerExceptionConstructor_PreservesInnerAndStatus()
     {
         var inner = new InvalidOperationException("ssm down");
@@ -45,13 +28,20 @@ public class OAuthExceptionTests
     }
 
     [Fact]
-    public void OAuthRequestJsonException_PreservesMessageAndInnerException()
+    public void OAuthRequestException_MessageOnly_AllowsRequiredFlagsViaInitializer()
     {
-        var inner = new JsonException("bad json");
-        var exception = new OAuthRequestJsonException("could not parse", inner);
+        var exception = new OAuthRequestException("token failed")
+        {
+            StatusCode = HttpStatusCode.Unauthorized,
+            CredentialStorageProblem = false,
+            FreshCredentialCacheResult = true
+        };
 
-        Assert.Equal("could not parse", exception.Message);
-        Assert.Same(inner, exception.InnerException);
+        Assert.Equal("token failed", exception.Message);
+        Assert.Equal(HttpStatusCode.Unauthorized, exception.StatusCode);
+        Assert.False(exception.CredentialStorageProblem);
+        Assert.True(exception.FreshCredentialCacheResult);
+        Assert.Null(exception.InnerException);
     }
 
     [Fact]
@@ -61,5 +51,15 @@ public class OAuthExceptionTests
 
         Assert.Equal("missing access_token", exception.Message);
         Assert.Null(exception.InnerException);
+    }
+
+    [Fact]
+    public void OAuthRequestJsonException_PreservesMessageAndInnerException()
+    {
+        var inner = new JsonException("bad json");
+        var exception = new OAuthRequestJsonException("could not parse", inner);
+
+        Assert.Equal("could not parse", exception.Message);
+        Assert.Same(inner, exception.InnerException);
     }
 }

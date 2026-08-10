@@ -38,35 +38,30 @@ public class BarApiRequestHandlerRetryWrapperServiceTests
             }));
     }
 
-    private static OAuthTokenCacheResponse Token(string accessToken, TokenCacheState state) => new()
+    private static OAuthTokenCacheResponse Token(string accessToken, TokenCacheState state)
     {
-        AccessToken = accessToken,
-        ExpiresAtUtc = DateTimeOffset.UtcNow.AddHours(1),
-        TokenCacheState = state
-    };
+        return new OAuthTokenCacheResponse
+        {
+            AccessToken = accessToken,
+            ExpiresAtUtc = DateTimeOffset.UtcNow.AddHours(1),
+            TokenCacheState = state
+        };
+    }
 
     [Fact]
-    public async Task GetAccessTokenAsync_CachesToken_UntilForcedRefreshPath()
+    public void ConfigurationModel_EffectiveTokenRefreshCooldown_FloorsAtOneSecond()
     {
-        var cache = new Mock<IOAuthTokenCache>(MockBehavior.Strict);
-        cache
-            .Setup(c => c.GetAsync(
-                It.IsAny<OAuthClientCredentialsRequest>(),
-                false,
-                false,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Token("tok-1", TokenCacheState.FreshToken));
+        var model = new BarApiRequestHandlerRetryWrapperService.ConfigurationModel
+        {
+            TokenUrl = TokenUrl,
+            ClientIdPath = ClientIdPath,
+            ClientSecretPath = ClientSecretPath,
+            ScopeLabel = null,
+            ScopeValue = null,
+            TokenRefreshCooldownSeconds = 0
+        };
 
-        var sut = CreateSut(cache.Object);
-
-        var first = await sut.GetAccessTokenAsync(TestContext.Current.CancellationToken);
-        var second = await sut.GetAccessTokenAsync(TestContext.Current.CancellationToken);
-
-        Assert.Equal("tok-1", first);
-        Assert.Equal("tok-1", second);
-        cache.Verify(
-            c => c.GetAsync(It.IsAny<OAuthClientCredentialsRequest>(), false, false, It.IsAny<CancellationToken>()),
-            Times.Once);
+        Assert.Equal(TimeSpan.FromSeconds(1), model.EffectiveTokenRefreshCooldown);
     }
 
     [Fact]
@@ -88,7 +83,7 @@ public class BarApiRequestHandlerRetryWrapperServiceTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(Token("new-token", TokenCacheState.FreshToken));
 
-        var sut = CreateSut(cache.Object, cooldownSeconds: 1);
+        var sut = CreateSut(cache.Object, 1);
         await sut.GetAccessTokenAsync(TestContext.Current.CancellationToken);
         await Task.Delay(TimeSpan.FromMilliseconds(1100), TestContext.Current.CancellationToken);
 
@@ -136,7 +131,7 @@ public class BarApiRequestHandlerRetryWrapperServiceTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(Token("recovered-token", TokenCacheState.ForcedCredentialRetrieval));
 
-        var sut = CreateSut(cache.Object, cooldownSeconds: 1);
+        var sut = CreateSut(cache.Object, 1);
 
         var result = await sut.ExecuteAsync(async ct => await sut.GetAccessTokenAsync(ct),
             TestContext.Current.CancellationToken);
@@ -164,7 +159,7 @@ public class BarApiRequestHandlerRetryWrapperServiceTests
                 FreshCredentialCacheResult = true
             });
 
-        var sut = CreateSut(cache.Object, cooldownSeconds: 120);
+        var sut = CreateSut(cache.Object, 120);
 
         // First call records the failed attempt timestamp / status.
         await Assert.ThrowsAsync<OAuthRequestException>(() =>
@@ -176,18 +171,26 @@ public class BarApiRequestHandlerRetryWrapperServiceTests
     }
 
     [Fact]
-    public void ConfigurationModel_EffectiveTokenRefreshCooldown_FloorsAtOneSecond()
+    public async Task GetAccessTokenAsync_CachesToken_UntilForcedRefreshPath()
     {
-        var model = new BarApiRequestHandlerRetryWrapperService.ConfigurationModel
-        {
-            TokenUrl = TokenUrl,
-            ClientIdPath = ClientIdPath,
-            ClientSecretPath = ClientSecretPath,
-            ScopeLabel = null,
-            ScopeValue = null,
-            TokenRefreshCooldownSeconds = 0
-        };
+        var cache = new Mock<IOAuthTokenCache>(MockBehavior.Strict);
+        cache
+            .Setup(c => c.GetAsync(
+                It.IsAny<OAuthClientCredentialsRequest>(),
+                false,
+                false,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Token("tok-1", TokenCacheState.FreshToken));
 
-        Assert.Equal(TimeSpan.FromSeconds(1), model.EffectiveTokenRefreshCooldown);
+        var sut = CreateSut(cache.Object);
+
+        var first = await sut.GetAccessTokenAsync(TestContext.Current.CancellationToken);
+        var second = await sut.GetAccessTokenAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal("tok-1", first);
+        Assert.Equal("tok-1", second);
+        cache.Verify(
+            c => c.GetAsync(It.IsAny<OAuthClientCredentialsRequest>(), false, false, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 }
