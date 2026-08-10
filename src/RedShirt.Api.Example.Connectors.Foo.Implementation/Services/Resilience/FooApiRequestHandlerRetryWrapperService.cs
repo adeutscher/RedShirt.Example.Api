@@ -9,15 +9,15 @@ namespace RedShirt.Api.Example.Connectors.Foo.Implementation.Services.Resilience
 internal interface IFooApiRequestHandlerRetryWrapperService
 {
     /// <summary>
-    ///     Ensures an API key is loaded (from cache or secret manager) and returns it.
-    /// </summary>
-    Task<string> GetApiKeyAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
     ///     Executes <paramref name="func" /> with a one-shot retry that force-refreshes the API key on
     ///     <see cref="FooApiRequestHandlerRetryWrapperService.UnauthorizedException" />.
     /// </summary>
     Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> func, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Ensures an API key is loaded (from cache or secret manager) and returns it.
+    /// </summary>
+    Task<string> GetApiKeyAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -32,44 +32,13 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
     private const int DefaultApiKeyRetryCooldownSeconds = 60;
 
     /// <summary>
-    /// Gate access to secret manager for API key in order to avoid a stampede on the secret manager.
+    ///     Gate access to secret manager for API key in order to avoid a stampede on the secret manager.
     /// </summary>
     private readonly SemaphoreSlim _apiKeyGate = new(1, 1);
 
     private string? _apiKey;
     private DateTimeOffset? _apiKeyFetchedAtUtc;
     private ResiliencePipeline? _retryPipeline;
-
-    public async Task<string> GetApiKeyAsync(CancellationToken cancellationToken = default)
-    {
-        if (_apiKey is not null)
-        {
-            return _apiKey;
-        }
-
-        await _apiKeyGate.WaitAsync(cancellationToken);
-        try
-        {
-            if (_apiKey is null)
-            {
-                await RefreshApiKeyAsync(force: false, cancellationToken);
-            }
-
-            return _apiKey!;
-        }
-        finally
-        {
-            _apiKeyGate.Release();
-        }
-    }
-
-    public Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> func,
-        CancellationToken cancellationToken = default)
-    {
-        return GetRetryPipeline().ExecuteAsync(
-            async token => await func(token),
-            cancellationToken).AsTask();
-    }
 
     private bool IsWithinApiKeyRetryCooldown()
     {
@@ -81,12 +50,13 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
         return DateTimeOffset.UtcNow < fetchedAtUtc + options.Value.EffectiveApiKeyRetryCooldownSeconds;
     }
 
-    private async Task RefreshApiKeyAsync(bool force, CancellationToken cancellationToken)
+    private async Task<string> RefreshAndGetApiKeyAsync(bool force, CancellationToken cancellationToken)
     {
         _apiKey = await secretManager.GetSecretAsync(options.Value.ApiKeyPath,
             force: force,
             cancellationToken: cancellationToken);
         _apiKeyFetchedAtUtc = DateTimeOffset.UtcNow;
+        return _apiKey;
     }
 
     private ResiliencePipeline GetRetryPipeline()
@@ -104,20 +74,20 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
                     await _apiKeyGate.WaitAsync(args.Context.CancellationToken);
                     try
                     {
-                        // Key was fetched recently enough to be considered stable, so cannot recover via retry.
                         if (IsWithinApiKeyRetryCooldown())
                         {
+                            // Key was fetched recently enough to be considered stable, so cannot recover via retry.
                             throw new UnauthorizedException();
                         }
 
                         var previousApiKey = _apiKey;
                         logger.LogDebug("Refreshing Foo API key from secret path {ApiKeyPath}",
                             options.Value.ApiKeyPath);
-                        await RefreshApiKeyAsync(force: true, args.Context.CancellationToken);
+                        await RefreshAndGetApiKeyAsync(true, args.Context.CancellationToken);
 
-                        // Same key after force-refresh — unauthorized cannot be recovered by retry.
                         if (string.Equals(previousApiKey, _apiKey, StringComparison.Ordinal))
                         {
+                            // Same key after force-refresh, so the unauthorized result cannot be recovered by retry.
                             throw new UnauthorizedException();
                         }
                     }
@@ -128,6 +98,37 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
                 }
             })
             .Build();
+    }
+
+    public async Task<string> GetApiKeyAsync(CancellationToken cancellationToken = default)
+    {
+        if (_apiKey is not null)
+        {
+            return _apiKey;
+        }
+
+        await _apiKeyGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (_apiKey is not null) // Need to re-check after acquiring lock
+            {
+                return _apiKey;
+            }
+
+            return await RefreshAndGetApiKeyAsync(false, cancellationToken);
+        }
+        finally
+        {
+            _apiKeyGate.Release();
+        }
+    }
+
+    public Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> func,
+        CancellationToken cancellationToken = default)
+    {
+        return GetRetryPipeline().ExecuteAsync(
+            async token => await func(token),
+            cancellationToken).AsTask();
     }
 
     /// <summary>
@@ -153,6 +154,6 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
         ///     Effective stability window for an API key fetch.
         /// </summary>
         public TimeSpan EffectiveApiKeyRetryCooldownSeconds =>
-            TimeSpan.FromSeconds(ApiKeyRetryCooldownSeconds ?? DefaultApiKeyRetryCooldownSeconds);
+            TimeSpan.FromSeconds(Math.Max(1, ApiKeyRetryCooldownSeconds ?? DefaultApiKeyRetryCooldownSeconds));
     }
 }
