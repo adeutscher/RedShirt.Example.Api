@@ -12,8 +12,8 @@ namespace RedShirt.Api.Example.Connectors.Bar.Implementation.Services.Resilience
 internal interface IBarApiRequestHandlerRetryWrapperService
 {
     /// <summary>
-    ///     Executes <paramref name="func" /> with a one-shot retry that force-refreshes the bearer token on
-    ///     <see cref="BarUnauthorizedException" />.
+    ///     Executes <paramref name="func" /> with up to two retries on <see cref="BarUnauthorizedException" />:
+    ///     first forces a fresh token; second forces fresh credentials and a fresh token.
     /// </summary>
     Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> func, CancellationToken cancellationToken = default);
 
@@ -24,8 +24,8 @@ internal interface IBarApiRequestHandlerRetryWrapperService
 }
 
 /// <summary>
-///     Obtains Bar bearer tokens via <see cref="IOAuthTokenCache" /> and retries once on unauthorized,
-///     escalating from a forced token refresh to a forced credential refresh when needed.
+///     Obtains Bar bearer tokens via <see cref="IOAuthTokenCache" /> and retries on unauthorized:
+///     attempt 1 forces a fresh token; attempt 2 forces fresh credentials and a fresh token.
 /// </summary>
 internal sealed class BarApiRequestHandlerRetryWrapperService(
     IOAuthTokenCache oauthTokenCache,
@@ -41,8 +41,8 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
     private readonly SemaphoreSlim _tokenGate = new(1, 1);
 
     private string? _accessToken;
-    private DateTimeOffset? _tokenFetchedAtUtc;
     private ResiliencePipeline? _retryPipeline;
+    private DateTimeOffset? _tokenFetchedAtUtc;
 
     private OAuthClientCredentialsRequest CreateOAuthRequest()
     {
@@ -82,7 +82,7 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
         return _retryPipeline ??= new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
             {
-                MaxRetryAttempts = 1,
+                MaxRetryAttempts = 2,
                 ShouldHandle = args => args.Outcome.Exception is BarUnauthorizedException
                     ? PredicateResult.True()
                     : PredicateResult.False(),
@@ -92,35 +92,33 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
                     await _tokenGate.WaitAsync(args.Context.CancellationToken);
                     try
                     {
-                        if (IsWithinTokenRefreshCooldown())
+                        // AttemptNumber is zero-based: 0 = first retry, 1 = second retry.
+                        var forceFreshCredentials = args.AttemptNumber >= 1;
+
+                        // Cooldown only blocks the initial token-only refresh. A second retry must still be
+                        // allowed to force credential retrieval after a recent token refresh.
+                        if (!forceFreshCredentials && IsWithinTokenRefreshCooldown())
                         {
                             // Token was fetched recently enough to be considered stable, so cannot recover via retry.
                             throw new BarUnauthorizedException();
                         }
 
                         var previousAccessToken = _accessToken;
-                        logger.LogDebug("Refreshing Bar bearer token from {TokenUrl}", options.Value.TokenUrl);
+                        logger.LogDebug(
+                            "Refreshing Bar bearer token from {TokenUrl} (forceFreshCredentials: {ForceFreshCredentials})",
+                            options.Value.TokenUrl, forceFreshCredentials);
 
                         var result = await oauthTokenCache.GetAsync(CreateOAuthRequest(),
-                            forceFreshToken: true,
-                            forceFreshCredentials: false,
+                            true,
+                            forceFreshCredentials,
                             args.Context.CancellationToken);
 
-                        if (string.Equals(previousAccessToken, result.AccessToken, StringComparison.Ordinal))
+                        if (forceFreshCredentials
+                            && (string.Equals(previousAccessToken, result.AccessToken, StringComparison.Ordinal)
+                                || result.TokenCacheState != TokenCacheState.ForcedCredentialRetrieval))
                         {
-                            logger.LogDebug(
-                                "Bar bearer token unchanged after forced token refresh; forcing credential retrieval");
-                            result = await oauthTokenCache.GetAsync(CreateOAuthRequest(),
-                                forceFreshToken: true,
-                                forceFreshCredentials: true,
-                                args.Context.CancellationToken);
-
-                            if (string.Equals(previousAccessToken, result.AccessToken, StringComparison.Ordinal)
-                                || result.TokenCacheState != TokenCacheState.ForcedCredentialRetrieval)
-                            {
-                                // Same token after force-refresh, so the unauthorized result cannot be recovered by retry.
-                                throw new BarUnauthorizedException();
-                            }
+                            // Same token after forced credential refresh, so unauthorized cannot be recovered.
+                            throw new BarUnauthorizedException();
                         }
 
                         _accessToken = result.AccessToken;

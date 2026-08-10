@@ -8,7 +8,7 @@ namespace RedShirt.Api.Example.Connectors.Bar.Implementation.Clients;
 /// <summary>
 ///     Attaches a Bar OAuth bearer token to outbound requests.
 ///     On <see cref="HttpStatusCode.Unauthorized" />, signals <see cref="BarUnauthorizedException" />
-///     so the request handler retry wrapper can force-refresh the token and retry once.
+///     so the request handler retry wrapper can refresh the token (then credentials) and retry.
 /// </summary>
 internal sealed class BarApiClientHandler(
     IBarApiRequestHandlerRetryWrapperService apiRequestRetryWrapperService) : DelegatingHandler
