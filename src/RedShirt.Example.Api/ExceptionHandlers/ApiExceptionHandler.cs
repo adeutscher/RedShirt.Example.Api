@@ -33,7 +33,7 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsS
                 return true;
             case FooConnectorException
             {
-                InnerException: HttpRequestException { StatusCode: HttpStatusCode.NotFound }
+                InnerException: HttpRequestException {StatusCode: HttpStatusCode.NotFound}
             }:
                 statusCode = StatusCodes.Status404NotFound;
                 title = "Not Found";

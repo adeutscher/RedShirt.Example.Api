@@ -1,6 +1,7 @@
 using RedShirt.Api.Example.Connectors.Foo.Core.Models;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Models.Requests;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Models.Responses;
+using System.Text;
 using System.Text.Json;
 
 namespace RedShirt.Api.Example.Connectors.Foo.Implementation.Clients;
@@ -26,7 +27,7 @@ internal sealed class FooApiClient(HttpClient httpClient, string baseUrl) : IFoo
         message.Content = new StringContent(JsonSerializer.Serialize(new InternalFooCreateRequest
         {
             Name = request.Name
-        }), System.Text.Encoding.UTF8, "application/json");
+        }), Encoding.UTF8, "application/json");
 
         using var response = await httpClient.SendAsync(message, cancellationToken);
 

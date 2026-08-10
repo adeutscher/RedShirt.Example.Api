@@ -209,7 +209,7 @@ public class MariaDbProductRepositoryTests
         var cachedJson = JsonSerializer.Serialize(new
         {
             OrderBys = new List<string> {"`UpdatedAtUtc` DESC"},
-            SearchParameters = CreateSearchRequest(5, sku: "SKU-SHIPPED"),
+            SearchParameters = CreateSearchRequest(5, "SKU-SHIPPED"),
             LastId = lastId,
             LastUpdatedAtUtc = lastUpdatedAtUtc
         });
@@ -222,7 +222,7 @@ public class MariaDbProductRepositoryTests
             retryWrapperService: CreateRetryReturning([CreateDto()]).Object);
 
         var result = await repository.SearchAsync(
-            CreateSearchRequest(99, sku: "Ignored"),
+            CreateSearchRequest(99, "Ignored"),
             continuationToken,
             TestContext.Current.CancellationToken);
 
