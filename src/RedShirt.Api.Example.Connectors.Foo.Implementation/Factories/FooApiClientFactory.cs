@@ -5,17 +5,17 @@ namespace RedShirt.Api.Example.Connectors.Foo.Implementation.Factories;
 
 internal interface IFooApiClientFactory
 {
-    Task<IFooApiClient> CreateFooApiClientAsync(CancellationToken cancellationToken = default);
+    IFooApiClient CreateFooApiClient();
 }
 
 internal sealed class FooApiClientFactory(
     IHttpClientFactory httpClientFactory,
     IOptions<FooApiClientFactory.ConfigurationModel> configuration) : IFooApiClientFactory
 {
-    public Task<IFooApiClient> CreateFooApiClientAsync(CancellationToken cancellationToken = default)
+    public IFooApiClient CreateFooApiClient()
     {
         var httpClient = httpClientFactory.CreateClient(nameof(FooApiClient));
-        return Task.FromResult<IFooApiClient>(new FooApiClient(httpClient, configuration.Value.BaseUrl));
+        return new FooApiClient(httpClient, configuration.Value.BaseUrl);
     }
 
     internal sealed class ConfigurationModel
