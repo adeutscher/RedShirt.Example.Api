@@ -81,9 +81,17 @@
     </Folder>
     <Folder Name="/test/connectors/">
         <Project
+                Path="test/RedShirt.Api.Example.Connectors.Bar.Core.UnitTests/RedShirt.Api.Example.Connectors.Bar.Core.UnitTests.csproj"/>
+        <Project
+                Path="test/RedShirt.Api.Example.Connectors.Bar.Implementation.UnitTests/RedShirt.Api.Example.Connectors.Bar.Implementation.UnitTests.csproj"/>
+        <Project
                 Path="test/RedShirt.Api.Example.Connectors.Foo.Core.UnitTests/RedShirt.Api.Example.Connectors.Foo.Core.UnitTests.csproj"/>
         <Project
                 Path="test/RedShirt.Api.Example.Connectors.Foo.Implementation.UnitTests/RedShirt.Api.Example.Connectors.Foo.Implementation.UnitTests.csproj"/>
+    </Folder>
+    <Folder Name="/test/connectors/common/">
+        <Project
+                Path="test/RedShirt.Api.Example.Connectors.Common.Http.UnitTests/RedShirt.Api.Example.Connectors.Common.Http.UnitTests.csproj"/>
     </Folder>
     <Folder Name="/test/data-stores/">
         <Project
