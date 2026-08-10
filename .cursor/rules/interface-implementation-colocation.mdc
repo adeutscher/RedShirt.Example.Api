@@ -1,0 +1,30 @@
+---
+description: Colocate interface with its implementation when both live in the same project
+globs: "**/*.cs"
+alwaysApply: false
+---
+
+# Interface and implementation file colocating
+
+When an interface and its implementing class are defined in the **same project**, put them in the **same file**. Name the file after the implementation (e.g. `OAuthTokenSource.cs` contains `IOAuthTokenSource` and `OAuthTokenSource`).
+
+Do **not** create a separate `IThing.cs` alongside `Thing.cs` in that case.
+
+```csharp
+// ✅ GOOD — OAuthTokenSource.cs
+public interface IOAuthTokenSource
+{
+    Task<OAuthTokenResponse> GetTokenAsync(...);
+}
+
+public sealed class OAuthTokenSource(...) : IOAuthTokenSource
+{
+    public Task<OAuthTokenResponse> GetTokenAsync(...) { ... }
+}
+```
+
+```csharp
+// ❌ BAD — split across IOAuthTokenSource.cs and OAuthTokenSource.cs in the same project
+```
+
+**Exception:** Keep the interface in its own project/file when it is a public contract in a Core (or similar) assembly and the implementation lives in a different project (e.g. `IFooConnector` in Foo.Core, `FooConnector` in Foo.Implementation).

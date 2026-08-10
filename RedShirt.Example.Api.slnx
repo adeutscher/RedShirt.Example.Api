@@ -38,6 +38,10 @@
         <Project
                 Path="src/RedShirt.Api.Example.Connectors.Foo.Implementation/RedShirt.Api.Example.Connectors.Foo.Implementation.csproj"/>
     </Folder>
+    <Folder Name="/src/connectors/common/">
+        <Project
+                Path="src/RedShirt.Api.Example.Connectors.Common.Http/RedShirt.Api.Example.Connectors.Common.Http.csproj"/>
+    </Folder>
     <Folder Name="/src/data-stores/">
         <Project Path="src\RedShirt.Example.Api.DataStores.Constants\RedShirt.Example.Api.DataStores.Constants.csproj"/>
         <Project
