@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
 using RedShirt.Api.Example.Connectors.Foo.Core.Exceptions;
@@ -31,10 +32,11 @@ internal interface IFooRetryWrapperService
 internal sealed class FooRetryWrapperService(
     IFooExceptionArbiterService exceptionArbiterService,
     ILogger<FooRetryWrapperService> logger,
-    ISleepService sleepService)
+    ISleepService sleepService,
+    IOptions<FooRetryWrapperService.ConfigurationModel> options)
     : IFooRetryWrapperService
 {
-    private const int FooRetryCount = 3;
+    private const int DefaultRetryCount = 3;
 
     private ResiliencePipeline? _retryPipeline;
 
@@ -43,7 +45,7 @@ internal sealed class FooRetryWrapperService(
         return _retryPipeline ??= new ResiliencePipelineBuilder()
             .AddRetry(new RetryStrategyOptions
             {
-                MaxRetryAttempts = FooRetryCount,
+                MaxRetryAttempts = options.Value.EffectiveRetryCount,
                 ShouldHandle = args =>
                 {
                     // ReSharper disable once DuplicatedSequentialIfBodies
@@ -142,5 +144,19 @@ internal sealed class FooRetryWrapperService(
         {
             throw WrapIfNeeded(exception);
         }
+    }
+
+    internal sealed class ConfigurationModel
+    {
+        /// <summary>
+        ///     Maximum number of retry attempts for expected transient Foo failures.
+        ///     When null, <see cref="DefaultRetryCount" /> is used.
+        /// </summary>
+        public required int? RetryCount { get; init; }
+
+        /// <summary>
+        ///     Effective retry attempt count (floored at zero).
+        /// </summary>
+        public int EffectiveRetryCount => Math.Max(0, RetryCount ?? DefaultRetryCount);
     }
 }

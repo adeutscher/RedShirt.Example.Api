@@ -21,6 +21,8 @@ public static class ServiceCollectionExtensions
                 configuration.GetSection(ConfigurationSectionName))
             .Configure<FooApiRequestHandlerRetryWrapperService.ConfigurationModel>(
                 configuration.GetSection(ConfigurationSectionName))
+            .Configure<FooRetryWrapperService.ConfigurationModel>(
+                configuration.GetSection(ConfigurationSectionName))
             .AddTransient<FooApiClientHandler>()
             .AddSingleton<IFooApiRequestHandlerRetryWrapperService, FooApiRequestHandlerRetryWrapperService>()
             .AddSingleton<IFooExceptionArbiterService, FooExceptionArbiterService>()

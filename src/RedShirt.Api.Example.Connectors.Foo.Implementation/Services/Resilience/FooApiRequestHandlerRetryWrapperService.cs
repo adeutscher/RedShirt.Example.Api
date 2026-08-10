@@ -30,7 +30,7 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
     IOptions<FooApiRequestHandlerRetryWrapperService.ConfigurationModel> options)
     : IFooApiRequestHandlerRetryWrapperService
 {
-    private const int DefaultApiKeyRetryCooldownSeconds = 60;
+    private const int DefaultApiKeyRefreshCooldownSeconds = 60;
 
     /// <summary>
     ///     Gate access to secret manager for API key in order to avoid a stampede on the secret manager.
@@ -41,14 +41,14 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
     private DateTimeOffset? _apiKeyFetchedAtUtc;
     private ResiliencePipeline? _retryPipeline;
 
-    private bool IsWithinApiKeyRetryCooldown()
+    private bool IsWithinApiKeyRefreshCooldown()
     {
         if (_apiKeyFetchedAtUtc is not { } fetchedAtUtc)
         {
             return false;
         }
 
-        return DateTimeOffset.UtcNow < fetchedAtUtc + options.Value.EffectiveApiKeyRetryCooldownSeconds;
+        return DateTimeOffset.UtcNow < fetchedAtUtc + options.Value.EffectiveApiKeyRefreshCooldownSeconds;
     }
 
     private async Task<string> RefreshAndGetApiKeyAsync(bool force, CancellationToken cancellationToken)
@@ -75,7 +75,7 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
                     await _apiKeyGate.WaitAsync(args.Context.CancellationToken);
                     try
                     {
-                        if (IsWithinApiKeyRetryCooldown())
+                        if (IsWithinApiKeyRefreshCooldown())
                         {
                             // Key was fetched recently enough to be considered stable, so cannot recover via retry.
                             throw new FooUnauthorizedException();
@@ -142,14 +142,14 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
         /// <summary>
         ///     Seconds after an API key fetch during which the key is considered stable.
         ///     When still within this window, an unauthorized response is not retried.
-        ///     When null, <see cref="DefaultApiKeyRetryCooldownSeconds" /> is used.
+        ///     When null, <see cref="DefaultApiKeyRefreshCooldownSeconds" /> is used.
         /// </summary>
-        public required int? ApiKeyRetryCooldownSeconds { get; init; }
+        public required int? ApiKeyRefreshCooldownSeconds { get; init; }
 
         /// <summary>
         ///     Effective stability window for an API key fetch.
         /// </summary>
-        public TimeSpan EffectiveApiKeyRetryCooldownSeconds =>
-            TimeSpan.FromSeconds(Math.Max(1, ApiKeyRetryCooldownSeconds ?? DefaultApiKeyRetryCooldownSeconds));
+        public TimeSpan EffectiveApiKeyRefreshCooldownSeconds =>
+            TimeSpan.FromSeconds(Math.Max(1, ApiKeyRefreshCooldownSeconds ?? DefaultApiKeyRefreshCooldownSeconds));
     }
 }

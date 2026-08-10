@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 using RedShirt.Api.Example.Connectors.Foo.Core.Exceptions;
 using RedShirt.Api.Example.Connectors.Foo.Implementation.Services.Resilience;
@@ -14,7 +15,8 @@ public class FooRetryWrapperServiceTests
 {
     private static FooRetryWrapperService CreateSut(
         IFooExceptionArbiterService? arbiter = null,
-        ISleepService? sleep = null)
+        ISleepService? sleep = null,
+        int? retryCount = 3)
     {
         var sleepMock = new Mock<ISleepService>();
         sleepMock
@@ -24,7 +26,11 @@ public class FooRetryWrapperServiceTests
         return new FooRetryWrapperService(
             arbiter ?? new FooExceptionArbiterService(),
             NullLogger<FooRetryWrapperService>.Instance,
-            sleep ?? sleepMock.Object);
+            sleep ?? sleepMock.Object,
+            Options.Create(new FooRetryWrapperService.ConfigurationModel
+            {
+                RetryCount = retryCount
+            }));
     }
 
     [Fact]

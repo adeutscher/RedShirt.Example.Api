@@ -24,7 +24,7 @@ public class FooApiRequestHandlerRetryWrapperServiceTests
             Options.Create(new FooApiRequestHandlerRetryWrapperService.ConfigurationModel
             {
                 ApiKeyPath = ApiKeyPath,
-                ApiKeyRetryCooldownSeconds = cooldownSeconds
+                ApiKeyRefreshCooldownSeconds = cooldownSeconds
             }));
     }
 
