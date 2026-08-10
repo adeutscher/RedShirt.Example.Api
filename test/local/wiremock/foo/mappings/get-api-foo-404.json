@@ -1,0 +1,22 @@
+{
+  "priority": 1,
+  "name": "Foo get by id — not found",
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/foo/404",
+    "headers": {
+      "x-api-key": {
+        "equalTo": "local-foo-api-key"
+      }
+    }
+  },
+  "response": {
+    "status": 404,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "message": "Foo not found"
+    }
+  }
+}

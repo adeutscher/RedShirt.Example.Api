@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using RedShirt.Api.Example.Connectors.Foo.Core.Exceptions;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 
 namespace RedShirt.Example.Api.ExceptionHandlers;
@@ -28,6 +29,15 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsS
             case NoChangesToModifyException:
                 statusCode = StatusCodes.Status304NotModified;
                 title = "Not Modified";
+                return true;
+            case FooRecordNotFoundException:
+                statusCode = StatusCodes.Status404NotFound;
+                title = "Not Found";
+                return true;
+            case FooUnauthorizedException:
+            case FooConnectorException:
+                statusCode = StatusCodes.Status502BadGateway;
+                title = "Bad Gateway";
                 return true;
             default:
                 statusCode = 0;

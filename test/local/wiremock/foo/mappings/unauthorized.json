@@ -1,0 +1,17 @@
+{
+  "priority": 10,
+  "name": "Foo unauthorized without valid API key",
+  "request": {
+    "method": "ANY",
+    "urlPathPattern": "/api/foo(/.*)?"
+  },
+  "response": {
+    "status": 401,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "message": "Unauthorized"
+    }
+  }
+}

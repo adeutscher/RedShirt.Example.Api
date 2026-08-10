@@ -30,6 +30,11 @@
         <Project
                 Path="src\RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation\RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.csproj"/>
     </Folder>
+    <Folder Name="/src/connectors/">
+        <Project Path="src/RedShirt.Api.Example.Connectors.Foo.Core/RedShirt.Api.Example.Connectors.Foo.Core.csproj"/>
+        <Project
+                Path="src/RedShirt.Api.Example.Connectors.Foo.Implementation/RedShirt.Api.Example.Connectors.Foo.Implementation.csproj"/>
+    </Folder>
     <Folder Name="/src/data-stores/">
         <Project Path="src\RedShirt.Example.Api.DataStores.Constants\RedShirt.Example.Api.DataStores.Constants.csproj"/>
         <Project
@@ -66,6 +71,12 @@
         <Project
                 Path="test/RedShirt.Example.Api.Common.SecretManagers.Core.UnitTests/RedShirt.Example.Api.Common.SecretManagers.Core.UnitTests.csproj"/>
         <Project Path="test/RedShirt.Example.Api.Common.UnitTests/RedShirt.Example.Api.Common.UnitTests.csproj"/>
+    </Folder>
+    <Folder Name="/test/connectors/">
+        <Project
+                Path="test/RedShirt.Api.Example.Connectors.Foo.Core.UnitTests/RedShirt.Api.Example.Connectors.Foo.Core.UnitTests.csproj"/>
+        <Project
+                Path="test/RedShirt.Api.Example.Connectors.Foo.Implementation.UnitTests/RedShirt.Api.Example.Connectors.Foo.Implementation.UnitTests.csproj"/>
     </Folder>
     <Folder Name="/test/data-stores/">
         <Project

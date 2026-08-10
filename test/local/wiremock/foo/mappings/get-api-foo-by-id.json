@@ -1,0 +1,21 @@
+{
+  "priority": 5,
+  "name": "Foo get by id",
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/api/foo/[0-9]+",
+    "headers": {
+      "x-api-key": {
+        "equalTo": "local-foo-api-key"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "transformers": ["response-template"],
+    "body": "{\"Id\":{{request.pathSegments.[2]}},\"Name\":\"Foo-{{request.pathSegments.[2]}}\"}"
+  }
+}

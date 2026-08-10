@@ -11,3 +11,7 @@ AWS_DEFAULT_REGION=us-east-1 awslocal ssm put-parameter --overwrite --type Strin
 AWS_DEFAULT_REGION=us-east-1 awslocal ssm put-parameter --overwrite --type String \
     --name /mysql/connection-string \
     --value "Server=mariadb;Port=3306;Database=example;Uid=example-user;Pwd=example-password;"
+
+AWS_DEFAULT_REGION=us-east-1 awslocal ssm put-parameter --overwrite --type String \
+    --name /foo/api-key \
+    --value "local-foo-api-key"

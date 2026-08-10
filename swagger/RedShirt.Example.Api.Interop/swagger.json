@@ -191,6 +191,127 @@
         }
       }
     },
+    "/foo/{id}": {
+      "get": {
+        "tags": [
+          "Foo"
+        ],
+        "operationId": "Foo_Get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetFooConnectorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/foo": {
+      "post": {
+        "tags": [
+          "Foo"
+        ],
+        "operationId": "Foo_Post",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "x-originalName": "idempotencyKey",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FooPostRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateFooConnectorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/orders/{id}": {
       "delete": {
         "tags": [
@@ -1113,6 +1234,52 @@
       "ExampleItemPutRequest": {
         "type": "object",
         "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "GetFooConnectorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateFooConnectorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "FooPostRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
         "properties": {
           "name": {
             "type": "string"
