@@ -23,4 +23,13 @@ internal sealed class FooConnector(
             return await client.CreateFooAsync(request, token);
         }, cancellationToken);
     }
+
+    public Task<GetFooConnectorResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return retryWrapperService.RunAsync(async token =>
+        {
+            var client = await fooApiClientFactory.CreateFooApiClientAsync(token);
+            return await client.GetFooByIdAsync(id, token);
+        }, cancellationToken);
+    }
 }
