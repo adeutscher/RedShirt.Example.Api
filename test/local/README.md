@@ -76,7 +76,7 @@ under `wiremock/foo/mappings/`. Successful calls require header
 `make-local-aws-resources.sh`). The API container reaches WireMock at
 `http://wiremock-foo:8080`; from the host use `http://localhost:9100`.
 
-```
+
 | Method | Path                     | Auth                | Result                                                                 |
 |--------|--------------------------|---------------------|------------------------------------------------------------------------|
 | POST   | /api/foo                 | valid x-api-key     | 200 with { "Id": <random int>, "Name": <request Name> }                |
@@ -84,4 +84,24 @@ under `wiremock/foo/mappings/`. Successful calls require header
 | GET    | /api/foo/{id}            | valid x-api-key     | 200 with { "Id": {id}, "Name": "Foo-{id}" }                            |
 | GET    | /api/foo/404             | valid x-api-key     | 404 (exercises not-found handling)                                     |
 | any    | /api/foo or /api/foo/... | missing/invalid key | 401                                                                    |
+
+
+### Testing Unauthorized Behaviour
+
+To conveniently set an invalid API key value in SSM, you can use the `foo-set-ssm-api-key.sh` script:
+
+```bash
+./foo-set-ssm-api-key.sh 'bogus-key-value-here'
 ```
+
+Silly reminder: The API caches a successful key for its entire lifetime or until such a time as it becomes an unsuccessful key. This means that if the API instance is told to make a request to the Foo service and *then* a bad value is stored in SSM the API will have no reason to pull that bad key. This paragraph was made because of a local testing mix-up when the Foo example was first being developed (the hazards of developing code in one sitting and then local testing in the next). In order to force the pull of a bad key, you would need to use the below rotation script to update the key in WireMock and then manually.
+
+### Testing Key Rotations
+
+To conveniently set a new API key value in SSM *and* update WireMock's mappings (in-memory), use the `foo-rotate-api-key.sh` script.
+
+```bash
+./foo-rotate-api-key.sh
+```
+
+Confirming that this script will only update the in-memory versions that WireMock has loaded from disk. It will not adjust the mapping files mapped from the `wiremock/foo/` directory.
