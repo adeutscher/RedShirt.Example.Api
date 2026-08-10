@@ -7,7 +7,7 @@ namespace RedShirt.Api.Example.Connectors.Common.Http.Exceptions;
 /// </summary>
 public sealed class OAuthRequestException : Exception
 {
-    public required HttpStatusCode? StatusCode { get; init;  }
+    public required HttpStatusCode? StatusCode { get; init; }
     public required bool CredentialStorageProblem { get; init; }
     public required bool FreshCredentialCacheResult { get; init; }
 
