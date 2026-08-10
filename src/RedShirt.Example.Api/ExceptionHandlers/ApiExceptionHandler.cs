@@ -34,6 +34,10 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsS
                 statusCode = StatusCodes.Status404NotFound;
                 title = "Not Found";
                 return true;
+            case FooUnauthorizedException:
+                statusCode = StatusCodes.Status502BadGateway;
+                title = "Bad Gateway";
+                return true;
             case FooConnectorException:
                 statusCode = StatusCodes.Status502BadGateway;
                 title = "Bad Gateway";
