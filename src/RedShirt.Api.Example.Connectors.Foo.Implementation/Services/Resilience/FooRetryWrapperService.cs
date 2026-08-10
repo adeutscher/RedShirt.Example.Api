@@ -79,8 +79,8 @@ internal sealed class FooRetryWrapperService(
     {
         var report = exceptionArbiterService.GetReport(exception);
         
-        // Domain not-found is a stable connector outcome; do not wrap as FooConnectorException.
-        if (exception is FooRecordNotFoundException)
+        // Domain auth / not-found are stable connector outcomes; do not wrap as FooConnectorException.
+        if (exception is FooRecordNotFoundException or FooUnauthorizedException)
         {
             return exception;
         }

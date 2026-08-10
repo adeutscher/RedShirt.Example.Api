@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
+using RedShirt.Api.Example.Connectors.Foo.Core.Exceptions;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
 
 namespace RedShirt.Api.Example.Connectors.Foo.Implementation.Services.Resilience;
@@ -10,7 +11,7 @@ internal interface IFooApiRequestHandlerRetryWrapperService
 {
     /// <summary>
     ///     Executes <paramref name="func" /> with a one-shot retry that force-refreshes the API key on
-    ///     <see cref="FooApiRequestHandlerRetryWrapperService.UnauthorizedException" />.
+    ///     <see cref="FooUnauthorizedException" />.
     /// </summary>
     Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> func, CancellationToken cancellationToken = default);
 
@@ -65,7 +66,7 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
             .AddRetry(new RetryStrategyOptions
             {
                 MaxRetryAttempts = 1,
-                ShouldHandle = args => args.Outcome.Exception is UnauthorizedException
+                ShouldHandle = args => args.Outcome.Exception is FooUnauthorizedException
                     ? PredicateResult.True()
                     : PredicateResult.False(),
                 DelayGenerator = static _ => new ValueTask<TimeSpan?>(TimeSpan.Zero),
@@ -77,7 +78,7 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
                         if (IsWithinApiKeyRetryCooldown())
                         {
                             // Key was fetched recently enough to be considered stable, so cannot recover via retry.
-                            throw new UnauthorizedException();
+                            throw new FooUnauthorizedException();
                         }
 
                         var previousApiKey = _apiKey;
@@ -88,7 +89,7 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
                         if (string.Equals(previousApiKey, _apiKey, StringComparison.Ordinal))
                         {
                             // Same key after force-refresh, so the unauthorized result cannot be recovered by retry.
-                            throw new UnauthorizedException();
+                            throw new FooUnauthorizedException();
                         }
                     }
                     finally
@@ -130,11 +131,6 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
             async token => await func(token),
             cancellationToken).AsTask();
     }
-
-    /// <summary>
-    ///     Signals that the Foo API rejected the current key; the retry pipeline force-refreshes and retries.
-    /// </summary>
-    internal sealed class UnauthorizedException : Exception;
 
     internal sealed class ConfigurationModel
     {
