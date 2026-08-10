@@ -29,7 +29,10 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
     IOptions<FooApiRequestHandlerRetryWrapperService.ConfigurationModel> options)
     : IFooApiRequestHandlerRetryWrapperService
 {
+    private const int DefaultApiKeyRetryCooldownSeconds = 60;
+
     private string? _apiKey;
+    private DateTimeOffset? _apiKeyFetchedAtUtc;
     private ResiliencePipeline? _retryPipeline;
 
     public async Task<string> GetApiKeyAsync(CancellationToken cancellationToken = default)
@@ -50,11 +53,22 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
             cancellationToken).AsTask();
     }
 
+    private bool IsWithinApiKeyRetryCooldown()
+    {
+        if (_apiKeyFetchedAtUtc is not { } fetchedAtUtc)
+        {
+            return false;
+        }
+
+        return DateTimeOffset.UtcNow < fetchedAtUtc + options.Value.EffectiveApiKeyRetryCooldownSeconds;
+    }
+
     private async Task RefreshApiKeyAsync(bool force, CancellationToken cancellationToken)
     {
         _apiKey = await secretManager.GetSecretAsync(options.Value.ApiKeyPath,
             force: force,
             cancellationToken: cancellationToken);
+        _apiKeyFetchedAtUtc = DateTimeOffset.UtcNow;
     }
 
     private ResiliencePipeline GetRetryPipeline()
@@ -69,9 +83,22 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
                 DelayGenerator = static _ => new ValueTask<TimeSpan?>(TimeSpan.Zero),
                 OnRetry = async args =>
                 {
+                    // Key was fetched recently enough to be considered stable, so cannot recover via retry.
+                    if (IsWithinApiKeyRetryCooldown())
+                    {
+                        throw new UnauthorizedException();
+                    }
+
+                    var previousApiKey = _apiKey;
                     logger.LogDebug("Refreshing Foo API key from secret path {ApiKeyPath}",
                         options.Value.ApiKeyPath);
                     await RefreshApiKeyAsync(force: true, args.Context.CancellationToken);
+
+                    // Same key after force-refresh — unauthorized cannot be recovered by retry.
+                    if (string.Equals(previousApiKey, _apiKey, StringComparison.Ordinal))
+                    {
+                        throw new UnauthorizedException();
+                    }
                 }
             })
             .Build();
@@ -88,5 +115,18 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
         ///     Secret-manager path for the Foo API key (same pattern as connection-string paths).
         /// </summary>
         public required string ApiKeyPath { get; init; }
+
+        /// <summary>
+        ///     Seconds after an API key fetch during which the key is considered stable.
+        ///     When still within this window, an unauthorized response is not retried.
+        ///     When null, <see cref="DefaultApiKeyRetryCooldownSeconds" /> is used.
+        /// </summary>
+        public required int? ApiKeyRetryCooldownSeconds { get; init; }
+
+        /// <summary>
+        ///     Effective stability window for an API key fetch.
+        /// </summary>
+        public TimeSpan EffectiveApiKeyRetryCooldownSeconds =>
+            TimeSpan.FromSeconds(ApiKeyRetryCooldownSeconds ?? DefaultApiKeyRetryCooldownSeconds);
     }
 }
