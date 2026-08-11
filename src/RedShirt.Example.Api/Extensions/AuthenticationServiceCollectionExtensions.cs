@@ -11,12 +11,21 @@ namespace RedShirt.Example.Api.Extensions;
 
 internal static class AuthenticationServiceCollectionExtensions
 {
+    private static AuthenticationOptions? GetAuthenticationOptions(IConfiguration configuration)
+    {
+        return configuration.GetSection(AuthenticationOptions.ConfigurationSectionName)
+            .Get<AuthenticationOptions>();
+    }
+
+    private static bool IsAuthenticationEnabled(AuthenticationOptions? options)
+    {
+        return options is {DisableAuthentication: false};
+    }
+
     internal static IServiceCollection AddApiSwaggerDocument(this IServiceCollection services,
         IConfiguration configuration)
     {
-        var authentication = configuration.GetSection(AuthenticationOptions.ConfigurationSectionName)
-            .Get<AuthenticationOptions>();
-        var authenticationEnabled = authentication is {DisableAuthentication: false};
+        var authenticationEnabled = IsAuthenticationEnabled(GetAuthenticationOptions(configuration));
 
         return services.AddSwaggerDocument(document =>
         {
@@ -42,15 +51,14 @@ internal static class AuthenticationServiceCollectionExtensions
     internal static IServiceCollection ConsiderAddingAuthentication(this IServiceCollection services,
         IConfiguration configuration)
     {
-        var options = configuration.GetSection(AuthenticationOptions.ConfigurationSectionName)
-            .Get<AuthenticationOptions>();
+        var options = GetAuthenticationOptions(configuration);
 
-        if (options is null or {DisableAuthentication: true})
+        if (!IsAuthenticationEnabled(options))
         {
             return services;
         }
 
-        if (string.IsNullOrWhiteSpace(options.Authority))
+        if (string.IsNullOrWhiteSpace(options!.Authority))
         {
             throw new InvalidOperationException(
                 "Authentication is enabled but Authentication:Authority is missing.");
@@ -91,17 +99,13 @@ internal static class AuthenticationServiceCollectionExtensions
 
         return services;
     }
-}
 
-internal static class AuthenticationWebApplicationExtensions
-{
     internal static WebApplication ConsiderUsingAuthentication(this WebApplication app)
     {
         var options = app.Services.GetService<IOptions<AuthenticationOptions>>()?.Value
-                      ?? app.Configuration.GetSection(AuthenticationOptions.ConfigurationSectionName)
-                          .Get<AuthenticationOptions>();
+                      ?? GetAuthenticationOptions(app.Configuration);
 
-        if (options is null or {DisableAuthentication: true})
+        if (!IsAuthenticationEnabled(options))
         {
             return app;
         }
