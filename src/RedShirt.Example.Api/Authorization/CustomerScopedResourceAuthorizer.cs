@@ -44,6 +44,7 @@ internal sealed class CustomerScopedResourceAuthorizer(IAuthorizationService aut
             return requestedCustomerId;
         }
 
+        // ReSharper disable once DuplicatedSequentialIfBodies
         if (!CustomerScope.TryGetCustomerId(user, out var scopedCustomerId))
         {
             return Guid.Empty;
