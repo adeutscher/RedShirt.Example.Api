@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
-using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
+using RedShirt.Example.Api.Connectors.Foo.Implementation.Exceptions;
 
 namespace RedShirt.Example.Api.Connectors.Foo.Implementation.Services.Resilience;
 

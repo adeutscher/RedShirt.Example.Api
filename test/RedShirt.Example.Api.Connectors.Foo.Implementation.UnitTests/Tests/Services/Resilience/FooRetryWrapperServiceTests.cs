@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using RedShirt.Example.Api.Common.Services.Utility;
 using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
+using RedShirt.Example.Api.Connectors.Foo.Implementation.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Services.Resilience;
 using System.Net;
 
@@ -56,13 +57,18 @@ public class FooRetryWrapperServiceTests
     }
 
     [Fact]
-    public async Task RunAsync_PassesThrough_FooUnauthorizedException()
+    public async Task RunAsync_Wraps_FooUnauthorizedException_AsFooConnectorException()
     {
         var sut = CreateSut();
 
-        await Assert.ThrowsAsync<FooUnauthorizedException>(() =>
+        var wrapped = await Assert.ThrowsAsync<FooConnectorException>(() =>
             sut.RunAsync<int>(_ => throw new FooUnauthorizedException(),
                 TestContext.Current.CancellationToken));
+
+        Assert.True(wrapped.IsHandled);
+        Assert.False(wrapped.CouldBeTransient);
+        Assert.True(wrapped.CouldBeExternallySolvable);
+        Assert.IsType<FooUnauthorizedException>(wrapped.InnerException);
     }
 
     [Fact]

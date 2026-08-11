@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Models;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
-using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
+using RedShirt.Example.Api.Connectors.Foo.Implementation.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Services.Resilience;
 
 namespace RedShirt.Example.Api.Connectors.Foo.Implementation.UnitTests.Tests.Services.Resilience;

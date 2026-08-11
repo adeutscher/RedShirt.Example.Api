@@ -1,5 +1,6 @@
 using RedShirt.Example.Api.Common.SecretManagers.Core.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
+using RedShirt.Example.Api.Connectors.Foo.Implementation.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Models;
 using System.Net;
 using System.Net.Sockets;
