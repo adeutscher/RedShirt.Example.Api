@@ -15,7 +15,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\RedShirt.Api.Example.Connectors.Foo.Core\RedShirt.Api.Example.Connectors.Foo.Core.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Connectors.Bar.Core\RedShirt.Example.Api.Connectors.Bar.Core.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Connectors.Foo.Core\RedShirt.Example.Api.Connectors.Foo.Core.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Distributed\RedShirt.Example.Api.Common.Distributed.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Exceptions\RedShirt.Example.Api.Common.Exceptions.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>

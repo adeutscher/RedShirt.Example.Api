@@ -15,3 +15,11 @@ AWS_DEFAULT_REGION=us-east-1 awslocal ssm put-parameter --overwrite --type Strin
 AWS_DEFAULT_REGION=us-east-1 awslocal ssm put-parameter --overwrite --type String \
     --name /foo/api-key \
     --value "local-foo-api-key"
+
+AWS_DEFAULT_REGION=us-east-1 awslocal ssm put-parameter --overwrite --type String \
+    --name /bar/oauth/client-id \
+    --value "local-bar-client-id"
+
+AWS_DEFAULT_REGION=us-east-1 awslocal ssm put-parameter --overwrite --type String \
+    --name /bar/oauth/client-secret \
+    --value "local-bar-client-secret"

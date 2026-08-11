@@ -22,17 +22,20 @@ If you added it to `~/.bashrc`, reload:
 
 ## Steps
 
-1. Bring up `ministack`, `redis`, `mariadb`, and `wiremock-foo` containers:
+1. Bring up `ministack`, `redis`, `mariadb`, `wiremock-foo`, and `wiremock-bar` containers:
 
     ```bash
-    docker compose up -d ministack redis mariadb wiremock-foo
+    docker compose up -d ministack redis mariadb wiremock-foo wiremock-bar
     ```
 
-    See **Foo WireMock stubs** below for the mocked endpoints. Admin UI:
-    http://localhost:9100/__admin/
+    See **Foo WireMock stubs** and **Bar WireMock stubs** below for the mocked
+    endpoints. Admin UIs:
+    http://localhost:9100/__admin/ (Foo),
+    http://localhost:9101/__admin/ (Bar).
 
 2. Run `make-local-aws-resources.sh` to create ministack resources (DynamoDB table and
-   SSM parameters, including `/mysql/connection-string` and `/foo/api-key`):
+   SSM parameters, including `/mysql/connection-string`, `/foo/api-key`,
+   `/bar/oauth/client-id`, and `/bar/oauth/client-secret`):
 
     ```bash
     ./make-local-aws-resources.sh
@@ -70,13 +73,13 @@ If you added it to `~/.bashrc`, reload:
 ## Foo WireMock stubs
 
 `wiremock-foo` mocks the external Foo HTTP API used by
-`RedShirt.Api.Example.Connectors.Foo.Implementation` (`FooApiClient`). Mapping files live
+`RedShirt.Example.Api.Connectors.Foo.Implementation` (`FooApiClient`). Mapping files live
 under `wiremock/foo/mappings/`. Successful calls require header
-`x-api-key: local-foo-api-key` (Set in SSM path `/foo/api-key` from
+`x-api-key: local-foo-api-key` (set in SSM path `/foo/api-key` from
 `make-local-aws-resources.sh`). The API container reaches WireMock at
 `http://wiremock-foo:8080`; from the host use `http://localhost:9100`.
 
-
+```
 | Method | Path                     | Auth                | Result                                                                 |
 |--------|--------------------------|---------------------|------------------------------------------------------------------------|
 | POST   | /api/foo                 | valid x-api-key     | 200 with { "Id": <random int>, "Name": <request Name> }                |
@@ -84,7 +87,7 @@ under `wiremock/foo/mappings/`. Successful calls require header
 | GET    | /api/foo/{id}            | valid x-api-key     | 200 with { "Id": {id}, "Name": "Foo-{id}" }                            |
 | GET    | /api/foo/404             | valid x-api-key     | 404 (exercises not-found handling)                                     |
 | any    | /api/foo or /api/foo/... | missing/invalid key | 401                                                                    |
-
+```
 
 ### Testing Unauthorized Behaviour
 
@@ -105,3 +108,57 @@ To conveniently set a new API key value in SSM *and* update WireMock's mappings 
 ```
 
 Confirming that this script will only update the in-memory versions that WireMock has loaded from disk. It will not adjust the mapping files mapped from the `wiremock/foo/` directory.
+
+## Bar WireMock stubs
+
+`wiremock-bar` mocks the Bar OAuth token endpoint and Bar HTTP API used by
+`RedShirt.Example.Api.Connectors.Bar.Implementation` (`BarApiClient` +
+`OAuthTokenSource`). Mapping files live under `wiremock/bar/mappings/`.
+
+Default credentials (from `make-local-aws-resources.sh`):
+
+- SSM `/bar/oauth/client-id` → `local-bar-client-id`
+- SSM `/bar/oauth/client-secret` → `local-bar-client-secret`
+- Access token returned by the token stub → `local-bar-access-token`
+
+Compose points the API at `http://wiremock-bar:8080` for both `BaseUrl` and
+`TokenUrl` (`…/oauth/token`), with scope form field `audience=https://bar.local/api`.
+From the host use `http://localhost:9101`.
+
+```
+| Method | Path                     | Auth / body                                              | Result                                                                 |
+|--------|--------------------------|----------------------------------------------------------|------------------------------------------------------------------------|
+| POST   | /oauth/token             | form: grant_type=client_credentials, valid client_id/secret, audience | 200 with access_token + expires_in                            |
+| POST   | /oauth/token             | anything else                                            | 401 invalid_client                                                     |
+| POST   | /api/bar                 | Authorization: Bearer local-bar-access-token             | 200 with { "Id": <random int>, "Name": <request Name> }                |
+| GET    | /api/bar/{id}            | valid Bearer                                             | 200 with { "Id": {id}, "Name": "Bar-{id}" }                            |
+| GET    | /api/bar/404             | valid Bearer                                             | 404 (exercises not-found handling)                                     |
+| any    | /api/bar or /api/bar/... | missing/invalid Bearer                                   | 401                                                                    |
+```
+
+### Testing Unauthorized Behaviour
+
+To put an invalid client secret in SSM (token endpoint will 401 once credentials are refreshed):
+
+```bash
+./bar-set-ssm-oauth-secret.sh 'bogus-secret-value-here'
+```
+
+Same caching caveat as Foo: a successfully obtained bearer token stays cached until it fails or expires. Setting a bad secret in SSM alone does not invalidate an already-cached token. To force WireMock to reject the current token (and exercise refresh), use the rotation script below so the API's cached token no longer matches WireMock's Authorization matcher—or restart the API after changing secrets.
+
+Local Compose defaults `COMMON__SECRETS__CACHE__FORCE_COOLDOWN_SECONDS` and
+`CONNECTORS__BAR__TOKEN_REFRESH_COOLDOWN_SECONDS` to `1` so credential rotation can
+recover on the next request. The rotate script waits briefly for those windows to
+elapse before returning.
+
+### Testing Credential / Token Rotations
+
+To update the client secret in SSM *and* WireMock's in-memory stubs (token bodyPatterns, returned `access_token`, and API `Authorization` matchers):
+
+```bash
+./bar-rotate-oauth-credentials.sh
+# or:
+./bar-rotate-oauth-credentials.sh 'my-new-secret' 'my-new-access-token'
+```
+
+This only updates in-memory WireMock stubs. Restarting `wiremock-bar` restores the mapping files under `wiremock/bar/`. After the script finishes, call `GET /bar/{id}` or `POST /bar` again — the connector should 401 once with the old bearer, refresh client credentials + token, then succeed with the rotated bearer.
