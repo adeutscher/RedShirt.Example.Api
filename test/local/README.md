@@ -88,12 +88,17 @@ Local Compose runs Keycloak on http://localhost:9080 with realm `example` import
 
 When authentication is enabled:
 
-* A fallback authorization policy requires the `api-user` realm role (write / full access).
-* GET endpoints marked with `[ApproveReadOnly]` also allow the `api-readonly` role (GET only).
+* Realm roles are mapped to permission claims (`permission` = `api:read` / `api:write`).
+  Endpoints authorize on those permissions, not on role names.
+* A fallback policy requires `api:write` (granted to `api-user`).
+* GET endpoints marked with `[ApproveReadOnly]` require `api:read` and HTTP GET
+  (granted to `api-readonly` and `api-user`).
 * All GET controller actions are approved for read-only access at present.
 
 Realm roles are emitted as multivalued JWT `role` claims via a client protocol mapper in
-`keycloak/realm-example.json`.
+`keycloak/realm-example.json`. Locally, `api-user` is a composite role that includes
+`api-readonly`; the API map also grants both permissions to `api-user` so authorization
+does not depend on the IdP sending both role claims.
 
 If you already had a Keycloak container from before roles were added, recreate it so the realm
 import re-runs (`docker compose up -d --force-recreate keycloak`). Keycloak only imports a realm
@@ -108,10 +113,10 @@ when it does not already exist in that container’s data.
 | User                | `testuser`        | `testpass`                | Realm role `api-user` (full access)                |
 | User                | `readonlyuser`    | `readonlypass`            | Realm role `api-readonly` (approved GETs only)     |
 
-| Realm role       | Access                                                                 |
-|------------------|------------------------------------------------------------------------|
-| `api-user`       | All endpoints                                                          |
-| `api-readonly`   | Only GET endpoints decorated with `[ApproveReadOnly]`                  |
+| Realm role       | Permissions (API map)     | Access                                                |
+|------------------|---------------------------|-------------------------------------------------------|
+| `api-user`       | `api:read`, `api:write`   | All endpoints (Keycloak composite includes `api-readonly`) |
+| `api-readonly`   | `api:read`                | Only GET endpoints decorated with `[ApproveReadOnly]` |
 
 ### Get a bearer token
 

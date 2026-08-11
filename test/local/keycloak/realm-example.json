@@ -11,15 +11,20 @@
   "roles": {
     "realm": [
       {
-        "name": "api-user",
-        "description": "Full access to the example API (read and write)",
+        "name": "api-readonly",
+        "description": "Read-only access (api:read) to GET endpoints marked ApproveReadOnly",
         "composite": false,
         "clientRole": false
       },
       {
-        "name": "api-readonly",
-        "description": "Read-only access to GET endpoints marked ApproveReadOnly",
-        "composite": false,
+        "name": "api-user",
+        "description": "Full access (api:read and api:write); composite includes api-readonly",
+        "composite": true,
+        "composites": {
+          "realm": [
+            "api-readonly"
+          ]
+        },
         "clientRole": false
       }
     ]

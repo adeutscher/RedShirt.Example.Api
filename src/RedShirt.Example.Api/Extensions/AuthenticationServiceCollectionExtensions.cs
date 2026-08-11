@@ -1,13 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using NJsonSchema;
 using NSwag;
 using NSwag.Generation.Processors.Security;
-using RedShirt.Example.Api.Authorization;
 using RedShirt.Example.Api.Configuration;
-using RedShirt.Example.Api.Constants;
 
 namespace RedShirt.Example.Api.Extensions;
 
@@ -95,24 +92,7 @@ internal static class AuthenticationServiceCollectionExtensions
                 };
             });
 
-        services.AddSingleton<IAuthorizationHandler, ApiAccessAuthorizationHandler>();
-
-        services.AddAuthorization(authorization =>
-        {
-            authorization.AddPolicy(AuthorizationPolicies.Write, policy =>
-                policy
-                    .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
-                    .RequireAuthenticatedUser()
-                    .AddRequirements(new ApiAccessRequirement {ReadOnlyApprovedEndpoint = false}));
-
-            authorization.AddPolicy(AuthorizationPolicies.ReadApproved, policy =>
-                policy
-                    .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
-                    .RequireAuthenticatedUser()
-                    .AddRequirements(new ApiAccessRequirement {ReadOnlyApprovedEndpoint = true}));
-
-            authorization.FallbackPolicy = authorization.GetPolicy(AuthorizationPolicies.Write);
-        });
+        services.AddApiAuthorizationPolicies();
 
         return services;
     }

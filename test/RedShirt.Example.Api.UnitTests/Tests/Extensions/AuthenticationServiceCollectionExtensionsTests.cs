@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -151,24 +152,33 @@ public class AuthenticationServiceCollectionExtensionsTests
         Assert.NotNull(bearer);
         Assert.Equal(JwtBearerDefaults.AuthenticationScheme, bearer.Name);
 
+        Assert.Contains(provider.GetServices<IClaimsTransformation>(),
+            transformation => transformation is RolePermissionClaimsTransformation);
         Assert.Contains(provider.GetServices<IAuthorizationHandler>(),
-            handler => handler is ApiAccessAuthorizationHandler);
+            handler => handler is HttpGetAuthorizationHandler);
 
         var authorization = provider.GetRequiredService<IOptions<AuthorizationOptions>>().Value;
         Assert.NotNull(authorization.FallbackPolicy);
         Assert.Contains(JwtBearerDefaults.AuthenticationScheme, authorization.FallbackPolicy.AuthenticationSchemes);
         Assert.Contains(authorization.FallbackPolicy.Requirements,
-            requirement => requirement is ApiAccessRequirement {ReadOnlyApprovedEndpoint: false});
+            requirement => requirement is ClaimsAuthorizationRequirement);
 
         var writePolicy = authorization.GetPolicy(AuthorizationPolicies.Write);
         Assert.NotNull(writePolicy);
-        Assert.Contains(writePolicy.Requirements,
-            requirement => requirement is ApiAccessRequirement {ReadOnlyApprovedEndpoint: false});
+        Assert.Contains(writePolicy.Requirements, requirement =>
+            requirement is ClaimsAuthorizationRequirement claim
+            && claim.ClaimType == AuthorizationPermissions.ClaimType
+            && claim.AllowedValues is not null
+            && claim.AllowedValues.Contains(AuthorizationPermissions.Write));
 
         var readPolicy = authorization.GetPolicy(AuthorizationPolicies.ReadApproved);
         Assert.NotNull(readPolicy);
-        Assert.Contains(readPolicy.Requirements,
-            requirement => requirement is ApiAccessRequirement {ReadOnlyApprovedEndpoint: true});
+        Assert.Contains(readPolicy.Requirements, requirement =>
+            requirement is ClaimsAuthorizationRequirement claim
+            && claim.ClaimType == AuthorizationPermissions.ClaimType
+            && claim.AllowedValues is not null
+            && claim.AllowedValues.Contains(AuthorizationPermissions.Read));
+        Assert.Contains(readPolicy.Requirements, requirement => requirement is HttpGetRequirement);
     }
 
     [Fact]
