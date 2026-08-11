@@ -1,5 +1,5 @@
-using RedShirt.Api.Example.Connectors.Foo.Core.Models;
-using RedShirt.Api.Example.Connectors.Foo.Core.Services;
+using RedShirt.Example.Api.Connectors.Foo.Core.Models;
+using RedShirt.Example.Api.Connectors.Foo.Core.Services;
 using RedShirt.Example.Api.Core.Cqrs;
 using RedShirt.Example.Api.Core.Services;
 

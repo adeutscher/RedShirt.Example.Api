@@ -73,7 +73,7 @@ If you added it to `~/.bashrc`, reload:
 ## Foo WireMock stubs
 
 `wiremock-foo` mocks the external Foo HTTP API used by
-`RedShirt.Api.Example.Connectors.Foo.Implementation` (`FooApiClient`). Mapping files live
+`RedShirt.Example.Api.Connectors.Foo.Implementation` (`FooApiClient`). Mapping files live
 under `wiremock/foo/mappings/`. Successful calls require header
 `x-api-key: local-foo-api-key` (set in SSM path `/foo/api-key` from
 `make-local-aws-resources.sh`). The API container reaches WireMock at
@@ -112,7 +112,7 @@ Confirming that this script will only update the in-memory versions that WireMoc
 ## Bar WireMock stubs
 
 `wiremock-bar` mocks the Bar OAuth token endpoint and Bar HTTP API used by
-`RedShirt.Api.Example.Connectors.Bar.Implementation` (`BarApiClient` +
+`RedShirt.Example.Api.Connectors.Bar.Implementation` (`BarApiClient` +
 `OAuthTokenSource`). Mapping files live under `wiremock/bar/mappings/`.
 
 Default credentials (from `make-local-aws-resources.sh`):

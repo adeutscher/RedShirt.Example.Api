@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using RedShirt.Api.Example.Connectors.Bar.Core.Exceptions;
-using RedShirt.Api.Example.Connectors.Foo.Core.Exceptions;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
+using RedShirt.Example.Api.Connectors.Bar.Core.Exceptions;
+using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
 
 namespace RedShirt.Example.Api.ExceptionHandlers;
 

@@ -1,5 +1,5 @@
-using RedShirt.Api.Example.Connectors.Bar.Core.Models;
-using RedShirt.Api.Example.Connectors.Bar.Core.Services;
+using RedShirt.Example.Api.Connectors.Bar.Core.Models;
+using RedShirt.Example.Api.Connectors.Bar.Core.Services;
 using RedShirt.Example.Api.Core.Cqrs;
 
 namespace RedShirt.Example.Api.Core.UseCases.Bar.Queries.GetRecord;

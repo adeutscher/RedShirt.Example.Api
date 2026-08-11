@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using RedShirt.Api.Example.Connectors.Bar.Core.Models;
 using RedShirt.Example.Api.Attributes;
+using RedShirt.Example.Api.Connectors.Bar.Core.Models;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Bar.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.Bar.Queries.GetRecord;
