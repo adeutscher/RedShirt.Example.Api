@@ -22,16 +22,17 @@ If you added it to `~/.bashrc`, reload:
 
 ## Steps
 
-1. Bring up `ministack`, `redis`, `mariadb`, `wiremock-foo`, and `wiremock-bar` containers:
+1. Bring up `ministack`, `redis`, `mariadb`, `wiremock-foo`, `wiremock-bar`, and `keycloak` containers:
 
     ```bash
-    docker compose up -d ministack redis mariadb wiremock-foo wiremock-bar
+    docker compose up -d ministack redis mariadb wiremock-foo wiremock-bar keycloak
     ```
 
-    See **Foo WireMock stubs** and **Bar WireMock stubs** below for the mocked
-    endpoints. Admin UIs:
+    See **Foo WireMock stubs**, **Bar WireMock stubs**, and **Authentication (Keycloak)** below.
+    Admin UIs:
     http://localhost:9100/__admin/ (Foo),
-    http://localhost:9101/__admin/ (Bar).
+    http://localhost:9101/__admin/ (Bar),
+    http://localhost:9080/ (Keycloak; admin/`admin`).
 
 2. Run `make-local-aws-resources.sh` to create ministack resources (DynamoDB table and
    SSM parameters, including `/mysql/connection-string`, `/foo/api-key`,
@@ -69,6 +70,64 @@ If you added it to `~/.bashrc`, reload:
     ```
 
 5. Visit the Swagger page at http://localhost:9000/swagger/
+
+6. Obtain a bearer token (see **Authentication (Keycloak)**) and authorize Swagger or `curl`.
+
+## Authentication (Keycloak)
+
+Local Compose runs Keycloak on http://localhost:9080 with realm `example` imported from
+`keycloak/realm-example.json`. The API container validates JWTs using:
+
+| Variable | Local default |
+|----------|---------------|
+| `AUTHENTICATION__DISABLE_AUTHENTICATION` | `false` |
+| `AUTHENTICATION__AUTHORITY` | `http://localhost:9080/realms/example` (token `iss`) |
+| `AUTHENTICATION__METADATA_ADDRESS` | `http://keycloak:8080/realms/example/.well-known/openid-configuration` (JWKS discovery inside Docker) |
+| `AUTHENTICATION__AUDIENCE` | `example-api` |
+| `AUTHENTICATION__REQUIRE_HTTPS_METADATA` | `false` |
+
+When authentication is enabled, a fallback authorization policy requires an authenticated user on all controllers.
+
+### Seeded clients / user
+
+| Kind | Id / username | Secret / password | Notes |
+|------|---------------|-------------------|-------|
+| Public client | `example-api` | _(none)_ | Password grant for interactive testing |
+| Confidential client | `example-service` | `example-service-secret` | Client-credentials grant |
+| User | `testuser` | `testpass` | Realm role `api-user` |
+
+### Get a bearer token
+
+Use the stdlib Python helper (no pip packages required):
+
+```bash
+chmod +x ./get-bearer-token.py   # once
+./get-bearer-token.py            # password grant → prints access_token
+./get-bearer-token.py --print-header
+./get-bearer-token.py --grant client_credentials
+```
+
+Or call Keycloak directly:
+
+```bash
+curl -s -X POST 'http://localhost:9080/realms/example/protocol/openid-connect/token' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=password' \
+  -d 'client_id=example-api' \
+  -d 'username=testuser' \
+  -d 'password=testpass' | jq -r .access_token
+```
+
+### Call the API
+
+```bash
+TOKEN="$(./get-bearer-token.py)"
+curl -s -H "Authorization: Bearer ${TOKEN}" 'http://localhost:9000/foo/1'
+```
+
+In Swagger UI, use **Authorize**, choose **Bearer**, and paste the access token only (no `Bearer ` prefix).
+
+To run the API without JWT checks locally, set `AUTHENTICATION__DISABLE_AUTHENTICATION=true` (also the default in `appsettings.json` for non-Compose runs / NSwag generation).
 
 ## Foo WireMock stubs
 

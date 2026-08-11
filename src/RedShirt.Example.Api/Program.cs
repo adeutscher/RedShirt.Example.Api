@@ -1,4 +1,3 @@
-using NJsonSchema;
 using RedShirt.Example.Api.Common.RateLimiting.Extensions;
 using RedShirt.Example.Api.Extensions;
 
@@ -19,12 +18,9 @@ builder.Configuration
 
 // Add services to the container.
 builder.Services
-    .AddSwaggerDocument(s =>
-    {
-        s.Title = "RedShirt.Example.Api";
-        s.SchemaSettings.SchemaType = SchemaType.OpenApi3;
-    })
+    .AddApiSwaggerDocument(builder.Configuration)
     .ConfigureApiServices(builder.Configuration)
+    .ConsiderAddingAuthentication(builder.Configuration)
     .AddControllersWithViews();
 
 var app = builder.Build();
@@ -53,6 +49,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.ConsiderUsingAuthentication();
 app.UseAuthorization();
 
 if (Environment.GetEnvironmentVariable("NSWAG_RUN") != "1")

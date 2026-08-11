@@ -47,6 +47,26 @@ services:
       - --global-response-templating
       - --verbose
 
+  # Local OpenID Provider for API JWT authentication (admin console: http://localhost:9080/)
+  # Realm import: ./keycloak/realm-example.json (realm "example", clients example-api / example-service).
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    command:
+      - start-dev
+      - --import-realm
+    ports:
+      - "9080:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      # Advertise localhost issuer while still serving the API container on the Docker network.
+      KC_HOSTNAME: http://localhost:9080
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+    volumes:
+      - ./keycloak/realm-example.json:/opt/keycloak/data/import/realm-example.json:ro
+
   api:
     build:
       context: ../..
@@ -58,6 +78,7 @@ services:
       - mariadb
       - wiremock-foo
       - wiremock-bar
+      - keycloak
     ports:
       - "9000:8080"
     environment:
@@ -65,6 +86,13 @@ services:
       ##
       ASPNETCORE_ENVIRONMENT: Development # Enable swagger
       ASPNETCORE_URLS: http://*:8080
+      # Authentication (Keycloak JWT bearer)
+      ##
+      AUTHENTICATION__DISABLE_AUTHENTICATION: "${AUTHENTICATION__DISABLE_AUTHENTICATION-false}"
+      AUTHENTICATION__AUTHORITY: "${AUTHENTICATION__AUTHORITY-http://localhost:9080/realms/example}"
+      AUTHENTICATION__METADATA_ADDRESS: "${AUTHENTICATION__METADATA_ADDRESS-http://keycloak:8080/realms/example/.well-known/openid-configuration}"
+      AUTHENTICATION__AUDIENCE: "${AUTHENTICATION__AUDIENCE-example-api}"
+      AUTHENTICATION__REQUIRE_HTTPS_METADATA: "${AUTHENTICATION__REQUIRE_HTTPS_METADATA-false}"
       # AWS Settings
       ##
       AWS_SERVICE_URL: http://ministack:4566

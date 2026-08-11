@@ -13,6 +13,7 @@ Repo features:
     * This is demonstrated in the implementation for accessing the `Order` data store.
 * Configurable rate limiting using a sliding window system:
     * Uses either Redis or in-memory for storing limits.
+* JWT bearer authentication (optional; Keycloak in the local Compose stack).
 * Configuration is based on environment variables.
 
 ## Related: Schema
@@ -59,6 +60,17 @@ Resources:
   defined in environment variables beginning in `RATE_LIMITING`.
 * To better understand the configuration definitions, refer to the classes in the `Configuration/` folder of the
   `Common.RateLimiting` project
+
+## Authentication Configuration
+
+JWT bearer authentication is optional and controlled by `AUTHENTICATION__*` environment variables (see
+`AuthenticationOptions` in the API project).
+
+* Set `AUTHENTICATION__DISABLE_AUTHENTICATION=true` to skip `UseAuthentication` / JWT registration (default in
+  `appsettings.json`, useful for NSwag generation and unit tests).
+* When enabled, configure at least `AUTHENTICATION__AUTHORITY` and typically `AUTHENTICATION__AUDIENCE`.
+* Local Compose enables authentication against Keycloak; see `test/local/README.md` for realm details and
+  `test/local/get-bearer-token.py` to obtain an access token.
 
 # Development
 
