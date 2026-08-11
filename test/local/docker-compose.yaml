@@ -86,6 +86,12 @@ services:
       ##
       ASPNETCORE_ENVIRONMENT: Development # Enable swagger
       ASPNETCORE_URLS: http://*:8080
+      # AWS Settings
+      ##
+      AWS_SERVICE_URL: http://ministack:4566
+      AWS_ACCESS_KEY_ID: foo
+      AWS_SECRET_ACCESS_KEY: bar
+      AWS_REGION: us-east-1
       # Authentication (Keycloak JWT bearer)
       ##
       AUTHENTICATION__DISABLE_AUTHENTICATION: "${AUTHENTICATION__DISABLE_AUTHENTICATION-false}"
@@ -93,12 +99,6 @@ services:
       AUTHENTICATION__METADATA_ADDRESS: "${AUTHENTICATION__METADATA_ADDRESS-http://keycloak:8080/realms/example/.well-known/openid-configuration}"
       AUTHENTICATION__AUDIENCE: "${AUTHENTICATION__AUDIENCE-example-api}"
       AUTHENTICATION__REQUIRE_HTTPS_METADATA: "${AUTHENTICATION__REQUIRE_HTTPS_METADATA-false}"
-      # AWS Settings
-      ##
-      AWS_SERVICE_URL: http://ministack:4566
-      AWS_ACCESS_KEY_ID: foo
-      AWS_SECRET_ACCESS_KEY: bar
-      AWS_REGION: us-east-1
       # General
       ##
       LOGGING__LOG_LEVEL__DEFAULT: Information

@@ -11,7 +11,7 @@ namespace RedShirt.Example.Api.Extensions;
 
 internal static class AuthenticationServiceCollectionExtensions
 {
-    private static AuthenticationOptions? GetAuthenticationOptions(IConfiguration configuration)
+    private static AuthenticationOptions? GetAuthenticationOptionsFromConfiguration(IConfiguration configuration)
     {
         return configuration.GetSection(AuthenticationOptions.ConfigurationSectionName)
             .Get<AuthenticationOptions>();
@@ -19,13 +19,13 @@ internal static class AuthenticationServiceCollectionExtensions
 
     private static bool IsAuthenticationEnabled(AuthenticationOptions? options)
     {
-        return options is {DisableAuthentication: false};
+        return options is not {DisableAuthentication: true};
     }
 
     internal static IServiceCollection AddApiSwaggerDocument(this IServiceCollection services,
         IConfiguration configuration)
     {
-        var authenticationEnabled = IsAuthenticationEnabled(GetAuthenticationOptions(configuration));
+        var authenticationEnabled = IsAuthenticationEnabled(GetAuthenticationOptionsFromConfiguration(configuration));
 
         return services.AddSwaggerDocument(document =>
         {
@@ -51,7 +51,7 @@ internal static class AuthenticationServiceCollectionExtensions
     internal static IServiceCollection ConsiderAddingAuthentication(this IServiceCollection services,
         IConfiguration configuration)
     {
-        var options = GetAuthenticationOptions(configuration);
+        var options = GetAuthenticationOptionsFromConfiguration(configuration);
 
         if (!IsAuthenticationEnabled(options))
         {
@@ -103,7 +103,7 @@ internal static class AuthenticationServiceCollectionExtensions
     internal static WebApplication ConsiderUsingAuthentication(this WebApplication app)
     {
         var options = app.Services.GetService<IOptions<AuthenticationOptions>>()?.Value
-                      ?? GetAuthenticationOptions(app.Configuration);
+                      ?? GetAuthenticationOptionsFromConfiguration(app.Configuration);
 
         if (!IsAuthenticationEnabled(options))
         {
