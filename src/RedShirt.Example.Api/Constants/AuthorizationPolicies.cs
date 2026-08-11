@@ -17,4 +17,11 @@ public static class AuthorizationPolicies
     ///     Used by <see cref="Attributes.ApproveReadOnlyAttribute" />.
     /// </summary>
     public const string ReadApproved = "ApiReadApproved";
+
+    /// <summary>
+    ///     Resource-based access to a customer-scoped record (for example an order).
+    ///     Invoked with an explicit resource via <c>IAuthorizationService</c>, not as an
+    ///     endpoint attribute (the resource is not available until the row is loaded).
+    /// </summary>
+    public const string CustomerScoped = "ApiCustomerScoped";
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
+using RedShirt.Example.Api.Authorization;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Order.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.Order.Commands.Delete;
@@ -28,9 +29,15 @@ public class OrderController : ControllerBase
         [FromRoute]
         Guid id,
         [FromServices]
+        IGetOrderRecordQueryHandler getOrderRecordQueryHandler,
+        [FromServices]
+        ICustomerScopedResourceAuthorizer customerScopedResourceAuthorizer,
+        [FromServices]
         IDeleteOrderCommandHandler deleteOrderCommandHandler,
         CancellationToken cancellationToken)
     {
+        var existing = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
+        await customerScopedResourceAuthorizer.EnsureCanAccessAsync(User, existing.CustomerId);
         await deleteOrderCommandHandler.Handle(new DeleteOrderCommand(id), cancellationToken);
         return Ok();
     }
@@ -45,9 +52,12 @@ public class OrderController : ControllerBase
         Guid id,
         [FromServices]
         IGetOrderRecordQueryHandler getOrderRecordQueryHandler,
+        [FromServices]
+        ICustomerScopedResourceAuthorizer customerScopedResourceAuthorizer,
         CancellationToken cancellationToken)
     {
         var model = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
+        await customerScopedResourceAuthorizer.EnsureCanAccessAsync(User, model.CustomerId);
         return Ok(model);
     }
 
@@ -61,9 +71,15 @@ public class OrderController : ControllerBase
         [FromBody]
         OrderPatchRequest request,
         [FromServices]
+        IGetOrderRecordQueryHandler getOrderRecordQueryHandler,
+        [FromServices]
+        ICustomerScopedResourceAuthorizer customerScopedResourceAuthorizer,
+        [FromServices]
         IPatchOrderCommandHandler patchOrderCommandHandler,
         CancellationToken cancellationToken)
     {
+        var existing = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
+        await customerScopedResourceAuthorizer.EnsureCanAccessAsync(User, existing.CustomerId);
         var model = await patchOrderCommandHandler.Handle(
             new PatchOrderCommand(
                 id,
@@ -104,15 +120,22 @@ public class OrderController : ControllerBase
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Put(
         [FromRoute]
         Guid id,
         [FromBody]
         OrderPutRequest request,
         [FromServices]
+        IGetOrderRecordQueryHandler getOrderRecordQueryHandler,
+        [FromServices]
+        ICustomerScopedResourceAuthorizer customerScopedResourceAuthorizer,
+        [FromServices]
         IUpdateOrderCommandHandler updateOrderCommandHandler,
         CancellationToken cancellationToken)
     {
+        var existing = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
+        await customerScopedResourceAuthorizer.EnsureCanAccessAsync(User, existing.CustomerId);
         var model = await updateOrderCommandHandler.Handle(
             new UpdateOrderCommand(
                 id,
@@ -131,9 +154,12 @@ public class OrderController : ControllerBase
         [FromQuery]
         OrderSearchRequest request,
         [FromServices]
+        ICustomerScopedResourceAuthorizer customerScopedResourceAuthorizer,
+        [FromServices]
         ISearchOrderRecordsQueryHandler searchOrderRecordsQueryHandler,
         CancellationToken cancellationToken)
     {
+        var customerId = customerScopedResourceAuthorizer.ConstrainSearchCustomerId(User, request.CustomerId);
         var model = await searchOrderRecordsQueryHandler.Handle(
             new SearchOrderRecordsQuery(
                 new OrderServiceSearchRequest
@@ -143,7 +169,7 @@ public class OrderController : ControllerBase
                     CreatedAfterUtc = request.CreatedAfterUtc,
                     UpdatedBeforeUtc = request.UpdatedBeforeUtc,
                     UpdatedAfterUtc = request.UpdatedAfterUtc,
-                    CustomerId = request.CustomerId,
+                    CustomerId = customerId,
                     Status = request.Status,
                     StatusContains = request.StatusContains,
                     TotalAmount = request.TotalAmount,

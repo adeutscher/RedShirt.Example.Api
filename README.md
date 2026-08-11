@@ -15,6 +15,7 @@ Repo features:
     * Uses either Redis or in-memory for storing limits.
 * JWT bearer authentication and role-based authorization (optional; Keycloak in the local Compose stack).
     * Realm roles map to permissions (`api:read` / `api:write`); `[ApproveReadOnly]` GET endpoints allow `api:read`.
+    * Resource-based authorization on orders: callers without `api:write` may only access rows whose `CustomerId` matches the JWT `customer_id` claim.
 * Example connectors to secondary APIs
     * The "Foo" connector connects to the imaginary Foo API using a static key.
     * The "Bar" connector connects to the imaginary Foo API using a bearer token obtained using a OAuth Client

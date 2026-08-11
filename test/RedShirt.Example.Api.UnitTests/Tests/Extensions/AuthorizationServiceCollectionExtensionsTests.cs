@@ -48,6 +48,9 @@ public class AuthorizationServiceCollectionExtensionsTests
             transformation => transformation is RolePermissionClaimsTransformation);
         Assert.Contains(provider.GetServices<IAuthorizationHandler>(),
             handler => handler is HttpGetAuthorizationHandler);
+        Assert.Contains(provider.GetServices<IAuthorizationHandler>(),
+            handler => handler is CustomerScopedResourceAuthorizationHandler);
+        Assert.NotNull(provider.GetService<ICustomerScopedResourceAuthorizer>());
 
         var authorization = provider.GetRequiredService<IOptions<AuthorizationOptions>>().Value;
 
@@ -62,6 +65,10 @@ public class AuthorizationServiceCollectionExtensionsTests
         Assert.Contains(readPolicy.Requirements, requirement => requirement is HttpGetRequirement);
 
         Assert.Same(writePolicy, authorization.FallbackPolicy);
+
+        var scopedPolicy = authorization.GetPolicy(AuthorizationPolicies.CustomerScoped);
+        Assert.NotNull(scopedPolicy);
+        Assert.Contains(scopedPolicy.Requirements, requirement => requirement is CustomerScopedResourceRequirement);
     }
 
     [Fact]

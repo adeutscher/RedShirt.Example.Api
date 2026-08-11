@@ -94,6 +94,10 @@ When authentication is enabled:
 * GET endpoints marked with `[ApproveReadOnly]` require `api:read` and HTTP GET
   (granted to `api-readonly` and `api-user`).
 * All GET controller actions are approved for read-only access at present.
+* **Orders** also use resource-based authorization: callers without `api:write` may only
+  see orders whose `CustomerId` matches the JWT `customer_id` claim. Failed checks return
+  **404** (same as a missing id) so existence is not leaked. Product/Foo/Bar/ExampleItem
+  stay permission-only.
 
 Realm roles are emitted as multivalued JWT `role` claims via a client protocol mapper in
 `keycloak/realm-example.json`. Locally, `api-user` is a composite role that includes
@@ -111,7 +115,7 @@ when it does not already exist in that container’s data.
 | Public client       | `example-api`     | _(none)_                  | Password grant for interactive testing             |
 | Confidential client | `example-service` | `example-service-secret`  | Client-credentials grant; realm role `api-user`    |
 | User                | `testuser`        | `testpass`                | Realm role `api-user` (full access)                |
-| User                | `readonlyuser`    | `readonlypass`            | Realm role `api-readonly` (approved GETs only)     |
+| User                | `readonlyuser`    | `readonlypass`            | `api-readonly`; JWT `customer_id` = `11111111-1111-1111-1111-111111111111` |
 
 | Realm role       | Permissions (API map)     | Access                                                |
 |------------------|---------------------------|-------------------------------------------------------|
@@ -162,6 +166,36 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${RO_TOKEN}" 
 curl -s -o /dev/null -w '%{http_code}\n' -X POST -H "Authorization: Bearer ${RO_TOKEN}" \
   -H 'Content-Type: application/json' -d '{"name":"demo"}' 'http://localhost:9000/foo'
 ```
+
+### Orders: customer-scoped access
+
+`readonlyuser` has user attribute `customer_id` = `11111111-1111-1111-1111-111111111111`
+(mapped into the access token). `testuser` has `api:write` and is not scoped.
+
+Create an order as the full-access user, then fetch it as read-only:
+
+```bash
+TOKEN="$(./get-bearer-token.py)"
+ORDER_JSON="$(curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: local-order-1' \
+  -d '{"customerId":"11111111-1111-1111-1111-111111111111","status":"open","totalAmount":"10.00"}' \
+  'http://localhost:9000/orders')"
+ORDER_ID="$(echo "${ORDER_JSON}" | jq -r .id)"
+
+RO_TOKEN="$(./get-bearer-token.py --readonly)"
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${RO_TOKEN}" \
+  "http://localhost:9000/orders/${ORDER_ID}"   # 200
+
+OTHER_JSON="$(curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: local-order-2' \
+  -d '{"customerId":"22222222-2222-2222-2222-222222222222","status":"open","totalAmount":"10.00"}' \
+  'http://localhost:9000/orders')"
+OTHER_ID="$(echo "${OTHER_JSON}" | jq -r .id)"
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${RO_TOKEN}" \
+  "http://localhost:9000/orders/${OTHER_ID}"   # 404
+```
+
+Search as `readonlyuser` is forced to that customer id (other `customerId` query values do not leak rows).
 
 In Swagger UI, use **Authorize**, choose **Bearer**, and paste the access token only (no `Bearer ` prefix).
 

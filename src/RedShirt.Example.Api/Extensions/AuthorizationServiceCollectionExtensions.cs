@@ -12,6 +12,8 @@ internal static class AuthorizationServiceCollectionExtensions
     {
         services.AddSingleton<IClaimsTransformation, RolePermissionClaimsTransformation>();
         services.AddSingleton<IAuthorizationHandler, HttpGetAuthorizationHandler>();
+        services.AddSingleton<IAuthorizationHandler, CustomerScopedResourceAuthorizationHandler>();
+        services.AddSingleton<ICustomerScopedResourceAuthorizer, CustomerScopedResourceAuthorizer>();
 
         services.AddAuthorization(authorization =>
         {
@@ -21,6 +23,9 @@ internal static class AuthorizationServiceCollectionExtensions
             authorization.AddPolicy(AuthorizationPolicies.ReadApproved, policy => ConfigureApiPolicy(policy)
                 .RequireClaim(AuthorizationPermissions.ClaimType, AuthorizationPermissions.Read)
                 .AddRequirements(new HttpGetRequirement()));
+
+            authorization.AddPolicy(AuthorizationPolicies.CustomerScoped, policy => ConfigureApiPolicy(policy)
+                .AddRequirements(new CustomerScopedResourceRequirement()));
 
             authorization.FallbackPolicy = authorization.GetPolicy(AuthorizationPolicies.Write);
         });
