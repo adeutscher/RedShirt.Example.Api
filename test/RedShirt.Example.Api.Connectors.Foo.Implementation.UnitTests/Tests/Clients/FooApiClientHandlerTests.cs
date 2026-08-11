@@ -1,7 +1,7 @@
 using Moq;
-using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Clients;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Constants;
+using RedShirt.Example.Api.Connectors.Foo.Implementation.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Services.Resilience;
 using System.Net;
 

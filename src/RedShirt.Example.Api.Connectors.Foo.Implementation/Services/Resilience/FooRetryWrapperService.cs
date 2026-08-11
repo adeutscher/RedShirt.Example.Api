@@ -81,12 +81,13 @@ internal sealed class FooRetryWrapperService(
     {
         /* Handle Special Exceptions */
 
-        // Domain auth / not-found are specific connector outcomes. Do not wrap as FooConnectorException.
-        if (exception is FooRecordNotFoundException
-            or FooUnauthorizedException)
+        // Domain not-found is a specific connector outcome. Do not wrap as FooConnectorException.
+        if (exception is FooRecordNotFoundException)
         {
             return exception;
         }
+
+        /* Handle General Exceptions */
 
         var report = exceptionArbiterService.GetReport(exception);
 

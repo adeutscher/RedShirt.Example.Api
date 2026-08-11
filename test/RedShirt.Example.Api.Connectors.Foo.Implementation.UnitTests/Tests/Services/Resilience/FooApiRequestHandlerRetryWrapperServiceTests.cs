@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Models;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
-using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
+using RedShirt.Example.Api.Connectors.Foo.Implementation.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Services.Resilience;
 
 namespace RedShirt.Example.Api.Connectors.Foo.Implementation.UnitTests.Tests.Services.Resilience;
@@ -78,6 +78,27 @@ public class FooApiRequestHandlerRetryWrapperServiceTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_ThrowsFooUnavailable_WhenUnauthorizedDuringCooldown()
+    {
+        var secrets = new Mock<ISecretManagerCacheService>(MockBehavior.Strict);
+        secrets
+            .Setup(s => s.GetSecretAsync(ApiKeyPath, It.IsAny<TimeSpan?>(), false,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Secret("key-1"));
+
+        var sut = CreateSut(secrets.Object, 120);
+        await sut.GetApiKeyAsync(TestContext.Current.CancellationToken);
+
+        await Assert.ThrowsAsync<FooUnavailableException>(() =>
+            sut.ExecuteAsync<string>(_ => throw new FooUnauthorizedException(),
+                TestContext.Current.CancellationToken));
+
+        secrets.Verify(
+            s => s.GetSecretAsync(ApiKeyPath, It.IsAny<TimeSpan?>(), true, It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_Throws_WhenForceRefreshReturnsSameKey()
     {
         var secrets = new Mock<ISecretManagerCacheService>(MockBehavior.Strict);
@@ -93,27 +114,6 @@ public class FooApiRequestHandlerRetryWrapperServiceTests
         await Assert.ThrowsAsync<FooUnauthorizedException>(() =>
             sut.ExecuteAsync<string>(_ => throw new FooUnauthorizedException(),
                 TestContext.Current.CancellationToken));
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_Throws_WhenUnauthorizedDuringCooldown()
-    {
-        var secrets = new Mock<ISecretManagerCacheService>(MockBehavior.Strict);
-        secrets
-            .Setup(s => s.GetSecretAsync(ApiKeyPath, It.IsAny<TimeSpan?>(), false,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Secret("key-1"));
-
-        var sut = CreateSut(secrets.Object, 120);
-        await sut.GetApiKeyAsync(TestContext.Current.CancellationToken);
-
-        await Assert.ThrowsAsync<FooUnauthorizedException>(() =>
-            sut.ExecuteAsync<string>(_ => throw new FooUnauthorizedException(),
-                TestContext.Current.CancellationToken));
-
-        secrets.Verify(
-            s => s.GetSecretAsync(ApiKeyPath, It.IsAny<TimeSpan?>(), true, It.IsAny<CancellationToken>()),
-            Times.Never);
     }
 
     [Fact]

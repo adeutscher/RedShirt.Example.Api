@@ -1,5 +1,6 @@
 using RedShirt.Example.Api.Common.SecretManagers.Core.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
+using RedShirt.Example.Api.Connectors.Foo.Implementation.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Services.Resilience;
 using System.Net;
 using System.Net.Sockets;
@@ -59,6 +60,17 @@ public class FooExceptionArbiterServiceTests
     public void GetReport_FooUnauthorized_IsExpectedExternallySolvable()
     {
         var report = _sut.GetReport(new FooUnauthorizedException());
+
+        Assert.False(report.AlreadyHandled);
+        Assert.True(report.IsExpected);
+        Assert.False(report.CouldBeTransient);
+        Assert.True(report.CouldBeExternallySolvable);
+    }
+
+    [Fact]
+    public void GetReport_FooUnavailable_IsExpectedExternallySolvable()
+    {
+        var report = _sut.GetReport(new FooUnavailableException());
 
         Assert.False(report.AlreadyHandled);
         Assert.True(report.IsExpected);

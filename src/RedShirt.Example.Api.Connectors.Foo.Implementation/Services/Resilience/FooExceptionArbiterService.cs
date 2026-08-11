@@ -1,5 +1,6 @@
 using RedShirt.Example.Api.Common.SecretManagers.Core.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
+using RedShirt.Example.Api.Connectors.Foo.Implementation.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Models;
 using System.Net;
 using System.Net.Sockets;
@@ -96,6 +97,7 @@ internal sealed class FooExceptionArbiterService : IFooExceptionArbiterService
         {
             FooRecordNotFoundException => Fresh(true, false, false),
             FooUnauthorizedException => Fresh(true, false, true),
+            FooUnavailableException => Fresh(true, false, true),
             FooConnectorException w =>
                 Handled(true, w is {IsHandled: false, CouldBeTransient: true}, w.CouldBeExternallySolvable),
             // API key comes from the secret manager; honour prior classification.

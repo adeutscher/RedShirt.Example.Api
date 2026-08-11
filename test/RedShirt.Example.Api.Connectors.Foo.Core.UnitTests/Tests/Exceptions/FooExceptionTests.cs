@@ -47,13 +47,4 @@ public class FooExceptionTests
         Assert.Equal(42, exception.Id);
         Assert.Equal("Foo record 42 was not found.", exception.Message);
     }
-
-    [Fact]
-    public void FooUnauthorizedException_UsesStableMessage()
-    {
-        var exception = new FooUnauthorizedException();
-
-        Assert.Equal("Foo API rejected the API key.", exception.Message);
-        Assert.Null(exception.InnerException);
-    }
 }
