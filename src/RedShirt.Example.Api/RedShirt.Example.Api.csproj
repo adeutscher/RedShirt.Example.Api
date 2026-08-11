@@ -33,7 +33,8 @@
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-        <Exec Command="$(NSwagExe_Net100) run nswag.json /variables:Configuration=$(Configuration)" EnvironmentVariables="NSWAG_RUN=1"/>
+        <Exec Command="$(NSwagExe_Net100) run nswag.json /variables:Configuration=$(Configuration)"
+              EnvironmentVariables="NSWAG_RUN=1;AUTHENTICATION__DISABLE_AUTHENTICATION=true"/>
     </Target>
 
 </Project>

@@ -127,7 +127,7 @@ curl -s -H "Authorization: Bearer ${TOKEN}" 'http://localhost:9000/foo/1'
 
 In Swagger UI, use **Authorize**, choose **Bearer**, and paste the access token only (no `Bearer ` prefix).
 
-To run the API without JWT checks locally, set `AUTHENTICATION__DISABLE_AUTHENTICATION=true` (also the default in `appsettings.json` for non-Compose runs / NSwag generation).
+To run the API without JWT checks locally, set `AUTHENTICATION__DISABLE_AUTHENTICATION=true`. NSwag generation sets that variable in the API project’s post-build `Exec` so OpenAPI generation does not require an identity provider.
 
 ## Foo WireMock stubs
 

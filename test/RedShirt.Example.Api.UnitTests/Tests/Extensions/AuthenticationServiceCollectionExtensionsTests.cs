@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using NSwag;
 using NSwag.Generation;
 using RedShirt.Example.Api.Extensions;
 using ApiAuthenticationOptions = RedShirt.Example.Api.Configuration.AuthenticationOptions;
@@ -49,79 +50,6 @@ public class AuthenticationServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void ConsiderAddingAuthentication_WhenDisabled_DoesNotRegisterJwtSchemeOrFallbackPolicy()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-
-        services.ConsiderAddingAuthentication(DisabledAuthenticationConfiguration());
-
-        using var provider = services.BuildServiceProvider();
-
-        Assert.Null(provider.GetService<IAuthenticationSchemeProvider>());
-
-        // IOptions<T> can still resolve via the options factory without Configure(...).
-        // A disabled registration must not bind the configured Authority from our section.
-        var options = provider.GetService<IOptions<ApiAuthenticationOptions>>()?.Value;
-        Assert.True(options is null || string.IsNullOrWhiteSpace(options.Authority));
-
-        var authorization = provider.GetService<IOptions<AuthorizationOptions>>()?.Value;
-        Assert.True(authorization is null || authorization.FallbackPolicy is null);
-    }
-
-    [Fact]
-    public async Task ConsiderAddingAuthentication_WhenEnabled_RegistersJwtBearerAndFallbackPolicy()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-
-        services.ConsiderAddingAuthentication(EnabledAuthenticationConfiguration());
-
-        using var provider = services.BuildServiceProvider();
-
-        var authenticationOptions = provider.GetRequiredService<IOptions<ApiAuthenticationOptions>>().Value;
-        Assert.False(authenticationOptions.DisableAuthentication);
-        Assert.Equal("http://localhost:9080/realms/example", authenticationOptions.Authority);
-        Assert.Equal("example-api", authenticationOptions.Audience);
-        Assert.False(authenticationOptions.EffectiveRequireHttpsMetadata);
-
-        var schemes = provider.GetRequiredService<IAuthenticationSchemeProvider>();
-        var bearer = await schemes.GetSchemeAsync(JwtBearerDefaults.AuthenticationScheme);
-        Assert.NotNull(bearer);
-        Assert.Equal(JwtBearerDefaults.AuthenticationScheme, bearer.Name);
-
-        var authorization = provider.GetRequiredService<IOptions<AuthorizationOptions>>().Value;
-        Assert.NotNull(authorization.FallbackPolicy);
-        Assert.Contains(JwtBearerDefaults.AuthenticationScheme, authorization.FallbackPolicy.AuthenticationSchemes);
-        Assert.Contains(authorization.FallbackPolicy.Requirements,
-            requirement => requirement is DenyAnonymousAuthorizationRequirement);
-    }
-
-    [Fact]
-    public void ConsiderAddingAuthentication_WhenEnabledWithoutAuthority_Throws()
-    {
-        var configuration = EnabledAuthenticationConfiguration(authority: "   ");
-        var services = new ServiceCollection();
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            services.ConsiderAddingAuthentication(configuration));
-
-        Assert.Contains("Authority", exception.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void ConsiderAddingAuthentication_WhenConfigurationSectionMissing_ThrowsBecauseNullOptionsAreTreatedAsEnabled()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-
-        // IsAuthenticationEnabled(null) is true (`is not { DisableAuthentication: true }`),
-        // so a missing section falls through and fails when Authority is read.
-        Assert.ThrowsAny<Exception>(() =>
-            services.ConsiderAddingAuthentication(new ConfigurationBuilder().Build()));
-    }
-
-    [Fact]
     public async Task AddApiSwaggerDocument_WhenDisabled_DoesNotAdvertiseBearerSecurity()
     {
         var services = new ServiceCollection();
@@ -151,8 +79,82 @@ public class AuthenticationServiceCollectionExtensionsTests
 
         Assert.Equal("RedShirt.Example.Api", document.Info.Title);
         Assert.True(document.SecurityDefinitions.ContainsKey("Bearer"));
-        Assert.Equal(NSwag.OpenApiSecuritySchemeType.Http, document.SecurityDefinitions["Bearer"].Type);
+        Assert.Equal(OpenApiSecuritySchemeType.Http, document.SecurityDefinitions["Bearer"].Type);
         Assert.Equal("bearer", document.SecurityDefinitions["Bearer"].Scheme);
+    }
+
+    [Fact]
+    public void
+        ConsiderAddingAuthentication_WhenConfigurationSectionMissing_ThrowsBecauseNullOptionsAreTreatedAsEnabled()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        // IsAuthenticationEnabled(null) is true (`is not { DisableAuthentication: true }`),
+        // so a missing section falls through and fails when Authority is read.
+        Assert.ThrowsAny<Exception>(() =>
+            services.ConsiderAddingAuthentication(new ConfigurationBuilder().Build()));
+    }
+
+    [Fact]
+    public void ConsiderAddingAuthentication_WhenDisabled_DoesNotRegisterJwtSchemeOrFallbackPolicy()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.ConsiderAddingAuthentication(DisabledAuthenticationConfiguration());
+
+        using var provider = services.BuildServiceProvider();
+
+        Assert.Null(provider.GetService<IAuthenticationSchemeProvider>());
+
+        // IOptions<T> can still resolve via the options factory without Configure(...).
+        // A disabled registration must not bind the configured Authority from our section.
+        var options = provider.GetService<IOptions<ApiAuthenticationOptions>>()?.Value;
+        Assert.True(options is null || string.IsNullOrWhiteSpace(options.Authority));
+
+        var authorization = provider.GetService<IOptions<AuthorizationOptions>>()?.Value;
+        Assert.True(authorization is null || authorization.FallbackPolicy is null);
+    }
+
+    [Fact]
+    public void ConsiderAddingAuthentication_WhenEnabledWithoutAuthority_Throws()
+    {
+        var configuration = EnabledAuthenticationConfiguration("   ");
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            services.ConsiderAddingAuthentication(configuration));
+
+        Assert.Contains("Authority", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ConsiderAddingAuthentication_WhenEnabled_RegistersJwtBearerAndFallbackPolicy()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.ConsiderAddingAuthentication(EnabledAuthenticationConfiguration());
+
+        using var provider = services.BuildServiceProvider();
+
+        var authenticationOptions = provider.GetRequiredService<IOptions<ApiAuthenticationOptions>>().Value;
+        Assert.False(authenticationOptions.DisableAuthentication);
+        Assert.Equal("http://localhost:9080/realms/example", authenticationOptions.Authority);
+        Assert.Equal("example-api", authenticationOptions.Audience);
+        Assert.False(authenticationOptions.EffectiveRequireHttpsMetadata);
+
+        var schemes = provider.GetRequiredService<IAuthenticationSchemeProvider>();
+        var bearer = await schemes.GetSchemeAsync(JwtBearerDefaults.AuthenticationScheme);
+        Assert.NotNull(bearer);
+        Assert.Equal(JwtBearerDefaults.AuthenticationScheme, bearer.Name);
+
+        var authorization = provider.GetRequiredService<IOptions<AuthorizationOptions>>().Value;
+        Assert.NotNull(authorization.FallbackPolicy);
+        Assert.Contains(JwtBearerDefaults.AuthenticationScheme, authorization.FallbackPolicy.AuthenticationSchemes);
+        Assert.Contains(authorization.FallbackPolicy.Requirements,
+            requirement => requirement is DenyAnonymousAuthorizationRequirement);
     }
 
     [Fact]
