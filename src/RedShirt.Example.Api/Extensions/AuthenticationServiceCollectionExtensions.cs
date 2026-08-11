@@ -42,7 +42,7 @@ internal static class AuthenticationServiceCollectionExtensions
                 Type = OpenApiSecuritySchemeType.Http,
                 Scheme = "bearer",
                 BearerFormat = "JWT",
-                Description = "Paste a Keycloak access token (without the 'Bearer ' prefix)."
+                Description = "Paste a JWT access token (without the 'Bearer ' prefix)."
             });
             document.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor("Bearer"));
         });

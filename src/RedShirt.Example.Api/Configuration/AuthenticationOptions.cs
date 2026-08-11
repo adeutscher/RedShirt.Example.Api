@@ -14,14 +14,13 @@ public sealed class AuthenticationOptions
 
     /// <summary>
     ///     Expected token issuer / OpenID authority (for example
-    ///     <c>http://localhost:9080/realms/example</c>).
+    ///     <c>https://idp.example.com/</c>).
     /// </summary>
     public required string? Authority { get; init; }
 
     /// <summary>
     ///     Optional OpenID discovery URL used when the process cannot reach <see cref="Authority" />
-    ///     (for example the API container uses the Keycloak service hostname while tokens still
-    ///     carry a localhost issuer).
+    ///     (for example an internal service hostname while tokens still carry a public issuer).
     /// </summary>
     public required string? MetadataAddress { get; init; }
 
@@ -31,7 +30,7 @@ public sealed class AuthenticationOptions
     public required string? Audience { get; init; }
 
     /// <summary>
-    ///     When <see langword="false" />, HTTPS is not required for OpenID metadata (local Keycloak).
+    ///     When <see langword="false" />, HTTPS is not required for OpenID metadata (local development).
     ///     Defaults to <see langword="true" /> when unset.
     /// </summary>
     public required bool? RequireHttpsMetadata { get; init; }
