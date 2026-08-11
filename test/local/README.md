@@ -22,16 +22,17 @@ If you added it to `~/.bashrc`, reload:
 
 ## Steps
 
-1. Bring up `ministack`, `redis`, `mariadb`, `wiremock-foo`, and `wiremock-bar` containers:
+1. Bring up `ministack`, `redis`, `mariadb`, `wiremock-foo`, `wiremock-bar`, and `keycloak` containers:
 
     ```bash
-    docker compose up -d ministack redis mariadb wiremock-foo wiremock-bar
+    docker compose up -d ministack redis mariadb wiremock-foo wiremock-bar keycloak
     ```
 
-    See **Foo WireMock stubs** and **Bar WireMock stubs** below for the mocked
-    endpoints. Admin UIs:
+    See **Foo WireMock stubs**, **Bar WireMock stubs**, and **Authentication (Keycloak)** below.
+    Admin UIs:
     http://localhost:9100/__admin/ (Foo),
-    http://localhost:9101/__admin/ (Bar).
+    http://localhost:9101/__admin/ (Bar),
+    http://localhost:9080/ (Keycloak; admin/`admin`).
 
 2. Run `make-local-aws-resources.sh` to create ministack resources (DynamoDB table and
    SSM parameters, including `/mysql/connection-string`, `/foo/api-key`,
@@ -70,6 +71,64 @@ If you added it to `~/.bashrc`, reload:
 
 5. Visit the Swagger page at http://localhost:9000/swagger/
 
+6. Obtain a bearer token (see **Authentication (Keycloak)**) and authorize Swagger or `curl`.
+
+## Authentication (Keycloak)
+
+Local Compose runs Keycloak on http://localhost:9080 with realm `example` imported from
+`keycloak/realm-example.json`. The API container validates JWTs using:
+
+| Variable                                   | Local default                                                                                         |
+|--------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| `AUTHENTICATION__DISABLE_AUTHENTICATION`   | `false`                                                                                               |
+| `AUTHENTICATION__AUTHORITY`                | `http://localhost:9080/realms/example` (token `iss`)                                                  |
+| `AUTHENTICATION__METADATA_ADDRESS`         | `http://keycloak:8080/realms/example/.well-known/openid-configuration` (JWKS discovery inside Docker) |
+| `AUTHENTICATION__AUDIENCE`                 | `example-api`                                                                                         |
+| `AUTHENTICATION__REQUIRE_HTTPS_METADATA`   | `false`                                                                                               |
+
+When authentication is enabled, a fallback authorization policy requires an authenticated user on all controllers.
+
+### Seeded clients / user
+
+| Kind                | Id / username     | Secret / password         | Notes                                   |
+|---------------------|-------------------|---------------------------|-----------------------------------------|
+| Public client       | `example-api`     | _(none)_                  | Password grant for interactive testing  |
+| Confidential client | `example-service` | `example-service-secret`  | Client-credentials grant                |
+| User                | `testuser`        | `testpass`                | Realm role `api-user`                   |
+
+### Get a bearer token
+
+Use the stdlib Python helper (no pip packages required):
+
+```bash
+chmod +x ./get-bearer-token.py   # once
+./get-bearer-token.py            # password grant → prints access_token
+./get-bearer-token.py --print-header
+./get-bearer-token.py --grant client_credentials
+```
+
+Or call Keycloak directly:
+
+```bash
+curl -s -X POST 'http://localhost:9080/realms/example/protocol/openid-connect/token' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=password' \
+  -d 'client_id=example-api' \
+  -d 'username=testuser' \
+  -d 'password=testpass' | jq -r .access_token
+```
+
+### Call the API
+
+```bash
+TOKEN="$(./get-bearer-token.py)"
+curl -s -H "Authorization: Bearer ${TOKEN}" 'http://localhost:9000/foo/1'
+```
+
+In Swagger UI, use **Authorize**, choose **Bearer**, and paste the access token only (no `Bearer ` prefix).
+
+To run the API without JWT checks locally, set `AUTHENTICATION__DISABLE_AUTHENTICATION=true`. NSwag generation sets that variable in the API project’s post-build `Exec` so OpenAPI generation does not require an identity provider.
+
 ## Foo WireMock stubs
 
 `wiremock-foo` mocks the external Foo HTTP API used by
@@ -79,16 +138,12 @@ under `wiremock/foo/mappings/`. Successful calls require header
 `make-local-aws-resources.sh`). The API container reaches WireMock at
 `http://wiremock-foo:8080`; from the host use `http://localhost:9100`.
 
-```
-| Method | Path                     | Auth                | Result                                                                 |
-|--------|--------------------------|---------------------|------------------------------------------------------------------------|
-| POST   | /api/foo                 | valid x-api-key     | 200 with { "Id": <random int>, "Name": <request Name> }                |
-|        |                          |                     | (PascalCase JSON, matching the connector DTOs)                         |
-| GET    | /api/foo/{id}            | valid x-api-key     | 200 with { "Id": {id}, "Name": "Foo-{id}" }                            |
-| GET    | /api/foo/404             | valid x-api-key     | 404 (exercises not-found handling)                                     |
-| any    | /api/foo or /api/foo/... | missing/invalid key | 401                                                                    |
-```
-
+| Method | Path                     | Auth                | Result                                                                          |
+|--------|--------------------------|---------------------|---------------------------------------------------------------------------------|
+| POST   | `/api/foo`               | valid `x-api-key`   | 200 with `{ "Id": <random int>, "Name": <request Name> }` (PascalCase JSON)     |
+| GET    | `/api/foo/{id}`          | valid `x-api-key`   | 200 with `{ "Id": {id}, "Name": "Foo-{id}" }`                                   |
+| GET    | `/api/foo/404`           | valid `x-api-key`   | 404 (exercises not-found handling)                                              |
+| any    | `/api/foo` or `/api/foo/…` | missing/invalid key | 401                                                                           |
 ### Testing Unauthorized Behaviour
 
 To conveniently set an invalid API key value in SSM, you can use the `foo-set-ssm-api-key.sh` script:
@@ -125,17 +180,14 @@ Compose points the API at `http://wiremock-bar:8080` for both `BaseUrl` and
 `TokenUrl` (`…/oauth/token`), with scope form field `audience=https://bar.local/api`.
 From the host use `http://localhost:9101`.
 
-```
-| Method | Path                     | Auth / body                                              | Result                                                                 |
-|--------|--------------------------|----------------------------------------------------------|------------------------------------------------------------------------|
-| POST   | /oauth/token             | form: grant_type=client_credentials, valid client_id/secret, audience | 200 with access_token + expires_in                            |
-| POST   | /oauth/token             | anything else                                            | 401 invalid_client                                                     |
-| POST   | /api/bar                 | Authorization: Bearer local-bar-access-token             | 200 with { "Id": <random int>, "Name": <request Name> }                |
-| GET    | /api/bar/{id}            | valid Bearer                                             | 200 with { "Id": {id}, "Name": "Bar-{id}" }                            |
-| GET    | /api/bar/404             | valid Bearer                                             | 404 (exercises not-found handling)                                     |
-| any    | /api/bar or /api/bar/... | missing/invalid Bearer                                   | 401                                                                    |
-```
-
+| Method | Path                       | Auth / body                                                              | Result                                                               |
+|--------|----------------------------|--------------------------------------------------------------------------|----------------------------------------------------------------------|
+| POST   | `/oauth/token`             | form: `grant_type=client_credentials`, valid client id/secret, audience  | 200 with `access_token` + `expires_in`                               |
+| POST   | `/oauth/token`             | anything else                                                            | 401 `invalid_client`                                                 |
+| POST   | `/api/bar`                 | `Authorization: Bearer local-bar-access-token`                           | 200 with `{ "Id": <random int>, "Name": <request Name> }`            |
+| GET    | `/api/bar/{id}`            | valid Bearer                                                             | 200 with `{ "Id": {id}, "Name": "Bar-{id}" }`                        |
+| GET    | `/api/bar/404`             | valid Bearer                                                             | 404 (exercises not-found handling)                                   |
+| any    | `/api/bar` or `/api/bar/…` | missing/invalid Bearer                                                   | 401                                                                  |
 ### Testing Unauthorized Behaviour
 
 To put an invalid client secret in SSM (token endpoint will 401 once credentials are refreshed):
