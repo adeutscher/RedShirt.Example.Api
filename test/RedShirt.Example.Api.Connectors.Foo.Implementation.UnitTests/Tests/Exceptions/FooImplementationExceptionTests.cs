@@ -15,4 +15,13 @@ public class FooImplementationExceptionTests
         Assert.Equal("Foo API rejected the API key.", exception.Message);
         Assert.Null(exception.InnerException);
     }
+
+    [Fact]
+    public void FooUnavailableException_UsesStableMessage()
+    {
+        var exception = new FooUnavailableException();
+
+        Assert.Equal("Foo is assumed to be unavailable for the time being.", exception.Message);
+        Assert.Null(exception.InnerException);
+    }
 }

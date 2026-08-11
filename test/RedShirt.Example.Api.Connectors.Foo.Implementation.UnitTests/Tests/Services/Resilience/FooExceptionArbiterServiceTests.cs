@@ -68,6 +68,17 @@ public class FooExceptionArbiterServiceTests
     }
 
     [Fact]
+    public void GetReport_FooUnavailable_IsExpectedExternallySolvable()
+    {
+        var report = _sut.GetReport(new FooUnavailableException());
+
+        Assert.False(report.AlreadyHandled);
+        Assert.True(report.IsExpected);
+        Assert.False(report.CouldBeTransient);
+        Assert.True(report.CouldBeExternallySolvable);
+    }
+
+    [Fact]
     public void GetReport_Http404_IsExpectedNonTransient()
     {
         var report = _sut.GetReport(new HttpRequestException("missing", null, HttpStatusCode.NotFound));

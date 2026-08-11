@@ -79,7 +79,7 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
                         if (IsWithinApiKeyRefreshCooldown())
                         {
                             // Key was fetched recently enough to be considered stable, so cannot recover via retry.
-                            throw new FooUnauthorizedException();
+                            throw new FooUnavailableException();
                         }
 
                         var previousApiKey = _apiKey;
@@ -87,10 +87,12 @@ internal sealed class FooApiRequestHandlerRetryWrapperService(
                             options.Value.ApiKeyPath);
                         await RefreshAndGetApiKeyAsync(true, args.Context.CancellationToken);
 
-                        if (string.Equals(previousApiKey, _apiKey, StringComparison.Ordinal))
+                        if (string.Equals(previousApiKey, _apiKey, StringComparison.Ordinal)
+                            && args.Outcome.Exception is { } e)
                         {
                             // Same key after force-refresh, so the unauthorized result cannot be recovered by retry.
-                            throw new FooUnauthorizedException();
+                            // Re-throw
+                            throw e;
                         }
                     }
                     finally
