@@ -13,6 +13,10 @@ Repo features:
     * This is demonstrated in the implementation for accessing the `Order` data store.
 * Configurable rate limiting using a sliding window system:
     * Uses either Redis or in-memory for storing limits.
+* Example connectors to secondary APIs
+    * The "Foo" connector connects to the imaginary Foo API using a static key.
+    * The "Bar" connector connects to the imaginary Foo API using a bearer token obtained using a OAuth Client
+      Credentials request.
 * Configuration is based on environment variables.
 
 ## Related: Schema
