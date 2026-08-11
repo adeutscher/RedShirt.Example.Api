@@ -1,0 +1,115 @@
+{
+  "realm": "example",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "api-user",
+        "description": "Caller permitted to use the example API",
+        "composite": false,
+        "clientRole": false
+      }
+    ]
+  },
+  "users": [
+    {
+      "username": "testuser",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "User",
+      "email": "testuser@example.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpass",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "api-user"
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "example-api",
+      "name": "Example API (local)",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ],
+      "protocolMappers": [
+        {
+          "name": "audience-example-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "example-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "example-service",
+      "name": "Example service account (local)",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "example-service-secret",
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "protocolMappers": [
+        {
+          "name": "audience-example-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "example-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ]
+}
