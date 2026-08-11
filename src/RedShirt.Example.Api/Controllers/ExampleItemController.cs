@@ -33,6 +33,7 @@ public class ExampleItemController : ControllerBase
     }
 
     [HttpGet("{name}")]
+    [ApproveReadOnly]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExampleItemModel))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -49,6 +50,7 @@ public class ExampleItemController : ControllerBase
     }
 
     [HttpGet]
+    [ApproveReadOnly]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExampleItemListModel))]
     public async Task<IActionResult> GetList(
         [FromQuery]

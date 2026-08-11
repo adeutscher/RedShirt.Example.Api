@@ -6,6 +6,7 @@ Examples:
   ./get-bearer-token.py --print-header
   ./get-bearer-token.py --grant client_credentials
   ./get-bearer-token.py --username testuser --password testpass
+  ./get-bearer-token.py --readonly
 """
 
 from __future__ import annotations
@@ -25,6 +26,8 @@ DEFAULT_SERVICE_CLIENT_ID = "example-service"
 DEFAULT_SERVICE_CLIENT_SECRET = "example-service-secret"
 DEFAULT_USERNAME = "testuser"
 DEFAULT_PASSWORD = "testpass"
+DEFAULT_READONLY_USERNAME = "readonlyuser"
+DEFAULT_READONLY_PASSWORD = "readonlypass"
 
 
 def request_token(token_url: str, form: dict[str, str]) -> dict:
@@ -76,8 +79,16 @@ def main() -> int:
         default=DEFAULT_SERVICE_CLIENT_SECRET,
         help="Client secret for client_credentials grant",
     )
-    parser.add_argument("--username", default=DEFAULT_USERNAME)
-    parser.add_argument("--password", default=DEFAULT_PASSWORD)
+    parser.add_argument("--username", default=None)
+    parser.add_argument("--password", default=None)
+    parser.add_argument(
+        "--readonly",
+        action="store_true",
+        help=(
+            "Password grant as the seeded read-only user "
+            f"({DEFAULT_READONLY_USERNAME} / {DEFAULT_READONLY_PASSWORD})"
+        ),
+    )
     parser.add_argument(
         "--print-header",
         action="store_true",
@@ -92,13 +103,21 @@ def main() -> int:
 
     if args.grant == "password":
         client_id = args.client_id or DEFAULT_CLIENT_ID
+        if args.readonly:
+            username = args.username or DEFAULT_READONLY_USERNAME
+            password = args.password or DEFAULT_READONLY_PASSWORD
+        else:
+            username = args.username or DEFAULT_USERNAME
+            password = args.password or DEFAULT_PASSWORD
         form = {
             "grant_type": "password",
             "client_id": client_id,
-            "username": args.username,
-            "password": args.password,
+            "username": username,
+            "password": password,
         }
     else:
+        if args.readonly:
+            raise SystemExit("--readonly only applies to the password grant")
         client_id = args.client_id or DEFAULT_SERVICE_CLIENT_ID
         form = {
             "grant_type": "client_credentials",

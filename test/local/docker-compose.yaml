@@ -48,7 +48,7 @@ services:
       - --verbose
 
   # Local OpenID Provider for API JWT authentication (admin console: http://localhost:9080/)
-  # Realm import: ./keycloak/realm-example.json (realm "example", clients example-api / example-service).
+  # Realm import: ./keycloak/realm-example.json (realm "example", roles api-user / api-readonly).
   keycloak:
     image: quay.io/keycloak/keycloak:26.2
     command:

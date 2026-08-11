@@ -16,6 +16,7 @@ namespace RedShirt.Example.Api.Controllers;
 public class FooController : ControllerBase
 {
     [HttpGet("{id:int}")]
+    [ApproveReadOnly]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GetFooConnectorResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -28,7 +28,7 @@ If you added it to `~/.bashrc`, reload:
     docker compose up -d ministack redis mariadb wiremock-foo wiremock-bar keycloak
     ```
 
-    See **Foo WireMock stubs**, **Bar WireMock stubs**, and **Authentication (Keycloak)** below.
+    See **Foo WireMock stubs**, **Bar WireMock stubs**, and **Authentication and authorization (Keycloak)** below.
     Admin UIs:
     http://localhost:9100/__admin/ (Foo),
     http://localhost:9101/__admin/ (Bar),
@@ -71,9 +71,9 @@ If you added it to `~/.bashrc`, reload:
 
 5. Visit the Swagger page at http://localhost:9000/swagger/
 
-6. Obtain a bearer token (see **Authentication (Keycloak)**) and authorize Swagger or `curl`.
+6. Obtain a bearer token (see **Authentication and authorization (Keycloak)**) and authorize Swagger or `curl`.
 
-## Authentication (Keycloak)
+## Authentication and authorization (Keycloak)
 
 Local Compose runs Keycloak on http://localhost:9080 with realm `example` imported from
 `keycloak/realm-example.json`. The API container validates JWTs using:
@@ -86,15 +86,32 @@ Local Compose runs Keycloak on http://localhost:9080 with realm `example` import
 | `AUTHENTICATION__AUDIENCE`                 | `example-api`                                                                                         |
 | `AUTHENTICATION__REQUIRE_HTTPS_METADATA`   | `false`                                                                                               |
 
-When authentication is enabled, a fallback authorization policy requires an authenticated user on all controllers.
+When authentication is enabled:
 
-### Seeded clients / user
+* A fallback authorization policy requires the `api-user` realm role (write / full access).
+* GET endpoints marked with `[ApproveReadOnly]` also allow the `api-readonly` role (GET only).
+* All GET controller actions are approved for read-only access at present.
 
-| Kind                | Id / username     | Secret / password         | Notes                                   |
-|---------------------|-------------------|---------------------------|-----------------------------------------|
-| Public client       | `example-api`     | _(none)_                  | Password grant for interactive testing  |
-| Confidential client | `example-service` | `example-service-secret`  | Client-credentials grant                |
-| User                | `testuser`        | `testpass`                | Realm role `api-user`                   |
+Realm roles are emitted as multivalued JWT `role` claims via a client protocol mapper in
+`keycloak/realm-example.json`.
+
+If you already had a Keycloak container from before roles were added, recreate it so the realm
+import re-runs (`docker compose up -d --force-recreate keycloak`). Keycloak only imports a realm
+when it does not already exist in that container’s data.
+
+### Seeded clients / users / roles
+
+| Kind                | Id / username     | Secret / password         | Notes                                              |
+|---------------------|-------------------|---------------------------|----------------------------------------------------|
+| Public client       | `example-api`     | _(none)_                  | Password grant for interactive testing             |
+| Confidential client | `example-service` | `example-service-secret`  | Client-credentials grant; realm role `api-user`    |
+| User                | `testuser`        | `testpass`                | Realm role `api-user` (full access)                |
+| User                | `readonlyuser`    | `readonlypass`            | Realm role `api-readonly` (approved GETs only)     |
+
+| Realm role       | Access                                                                 |
+|------------------|------------------------------------------------------------------------|
+| `api-user`       | All endpoints                                                          |
+| `api-readonly`   | Only GET endpoints decorated with `[ApproveReadOnly]`                  |
 
 ### Get a bearer token
 
@@ -102,9 +119,12 @@ Use the stdlib Python helper (no pip packages required):
 
 ```bash
 chmod +x ./get-bearer-token.py   # once
-./get-bearer-token.py            # password grant → prints access_token
+./get-bearer-token.py            # password grant as testuser → prints access_token
 ./get-bearer-token.py --print-header
 ./get-bearer-token.py --grant client_credentials
+./get-bearer-token.py --username readonlyuser --password readonlypass
+# or:
+./get-bearer-token.py --readonly
 ```
 
 Or call Keycloak directly:
@@ -120,9 +140,22 @@ curl -s -X POST 'http://localhost:9080/realms/example/protocol/openid-connect/to
 
 ### Call the API
 
+Full-access user (`api-user`):
+
 ```bash
 TOKEN="$(./get-bearer-token.py)"
 curl -s -H "Authorization: Bearer ${TOKEN}" 'http://localhost:9000/foo/1'
+curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
+  -d '{"name":"demo"}' 'http://localhost:9000/foo'
+```
+
+Read-only user (`api-readonly`) — GET succeeds, mutating verbs return 403:
+
+```bash
+RO_TOKEN="$(./get-bearer-token.py --readonly)"
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${RO_TOKEN}" 'http://localhost:9000/foo/1'
+curl -s -o /dev/null -w '%{http_code}\n' -X POST -H "Authorization: Bearer ${RO_TOKEN}" \
+  -H 'Content-Type: application/json' -d '{"name":"demo"}' 'http://localhost:9000/foo'
 ```
 
 In Swagger UI, use **Authorize**, choose **Bearer**, and paste the access token only (no `Bearer ` prefix).

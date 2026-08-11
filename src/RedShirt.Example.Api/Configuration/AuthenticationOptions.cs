@@ -8,7 +8,7 @@ public sealed class AuthenticationOptions
     public const string ConfigurationSectionName = "Authentication";
 
     /// <summary>
-    ///     When <see langword="true" />, JWT authentication and the authenticated-user fallback policy are not registered.
+    ///     When <see langword="true" />, JWT authentication and role-based authorization policies are not registered.
     /// </summary>
     public required bool DisableAuthentication { get; init; }
 

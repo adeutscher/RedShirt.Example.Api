@@ -1,13 +1,14 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NSwag;
 using NSwag.Generation;
+using RedShirt.Example.Api.Authorization;
+using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Extensions;
 using ApiAuthenticationOptions = RedShirt.Example.Api.Configuration.AuthenticationOptions;
 
@@ -130,7 +131,7 @@ public class AuthenticationServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public async Task ConsiderAddingAuthentication_WhenEnabled_RegistersJwtBearerAndFallbackPolicy()
+    public async Task ConsiderAddingAuthentication_WhenEnabled_RegistersJwtBearerAndAuthorizationPolicies()
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -150,11 +151,24 @@ public class AuthenticationServiceCollectionExtensionsTests
         Assert.NotNull(bearer);
         Assert.Equal(JwtBearerDefaults.AuthenticationScheme, bearer.Name);
 
+        Assert.Contains(provider.GetServices<IAuthorizationHandler>(),
+            handler => handler is ApiAccessAuthorizationHandler);
+
         var authorization = provider.GetRequiredService<IOptions<AuthorizationOptions>>().Value;
         Assert.NotNull(authorization.FallbackPolicy);
         Assert.Contains(JwtBearerDefaults.AuthenticationScheme, authorization.FallbackPolicy.AuthenticationSchemes);
         Assert.Contains(authorization.FallbackPolicy.Requirements,
-            requirement => requirement is DenyAnonymousAuthorizationRequirement);
+            requirement => requirement is ApiAccessRequirement {ReadOnlyApprovedEndpoint: false});
+
+        var writePolicy = authorization.GetPolicy(AuthorizationPolicies.Write);
+        Assert.NotNull(writePolicy);
+        Assert.Contains(writePolicy.Requirements,
+            requirement => requirement is ApiAccessRequirement {ReadOnlyApprovedEndpoint: false});
+
+        var readPolicy = authorization.GetPolicy(AuthorizationPolicies.ReadApproved);
+        Assert.NotNull(readPolicy);
+        Assert.Contains(readPolicy.Requirements,
+            requirement => requirement is ApiAccessRequirement {ReadOnlyApprovedEndpoint: true});
     }
 
     [Fact]

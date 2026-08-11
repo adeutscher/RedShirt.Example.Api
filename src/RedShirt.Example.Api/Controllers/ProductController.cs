@@ -35,6 +35,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [ApproveReadOnly]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -111,6 +112,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet]
+    [ApproveReadOnly]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSearchResponse))]
     public async Task<IActionResult> Search(
         [FromQuery]

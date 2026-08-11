@@ -5,7 +5,9 @@ using Microsoft.IdentityModel.Tokens;
 using NJsonSchema;
 using NSwag;
 using NSwag.Generation.Processors.Security;
+using RedShirt.Example.Api.Authorization;
 using RedShirt.Example.Api.Configuration;
+using RedShirt.Example.Api.Constants;
 
 namespace RedShirt.Example.Api.Extensions;
 
@@ -73,6 +75,7 @@ internal static class AuthenticationServiceCollectionExtensions
                 jwt.Authority = options.Authority;
                 jwt.Audience = options.Audience;
                 jwt.RequireHttpsMetadata = options.EffectiveRequireHttpsMetadata;
+                jwt.MapInboundClaims = false;
 
                 if (!string.IsNullOrWhiteSpace(options.MetadataAddress))
                 {
@@ -85,16 +88,30 @@ internal static class AuthenticationServiceCollectionExtensions
                     ValidIssuer = options.Authority,
                     ValidateAudience = !string.IsNullOrWhiteSpace(options.Audience),
                     ValidAudience = options.Audience,
-                    ValidateLifetime = true
+                    ValidateLifetime = true,
+                    // Keycloak realm-role mapper emits multivalued "role" claims (see realm-example.json).
+                    RoleClaimType = "role",
+                    NameClaimType = "preferred_username"
                 };
             });
 
+        services.AddSingleton<IAuthorizationHandler, ApiAccessAuthorizationHandler>();
+
         services.AddAuthorization(authorization =>
         {
-            authorization.FallbackPolicy = new AuthorizationPolicyBuilder()
-                .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
-                .RequireAuthenticatedUser()
-                .Build();
+            authorization.AddPolicy(AuthorizationPolicies.Write, policy =>
+                policy
+                    .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+                    .RequireAuthenticatedUser()
+                    .AddRequirements(new ApiAccessRequirement {ReadOnlyApprovedEndpoint = false}));
+
+            authorization.AddPolicy(AuthorizationPolicies.ReadApproved, policy =>
+                policy
+                    .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+                    .RequireAuthenticatedUser()
+                    .AddRequirements(new ApiAccessRequirement {ReadOnlyApprovedEndpoint = true}));
+
+            authorization.FallbackPolicy = authorization.GetPolicy(AuthorizationPolicies.Write);
         });
 
         return services;

@@ -12,7 +12,13 @@
     "realm": [
       {
         "name": "api-user",
-        "description": "Caller permitted to use the example API",
+        "description": "Full access to the example API (read and write)",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "api-readonly",
+        "description": "Read-only access to GET endpoints marked ApproveReadOnly",
         "composite": false,
         "clientRole": false
       }
@@ -33,6 +39,33 @@
           "temporary": false
         }
       ],
+      "realmRoles": [
+        "api-user"
+      ]
+    },
+    {
+      "username": "readonlyuser",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Read",
+      "lastName": "Only",
+      "email": "readonlyuser@example.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "readonlypass",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "api-readonly"
+      ]
+    },
+    {
+      "username": "service-account-example-service",
+      "enabled": true,
+      "serviceAccountClientId": "example-service",
+      "clientRoles": {},
       "realmRoles": [
         "api-user"
       ]
@@ -75,6 +108,20 @@
             "access.token.claim": "true",
             "introspection.token.claim": "true"
           }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "role",
+            "jsonType.label": "String"
+          }
         }
       ]
     },
@@ -107,6 +154,20 @@
             "id.token.claim": "false",
             "access.token.claim": "true",
             "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "role",
+            "jsonType.label": "String"
           }
         }
       ]
