@@ -22,7 +22,7 @@ internal static class AuthorizationServiceCollectionExtensions
         services.AddSingleton<IClaimsTransformation, BespokeRolePermissionClaimsTransformation>();
         services.AddSingleton<IAuthorizationHandler, HttpGetAuthorizationHandler>();
         services.AddSingleton<IAuthorizationHandler, CustomerScopedResourceAuthorizationHandler>();
-        services.AddSingleton<ICustomerScopedResourceAuthorizer, CustomerScopedResourceAuthorizer>();
+        services.AddSingleton<ICustomerScopedResourceEnforcer, CustomerScopedResourceEnforcer>();
 
         services.AddAuthorization(authorization =>
         {

@@ -31,13 +31,13 @@ public class OrderController : ControllerBase
         [FromServices]
         IGetOrderRecordQueryHandler getOrderRecordQueryHandler,
         [FromServices]
-        ICustomerScopedResourceAuthorizer customerScopedResourceAuthorizer,
+        ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
         [FromServices]
         IDeleteOrderCommandHandler deleteOrderCommandHandler,
         CancellationToken cancellationToken)
     {
         var existing = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
-        await customerScopedResourceAuthorizer.EnsureCanAccessAsync(User, existing.CustomerId);
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
         await deleteOrderCommandHandler.Handle(new DeleteOrderCommand(id), cancellationToken);
         return Ok();
     }
@@ -53,11 +53,11 @@ public class OrderController : ControllerBase
         [FromServices]
         IGetOrderRecordQueryHandler getOrderRecordQueryHandler,
         [FromServices]
-        ICustomerScopedResourceAuthorizer customerScopedResourceAuthorizer,
+        ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
         CancellationToken cancellationToken)
     {
         var model = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
-        await customerScopedResourceAuthorizer.EnsureCanAccessAsync(User, model.CustomerId);
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, model.CustomerId);
         return Ok(model);
     }
 
@@ -73,13 +73,13 @@ public class OrderController : ControllerBase
         [FromServices]
         IGetOrderRecordQueryHandler getOrderRecordQueryHandler,
         [FromServices]
-        ICustomerScopedResourceAuthorizer customerScopedResourceAuthorizer,
+        ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
         [FromServices]
         IPatchOrderCommandHandler patchOrderCommandHandler,
         CancellationToken cancellationToken)
     {
         var existing = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
-        await customerScopedResourceAuthorizer.EnsureCanAccessAsync(User, existing.CustomerId);
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
         var model = await patchOrderCommandHandler.Handle(
             new PatchOrderCommand(
                 id,
@@ -129,13 +129,13 @@ public class OrderController : ControllerBase
         [FromServices]
         IGetOrderRecordQueryHandler getOrderRecordQueryHandler,
         [FromServices]
-        ICustomerScopedResourceAuthorizer customerScopedResourceAuthorizer,
+        ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
         [FromServices]
         IUpdateOrderCommandHandler updateOrderCommandHandler,
         CancellationToken cancellationToken)
     {
         var existing = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
-        await customerScopedResourceAuthorizer.EnsureCanAccessAsync(User, existing.CustomerId);
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
         var model = await updateOrderCommandHandler.Handle(
             new UpdateOrderCommand(
                 id,
@@ -154,12 +154,12 @@ public class OrderController : ControllerBase
         [FromQuery]
         OrderSearchRequest request,
         [FromServices]
-        ICustomerScopedResourceAuthorizer customerScopedResourceAuthorizer,
+        ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
         [FromServices]
         ISearchOrderRecordsQueryHandler searchOrderRecordsQueryHandler,
         CancellationToken cancellationToken)
     {
-        var customerId = customerScopedResourceAuthorizer.ConstrainSearchCustomerId(User, request.CustomerId);
+        var customerId = customerScopedResourceEnforcer.ConstrainSearchCustomerId(User, request.CustomerId);
         var model = await searchOrderRecordsQueryHandler.Handle(
             new SearchOrderRecordsQuery(
                 new OrderServiceSearchRequest

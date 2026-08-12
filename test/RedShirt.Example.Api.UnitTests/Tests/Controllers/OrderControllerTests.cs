@@ -47,7 +47,7 @@ public class OrderControllerTests
             .Setup(handler => handler.Handle(It.Is<GetOrderRecordQuery>(query => query.Id == OrderId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
-        var authorizer = new Mock<ICustomerScopedResourceAuthorizer>();
+        var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
 
         var result = await _controller.Get(OrderId, getHandler.Object, authorizer.Object,
             TestContext.Current.CancellationToken);
@@ -65,7 +65,7 @@ public class OrderControllerTests
         getHandler
             .Setup(handler => handler.Handle(It.IsAny<GetOrderRecordQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Order(CustomerId));
-        var authorizer = new Mock<ICustomerScopedResourceAuthorizer>();
+        var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
         authorizer
             .Setup(a => a.EnsureCanAccessAsync(It.IsAny<System.Security.Claims.ClaimsPrincipal>(), CustomerId))
             .ThrowsAsync(new ResourceNotFoundException());
@@ -81,7 +81,7 @@ public class OrderControllerTests
         getHandler
             .Setup(handler => handler.Handle(It.IsAny<GetOrderRecordQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Order(CustomerId));
-        var authorizer = new Mock<ICustomerScopedResourceAuthorizer>();
+        var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
         authorizer
             .Setup(a => a.EnsureCanAccessAsync(It.IsAny<System.Security.Claims.ClaimsPrincipal>(), CustomerId))
             .ThrowsAsync(new ResourceNotFoundException());
@@ -99,7 +99,7 @@ public class OrderControllerTests
     [Fact]
     public async Task Search_PassesConstrainedCustomerId()
     {
-        var authorizer = new Mock<ICustomerScopedResourceAuthorizer>();
+        var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
         authorizer
             .Setup(a => a.ConstrainSearchCustomerId(It.IsAny<System.Security.Claims.ClaimsPrincipal>(), null))
             .Returns(CustomerId);

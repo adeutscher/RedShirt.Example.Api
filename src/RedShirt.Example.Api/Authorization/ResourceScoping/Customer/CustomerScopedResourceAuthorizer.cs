@@ -5,7 +5,7 @@ using System.Security.Claims;
 
 namespace RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
 
-public interface ICustomerScopedResourceAuthorizer
+public interface ICustomerScopedResourceEnforcer
 {
     /// <summary>
     ///     Restricts order search to the caller’s customer when they are not unrestricted.
@@ -21,8 +21,8 @@ public interface ICustomerScopedResourceAuthorizer
     Task EnsureCanAccessAsync(ClaimsPrincipal user, Guid customerId);
 }
 
-internal sealed class CustomerScopedResourceAuthorizer(IAuthorizationService authorization)
-    : ICustomerScopedResourceAuthorizer
+internal sealed class CustomerScopedResourceEnforcer(IAuthorizationService authorization)
+    : ICustomerScopedResourceEnforcer
 {
     public async Task EnsureCanAccessAsync(ClaimsPrincipal user, Guid customerId)
     {
