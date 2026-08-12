@@ -1,6 +1,9 @@
 using System.Security.Claims;
 using Microsoft.Extensions.DependencyInjection;
 using RedShirt.Example.Api.Authorization;
+using RedShirt.Example.Api.Authorization.Constants;
+using RedShirt.Example.Api.Authorization.ResourceScoping;
+using RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Extensions;
@@ -36,7 +39,7 @@ public class CustomerScopedResourceAuthorizerTests
     public async Task EnsureCanAccessAsync_WriteUser_AllowsAnyCustomer()
     {
         var authorizer = CreateAuthorizer();
-        var user = Principal(new Claim(AuthorizationPermissions.ClaimType, AuthorizationPermissions.Write));
+        var user = Principal(new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Write));
 
         await authorizer.EnsureCanAccessAsync(user, Guid.NewGuid());
     }
@@ -46,8 +49,8 @@ public class CustomerScopedResourceAuthorizerTests
     {
         var authorizer = CreateAuthorizer();
         var user = Principal(
-            new Claim(AuthorizationPermissions.ClaimType, AuthorizationPermissions.Read),
-            new Claim(AuthorizationClaims.CustomerId, CustomerId.ToString()));
+            new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Read),
+            new Claim(BespokeAuthorizationClaims.CustomerId, CustomerId.ToString()));
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
             authorizer.EnsureCanAccessAsync(user, Guid.NewGuid()));
@@ -57,7 +60,7 @@ public class CustomerScopedResourceAuthorizerTests
     public void ConstrainSearchCustomerId_Unrestricted_KeepsRequestedFilter()
     {
         var authorizer = CreateAuthorizer();
-        var user = Principal(new Claim(AuthorizationPermissions.ClaimType, AuthorizationPermissions.Write));
+        var user = Principal(new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Write));
         var requested = Guid.NewGuid();
 
         Assert.Equal(requested, authorizer.ConstrainSearchCustomerId(user, requested));
@@ -69,8 +72,8 @@ public class CustomerScopedResourceAuthorizerTests
     {
         var authorizer = CreateAuthorizer();
         var user = Principal(
-            new Claim(AuthorizationPermissions.ClaimType, AuthorizationPermissions.Read),
-            new Claim(AuthorizationClaims.CustomerId, CustomerId.ToString()));
+            new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Read),
+            new Claim(BespokeAuthorizationClaims.CustomerId, CustomerId.ToString()));
 
         Assert.Equal(CustomerId, authorizer.ConstrainSearchCustomerId(user, null));
         Assert.Equal(CustomerId, authorizer.ConstrainSearchCustomerId(user, CustomerId));
@@ -81,7 +84,7 @@ public class CustomerScopedResourceAuthorizerTests
     public void ConstrainSearchCustomerId_ScopedWithoutClaim_MatchesNothing()
     {
         var authorizer = CreateAuthorizer();
-        var user = Principal(new Claim(AuthorizationPermissions.ClaimType, AuthorizationPermissions.Read));
+        var user = Principal(new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Read));
 
         Assert.Equal(Guid.Empty, authorizer.ConstrainSearchCustomerId(user, null));
     }

@@ -9,6 +9,8 @@ using Microsoft.Extensions.Options;
 using NSwag;
 using NSwag.Generation;
 using RedShirt.Example.Api.Authorization;
+using RedShirt.Example.Api.Authorization.Constants;
+using RedShirt.Example.Api.Authorization.Requirements;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Extensions;
 using ApiAuthenticationOptions = RedShirt.Example.Api.Configuration.AuthenticationOptions;
@@ -153,7 +155,7 @@ public class AuthenticationServiceCollectionExtensionsTests
         Assert.Equal(JwtBearerDefaults.AuthenticationScheme, bearer.Name);
 
         Assert.Contains(provider.GetServices<IClaimsTransformation>(),
-            transformation => transformation is RolePermissionClaimsTransformation);
+            transformation => transformation is BespokeRolePermissionClaimsTransformation);
         Assert.Contains(provider.GetServices<IAuthorizationHandler>(),
             handler => handler is HttpGetAuthorizationHandler);
 
@@ -163,21 +165,21 @@ public class AuthenticationServiceCollectionExtensionsTests
         Assert.Contains(authorization.FallbackPolicy.Requirements,
             requirement => requirement is ClaimsAuthorizationRequirement);
 
-        var writePolicy = authorization.GetPolicy(AuthorizationPolicies.Write);
+        var writePolicy = authorization.GetPolicy(BespokeAuthorizationPolicies.Write);
         Assert.NotNull(writePolicy);
         Assert.Contains(writePolicy.Requirements, requirement =>
             requirement is ClaimsAuthorizationRequirement claim
-            && claim.ClaimType == AuthorizationPermissions.ClaimType
+            && claim.ClaimType == BespokeAuthorizationPermissions.ClaimType
             && claim.AllowedValues is not null
-            && claim.AllowedValues.Contains(AuthorizationPermissions.Write));
+            && claim.AllowedValues.Contains(BespokeAuthorizationPermissions.Write));
 
-        var readPolicy = authorization.GetPolicy(AuthorizationPolicies.ReadApproved);
+        var readPolicy = authorization.GetPolicy(BespokeAuthorizationPolicies.ReadApproved);
         Assert.NotNull(readPolicy);
         Assert.Contains(readPolicy.Requirements, requirement =>
             requirement is ClaimsAuthorizationRequirement claim
-            && claim.ClaimType == AuthorizationPermissions.ClaimType
+            && claim.ClaimType == BespokeAuthorizationPermissions.ClaimType
             && claim.AllowedValues is not null
-            && claim.AllowedValues.Contains(AuthorizationPermissions.Read));
+            && claim.AllowedValues.Contains(BespokeAuthorizationPermissions.Read));
         Assert.Contains(readPolicy.Requirements, requirement => requirement is HttpGetRequirement);
     }
 

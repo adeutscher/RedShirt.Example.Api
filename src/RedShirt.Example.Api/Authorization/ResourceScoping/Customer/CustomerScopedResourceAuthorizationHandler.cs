@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 
-namespace RedShirt.Example.Api.Authorization;
+namespace RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
 
 internal sealed class CustomerScopedResourceRequirement : IAuthorizationRequirement;
 

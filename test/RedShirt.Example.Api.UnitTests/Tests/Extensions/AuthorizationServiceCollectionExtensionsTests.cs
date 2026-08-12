@@ -6,6 +6,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using RedShirt.Example.Api.Authorization;
+using RedShirt.Example.Api.Authorization.Constants;
+using RedShirt.Example.Api.Authorization.Requirements;
+using RedShirt.Example.Api.Authorization.ResourceScoping;
+using RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Extensions;
 
@@ -30,7 +34,7 @@ public class AuthorizationServiceCollectionExtensionsTests
     private static bool HasPermissionClaimRequirement(AuthorizationPolicy policy, string permission)
     {
         return policy.Requirements.OfType<ClaimsAuthorizationRequirement>().Any(requirement =>
-            requirement.ClaimType == AuthorizationPermissions.ClaimType
+            requirement.ClaimType == BespokeAuthorizationPermissions.ClaimType
             && requirement.AllowedValues is not null
             && requirement.AllowedValues.Contains(permission));
     }
@@ -45,7 +49,7 @@ public class AuthorizationServiceCollectionExtensionsTests
         using var provider = services.BuildServiceProvider();
 
         Assert.Contains(provider.GetServices<IClaimsTransformation>(),
-            transformation => transformation is RolePermissionClaimsTransformation);
+            transformation => transformation is BespokeRolePermissionClaimsTransformation);
         Assert.Contains(provider.GetServices<IAuthorizationHandler>(),
             handler => handler is HttpGetAuthorizationHandler);
         Assert.Contains(provider.GetServices<IAuthorizationHandler>(),
@@ -54,19 +58,19 @@ public class AuthorizationServiceCollectionExtensionsTests
 
         var authorization = provider.GetRequiredService<IOptions<AuthorizationOptions>>().Value;
 
-        var writePolicy = authorization.GetPolicy(AuthorizationPolicies.Write);
+        var writePolicy = authorization.GetPolicy(BespokeAuthorizationPolicies.Write);
         Assert.NotNull(writePolicy);
-        Assert.True(HasPermissionClaimRequirement(writePolicy, AuthorizationPermissions.Write));
+        Assert.True(HasPermissionClaimRequirement(writePolicy, BespokeAuthorizationPermissions.Write));
         Assert.DoesNotContain(writePolicy.Requirements, requirement => requirement is HttpGetRequirement);
 
-        var readPolicy = authorization.GetPolicy(AuthorizationPolicies.ReadApproved);
+        var readPolicy = authorization.GetPolicy(BespokeAuthorizationPolicies.ReadApproved);
         Assert.NotNull(readPolicy);
-        Assert.True(HasPermissionClaimRequirement(readPolicy, AuthorizationPermissions.Read));
+        Assert.True(HasPermissionClaimRequirement(readPolicy, BespokeAuthorizationPermissions.Read));
         Assert.Contains(readPolicy.Requirements, requirement => requirement is HttpGetRequirement);
 
         Assert.Same(writePolicy, authorization.FallbackPolicy);
 
-        var scopedPolicy = authorization.GetPolicy(AuthorizationPolicies.CustomerScoped);
+        var scopedPolicy = authorization.GetPolicy(BespokeAuthorizationPolicies.CustomerScoped);
         Assert.NotNull(scopedPolicy);
         Assert.Contains(scopedPolicy.Requirements, requirement => requirement is CustomerScopedResourceRequirement);
     }
@@ -82,12 +86,12 @@ public class AuthorizationServiceCollectionExtensionsTests
         var transformation = provider.GetRequiredService<IClaimsTransformation>();
         var authorization = provider.GetRequiredService<IAuthorizationService>();
 
-        var user = await transformation.TransformAsync(PrincipalWithRoles(AuthorizationRoles.ApiReadOnly));
+        var user = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.ApiReadOnly));
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Method = HttpMethods.Get;
 
-        var read = await authorization.AuthorizeAsync(user, httpContext, AuthorizationPolicies.ReadApproved);
-        var write = await authorization.AuthorizeAsync(user, httpContext, AuthorizationPolicies.Write);
+        var read = await authorization.AuthorizeAsync(user, httpContext, BespokeAuthorizationPolicies.ReadApproved);
+        var write = await authorization.AuthorizeAsync(user, httpContext, BespokeAuthorizationPolicies.Write);
 
         Assert.True(read.Succeeded);
         Assert.False(write.Succeeded);
@@ -104,12 +108,12 @@ public class AuthorizationServiceCollectionExtensionsTests
         var transformation = provider.GetRequiredService<IClaimsTransformation>();
         var authorization = provider.GetRequiredService<IAuthorizationService>();
 
-        var user = await transformation.TransformAsync(PrincipalWithRoles(AuthorizationRoles.ApiUser));
+        var user = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.ApiUser));
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Method = HttpMethods.Get;
 
-        var read = await authorization.AuthorizeAsync(user, httpContext, AuthorizationPolicies.ReadApproved);
-        var write = await authorization.AuthorizeAsync(user, httpContext, AuthorizationPolicies.Write);
+        var read = await authorization.AuthorizeAsync(user, httpContext, BespokeAuthorizationPolicies.ReadApproved);
+        var write = await authorization.AuthorizeAsync(user, httpContext, BespokeAuthorizationPolicies.Write);
 
         Assert.True(read.Succeeded);
         Assert.True(write.Succeeded);
@@ -126,11 +130,11 @@ public class AuthorizationServiceCollectionExtensionsTests
         var transformation = provider.GetRequiredService<IClaimsTransformation>();
         var authorization = provider.GetRequiredService<IAuthorizationService>();
 
-        var user = await transformation.TransformAsync(PrincipalWithRoles(AuthorizationRoles.ApiReadOnly));
+        var user = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.ApiReadOnly));
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Method = HttpMethods.Post;
 
-        var read = await authorization.AuthorizeAsync(user, httpContext, AuthorizationPolicies.ReadApproved);
+        var read = await authorization.AuthorizeAsync(user, httpContext, BespokeAuthorizationPolicies.ReadApproved);
 
         Assert.False(read.Succeeded);
     }

@@ -1,9 +1,9 @@
-namespace RedShirt.Example.Api.Constants;
+namespace RedShirt.Example.Api.Authorization.Constants;
 
 /// <summary>
 ///     JWT claim types used for resource-based authorization (in addition to roles/permissions).
 /// </summary>
-public static class AuthorizationClaims
+public static class BespokeAuthorizationClaims
 {
     /// <summary>
     ///     Caller’s customer id (<see cref="Guid" />). Scoped callers may only access

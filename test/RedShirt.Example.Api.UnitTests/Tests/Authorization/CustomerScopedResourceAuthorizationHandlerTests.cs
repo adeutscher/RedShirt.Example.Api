@@ -1,6 +1,9 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using RedShirt.Example.Api.Authorization;
+using RedShirt.Example.Api.Authorization.Constants;
+using RedShirt.Example.Api.Authorization.ResourceScoping;
+using RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
 using RedShirt.Example.Api.Constants;
 
 namespace RedShirt.Example.Api.UnitTests.Tests.Authorization;
@@ -33,7 +36,7 @@ public class CustomerScopedResourceAuthorizationHandlerTests
     [Fact]
     public async Task HandleAsync_WritePermission_SucceedsForAnyCustomer()
     {
-        var user = Principal(new Claim(AuthorizationPermissions.ClaimType, AuthorizationPermissions.Write));
+        var user = Principal(new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Write));
         var context = CreateContext(user, Guid.NewGuid());
         var handler = new CustomerScopedResourceAuthorizationHandler();
 
@@ -46,8 +49,8 @@ public class CustomerScopedResourceAuthorizationHandlerTests
     public async Task HandleAsync_MatchingCustomerId_Succeeds()
     {
         var user = Principal(
-            new Claim(AuthorizationPermissions.ClaimType, AuthorizationPermissions.Read),
-            new Claim(AuthorizationClaims.CustomerId, CustomerId.ToString()));
+            new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Read),
+            new Claim(BespokeAuthorizationClaims.CustomerId, CustomerId.ToString()));
         var context = CreateContext(user, CustomerId);
         var handler = new CustomerScopedResourceAuthorizationHandler();
 
@@ -60,8 +63,8 @@ public class CustomerScopedResourceAuthorizationHandlerTests
     public async Task HandleAsync_MismatchedCustomerId_DoesNotSucceed()
     {
         var user = Principal(
-            new Claim(AuthorizationPermissions.ClaimType, AuthorizationPermissions.Read),
-            new Claim(AuthorizationClaims.CustomerId, CustomerId.ToString()));
+            new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Read),
+            new Claim(BespokeAuthorizationClaims.CustomerId, CustomerId.ToString()));
         var context = CreateContext(user, Guid.NewGuid());
         var handler = new CustomerScopedResourceAuthorizationHandler();
 
@@ -73,7 +76,7 @@ public class CustomerScopedResourceAuthorizationHandlerTests
     [Fact]
     public async Task HandleAsync_ReadWithoutCustomerClaim_DoesNotSucceed()
     {
-        var user = Principal(new Claim(AuthorizationPermissions.ClaimType, AuthorizationPermissions.Read));
+        var user = Principal(new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Read));
         var context = CreateContext(user, CustomerId);
         var handler = new CustomerScopedResourceAuthorizationHandler();
 

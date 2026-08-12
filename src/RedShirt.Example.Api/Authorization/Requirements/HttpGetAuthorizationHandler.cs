@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 
-namespace RedShirt.Example.Api.Authorization;
+namespace RedShirt.Example.Api.Authorization.Requirements;
 
 /// <summary>
 ///     Succeeds when the authorization resource is an HTTP GET.

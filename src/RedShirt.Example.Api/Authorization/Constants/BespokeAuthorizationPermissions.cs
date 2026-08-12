@@ -1,11 +1,11 @@
-namespace RedShirt.Example.Api.Constants;
+namespace RedShirt.Example.Api.Authorization.Constants;
 
 /// <summary>
 ///     Permission values the API authorizes against. Realm roles are mapped to these
-///     (see <see cref="Authorization.RolePermissionMap" />); controllers reference
-///     <see cref="AuthorizationPolicies" />, not role names.
+///     (see <see cref="BespokeRolePermissionMap" />); controllers reference
+///     <see cref="BespokeAuthorizationPolicies" />, not role names.
 /// </summary>
-public static class AuthorizationPermissions
+public static class BespokeAuthorizationPermissions
 {
     /// <summary>
     ///     JWT / <see cref="System.Security.Claims.Claim.Type" /> used for derived permission claims.

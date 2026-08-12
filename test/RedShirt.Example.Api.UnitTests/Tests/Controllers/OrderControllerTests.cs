@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using RedShirt.Example.Api.Authorization;
+using RedShirt.Example.Api.Authorization.ResourceScoping;
+using RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.Controllers;
 using RedShirt.Example.Api.Core.UseCases.Order.Commands.Delete;

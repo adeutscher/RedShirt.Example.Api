@@ -1,5 +1,5 @@
+using RedShirt.Example.Api.Authorization.Constants;
 using System.Collections.Frozen;
-using RedShirt.Example.Api.Constants;
 
 namespace RedShirt.Example.Api.Authorization;
 
@@ -7,16 +7,16 @@ namespace RedShirt.Example.Api.Authorization;
 ///     Maps IdP realm roles to API permissions. Role hierarchy belongs here (and in
 ///     Keycloak composites), not in authorization handlers.
 /// </summary>
-internal static class RolePermissionMap
+internal static class BespokeRolePermissionMap
 {
     private static readonly FrozenDictionary<string, FrozenSet<string>> PermissionsByRole =
         new Dictionary<string, FrozenSet<string>>(StringComparer.Ordinal)
         {
-            [AuthorizationRoles.ApiReadOnly] = FrozenSet.ToFrozenSet(
-                [AuthorizationPermissions.Read],
+            [BespokeAuthorizationRoles.ApiReadOnly] = FrozenSet.ToFrozenSet(
+                [BespokeAuthorizationPermissions.Read],
                 StringComparer.Ordinal),
-            [AuthorizationRoles.ApiUser] = FrozenSet.ToFrozenSet(
-                [AuthorizationPermissions.Read, AuthorizationPermissions.Write],
+            [BespokeAuthorizationRoles.ApiUser] = FrozenSet.ToFrozenSet(
+                [BespokeAuthorizationPermissions.Read, BespokeAuthorizationPermissions.Write],
                 StringComparer.Ordinal)
         }.ToFrozenDictionary(StringComparer.Ordinal);
 
