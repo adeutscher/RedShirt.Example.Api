@@ -10,7 +10,7 @@ internal sealed record CustomerScopedResource(Guid CustomerId);
 ///     Succeeds when the caller has write permission (any customer) or the resource
 ///     <see cref="CustomerScopedResource.CustomerId" /> matches the caller’s customer claim.
 /// </summary>
-internal sealed class CustomerScopedResourceAuthorizationHandler
+internal sealed class CustomerScopedResourceEnforcerHandler
     : AuthorizationHandler<CustomerScopedResourceRequirement, CustomerScopedResource>
 {
     protected override Task HandleRequirementAsync(

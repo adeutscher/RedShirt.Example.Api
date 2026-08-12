@@ -53,7 +53,7 @@ public class AuthorizationServiceCollectionExtensionsTests
         Assert.Contains(provider.GetServices<IAuthorizationHandler>(),
             handler => handler is HttpGetAuthorizationHandler);
         Assert.Contains(provider.GetServices<IAuthorizationHandler>(),
-            handler => handler is CustomerScopedResourceAuthorizationHandler);
+            handler => handler is CustomerScopedResourceEnforcerHandler);
         Assert.NotNull(provider.GetService<ICustomerScopedResourceEnforcer>());
 
         var authorization = provider.GetRequiredService<IOptions<AuthorizationOptions>>().Value;
