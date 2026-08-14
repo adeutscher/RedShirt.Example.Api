@@ -4,7 +4,7 @@ Example of an ASP.NET Core API.
 
 Repo features:
 
-* Initialisation script for quick namespace adjustment.
+* Initialisation script for quick and convenient namespace adjustment.
 * Use of [NSwag](https://github.com/RicoSuter/NSwag) to automatically document endpoints and to generate client code for
   an interop package.
     * Recommended next step: Exporting the interop package as a NuGet for use in other projects.
@@ -67,6 +67,10 @@ Resources:
 * To better understand the configuration definitions, refer to the classes in the `Configuration/` folder of the
   `Common.RateLimiting` project
 
+# Authorization
+
+
+
 # Development
 
 Tips for local development.
@@ -107,7 +111,7 @@ describe the Rosalyn logo as "a weird branch-y thing".
 
 # Testing
 
-For local testing, see the `test/local` folder. That guide covers bringing up MariaDB and applying schema updates via
+For local testing, see the `test/local/` directory. That guide covers bringing up MariaDB and applying schema updates via
 [RedShirt.Example.Schema](https://github.com/adeutscher/RedShirt.Example.Schema).
 
 # Citations
