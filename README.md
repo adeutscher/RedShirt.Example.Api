@@ -23,7 +23,9 @@ Repo features:
     * The "Bar" connector connects to the imaginary Foo API using a bearer token obtained using a OAuth Client
       Credentials request.
     * Both connectors support key rotation: Credentials are refreshed out of the chosen secret manager if/when the
-      current credentials cease working, allowing for keys to be rotated without restarting the application.
+      current credentials cease working, allowing for keys to be rotated without restarting the application. Key
+      rotation on both connectors is throttled by a refresh cooldown parameter preventing bad credentials in the secret
+      manager from being continually polled.
 * Configuration is based on environment variables.
 
 ## Related: Schema
