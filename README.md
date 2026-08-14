@@ -1,11 +1,14 @@
 # RedShirt.Example.Api
 
-Example of an ASP.NET Core API.
+Forkable ASP.NET Core API template: rename the namespace, keep the scaffolding. Includes JWT authorization,
+Roslyn-generated data access, OpenAPI clients via NSwag, and a local Docker Compose stack.
 
-Repo features:
+## Features
+
+Repo features in more detail:
 
 * Initialisation script for quick and convenient namespace adjustment.
-* Use of [NSwag](https://github.com/RicoSuter/NSwag) to automatically document endpoints and to generate client code for
+* Use of [NSwag](https://github.com/RicoSuter/NSwag) to automatically document endpoints to OpenAPI standard and to generate client code for
   an interop package.
     * Recommended next step: Exporting the interop package as a NuGet for use in other projects.
 * [Roslyn](https://github.com/dotnet/roslyn) source generation for MariaDB/Dapper data-access scaffolding (services,
