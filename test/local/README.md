@@ -106,9 +106,15 @@ Realm roles are emitted as multivalued JWT `role` claims via a client protocol m
 `developer`; the API map also grants the full permission set to `admin` so authorization
 does not depend on the IdP sending both role claims.
 
-If you already had a Keycloak container from before roles were added or changed, recreate it so the realm
-import re-runs (`docker compose up -d --force-recreate keycloak`). Keycloak only imports a realm
-when it does not already exist in that container’s data.
+Keycloak imports `keycloak/realm-example.json` on each container start (`kc.sh import --override true`,
+then `start-dev`), so seeded users and roles stay in sync with that file. That override **replaces the
+entire `example` realm**: users, clients, roles, and mappers created in the Keycloak admin console (or
+otherwise missing from the JSON) are removed. Put durable local identities in `realm-example.json`
+instead of creating them only in the UI. Restart Keycloak after editing the realm JSON:
+
+```bash
+docker compose up -d --force-recreate keycloak
+```
 
 ### Seeded clients / users / roles
 
