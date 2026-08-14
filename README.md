@@ -1,12 +1,15 @@
 # RedShirt.Example.Api
 
-Example of an ASP.NET Core API.
+Forkable ASP.NET Core API template: rename the namespace, keep the scaffolding. Includes JWT authorization,
+Roslyn-generated data access, OpenAPI clients via NSwag, and a local Docker Compose stack.
 
-Repo features:
+## Features
+
+Repo features in more detail:
 
 * Initialisation script for quick and convenient namespace adjustment.
-* Use of [NSwag](https://github.com/RicoSuter/NSwag) to automatically document endpoints and to generate client code for
-  an interop package.
+* Use of [NSwag](https://github.com/RicoSuter/NSwag) to automatically document endpoints to OpenAPI standard and to
+  generate client code for an interop package.
     * Recommended next step: Exporting the interop package as a NuGet for use in other projects.
 * [Roslyn](https://github.com/dotnet/roslyn) source generation for MariaDB/Dapper data-access scaffolding (services,
   repositories, search requests, and related DI) from annotated DTO models.
@@ -73,75 +76,6 @@ Resources:
 * To better understand the configuration definitions, refer to the classes in the `Configuration/` folder of the
   `Common.RateLimiting` project
 
-# Authorization
-
-JWT bearer authentication is optional (setting `AUTHENTICATION__DISABLE_AUTHENTICATION=true` disables it). When enabled,
-Keycloak realm roles are mapped to `permission` claims. Endpoints authorize on those permissions, not on role names.
-
-The flow of identity provider roles to actionable enforcement looks like this:
-
-1. Identity provider provides a token. This token contains a series of claims. A claim is a key-value pairing, where the
-   value could be a list.
-2. The raw token claims are enriched by an implementation of `IClaimsTransformation`:
-   `BespokeRolePermissionClaimsTransformation`. This enriches the client's claims with specific permissions.
-    * The map of roles to permissions lives in `BespokeRolePermissionMap`.
-3. In `AuthorizationServiceCollectionExtensions.AddApiAuthorizationPolicies`, policies are declared with requirements.
-    * Many of these requirements are checking for a permission that is declared on the enriched series of claims.
-    * Custom requirement can also be specified by providing implementations of `IAuthorizationRequirement`.
-        * For example, this template's read policies are supplemented by a custom requirement that double-checks that
-          the endpoint method to a GET endpoint.
-
-The map of roles to permissions lives in `BespokeRolePermissionMap`. Role hierarchy belongs in the permission map (and
-in Keycloak composites), not in authorization handlers.
-
-## Constants
-
-Authorization is heavily reliant on constants:
-
-* `BespokeAuthorizationClaims`: Specify custom claim keys.
-* `BespokeAuthorizationPermissions`: Specify permission names.
-* `BespokeAuthorizationPolicies`: Specifies policy names.
-* `BespokeAuthorizationRoles`: Specifies role names.
-
-## Roles
-
-This example template contains the following roles:
-
-| Realm role  | Permissions                                                                                               | Access                                                            |
-|-------------|-----------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
-| `admin`     | `api:read`, `api:write`, `api:unrestricted`, `product:read`, `product:write`, `order:read`, `order:write` | All endpoints; bypasses customer resource scope                   |
-| `developer` | Same as `admin` except without `api:unrestricted`                                                         | All endpoints; still limited by customer resource scope on orders |
-| `analyst`   | `product:read`                                                                                            | GET `/products` only                                              |
-| `billing`   | `order:read`, `order:write`                                                                               | Read-write `/orders`; still limited by customer resource scope    |
-
-Locally, `admin` is a Keycloak composite that includes `developer`. The API map still grants the full set to `admin` so
-authorization does not depend on the identity provider sending both role claims.
-
-## Policies
-
-* Fallback policy requires `api:write` (Foo, Bar, ExampleItem writes, and any undecorated action).
-* `[ApproveReadOnly]` requires `api:read` on HTTP GET (Foo, Bar, ExampleItem).
-* Product GET requires `product:read` on HTTP GET (`[ApproveProductReadOnly]`). Product writes require `product:write`.
-* Order GET requires `order:read` on HTTP GET (`[ApproveOrderReadOnly]`). Order writes require `order:write`.
-* **Orders** also use resource-based authorization: callers without `api:unrestricted` may only see orders whose
-  `CustomerId` matches the JWT `customer_id` claim. Failed checks return **404** (same as a missing id) so existence is
-  not leaked.
-
-See `test/local/` for Keycloak users, token helper flags, and `curl` examples.
-
-## Resource-Based Authorization
-
-As mentioned as an item in the [Policies](#policies) section, this template applies scoped permissions to within the
-logic of an Order endpoint. When reading/searching Order objects, non-admin users (lacking the `api:unrestricted`
-permission) have their view constrained to only be able to access records that match their customer ID.
-
-* On the get-by-id endpoint, if a record is retrieved that the user does not own then an HTTP 404 is returned instead of
-  the record.
-    * Important note: It is strongly encouraged to return an HTTP 404 (Not Found) as opposed to an HTTP 403 (Forbidden)
-      in this case, as selectively responding with an HTTP 403 could imply the existence of a record.
-* On the search endpoint, the customer ID in the search query is constrained to that of the customer ID in the user's
-  claim.
-
 # Development
 
 Tips for local development.
@@ -182,37 +116,5 @@ describe the Rosalyn logo as "a weird branch-y thing".
 
 # Testing
 
-For local testing, see the `test/local/` directory. That guide covers bringing up MariaDB and applying schema updates
-via [RedShirt.Example.Schema](https://github.com/adeutscher/RedShirt.Example.Schema).
-
-# Citations
-
-Rough citation of some sources beyond memory.
-
-## API
-
-* https://github.com/RicoSuter/NSwag/issues/2409 - on models not showing up
-* https://github.com/RicoSuter/NSwag/wiki/NSwag.MSBuild
-* https://stackoverflow.com/questions/33283071/swagger-webapi-create-json-on-build
-* https://github.com/RicoSuter/NSwag/wiki/CommandLine/ce950c5aea7bf52a85ec6e517ad8ea96762181ed
-* https://github.com/RicoSuter/NSwag/issues/1573
-    * Should use aspnetcore2swagger
-* https://github.com/RicoSuter/NSwag/issues/3119
-    * Use nobuild to avoid infinite build loop
-* https://github.com/RicoSuter/NSwag/wiki/NSwag-Configuration-Document
-    * Doesn't include sourcing from an existing swagger.json though...
-    * Derived 'Net80' runtime from phrasing in EXE variable
-* https://stackoverflow.com/questions/63791017/generate-with-nswag-an-openapi-document-including-swashbuckle-custom-operation-f
-    * Describes fromDocument section
-    * Derive from Url, but we want path
-* https://stackoverflow.com/questions/73016248/generating-c-sharp-api-client-with-nswag-msbuild\
-    * Derive from Json
-* https://stackoverflow.com/questions/59393267/generate-nswag-client-as-part-of-the-build
-* Mentions rigging up before build
-* https://github.com/RicoSuter/NSwag/wiki/AspNetCoreOpenApiDocumentGenerator
-* https://github.com/RicoSuter/NSwag/blob/master/src/NSwag.Commands/Commands/Generation/AspNetCore/AspNetCoreToOpenApiCommand.cs
-* https://github.com/RicoSuter/NSwag/blob/master/src/NSwag.Commands/Commands/OutputCommandBase.cs
-
-## Dynamo
-
-* https://codewithmukesh.com/blog/pagination-in-amazon-dynamodb-with-dotnet/
+For local testing, see the `test/local` folder. That guide covers bringing up MariaDB and applying schema updates via
+[RedShirt.Example.Schema](https://github.com/adeutscher/RedShirt.Example.Schema).
