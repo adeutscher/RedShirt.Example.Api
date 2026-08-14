@@ -1,8 +1,7 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using RedShirt.Example.Api.Authorization;
 using RedShirt.Example.Api.Authorization.Requirements;
+using System.Security.Claims;
 
 namespace RedShirt.Example.Api.UnitTests.Tests.Authorization;
 

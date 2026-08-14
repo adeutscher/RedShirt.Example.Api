@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using RedShirt.Example.Api.Authorization;
-using RedShirt.Example.Api.Authorization.ResourceScoping;
 using RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.Controllers;
@@ -11,6 +9,7 @@ using RedShirt.Example.Api.Core.UseCases.Order.Queries.SearchRecords;
 using RedShirt.Example.Api.DataStores.Order.Models;
 using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 using RedShirt.Example.Api.Models.Order;
+using System.Security.Claims;
 
 namespace RedShirt.Example.Api.UnitTests.Tests.Controllers;
 
@@ -39,6 +38,44 @@ public class OrderControllerTests
     }
 
     [Fact]
+    public async Task Delete_DoesNotDelete_WhenResourceAuthorizationFails()
+    {
+        var getHandler = new Mock<IGetOrderRecordQueryHandler>();
+        getHandler
+            .Setup(handler => handler.Handle(It.IsAny<GetOrderRecordQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Order(CustomerId));
+        var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
+        authorizer
+            .Setup(a => a.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(), CustomerId))
+            .ThrowsAsync(new ResourceNotFoundException());
+        var deleteHandler = new Mock<IDeleteOrderCommandHandler>();
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
+            _controller.Delete(OrderId, getHandler.Object, authorizer.Object, deleteHandler.Object,
+                TestContext.Current.CancellationToken));
+
+        deleteHandler.Verify(
+            handler => handler.Handle(It.IsAny<DeleteOrderCommand>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Get_DoesNotReturnOrder_WhenResourceAuthorizationFails()
+    {
+        var getHandler = new Mock<IGetOrderRecordQueryHandler>();
+        getHandler
+            .Setup(handler => handler.Handle(It.IsAny<GetOrderRecordQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Order(CustomerId));
+        var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
+        authorizer
+            .Setup(a => a.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(), CustomerId))
+            .ThrowsAsync(new ResourceNotFoundException());
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
+            _controller.Get(OrderId, getHandler.Object, authorizer.Object, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task Get_ReturnsOk_AfterResourceAuthorization()
     {
         var expected = Order(CustomerId);
@@ -54,46 +91,8 @@ public class OrderControllerTests
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Same(expected, ok.Value);
-        authorizer.Verify(a => a.EnsureCanAccessAsync(It.IsAny<System.Security.Claims.ClaimsPrincipal>(), CustomerId),
+        authorizer.Verify(a => a.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(), CustomerId),
             Times.Once);
-    }
-
-    [Fact]
-    public async Task Get_DoesNotReturnOrder_WhenResourceAuthorizationFails()
-    {
-        var getHandler = new Mock<IGetOrderRecordQueryHandler>();
-        getHandler
-            .Setup(handler => handler.Handle(It.IsAny<GetOrderRecordQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Order(CustomerId));
-        var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
-        authorizer
-            .Setup(a => a.EnsureCanAccessAsync(It.IsAny<System.Security.Claims.ClaimsPrincipal>(), CustomerId))
-            .ThrowsAsync(new ResourceNotFoundException());
-
-        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
-            _controller.Get(OrderId, getHandler.Object, authorizer.Object, TestContext.Current.CancellationToken));
-    }
-
-    [Fact]
-    public async Task Delete_DoesNotDelete_WhenResourceAuthorizationFails()
-    {
-        var getHandler = new Mock<IGetOrderRecordQueryHandler>();
-        getHandler
-            .Setup(handler => handler.Handle(It.IsAny<GetOrderRecordQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Order(CustomerId));
-        var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
-        authorizer
-            .Setup(a => a.EnsureCanAccessAsync(It.IsAny<System.Security.Claims.ClaimsPrincipal>(), CustomerId))
-            .ThrowsAsync(new ResourceNotFoundException());
-        var deleteHandler = new Mock<IDeleteOrderCommandHandler>();
-
-        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
-            _controller.Delete(OrderId, getHandler.Object, authorizer.Object, deleteHandler.Object,
-                TestContext.Current.CancellationToken));
-
-        deleteHandler.Verify(
-            handler => handler.Handle(It.IsAny<DeleteOrderCommand>(), It.IsAny<CancellationToken>()),
-            Times.Never);
     }
 
     [Fact]
@@ -101,7 +100,7 @@ public class OrderControllerTests
     {
         var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
         authorizer
-            .Setup(a => a.ConstrainSearchCustomerId(It.IsAny<System.Security.Claims.ClaimsPrincipal>(), null))
+            .Setup(a => a.ConstrainSearchCustomerId(It.IsAny<ClaimsPrincipal>(), null))
             .Returns(CustomerId);
         var expected = new OrderSearchResponse
         {
