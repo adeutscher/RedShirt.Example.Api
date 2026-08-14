@@ -71,7 +71,7 @@ Resources:
 
 # Authorization
 
-JWT bearer authentication is optional (`AUTHENTICATION__DISABLE_AUTHENTICATION=true` disables it). When enabled,
+JWT bearer authentication is optional (setting `AUTHENTICATION__DISABLE_AUTHENTICATION=true` disables it). When enabled,
 Keycloak realm roles are mapped to `permission` claims. Endpoints authorize on those permissions, not on role names.
 
 The flow of identity provider roles to actionable enforcement looks like this:
@@ -89,6 +89,15 @@ The flow of identity provider roles to actionable enforcement looks like this:
 
 The map of roles to permissions lives in `BespokeRolePermissionMap`. Role hierarchy belongs in the permission map (and
 in Keycloak composites), not in authorization handlers.
+
+## Constants
+
+Authorization is heavily reliant on constants:
+
+* `BespokeAuthorizationClaims`: Specify custom claim keys.
+* `BespokeAuthorizationPermissions`: Specify permission names.
+* `BespokeAuthorizationPolicies`: Specifies policy names.
+* `BespokeAuthorizationRoles`: Specifies role names.
 
 ## Roles
 
@@ -114,7 +123,7 @@ authorization does not depend on the identity provider sending both role claims.
   `CustomerId` matches the JWT `customer_id` claim. Failed checks return **404** (same as a missing id) so existence is
   not leaked.
 
-See `test/local/` for Keycloak users, token helper flags, and curl examples.
+See `test/local/` for Keycloak users, token helper flags, and `curl` examples.
 
 # Development
 
