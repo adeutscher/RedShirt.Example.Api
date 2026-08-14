@@ -22,9 +22,9 @@ internal static class AuthenticationServiceCollectionExtensions
     }
 
     internal static IServiceCollection AddApiSwaggerDocument(this IServiceCollection services,
-        IConfiguration configuration)
+        IConfigurationRoot configuration)
     {
-        var authenticationEnabled = IsAuthenticationEnabled(GetAuthenticationOptionsFromConfiguration(configuration));
+        var authenticationEnabled = IsAuthenticationEnabled(configuration);
 
         return services.AddSwaggerDocument(document =>
         {
@@ -57,7 +57,7 @@ internal static class AuthenticationServiceCollectionExtensions
             return services;
         }
 
-        if (string.IsNullOrWhiteSpace(options!.Authority))
+        if (string.IsNullOrWhiteSpace(options?.Authority))
         {
             throw new InvalidOperationException(
                 "Authentication is enabled but Authentication:Authority is missing.");
@@ -109,5 +109,11 @@ internal static class AuthenticationServiceCollectionExtensions
 
         app.UseAuthentication();
         return app;
+    }
+
+    internal static bool IsAuthenticationEnabled(IConfigurationRoot configuration)
+    {
+        var options = GetAuthenticationOptionsFromConfiguration(configuration);
+        return IsAuthenticationEnabled(options);
     }
 }

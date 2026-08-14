@@ -17,6 +17,11 @@ internal static class AuthorizationServiceCollectionExtensions
             .RequireAuthenticatedUser();
     }
 
+    /// <summary>
+    ///     Add services for when authorization is enabled.
+    /// </summary>
+    /// <param name="services"></param>
+    /// <returns></returns>
     internal static IServiceCollection AddApiAuthorizationPolicies(this IServiceCollection services)
     {
         services.AddSingleton<IClaimsTransformation, BespokeRolePermissionClaimsTransformation>();
@@ -57,5 +62,26 @@ internal static class AuthorizationServiceCollectionExtensions
         });
 
         return services;
+    }
+
+    /// <summary>
+    ///     Consider adding stub implementations of inline resource enforcement such as scoped resource access.
+    ///     Even if authentication (and therefore authorization) is disabled, endpoints will still demand these services.
+    /// </summary>
+    /// <param name="services"></param>
+    /// <param name="configuration"></param>
+    /// <returns></returns>
+    internal static IServiceCollection ConsiderAddingStubAuthorizationScopedResourcePolicies(
+        this IServiceCollection services,
+        IConfigurationRoot configuration)
+    {
+        if (AuthenticationServiceCollectionExtensions.IsAuthenticationEnabled(configuration))
+        {
+            // If authentication is enabled, then no need for stubs
+            return services;
+        }
+
+        return services
+            .AddSingleton<ICustomerScopedResourceEnforcer, StubCustomerScopedResourceEnforcer>();
     }
 }

@@ -20,7 +20,6 @@ builder.Configuration
 builder.Services
     .AddApiSwaggerDocument(builder.Configuration)
     .ConfigureApiServices(builder.Configuration)
-    .ConsiderAddingAuthentication(builder.Configuration)
     .AddControllersWithViews();
 
 var app = builder.Build();

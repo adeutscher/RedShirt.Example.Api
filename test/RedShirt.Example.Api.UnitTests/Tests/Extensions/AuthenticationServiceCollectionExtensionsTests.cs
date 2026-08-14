@@ -21,14 +21,14 @@ namespace RedShirt.Example.Api.UnitTests.Tests.Extensions;
 /// </summary>
 public class AuthenticationServiceCollectionExtensionsTests
 {
-    private static IConfiguration BuildConfiguration(Dictionary<string, string?> values)
+    private static IConfigurationRoot BuildConfiguration(Dictionary<string, string?> values)
     {
         return new ConfigurationBuilder()
             .AddInMemoryCollection(values)
             .Build();
     }
 
-    private static IConfiguration DisabledAuthenticationConfiguration()
+    private static IConfigurationRoot DisabledAuthenticationConfiguration()
     {
         return BuildConfiguration(new Dictionary<string, string?>
         {
@@ -36,7 +36,7 @@ public class AuthenticationServiceCollectionExtensionsTests
         });
     }
 
-    private static IConfiguration EnabledAuthenticationConfiguration(
+    private static IConfigurationRoot EnabledAuthenticationConfiguration(
         string? authority = "http://localhost:9080/realms/example",
         string? audience = "example-api",
         string? metadataAddress = "http://keycloak:8080/realms/example/.well-known/openid-configuration",

@@ -24,6 +24,10 @@ internal static class ServiceCollectionExtensions
             .AddSingleton(configuration)
             .AddProblemDetails()
             .AddExceptionHandler<ApiExceptionHandler>()
+            // Host
+            ////
+            .ConsiderAddingAuthentication(configuration)
+            .ConsiderAddingStubAuthorizationScopedResourcePolicies(configuration)
             // Common
             ////
             .AddCommonServices()
