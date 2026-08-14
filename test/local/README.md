@@ -78,13 +78,13 @@ If you added it to `~/.bashrc`, reload:
 Local Compose runs Keycloak on http://localhost:9080 with realm `example` imported from
 `keycloak/realm-example.json`. The API container validates JWTs using:
 
-| Variable                                   | Local default                                                                                         |
-|--------------------------------------------|-------------------------------------------------------------------------------------------------------|
-| `AUTHENTICATION__DISABLE_AUTHENTICATION`   | `false`                                                                                               |
-| `AUTHENTICATION__AUTHORITY`                | `http://localhost:9080/realms/example` (token `iss`)                                                  |
-| `AUTHENTICATION__METADATA_ADDRESS`         | `http://keycloak:8080/realms/example/.well-known/openid-configuration` (JWKS discovery inside Docker) |
-| `AUTHENTICATION__AUDIENCE`                 | `example-api`                                                                                         |
-| `AUTHENTICATION__REQUIRE_HTTPS_METADATA`   | `false`                                                                                               |
+| Variable                                 | Local default                                                                                         |
+|------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| `AUTHENTICATION__DISABLE_AUTHENTICATION` | `false`                                                                                               |
+| `AUTHENTICATION__AUTHORITY`              | `http://localhost:9080/realms/example` (token `iss`)                                                  |
+| `AUTHENTICATION__METADATA_ADDRESS`       | `http://keycloak:8080/realms/example/.well-known/openid-configuration` (JWKS discovery inside Docker) |
+| `AUTHENTICATION__AUDIENCE`               | `example-api`                                                                                         |
+| `AUTHENTICATION__REQUIRE_HTTPS_METADATA` | `false`                                                                                               |
 
 When authentication is enabled:
 
@@ -112,21 +112,21 @@ when it does not already exist in that container’s data.
 
 ### Seeded clients / users / roles
 
-| Kind                | Id / username     | Secret / password         | Notes                                              |
-|---------------------|-------------------|---------------------------|----------------------------------------------------|
-| Public client       | `example-api`     | _(none)_                  | Password grant for interactive testing             |
-| Confidential client | `example-service` | `example-service-secret`  | Client-credentials grant; realm role `admin`       |
-| User                | `testuser`        | `testpass`                | Realm role `admin` (full access, unrestricted)     |
-| User                | `developeruser`   | `developerpass`           | `developer`; JWT `customer_id` = `11111111-1111-1111-1111-111111111111` |
-| User                | `analystuser`     | `analystpass`             | `analyst` (Product GET only)                       |
-| User                | `billinguser`     | `billingpass`             | `billing`; JWT `customer_id` = `11111111-1111-1111-1111-111111111111` |
+| Kind                | Id / username     | Secret / password        | Notes                                                                   |
+|---------------------|-------------------|--------------------------|-------------------------------------------------------------------------|
+| Public client       | `example-api`     | _(none)_                 | Password grant for interactive testing                                  |
+| Confidential client | `example-service` | `example-service-secret` | Client-credentials grant; realm role `admin`                            |
+| User                | `testuser`        | `testpass`               | Realm role `admin` (full access, unrestricted)                          |
+| User                | `developeruser`   | `developerpass`          | `developer`; JWT `customer_id` = `11111111-1111-1111-1111-111111111111` |
+| User                | `analystuser`     | `analystpass`            | `analyst` (Product GET only)                                            |
+| User                | `billinguser`     | `billingpass`            | `billing`; JWT `customer_id` = `11111111-1111-1111-1111-111111111111`   |
 
-| Realm role    | Permissions (API map) | Access |
-|---------------|-----------------------|--------|
-| `admin`       | `api:read`, `api:write`, `api:unrestricted`, `product:*`, `order:*` | All endpoints; bypasses customer scope (Keycloak composite includes `developer`) |
-| `developer`   | `api:read`, `api:write`, `product:*`, `order:*` | All endpoints; still limited by customer scope on orders |
-| `analyst`     | `product:read` | GET `/products` only |
-| `billing`     | `order:read`, `order:write` | Read-write `/orders`; still limited by customer scope |
+| Realm role  | Permissions (API map)                                               | Access                                                                           |
+|-------------|---------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| `admin`     | `api:read`, `api:write`, `api:unrestricted`, `product:*`, `order:*` | All endpoints; bypasses customer scope (Keycloak composite includes `developer`) |
+| `developer` | `api:read`, `api:write`, `product:*`, `order:*`                     | All endpoints; still limited by customer scope on orders                         |
+| `analyst`   | `product:read`                                                      | GET `/products` only                                                             |
+| `billing`   | `order:read`, `order:write`                                         | Read-write `/orders`; still limited by customer scope                            |
 
 ### Get a bearer token
 
@@ -240,12 +240,12 @@ under `wiremock/foo/mappings/`. Successful calls require header
 `make-local-aws-resources.sh`). The API container reaches WireMock at
 `http://wiremock-foo:8080`; from the host use `http://localhost:9100`.
 
-| Method | Path                     | Auth                | Result                                                                          |
-|--------|--------------------------|---------------------|---------------------------------------------------------------------------------|
-| POST   | `/api/foo`               | valid `x-api-key`   | 200 with `{ "Id": <random int>, "Name": <request Name> }` (PascalCase JSON)     |
-| GET    | `/api/foo/{id}`          | valid `x-api-key`   | 200 with `{ "Id": {id}, "Name": "Foo-{id}" }`                                   |
-| GET    | `/api/foo/404`           | valid `x-api-key`   | 404 (exercises not-found handling)                                              |
-| any    | `/api/foo` or `/api/foo/…` | missing/invalid key | 401                                                                           |
+| Method | Path                       | Auth                | Result                                                                      |
+|--------|----------------------------|---------------------|-----------------------------------------------------------------------------|
+| POST   | `/api/foo`                 | valid `x-api-key`   | 200 with `{ "Id": <random int>, "Name": <request Name> }` (PascalCase JSON) |
+| GET    | `/api/foo/{id}`            | valid `x-api-key`   | 200 with `{ "Id": {id}, "Name": "Foo-{id}" }`                               |
+| GET    | `/api/foo/404`             | valid `x-api-key`   | 404 (exercises not-found handling)                                          |
+| any    | `/api/foo` or `/api/foo/…` | missing/invalid key | 401                                                                         |
 ### Testing Unauthorized Behaviour
 
 To conveniently set an invalid API key value in SSM, you can use the `foo-set-ssm-api-key.sh` script:
@@ -282,14 +282,14 @@ Compose points the API at `http://wiremock-bar:8080` for both `BaseUrl` and
 `TokenUrl` (`…/oauth/token`), with scope form field `audience=https://bar.local/api`.
 From the host use `http://localhost:9101`.
 
-| Method | Path                       | Auth / body                                                              | Result                                                               |
-|--------|----------------------------|--------------------------------------------------------------------------|----------------------------------------------------------------------|
-| POST   | `/oauth/token`             | form: `grant_type=client_credentials`, valid client id/secret, audience  | 200 with `access_token` + `expires_in`                               |
-| POST   | `/oauth/token`             | anything else                                                            | 401 `invalid_client`                                                 |
-| POST   | `/api/bar`                 | `Authorization: Bearer local-bar-access-token`                           | 200 with `{ "Id": <random int>, "Name": <request Name> }`            |
-| GET    | `/api/bar/{id}`            | valid Bearer                                                             | 200 with `{ "Id": {id}, "Name": "Bar-{id}" }`                        |
-| GET    | `/api/bar/404`             | valid Bearer                                                             | 404 (exercises not-found handling)                                   |
-| any    | `/api/bar` or `/api/bar/…` | missing/invalid Bearer                                                   | 401                                                                  |
+| Method | Path                       | Auth / body                                                             | Result                                                    |
+|--------|----------------------------|-------------------------------------------------------------------------|-----------------------------------------------------------|
+| POST   | `/oauth/token`             | form: `grant_type=client_credentials`, valid client id/secret, audience | 200 with `access_token` + `expires_in`                    |
+| POST   | `/oauth/token`             | anything else                                                           | 401 `invalid_client`                                      |
+| POST   | `/api/bar`                 | `Authorization: Bearer local-bar-access-token`                          | 200 with `{ "Id": <random int>, "Name": <request Name> }` |
+| GET    | `/api/bar/{id}`            | valid Bearer                                                            | 200 with `{ "Id": {id}, "Name": "Bar-{id}" }`             |
+| GET    | `/api/bar/404`             | valid Bearer                                                            | 404 (exercises not-found handling)                        |
+| any    | `/api/bar` or `/api/bar/…` | missing/invalid Bearer                                                  | 401                                                       |
 ### Testing Unauthorized Behaviour
 
 To put an invalid client secret in SSM (token endpoint will 401 once credentials are refreshed):
