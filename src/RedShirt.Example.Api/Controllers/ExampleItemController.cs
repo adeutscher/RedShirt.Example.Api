@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
+using RedShirt.Example.Api.Attributes.Authorization;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.ExampleItem.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.ExampleItem.Commands.Delete;

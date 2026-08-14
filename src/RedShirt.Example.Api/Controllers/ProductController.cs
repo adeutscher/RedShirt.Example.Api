@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
+using RedShirt.Example.Api.Attributes.Authorization;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Product.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.Product.Commands.Delete;
@@ -20,6 +21,7 @@ namespace RedShirt.Example.Api.Controllers;
 public class ProductController : ControllerBase
 {
     [HttpDelete("{id:guid}")]
+    [AuthorizeProductWrite]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -35,7 +37,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [ApproveReadOnly]
+    [ApproveProductReadOnly]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -51,6 +53,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpPatch("{id:guid}")]
+    [AuthorizeProductWrite]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -70,6 +73,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost]
+    [AuthorizeProductWrite]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -94,6 +98,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [AuthorizeProductWrite]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Put(
@@ -112,7 +117,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet]
-    [ApproveReadOnly]
+    [ApproveProductReadOnly]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductSearchResponse))]
     public async Task<IActionResult> Search(
         [FromQuery]

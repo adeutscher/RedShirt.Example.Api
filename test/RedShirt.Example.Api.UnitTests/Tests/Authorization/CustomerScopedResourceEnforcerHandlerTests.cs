@@ -1,10 +1,7 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-using RedShirt.Example.Api.Authorization;
 using RedShirt.Example.Api.Authorization.Constants;
-using RedShirt.Example.Api.Authorization.ResourceScoping;
 using RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
-using RedShirt.Example.Api.Constants;
+using System.Security.Claims;
 
 namespace RedShirt.Example.Api.UnitTests.Tests.Authorization;
 
@@ -27,29 +24,17 @@ public class CustomerScopedResourceEnforcerHandlerTests
     {
         var identity = new ClaimsIdentity(
             claims,
-            authenticationType: "test",
-            nameType: "preferred_username",
-            roleType: "role");
+            "test",
+            "preferred_username",
+            "role");
         return new ClaimsPrincipal(identity);
-    }
-
-    [Fact]
-    public async Task HandleAsync_WritePermission_SucceedsForAnyCustomer()
-    {
-        var user = Principal(new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Write));
-        var context = CreateContext(user, Guid.NewGuid());
-        var handler = new CustomerScopedResourceEnforcerHandler();
-
-        await handler.HandleAsync(context);
-
-        Assert.True(context.HasSucceeded);
     }
 
     [Fact]
     public async Task HandleAsync_MatchingCustomerId_Succeeds()
     {
         var user = Principal(
-            new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Read),
+            new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.OrderWrite),
             new Claim(BespokeAuthorizationClaims.CustomerId, CustomerId.ToString()));
         var context = CreateContext(user, CustomerId);
         var handler = new CustomerScopedResourceEnforcerHandler();
@@ -63,7 +48,7 @@ public class CustomerScopedResourceEnforcerHandlerTests
     public async Task HandleAsync_MismatchedCustomerId_DoesNotSucceed()
     {
         var user = Principal(
-            new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Read),
+            new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.OrderWrite),
             new Claim(BespokeAuthorizationClaims.CustomerId, CustomerId.ToString()));
         var context = CreateContext(user, Guid.NewGuid());
         var handler = new CustomerScopedResourceEnforcerHandler();
@@ -74,10 +59,38 @@ public class CustomerScopedResourceEnforcerHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_ReadWithoutCustomerClaim_DoesNotSucceed()
+    public async Task HandleAsync_UnrestrictedPermission_SucceedsForAnyCustomer()
     {
-        var user = Principal(new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Read));
+        var user = Principal(
+            new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Unrestricted));
+        var context = CreateContext(user, Guid.NewGuid());
+        var handler = new CustomerScopedResourceEnforcerHandler();
+
+        await handler.HandleAsync(context);
+
+        Assert.True(context.HasSucceeded);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithoutCustomerClaim_DoesNotSucceed()
+    {
+        var user = Principal(
+            new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.OrderWrite));
         var context = CreateContext(user, CustomerId);
+        var handler = new CustomerScopedResourceEnforcerHandler();
+
+        await handler.HandleAsync(context);
+
+        Assert.False(context.HasSucceeded);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WriteWithoutUnrestricted_DoesNotSucceedForOtherCustomer()
+    {
+        var user = Principal(
+            new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Write),
+            new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.OrderWrite));
+        var context = CreateContext(user, Guid.NewGuid());
         var handler = new CustomerScopedResourceEnforcerHandler();
 
         await handler.HandleAsync(context);

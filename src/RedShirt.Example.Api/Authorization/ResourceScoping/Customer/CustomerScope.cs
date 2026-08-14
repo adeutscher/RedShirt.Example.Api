@@ -4,15 +4,15 @@ using System.Security.Claims;
 namespace RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
 
 /// <summary>
-///     Shared rules for customer-scoped resources: <see cref="BespokeAuthorizationPermissions.Write" />
-///     is unrestricted; otherwise the caller is limited to
-///     <see cref="BespokeAuthorizationClaims.CustomerId" />.
+///     Shared rules for customer-scoped resources:
+///     <see cref="BespokeAuthorizationPermissions.Unrestricted" /> bypasses scope;
+///     otherwise the caller is limited to <see cref="BespokeAuthorizationClaims.CustomerId" />.
 /// </summary>
 internal static class CustomerScope
 {
     public static bool IsUnrestricted(ClaimsPrincipal user)
     {
-        return user.HasClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Write);
+        return user.HasClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Unrestricted);
     }
 
     public static bool TryGetCustomerId(ClaimsPrincipal user, out Guid customerId)

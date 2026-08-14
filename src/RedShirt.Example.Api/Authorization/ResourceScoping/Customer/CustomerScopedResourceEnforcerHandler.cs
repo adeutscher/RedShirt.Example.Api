@@ -7,7 +7,7 @@ internal sealed class CustomerScopedResourceRequirement : IAuthorizationRequirem
 internal sealed record CustomerScopedResource(Guid CustomerId);
 
 /// <summary>
-///     Succeeds when the caller has write permission (any customer) or the resource
+///     Succeeds when the caller is unrestricted (any customer) or the resource
 ///     <see cref="CustomerScopedResource.CustomerId" /> matches the caller’s customer claim.
 /// </summary>
 internal sealed class CustomerScopedResourceEnforcerHandler

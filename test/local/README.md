@@ -88,23 +88,25 @@ Local Compose runs Keycloak on http://localhost:9080 with realm `example` import
 
 When authentication is enabled:
 
-* Realm roles are mapped to permission claims (`permission` = `api:read` / `api:write`).
+* Realm roles (`admin`, `developer`, `analyst`, `billing`) are mapped to permission claims.
   Endpoints authorize on those permissions, not on role names.
-* A fallback policy requires `api:write` (granted to `api-user`).
+* A fallback policy requires `api:write` (granted to `admin` and `developer`).
 * GET endpoints marked with `[ApproveReadOnly]` require `api:read` and HTTP GET
-  (granted to `api-readonly` and `api-user`).
-* All GET controller actions are approved for read-only access at present.
-* **Orders** also use resource-based authorization: callers without `api:write` may only
-  see orders whose `CustomerId` matches the JWT `customer_id` claim. Failed checks return
-  **404** (same as a missing id) so existence is not leaked. Product/Foo/Bar/ExampleItem
-  stay permission-only.
+  (Foo, Bar, ExampleItem).
+* Product GET requires `product:read` (`[ApproveProductReadOnly]`); Product writes require
+  `product:write`. `analyst` has Product read only.
+* Order GET requires `order:read` (`[ApproveOrderReadOnly]`); Order writes require
+  `order:write`. `billing` has Order read-write.
+* **Orders** also use resource-based authorization: callers without `api:unrestricted`
+  (`admin`) may only see orders whose `CustomerId` matches the JWT `customer_id` claim.
+  Failed checks return **404** (same as a missing id) so existence is not leaked.
 
 Realm roles are emitted as multivalued JWT `role` claims via a client protocol mapper in
-`keycloak/realm-example.json`. Locally, `api-user` is a composite role that includes
-`api-readonly`; the API map also grants both permissions to `api-user` so authorization
+`keycloak/realm-example.json`. Locally, `admin` is a composite role that includes
+`developer`; the API map also grants the full permission set to `admin` so authorization
 does not depend on the IdP sending both role claims.
 
-If you already had a Keycloak container from before roles were added, recreate it so the realm
+If you already had a Keycloak container from before roles were added or changed, recreate it so the realm
 import re-runs (`docker compose up -d --force-recreate keycloak`). Keycloak only imports a realm
 when it does not already exist in that container’s data.
 
@@ -113,14 +115,18 @@ when it does not already exist in that container’s data.
 | Kind                | Id / username     | Secret / password         | Notes                                              |
 |---------------------|-------------------|---------------------------|----------------------------------------------------|
 | Public client       | `example-api`     | _(none)_                  | Password grant for interactive testing             |
-| Confidential client | `example-service` | `example-service-secret`  | Client-credentials grant; realm role `api-user`    |
-| User                | `testuser`        | `testpass`                | Realm role `api-user` (full access)                |
-| User                | `readonlyuser`    | `readonlypass`            | `api-readonly`; JWT `customer_id` = `11111111-1111-1111-1111-111111111111` |
+| Confidential client | `example-service` | `example-service-secret`  | Client-credentials grant; realm role `admin`       |
+| User                | `testuser`        | `testpass`                | Realm role `admin` (full access, unrestricted)     |
+| User                | `developeruser`   | `developerpass`           | `developer`; JWT `customer_id` = `11111111-1111-1111-1111-111111111111` |
+| User                | `analystuser`     | `analystpass`             | `analyst` (Product GET only)                       |
+| User                | `billinguser`     | `billingpass`             | `billing`; JWT `customer_id` = `11111111-1111-1111-1111-111111111111` |
 
-| Realm role       | Permissions (API map)     | Access                                                |
-|------------------|---------------------------|-------------------------------------------------------|
-| `api-user`       | `api:read`, `api:write`   | All endpoints (Keycloak composite includes `api-readonly`) |
-| `api-readonly`   | `api:read`                | Only GET endpoints decorated with `[ApproveReadOnly]` |
+| Realm role    | Permissions (API map) | Access |
+|---------------|-----------------------|--------|
+| `admin`       | `api:read`, `api:write`, `api:unrestricted`, `product:*`, `order:*` | All endpoints; bypasses customer scope (Keycloak composite includes `developer`) |
+| `developer`   | `api:read`, `api:write`, `product:*`, `order:*` | All endpoints; still limited by customer scope on orders |
+| `analyst`     | `product:read` | GET `/products` only |
+| `billing`     | `order:read`, `order:write` | Read-write `/orders`; still limited by customer scope |
 
 ### Get a bearer token
 
@@ -128,12 +134,14 @@ Use the stdlib Python helper (no pip packages required):
 
 ```bash
 chmod +x ./get-bearer-token.py   # once
-./get-bearer-token.py            # password grant as testuser → prints access_token
+./get-bearer-token.py            # password grant as testuser (admin) → prints access_token
 ./get-bearer-token.py --print-header
 ./get-bearer-token.py --grant client_credentials
-./get-bearer-token.py --username readonlyuser --password readonlypass
+./get-bearer-token.py --developer
+./get-bearer-token.py --analyst
+./get-bearer-token.py --billing
 # or:
-./get-bearer-token.py --readonly
+./get-bearer-token.py --username analystuser --password analystpass
 ```
 
 Or call Keycloak directly:
@@ -149,7 +157,7 @@ curl -s -X POST 'http://localhost:9080/realms/example/protocol/openid-connect/to
 
 ### Call the API
 
-Full-access user (`api-user`):
+Full-access admin (`admin`):
 
 ```bash
 TOKEN="$(./get-bearer-token.py)"
@@ -158,21 +166,37 @@ curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: applicatio
   -d '{"name":"demo"}' 'http://localhost:9000/foo'
 ```
 
-Read-only user (`api-readonly`) — GET succeeds, mutating verbs return 403:
+Analyst (`analyst`) — Product GET succeeds; Product writes and other resources return 403:
 
 ```bash
-RO_TOKEN="$(./get-bearer-token.py --readonly)"
-curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${RO_TOKEN}" 'http://localhost:9000/foo/1'
-curl -s -o /dev/null -w '%{http_code}\n' -X POST -H "Authorization: Bearer ${RO_TOKEN}" \
-  -H 'Content-Type: application/json' -d '{"name":"demo"}' 'http://localhost:9000/foo'
+ANALYST_TOKEN="$(./get-bearer-token.py --analyst)"
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${ANALYST_TOKEN}" \
+  'http://localhost:9000/products'
+curl -s -o /dev/null -w '%{http_code}\n' -X POST -H "Authorization: Bearer ${ANALYST_TOKEN}" \
+  -H 'Content-Type: application/json' -d '{"sku":"X","name":"demo","price":"1.00"}' \
+  'http://localhost:9000/products'
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${ANALYST_TOKEN}" \
+  'http://localhost:9000/foo/1'
+```
+
+Billing (`billing`) — Order read-write succeeds (within customer scope); Product and Foo return 403:
+
+```bash
+BILLING_TOKEN="$(./get-bearer-token.py --billing)"
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOKEN}" \
+  'http://localhost:9000/orders'
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOKEN}" \
+  'http://localhost:9000/products'
 ```
 
 ### Orders: customer-scoped access
 
-`readonlyuser` has user attribute `customer_id` = `11111111-1111-1111-1111-111111111111`
-(mapped into the access token). `testuser` has `api:write` and is not scoped.
+`developeruser` and `billinguser` have user attribute `customer_id` =
+`11111111-1111-1111-1111-111111111111` (mapped into the access token). `testuser` has
+`api:unrestricted` and is not scoped. `developer` has full Order permissions but is still
+scoped.
 
-Create an order as the full-access user, then fetch it as read-only:
+Create an order as the admin user, then fetch it as billing / developer / admin:
 
 ```bash
 TOKEN="$(./get-bearer-token.py)"
@@ -182,8 +206,8 @@ ORDER_JSON="$(curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Ty
   'http://localhost:9000/orders')"
 ORDER_ID="$(echo "${ORDER_JSON}" | jq -r .id)"
 
-RO_TOKEN="$(./get-bearer-token.py --readonly)"
-curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${RO_TOKEN}" \
+BILLING_TOKEN="$(./get-bearer-token.py --billing)"
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOKEN}" \
   "http://localhost:9000/orders/${ORDER_ID}"   # 200
 
 OTHER_JSON="$(curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
@@ -191,11 +215,17 @@ OTHER_JSON="$(curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Ty
   -d '{"customerId":"22222222-2222-2222-2222-222222222222","status":"open","totalAmount":"10.00"}' \
   'http://localhost:9000/orders')"
 OTHER_ID="$(echo "${OTHER_JSON}" | jq -r .id)"
-curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${RO_TOKEN}" \
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOKEN}" \
   "http://localhost:9000/orders/${OTHER_ID}"   # 404
+
+DEV_TOKEN="$(./get-bearer-token.py --developer)"
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${DEV_TOKEN}" \
+  "http://localhost:9000/orders/${OTHER_ID}"   # 404 (developer is still scoped)
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${TOKEN}" \
+  "http://localhost:9000/orders/${OTHER_ID}"   # 200 (admin is unrestricted)
 ```
 
-Search as `readonlyuser` is forced to that customer id (other `customerId` query values do not leak rows).
+Search as `billinguser` or `developeruser` is forced to that customer id (other `customerId` query values do not leak rows).
 
 In Swagger UI, use **Authorize**, choose **Bearer**, and paste the access token only (no `Bearer ` prefix).
 

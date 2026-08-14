@@ -14,8 +14,10 @@ Repo features:
 * Configurable rate limiting using a sliding window system:
     * Uses either Redis or in-memory for storing limits.
 * JWT bearer authentication and role-based authorization (optional; Keycloak in the local Compose stack).
-    * Realm roles map to permissions (`api:read` / `api:write`); `[ApproveReadOnly]` GET endpoints allow `api:read`.
-    * Resource-based authorization on orders: callers without `api:write` may only access rows whose `CustomerId` matches the JWT `customer_id` claim.
+    * Realm roles (`admin`, `developer`, `analyst`, `billing`) map to permission claims; endpoints authorize on those
+      permissions, not on role names.
+    * Resource-based authorization on orders: callers without `api:unrestricted` (`admin`) may only access rows whose
+      `CustomerId` matches the JWT `customer_id` claim.
 * Example connectors to secondary APIs
     * The "Foo" connector connects to the imaginary Foo API using a static key.
     * The "Bar" connector connects to the imaginary Foo API using a bearer token obtained using a OAuth Client
@@ -69,7 +71,50 @@ Resources:
 
 # Authorization
 
+JWT bearer authentication is optional (`AUTHENTICATION__DISABLE_AUTHENTICATION=true` disables it). When enabled,
+Keycloak realm roles are mapped to `permission` claims. Endpoints authorize on those permissions, not on role names.
 
+The flow of identity provider roles to actionable enforcement looks like this:
+
+1. Identity provider provides a token. This token contains a series of claims. A claim is a key-value pairing, where the
+   value could be a list.
+2. The raw token claims are enriched by an implementation of `IClaimsTransformation`:
+   `BespokeRolePermissionClaimsTransformation`. This enriches the client's claims with specific permissions.
+    * The map of roles to permissions lives in `BespokeRolePermissionMap`.
+3. In `AuthorizationServiceCollectionExtensions.AddApiAuthorizationPolicies`, policies are declared with requirements.
+    * Many of these requirements are checking for a permission that is declared on the enriched series of claims.
+    * Custom requirement can also be specified by providing implementations of `IAuthorizationRequirement`.
+        * For example, this template's read policies are supplemented by a custom requirement that double-checks that
+          the endpoint method to a GET endpoint.
+
+The map of roles to permissions lives in `BespokeRolePermissionMap`. Role hierarchy belongs in the permission map (and
+in Keycloak composites), not in authorization handlers.
+
+## Roles
+
+This example template contains the following roles:
+
+| Realm role  | Permissions                                                                                               | Access                                                            |
+|-------------|-----------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| `admin`     | `api:read`, `api:write`, `api:unrestricted`, `product:read`, `product:write`, `order:read`, `order:write` | All endpoints; bypasses customer resource scope                   |
+| `developer` | Same as `admin` except without `api:unrestricted`                                                         | All endpoints; still limited by customer resource scope on orders |
+| `analyst`   | `product:read`                                                                                            | GET `/products` only                                              |
+| `billing`   | `order:read`, `order:write`                                                                               | Read-write `/orders`; still limited by customer resource scope    |
+
+Locally, `admin` is a Keycloak composite that includes `developer`. The API map still grants the full set to `admin` so
+authorization does not depend on the identity provider sending both role claims.
+
+## Policies
+
+* Fallback policy requires `api:write` (Foo, Bar, ExampleItem writes, and any undecorated action).
+* `[ApproveReadOnly]` requires `api:read` on HTTP GET (Foo, Bar, ExampleItem).
+* Product GET requires `product:read` on HTTP GET (`[ApproveProductReadOnly]`). Product writes require `product:write`.
+* Order GET requires `order:read` on HTTP GET (`[ApproveOrderReadOnly]`). Order writes require `order:write`.
+* **Orders** also use resource-based authorization: callers without `api:unrestricted` may only see orders whose
+  `CustomerId` matches the JWT `customer_id` claim. Failed checks return **404** (same as a missing id) so existence is
+  not leaked.
+
+See `test/local/` for Keycloak users, token helper flags, and curl examples.
 
 # Development
 
@@ -111,7 +156,8 @@ describe the Rosalyn logo as "a weird branch-y thing".
 
 # Testing
 
-For local testing, see the `test/local/` directory. That guide covers bringing up MariaDB and applying schema updates via
+For local testing, see the `test/local/` directory. That guide covers bringing up MariaDB and applying schema updates
+via
 [RedShirt.Example.Schema](https://github.com/adeutscher/RedShirt.Example.Schema).
 
 # Citations

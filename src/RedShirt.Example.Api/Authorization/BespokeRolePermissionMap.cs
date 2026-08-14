@@ -9,14 +9,29 @@ namespace RedShirt.Example.Api.Authorization;
 /// </summary>
 internal static class BespokeRolePermissionMap
 {
+    private static readonly FrozenSet<string> FullAccessPermissions = FrozenSet.ToFrozenSet(
+        [
+            BespokeAuthorizationPermissions.Read,
+            BespokeAuthorizationPermissions.Write,
+            BespokeAuthorizationPermissions.ProductRead,
+            BespokeAuthorizationPermissions.ProductWrite,
+            BespokeAuthorizationPermissions.OrderRead,
+            BespokeAuthorizationPermissions.OrderWrite
+        ],
+        StringComparer.Ordinal);
+
     private static readonly FrozenDictionary<string, FrozenSet<string>> PermissionsByRole =
         new Dictionary<string, FrozenSet<string>>(StringComparer.Ordinal)
         {
-            [BespokeAuthorizationRoles.ApiReadOnly] = FrozenSet.ToFrozenSet(
-                [BespokeAuthorizationPermissions.Read],
+            [BespokeAuthorizationRoles.Analyst] = FrozenSet.ToFrozenSet(
+                [BespokeAuthorizationPermissions.ProductRead],
                 StringComparer.Ordinal),
-            [BespokeAuthorizationRoles.ApiUser] = FrozenSet.ToFrozenSet(
-                [BespokeAuthorizationPermissions.Read, BespokeAuthorizationPermissions.Write],
+            [BespokeAuthorizationRoles.Billing] = FrozenSet.ToFrozenSet(
+                [BespokeAuthorizationPermissions.OrderRead, BespokeAuthorizationPermissions.OrderWrite],
+                StringComparer.Ordinal),
+            [BespokeAuthorizationRoles.Developer] = FullAccessPermissions,
+            [BespokeAuthorizationRoles.Admin] = FrozenSet.ToFrozenSet(
+                [.. FullAccessPermissions, BespokeAuthorizationPermissions.Unrestricted],
                 StringComparer.Ordinal)
         }.ToFrozenDictionary(StringComparer.Ordinal);
 

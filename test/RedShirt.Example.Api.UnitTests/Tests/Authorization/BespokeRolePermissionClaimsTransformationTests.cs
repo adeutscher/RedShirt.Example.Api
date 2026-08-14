@@ -1,7 +1,6 @@
-using System.Security.Claims;
 using RedShirt.Example.Api.Authorization;
 using RedShirt.Example.Api.Authorization.Constants;
-using RedShirt.Example.Api.Constants;
+using System.Security.Claims;
 
 namespace RedShirt.Example.Api.UnitTests.Tests.Authorization;
 
@@ -14,35 +13,22 @@ public class BespokeRolePermissionClaimsTransformationTests
     {
         var identity = new ClaimsIdentity(
             roles.Select(role => new Claim("role", role)),
-            authenticationType: "test",
-            nameType: "preferred_username",
-            roleType: "role");
+            "test",
+            "preferred_username",
+            "role");
 
         return new ClaimsPrincipal(identity);
     }
 
     [Fact]
-    public async Task TransformAsync_ApiUser_AddsReadAndWritePermissionClaims()
+    public async Task TransformAsync_Admin_AddsUnrestrictedPermissionClaim()
     {
         var transformation = new BespokeRolePermissionClaimsTransformation();
 
-        var principal = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.ApiUser));
+        var principal = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.Admin));
 
-        var permissions = principal.FindAll(BespokeAuthorizationPermissions.ClaimType).Select(claim => claim.Value);
-        Assert.Equal(
-            [BespokeAuthorizationPermissions.Read, BespokeAuthorizationPermissions.Write],
-            permissions.Order(StringComparer.Ordinal));
-    }
-
-    [Fact]
-    public async Task TransformAsync_ApiReadOnly_AddsReadPermissionClaim()
-    {
-        var transformation = new BespokeRolePermissionClaimsTransformation();
-
-        var principal = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.ApiReadOnly));
-
-        Assert.Equal(
-            [BespokeAuthorizationPermissions.Read],
+        Assert.Contains(
+            BespokeAuthorizationPermissions.Unrestricted,
             principal.FindAll(BespokeAuthorizationPermissions.ClaimType).Select(claim => claim.Value));
     }
 
@@ -50,7 +36,7 @@ public class BespokeRolePermissionClaimsTransformationTests
     public async Task TransformAsync_AlreadyHasPermissionClaim_DoesNotAddAgain()
     {
         var identity = new ClaimsIdentity("test", "preferred_username", "role");
-        identity.AddClaim(new Claim("role", BespokeAuthorizationRoles.ApiUser));
+        identity.AddClaim(new Claim("role", BespokeAuthorizationRoles.Admin));
         identity.AddClaim(new Claim(BespokeAuthorizationPermissions.ClaimType, "preexisting"));
         var transformation = new BespokeRolePermissionClaimsTransformation();
 
@@ -59,6 +45,39 @@ public class BespokeRolePermissionClaimsTransformationTests
         Assert.Equal(
             ["preexisting"],
             principal.FindAll(BespokeAuthorizationPermissions.ClaimType).Select(claim => claim.Value));
+    }
+
+    [Fact]
+    public async Task TransformAsync_Analyst_AddsProductReadPermissionClaim()
+    {
+        var transformation = new BespokeRolePermissionClaimsTransformation();
+
+        var principal = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.Analyst));
+
+        Assert.Equal(
+            [BespokeAuthorizationPermissions.ProductRead],
+            principal.FindAll(BespokeAuthorizationPermissions.ClaimType).Select(claim => claim.Value));
+    }
+
+    [Fact]
+    public async Task TransformAsync_Developer_AddsFullAccessPermissionClaimsWithoutUnrestricted()
+    {
+        var transformation = new BespokeRolePermissionClaimsTransformation();
+
+        var principal = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.Developer));
+
+        var permissions = principal.FindAll(BespokeAuthorizationPermissions.ClaimType).Select(claim => claim.Value);
+        Assert.Equal(
+            [
+                BespokeAuthorizationPermissions.Read,
+                BespokeAuthorizationPermissions.Write,
+                BespokeAuthorizationPermissions.OrderRead,
+                BespokeAuthorizationPermissions.OrderWrite,
+                BespokeAuthorizationPermissions.ProductRead,
+                BespokeAuthorizationPermissions.ProductWrite
+            ],
+            permissions.Order(StringComparer.Ordinal));
+        Assert.DoesNotContain(BespokeAuthorizationPermissions.Unrestricted, permissions);
     }
 
     [Fact]

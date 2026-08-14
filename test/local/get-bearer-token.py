@@ -6,7 +6,9 @@ Examples:
   ./get-bearer-token.py --print-header
   ./get-bearer-token.py --grant client_credentials
   ./get-bearer-token.py --username testuser --password testpass
-  ./get-bearer-token.py --readonly
+  ./get-bearer-token.py --developer
+  ./get-bearer-token.py --analyst
+  ./get-bearer-token.py --billing
 """
 
 from __future__ import annotations
@@ -26,8 +28,12 @@ DEFAULT_SERVICE_CLIENT_ID = "example-service"
 DEFAULT_SERVICE_CLIENT_SECRET = "example-service-secret"
 DEFAULT_USERNAME = "testuser"
 DEFAULT_PASSWORD = "testpass"
-DEFAULT_READONLY_USERNAME = "readonlyuser"
-DEFAULT_READONLY_PASSWORD = "readonlypass"
+
+SEEDED_USERS = {
+    "developer": ("developeruser", "developerpass"),
+    "analyst": ("analystuser", "analystpass"),
+    "billing": ("billinguser", "billingpass"),
+}
 
 
 def request_token(token_url: str, form: dict[str, str]) -> dict:
@@ -82,11 +88,27 @@ def main() -> int:
     parser.add_argument("--username", default=None)
     parser.add_argument("--password", default=None)
     parser.add_argument(
-        "--readonly",
+        "--developer",
         action="store_true",
         help=(
-            "Password grant as the seeded read-only user "
-            f"({DEFAULT_READONLY_USERNAME} / {DEFAULT_READONLY_PASSWORD})"
+            "Password grant as the seeded developer user "
+            f"({SEEDED_USERS['developer'][0]} / {SEEDED_USERS['developer'][1]})"
+        ),
+    )
+    parser.add_argument(
+        "--analyst",
+        action="store_true",
+        help=(
+            "Password grant as the seeded analyst user "
+            f"({SEEDED_USERS['analyst'][0]} / {SEEDED_USERS['analyst'][1]})"
+        ),
+    )
+    parser.add_argument(
+        "--billing",
+        action="store_true",
+        help=(
+            "Password grant as the seeded billing user "
+            f"({SEEDED_USERS['billing'][0]} / {SEEDED_USERS['billing'][1]})"
         ),
     )
     parser.add_argument(
@@ -101,11 +123,24 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    selected_roles = [
+        name
+        for name, selected in (
+            ("developer", args.developer),
+            ("analyst", args.analyst),
+            ("billing", args.billing),
+        )
+        if selected
+    ]
+    if len(selected_roles) > 1:
+        raise SystemExit("Specify at most one of --developer, --analyst, --billing")
+
     if args.grant == "password":
         client_id = args.client_id or DEFAULT_CLIENT_ID
-        if args.readonly:
-            username = args.username or DEFAULT_READONLY_USERNAME
-            password = args.password or DEFAULT_READONLY_PASSWORD
+        if selected_roles:
+            username, password = SEEDED_USERS[selected_roles[0]]
+            username = args.username or username
+            password = args.password or password
         else:
             username = args.username or DEFAULT_USERNAME
             password = args.password or DEFAULT_PASSWORD
@@ -116,8 +151,10 @@ def main() -> int:
             "password": password,
         }
     else:
-        if args.readonly:
-            raise SystemExit("--readonly only applies to the password grant")
+        if selected_roles:
+            raise SystemExit(
+                "--developer / --analyst / --billing only apply to the password grant"
+            )
         client_id = args.client_id or DEFAULT_SERVICE_CLIENT_ID
         form = {
             "grant_type": "client_credentials",

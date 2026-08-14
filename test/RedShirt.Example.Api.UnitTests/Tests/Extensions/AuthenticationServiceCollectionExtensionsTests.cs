@@ -11,7 +11,6 @@ using NSwag.Generation;
 using RedShirt.Example.Api.Authorization;
 using RedShirt.Example.Api.Authorization.Constants;
 using RedShirt.Example.Api.Authorization.Requirements;
-using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Extensions;
 using ApiAuthenticationOptions = RedShirt.Example.Api.Configuration.AuthenticationOptions;
 
@@ -181,6 +180,14 @@ public class AuthenticationServiceCollectionExtensionsTests
             && claim.AllowedValues is not null
             && claim.AllowedValues.Contains(BespokeAuthorizationPermissions.Read));
         Assert.Contains(readPolicy.Requirements, requirement => requirement is HttpGetRequirement);
+
+        var productReadPolicy = authorization.GetPolicy(BespokeAuthorizationPolicies.ProductReadApproved);
+        Assert.NotNull(productReadPolicy);
+        Assert.Contains(productReadPolicy.Requirements, requirement =>
+            requirement is ClaimsAuthorizationRequirement claim
+            && claim.ClaimType == BespokeAuthorizationPermissions.ClaimType
+            && claim.AllowedValues is not null
+            && claim.AllowedValues.Contains(BespokeAuthorizationPermissions.ProductRead));
     }
 
     [Fact]

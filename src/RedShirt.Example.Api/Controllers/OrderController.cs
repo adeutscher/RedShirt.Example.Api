@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
+using RedShirt.Example.Api.Attributes.Authorization;
 using RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Order.Commands.Create;
@@ -22,6 +23,7 @@ namespace RedShirt.Example.Api.Controllers;
 public class OrderController : ControllerBase
 {
     [HttpDelete("{id:guid}")]
+    [AuthorizeOrderWrite]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -43,7 +45,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [ApproveReadOnly]
+    [ApproveOrderReadOnly]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -62,6 +64,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpPatch("{id:guid}")]
+    [AuthorizeOrderWrite]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -93,6 +96,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpPost]
+    [AuthorizeOrderWrite]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -118,6 +122,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [AuthorizeOrderWrite]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -148,7 +153,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet]
-    [ApproveReadOnly]
+    [ApproveOrderReadOnly]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderSearchResponse))]
     public async Task<IActionResult> Search(
         [FromQuery]

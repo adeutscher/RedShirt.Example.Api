@@ -1,3 +1,5 @@
+using RedShirt.Example.Api.Attributes.Authorization;
+
 namespace RedShirt.Example.Api.Authorization.Constants;
 
 /// <summary>
@@ -14,9 +16,29 @@ public static class BespokeAuthorizationPolicies
 
     /// <summary>
     ///     Approved read access: <see cref="BespokeAuthorizationPermissions.Read" /> on an HTTP GET.
-    ///     Used by <see cref="Attributes.ApproveReadOnlyAttribute" />.
+    ///     Used by <see cref="ApproveReadOnlyAttribute" />.
     /// </summary>
     public const string ReadApproved = "ApiReadApproved";
+
+    /// <summary>
+    ///     Product write access: requires <see cref="BespokeAuthorizationPermissions.ProductWrite" />.
+    /// </summary>
+    public const string ProductWrite = "ProductWrite";
+
+    /// <summary>
+    ///     Approved Product read: <see cref="BespokeAuthorizationPermissions.ProductRead" /> on an HTTP GET.
+    /// </summary>
+    public const string ProductReadApproved = "ProductReadApproved";
+
+    /// <summary>
+    ///     Order write access: requires <see cref="BespokeAuthorizationPermissions.OrderWrite" />.
+    /// </summary>
+    public const string OrderWrite = "OrderWrite";
+
+    /// <summary>
+    ///     Approved Order read: <see cref="BespokeAuthorizationPermissions.OrderRead" /> on an HTTP GET.
+    /// </summary>
+    public const string OrderReadApproved = "OrderReadApproved";
 
     /// <summary>
     ///     Resource-based access to a customer-scoped record (for example an order).

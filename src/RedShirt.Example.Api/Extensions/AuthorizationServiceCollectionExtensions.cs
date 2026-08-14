@@ -33,6 +33,23 @@ internal static class AuthorizationServiceCollectionExtensions
                 .RequireClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Read)
                 .AddRequirements(new HttpGetRequirement()));
 
+            authorization.AddPolicy(BespokeAuthorizationPolicies.ProductWrite, policy => ConfigureApiPolicy(policy)
+                .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
+                    BespokeAuthorizationPermissions.ProductWrite));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.ProductReadApproved, policy =>
+                ConfigureApiPolicy(policy)
+                    .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
+                        BespokeAuthorizationPermissions.ProductRead)
+                    .AddRequirements(new HttpGetRequirement()));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.OrderWrite, policy => ConfigureApiPolicy(policy)
+                .RequireClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.OrderWrite));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.OrderReadApproved, policy => ConfigureApiPolicy(policy)
+                .RequireClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.OrderRead)
+                .AddRequirements(new HttpGetRequirement()));
+
             authorization.AddPolicy(BespokeAuthorizationPolicies.CustomerScoped, policy => ConfigureApiPolicy(policy)
                 .AddRequirements(new CustomerScopedResourceRequirement()));
 

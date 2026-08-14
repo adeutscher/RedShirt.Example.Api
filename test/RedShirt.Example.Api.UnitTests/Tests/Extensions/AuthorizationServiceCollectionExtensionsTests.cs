@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
@@ -8,10 +7,9 @@ using Microsoft.Extensions.Options;
 using RedShirt.Example.Api.Authorization;
 using RedShirt.Example.Api.Authorization.Constants;
 using RedShirt.Example.Api.Authorization.Requirements;
-using RedShirt.Example.Api.Authorization.ResourceScoping;
 using RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
-using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Extensions;
+using System.Security.Claims;
 
 namespace RedShirt.Example.Api.UnitTests.Tests.Extensions;
 
@@ -24,9 +22,9 @@ public class AuthorizationServiceCollectionExtensionsTests
     {
         var identity = new ClaimsIdentity(
             roles.Select(role => new Claim("role", role)),
-            authenticationType: "test",
-            nameType: "preferred_username",
-            roleType: "role");
+            "test",
+            "preferred_username",
+            "role");
 
         return new ClaimsPrincipal(identity);
     }
@@ -68,6 +66,24 @@ public class AuthorizationServiceCollectionExtensionsTests
         Assert.True(HasPermissionClaimRequirement(readPolicy, BespokeAuthorizationPermissions.Read));
         Assert.Contains(readPolicy.Requirements, requirement => requirement is HttpGetRequirement);
 
+        var productWrite = authorization.GetPolicy(BespokeAuthorizationPolicies.ProductWrite);
+        Assert.NotNull(productWrite);
+        Assert.True(HasPermissionClaimRequirement(productWrite, BespokeAuthorizationPermissions.ProductWrite));
+
+        var productRead = authorization.GetPolicy(BespokeAuthorizationPolicies.ProductReadApproved);
+        Assert.NotNull(productRead);
+        Assert.True(HasPermissionClaimRequirement(productRead, BespokeAuthorizationPermissions.ProductRead));
+        Assert.Contains(productRead.Requirements, requirement => requirement is HttpGetRequirement);
+
+        var orderWrite = authorization.GetPolicy(BespokeAuthorizationPolicies.OrderWrite);
+        Assert.NotNull(orderWrite);
+        Assert.True(HasPermissionClaimRequirement(orderWrite, BespokeAuthorizationPermissions.OrderWrite));
+
+        var orderRead = authorization.GetPolicy(BespokeAuthorizationPolicies.OrderReadApproved);
+        Assert.NotNull(orderRead);
+        Assert.True(HasPermissionClaimRequirement(orderRead, BespokeAuthorizationPermissions.OrderRead));
+        Assert.Contains(orderRead.Requirements, requirement => requirement is HttpGetRequirement);
+
         Assert.Same(writePolicy, authorization.FallbackPolicy);
 
         var scopedPolicy = authorization.GetPolicy(BespokeAuthorizationPolicies.CustomerScoped);
@@ -76,7 +92,7 @@ public class AuthorizationServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public async Task AuthorizeAsync_ApiReadOnly_AllowsApprovedGet_DeniesWrite()
+    public async Task AuthorizeAsync_Analyst_DeniesProductReadApprovedOnPost()
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -86,56 +102,50 @@ public class AuthorizationServiceCollectionExtensionsTests
         var transformation = provider.GetRequiredService<IClaimsTransformation>();
         var authorization = provider.GetRequiredService<IAuthorizationService>();
 
-        var user = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.ApiReadOnly));
-        var httpContext = new DefaultHttpContext();
-        httpContext.Request.Method = HttpMethods.Get;
-
-        var read = await authorization.AuthorizeAsync(user, httpContext, BespokeAuthorizationPolicies.ReadApproved);
-        var write = await authorization.AuthorizeAsync(user, httpContext, BespokeAuthorizationPolicies.Write);
-
-        Assert.True(read.Succeeded);
-        Assert.False(write.Succeeded);
-    }
-
-    [Fact]
-    public async Task AuthorizeAsync_ApiUser_AllowsReadGetAndWrite()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddApiAuthorizationPolicies();
-
-        using var provider = services.BuildServiceProvider();
-        var transformation = provider.GetRequiredService<IClaimsTransformation>();
-        var authorization = provider.GetRequiredService<IAuthorizationService>();
-
-        var user = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.ApiUser));
-        var httpContext = new DefaultHttpContext();
-        httpContext.Request.Method = HttpMethods.Get;
-
-        var read = await authorization.AuthorizeAsync(user, httpContext, BespokeAuthorizationPolicies.ReadApproved);
-        var write = await authorization.AuthorizeAsync(user, httpContext, BespokeAuthorizationPolicies.Write);
-
-        Assert.True(read.Succeeded);
-        Assert.True(write.Succeeded);
-    }
-
-    [Fact]
-    public async Task AuthorizeAsync_ApiReadOnly_DeniesApprovedPolicyOnPost()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddApiAuthorizationPolicies();
-
-        using var provider = services.BuildServiceProvider();
-        var transformation = provider.GetRequiredService<IClaimsTransformation>();
-        var authorization = provider.GetRequiredService<IAuthorizationService>();
-
-        var user = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.ApiReadOnly));
+        var user = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.Analyst));
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Method = HttpMethods.Post;
 
-        var read = await authorization.AuthorizeAsync(user, httpContext, BespokeAuthorizationPolicies.ReadApproved);
+        var read = await authorization.AuthorizeAsync(user, httpContext,
+            BespokeAuthorizationPolicies.ProductReadApproved);
 
         Assert.False(read.Succeeded);
+    }
+
+    [Theory]
+    [InlineData(BespokeAuthorizationRoles.Analyst, BespokeAuthorizationPolicies.ProductReadApproved, true)]
+    [InlineData(BespokeAuthorizationRoles.Analyst, BespokeAuthorizationPolicies.ProductWrite, false)]
+    [InlineData(BespokeAuthorizationRoles.Analyst, BespokeAuthorizationPolicies.OrderReadApproved, false)]
+    [InlineData(BespokeAuthorizationRoles.Analyst, BespokeAuthorizationPolicies.Write, false)]
+    [InlineData(BespokeAuthorizationRoles.Billing, BespokeAuthorizationPolicies.OrderReadApproved, true)]
+    [InlineData(BespokeAuthorizationRoles.Billing, BespokeAuthorizationPolicies.OrderWrite, true)]
+    [InlineData(BespokeAuthorizationRoles.Billing, BespokeAuthorizationPolicies.ProductReadApproved, false)]
+    [InlineData(BespokeAuthorizationRoles.Billing, BespokeAuthorizationPolicies.Write, false)]
+    [InlineData(BespokeAuthorizationRoles.Developer, BespokeAuthorizationPolicies.Write, true)]
+    [InlineData(BespokeAuthorizationRoles.Developer, BespokeAuthorizationPolicies.ReadApproved, true)]
+    [InlineData(BespokeAuthorizationRoles.Developer, BespokeAuthorizationPolicies.ProductReadApproved, true)]
+    [InlineData(BespokeAuthorizationRoles.Developer, BespokeAuthorizationPolicies.ProductWrite, true)]
+    [InlineData(BespokeAuthorizationRoles.Developer, BespokeAuthorizationPolicies.OrderReadApproved, true)]
+    [InlineData(BespokeAuthorizationRoles.Developer, BespokeAuthorizationPolicies.OrderWrite, true)]
+    [InlineData(BespokeAuthorizationRoles.Admin, BespokeAuthorizationPolicies.Write, true)]
+    [InlineData(BespokeAuthorizationRoles.Admin, BespokeAuthorizationPolicies.ProductWrite, true)]
+    [InlineData(BespokeAuthorizationRoles.Admin, BespokeAuthorizationPolicies.OrderWrite, true)]
+    public async Task AuthorizeAsync_RolePolicies(string role, string policy, bool expected)
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddApiAuthorizationPolicies();
+
+        using var provider = services.BuildServiceProvider();
+        var transformation = provider.GetRequiredService<IClaimsTransformation>();
+        var authorization = provider.GetRequiredService<IAuthorizationService>();
+
+        var user = await transformation.TransformAsync(PrincipalWithRoles(role));
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Method = HttpMethods.Get;
+
+        var result = await authorization.AuthorizeAsync(user, httpContext, policy);
+
+        Assert.Equal(expected, result.Succeeded);
     }
 }

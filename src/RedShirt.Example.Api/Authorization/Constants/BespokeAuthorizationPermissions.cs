@@ -15,4 +15,17 @@ public static class BespokeAuthorizationPermissions
     public const string Read = "api:read";
 
     public const string Write = "api:write";
+
+    /// <summary>
+    ///     Bypass customer resource-scope checks (granted to <see cref="BespokeAuthorizationRoles.Admin" />).
+    /// </summary>
+    public const string Unrestricted = "api:unrestricted";
+
+    public const string ProductRead = "product:read";
+
+    public const string ProductWrite = "product:write";
+
+    public const string OrderRead = "order:read";
+
+    public const string OrderWrite = "order:write";
 }
