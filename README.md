@@ -179,8 +179,7 @@ describe the Rosalyn logo as "a weird branch-y thing".
 # Testing
 
 For local testing, see the `test/local/` directory. That guide covers bringing up MariaDB and applying schema updates
-via
-[RedShirt.Example.Schema](https://github.com/adeutscher/RedShirt.Example.Schema).
+via [RedShirt.Example.Schema](https://github.com/adeutscher/RedShirt.Example.Schema).
 
 # Citations
 
