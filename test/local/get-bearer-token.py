@@ -20,9 +20,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-DEFAULT_TOKEN_URL = (
-    "http://localhost:9080/realms/example/protocol/openid-connect/token"
-)
+DEFAULT_TOKEN_URL = "http://localhost:9080/realms/example/protocol/openid-connect/token"
 DEFAULT_CLIENT_ID = "example-api"
 DEFAULT_SERVICE_CLIENT_ID = "example-service"
 DEFAULT_SERVICE_CLIENT_SECRET = "example-service-secret"
