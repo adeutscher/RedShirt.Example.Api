@@ -8,6 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NSwag;
 using NSwag.Generation;
+using RedShirt.Example.Api.Authorization;
+using RedShirt.Example.Api.Authorization.Constants;
+using RedShirt.Example.Api.Authorization.Requirements;
 using RedShirt.Example.Api.Extensions;
 using ApiAuthenticationOptions = RedShirt.Example.Api.Configuration.AuthenticationOptions;
 
@@ -18,14 +21,14 @@ namespace RedShirt.Example.Api.UnitTests.Tests.Extensions;
 /// </summary>
 public class AuthenticationServiceCollectionExtensionsTests
 {
-    private static IConfiguration BuildConfiguration(Dictionary<string, string?> values)
+    private static IConfigurationRoot BuildConfiguration(Dictionary<string, string?> values)
     {
         return new ConfigurationBuilder()
             .AddInMemoryCollection(values)
             .Build();
     }
 
-    private static IConfiguration DisabledAuthenticationConfiguration()
+    private static IConfigurationRoot DisabledAuthenticationConfiguration()
     {
         return BuildConfiguration(new Dictionary<string, string?>
         {
@@ -33,7 +36,7 @@ public class AuthenticationServiceCollectionExtensionsTests
         });
     }
 
-    private static IConfiguration EnabledAuthenticationConfiguration(
+    private static IConfigurationRoot EnabledAuthenticationConfiguration(
         string? authority = "http://localhost:9080/realms/example",
         string? audience = "example-api",
         string? metadataAddress = "http://keycloak:8080/realms/example/.well-known/openid-configuration",
@@ -130,7 +133,7 @@ public class AuthenticationServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public async Task ConsiderAddingAuthentication_WhenEnabled_RegistersJwtBearerAndFallbackPolicy()
+    public async Task ConsiderAddingAuthentication_WhenEnabled_RegistersJwtBearerAndAuthorizationPolicies()
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -150,11 +153,41 @@ public class AuthenticationServiceCollectionExtensionsTests
         Assert.NotNull(bearer);
         Assert.Equal(JwtBearerDefaults.AuthenticationScheme, bearer.Name);
 
+        Assert.Contains(provider.GetServices<IClaimsTransformation>(),
+            transformation => transformation is BespokeRolePermissionClaimsTransformation);
+        Assert.Contains(provider.GetServices<IAuthorizationHandler>(),
+            handler => handler is HttpGetAuthorizationHandler);
+
         var authorization = provider.GetRequiredService<IOptions<AuthorizationOptions>>().Value;
         Assert.NotNull(authorization.FallbackPolicy);
         Assert.Contains(JwtBearerDefaults.AuthenticationScheme, authorization.FallbackPolicy.AuthenticationSchemes);
         Assert.Contains(authorization.FallbackPolicy.Requirements,
-            requirement => requirement is DenyAnonymousAuthorizationRequirement);
+            requirement => requirement is ClaimsAuthorizationRequirement);
+
+        var writePolicy = authorization.GetPolicy(BespokeAuthorizationPolicies.Write);
+        Assert.NotNull(writePolicy);
+        Assert.Contains(writePolicy.Requirements, requirement =>
+            requirement is ClaimsAuthorizationRequirement claim
+            && claim.ClaimType == BespokeAuthorizationPermissions.ClaimType
+            && claim.AllowedValues is not null
+            && claim.AllowedValues.Contains(BespokeAuthorizationPermissions.Write));
+
+        var readPolicy = authorization.GetPolicy(BespokeAuthorizationPolicies.ReadApproved);
+        Assert.NotNull(readPolicy);
+        Assert.Contains(readPolicy.Requirements, requirement =>
+            requirement is ClaimsAuthorizationRequirement claim
+            && claim.ClaimType == BespokeAuthorizationPermissions.ClaimType
+            && claim.AllowedValues is not null
+            && claim.AllowedValues.Contains(BespokeAuthorizationPermissions.Read));
+        Assert.Contains(readPolicy.Requirements, requirement => requirement is HttpGetRequirement);
+
+        var productReadPolicy = authorization.GetPolicy(BespokeAuthorizationPolicies.ProductReadApproved);
+        Assert.NotNull(productReadPolicy);
+        Assert.Contains(productReadPolicy.Requirements, requirement =>
+            requirement is ClaimsAuthorizationRequirement claim
+            && claim.ClaimType == BespokeAuthorizationPermissions.ClaimType
+            && claim.AllowedValues is not null
+            && claim.AllowedValues.Contains(BespokeAuthorizationPermissions.ProductRead));
     }
 
     [Fact]

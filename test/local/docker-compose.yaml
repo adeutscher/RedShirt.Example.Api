@@ -48,12 +48,15 @@ services:
       - --verbose
 
   # Local OpenID Provider for API JWT authentication (admin console: http://localhost:9080/)
-  # Realm import: ./keycloak/realm-example.json (realm "example", clients example-api / example-service).
+  # Realm file: ./keycloak/realm-example.json (realm "example", roles admin / developer / analyst / billing).
+  # Import --override on each start so seeded users/roles always match the JSON.
   keycloak:
     image: quay.io/keycloak/keycloak:26.2
+    entrypoint: ["/bin/bash", "-ec"]
     command:
-      - start-dev
-      - --import-realm
+      - |
+        /opt/keycloak/bin/kc.sh import --file /opt/keycloak/data/import/realm-example.json --override true
+        exec /opt/keycloak/bin/kc.sh start-dev
     ports:
       - "9080:8080"
     environment:

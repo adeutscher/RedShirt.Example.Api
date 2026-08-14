@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
+using RedShirt.Example.Api.Attributes.Authorization;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.ExampleItem.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.ExampleItem.Commands.Delete;
@@ -33,6 +34,7 @@ public class ExampleItemController : ControllerBase
     }
 
     [HttpGet("{name}")]
+    [ApproveReadOnly]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExampleItemModel))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -49,6 +51,7 @@ public class ExampleItemController : ControllerBase
     }
 
     [HttpGet]
+    [ApproveReadOnly]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExampleItemListModel))]
     public async Task<IActionResult> GetList(
         [FromQuery]

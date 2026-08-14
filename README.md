@@ -4,7 +4,7 @@ Example of an ASP.NET Core API.
 
 Repo features:
 
-* Initialisation script for quick namespace adjustment.
+* Initialisation script for quick and convenient namespace adjustment.
 * Use of [NSwag](https://github.com/RicoSuter/NSwag) to automatically document endpoints and to generate client code for
   an interop package.
     * Recommended next step: Exporting the interop package as a NuGet for use in other projects.
@@ -13,11 +13,19 @@ Repo features:
     * This is demonstrated in the implementation for accessing the `Order` data store.
 * Configurable rate limiting using a sliding window system:
     * Uses either Redis or in-memory for storing limits.
-* JWT bearer authentication (optional; Keycloak in the local Compose stack).
-* Example connectors to secondary APIs
+* JWT bearer authentication and role-based authorization (optional; Keycloak in the local Compose stack).
+    * Realm roles (`admin`, `developer`, `analyst`, `billing`) map to permission claims; endpoints authorize on those
+      permissions, not on role names.
+    * Resource-based authorization on orders: callers without `api:unrestricted` (`admin`) may only access rows whose
+      `CustomerId` matches the JWT `customer_id` claim.
+* Example connectors to secondary APIs:
     * The "Foo" connector connects to the imaginary Foo API using a static key.
     * The "Bar" connector connects to the imaginary Foo API using a bearer token obtained using a OAuth Client
       Credentials request.
+    * Both connectors support key rotation: Credentials are refreshed out of the chosen secret manager if/when the
+      current credentials cease working, allowing for keys to be rotated without restarting the application. Key
+      rotation on both connectors is throttled by a refresh cooldown parameter preventing bad credentials in the secret
+      manager from being continually polled.
 * Configuration is based on environment variables.
 
 ## Related: Schema
@@ -65,6 +73,75 @@ Resources:
 * To better understand the configuration definitions, refer to the classes in the `Configuration/` folder of the
   `Common.RateLimiting` project
 
+# Authorization
+
+JWT bearer authentication is optional (setting `AUTHENTICATION__DISABLE_AUTHENTICATION=true` disables it). When enabled,
+Keycloak realm roles are mapped to `permission` claims. Endpoints authorize on those permissions, not on role names.
+
+The flow of identity provider roles to actionable enforcement looks like this:
+
+1. Identity provider provides a token. This token contains a series of claims. A claim is a key-value pairing, where the
+   value could be a list.
+2. The raw token claims are enriched by an implementation of `IClaimsTransformation`:
+   `BespokeRolePermissionClaimsTransformation`. This enriches the client's claims with specific permissions.
+    * The map of roles to permissions lives in `BespokeRolePermissionMap`.
+3. In `AuthorizationServiceCollectionExtensions.AddApiAuthorizationPolicies`, policies are declared with requirements.
+    * Many of these requirements are checking for a permission that is declared on the enriched series of claims.
+    * Custom requirement can also be specified by providing implementations of `IAuthorizationRequirement`.
+        * For example, this template's read policies are supplemented by a custom requirement that double-checks that
+          the endpoint method to a GET endpoint.
+
+The map of roles to permissions lives in `BespokeRolePermissionMap`. Role hierarchy belongs in the permission map (and
+in Keycloak composites), not in authorization handlers.
+
+## Constants
+
+Authorization is heavily reliant on constants:
+
+* `BespokeAuthorizationClaims`: Specify custom claim keys.
+* `BespokeAuthorizationPermissions`: Specify permission names.
+* `BespokeAuthorizationPolicies`: Specifies policy names.
+* `BespokeAuthorizationRoles`: Specifies role names.
+
+## Roles
+
+This example template contains the following roles:
+
+| Realm role  | Permissions                                                                                               | Access                                                            |
+|-------------|-----------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
+| `admin`     | `api:read`, `api:write`, `api:unrestricted`, `product:read`, `product:write`, `order:read`, `order:write` | All endpoints; bypasses customer resource scope                   |
+| `developer` | Same as `admin` except without `api:unrestricted`                                                         | All endpoints; still limited by customer resource scope on orders |
+| `analyst`   | `product:read`                                                                                            | GET `/products` only                                              |
+| `billing`   | `order:read`, `order:write`                                                                               | Read-write `/orders`; still limited by customer resource scope    |
+
+Locally, `admin` is a Keycloak composite that includes `developer`. The API map still grants the full set to `admin` so
+authorization does not depend on the identity provider sending both role claims.
+
+## Policies
+
+* Fallback policy requires `api:write` (Foo, Bar, ExampleItem writes, and any undecorated action).
+* `[ApproveReadOnly]` requires `api:read` on HTTP GET (Foo, Bar, ExampleItem).
+* Product GET requires `product:read` on HTTP GET (`[ApproveProductReadOnly]`). Product writes require `product:write`.
+* Order GET requires `order:read` on HTTP GET (`[ApproveOrderReadOnly]`). Order writes require `order:write`.
+* **Orders** also use resource-based authorization: callers without `api:unrestricted` may only see orders whose
+  `CustomerId` matches the JWT `customer_id` claim. Failed checks return **404** (same as a missing id) so existence is
+  not leaked.
+
+See `test/local/` for Keycloak users, token helper flags, and `curl` examples.
+
+## Resource-Based Authorization
+
+As mentioned as an item in the [Policies](#policies) section, this template applies scoped permissions to within the
+logic of an Order endpoint. When reading/searching Order objects, non-admin users (lacking the `api:unrestricted`
+permission) have their view constrained to only be able to access records that match their customer ID.
+
+* On the get-by-id endpoint, if a record is retrieved that the user does not own then an HTTP 404 is returned instead of
+  the record.
+    * Important note: It is strongly encouraged to return an HTTP 404 (Not Found) as opposed to an HTTP 403 (Forbidden)
+      in this case, as selectively responding with an HTTP 403 could imply the existence of a record.
+* On the search endpoint, the customer ID in the search query is constrained to that of the customer ID in the user's
+  claim.
+
 # Development
 
 Tips for local development.
@@ -105,8 +182,8 @@ describe the Rosalyn logo as "a weird branch-y thing".
 
 # Testing
 
-For local testing, see the `test/local` folder. That guide covers bringing up MariaDB and applying schema updates via
-[RedShirt.Example.Schema](https://github.com/adeutscher/RedShirt.Example.Schema).
+For local testing, see the `test/local/` directory. That guide covers bringing up MariaDB and applying schema updates
+via [RedShirt.Example.Schema](https://github.com/adeutscher/RedShirt.Example.Schema).
 
 # Citations
 

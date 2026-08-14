@@ -6,6 +6,9 @@ Examples:
   ./get-bearer-token.py --print-header
   ./get-bearer-token.py --grant client_credentials
   ./get-bearer-token.py --username testuser --password testpass
+  ./get-bearer-token.py --developer
+  ./get-bearer-token.py --analyst
+  ./get-bearer-token.py --billing
 """
 
 from __future__ import annotations
@@ -17,14 +20,18 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-DEFAULT_TOKEN_URL = (
-    "http://localhost:9080/realms/example/protocol/openid-connect/token"
-)
+DEFAULT_TOKEN_URL = "http://localhost:9080/realms/example/protocol/openid-connect/token"
 DEFAULT_CLIENT_ID = "example-api"
 DEFAULT_SERVICE_CLIENT_ID = "example-service"
 DEFAULT_SERVICE_CLIENT_SECRET = "example-service-secret"
 DEFAULT_USERNAME = "testuser"
 DEFAULT_PASSWORD = "testpass"
+
+SEEDED_USERS = {
+    "developer": ("developeruser", "developerpass"),
+    "analyst": ("analystuser", "analystpass"),
+    "billing": ("billinguser", "billingpass"),
+}
 
 
 def request_token(token_url: str, form: dict[str, str]) -> dict:
@@ -76,8 +83,32 @@ def main() -> int:
         default=DEFAULT_SERVICE_CLIENT_SECRET,
         help="Client secret for client_credentials grant",
     )
-    parser.add_argument("--username", default=DEFAULT_USERNAME)
-    parser.add_argument("--password", default=DEFAULT_PASSWORD)
+    parser.add_argument("--username", default=None)
+    parser.add_argument("--password", default=None)
+    parser.add_argument(
+        "--developer",
+        action="store_true",
+        help=(
+            "Password grant as the seeded developer user "
+            f"({SEEDED_USERS['developer'][0]} / {SEEDED_USERS['developer'][1]})"
+        ),
+    )
+    parser.add_argument(
+        "--analyst",
+        action="store_true",
+        help=(
+            "Password grant as the seeded analyst user "
+            f"({SEEDED_USERS['analyst'][0]} / {SEEDED_USERS['analyst'][1]})"
+        ),
+    )
+    parser.add_argument(
+        "--billing",
+        action="store_true",
+        help=(
+            "Password grant as the seeded billing user "
+            f"({SEEDED_USERS['billing'][0]} / {SEEDED_USERS['billing'][1]})"
+        ),
+    )
     parser.add_argument(
         "--print-header",
         action="store_true",
@@ -90,15 +121,38 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    selected_roles = [
+        name
+        for name, selected in (
+            ("developer", args.developer),
+            ("analyst", args.analyst),
+            ("billing", args.billing),
+        )
+        if selected
+    ]
+    if len(selected_roles) > 1:
+        raise SystemExit("Specify at most one of --developer, --analyst, --billing")
+
     if args.grant == "password":
         client_id = args.client_id or DEFAULT_CLIENT_ID
+        if selected_roles:
+            username, password = SEEDED_USERS[selected_roles[0]]
+            username = args.username or username
+            password = args.password or password
+        else:
+            username = args.username or DEFAULT_USERNAME
+            password = args.password or DEFAULT_PASSWORD
         form = {
             "grant_type": "password",
             "client_id": client_id,
-            "username": args.username,
-            "password": args.password,
+            "username": username,
+            "password": password,
         }
     else:
+        if selected_roles:
+            raise SystemExit(
+                "--developer / --analyst / --billing only apply to the password grant"
+            )
         client_id = args.client_id or DEFAULT_SERVICE_CLIENT_ID
         form = {
             "grant_type": "client_credentials",

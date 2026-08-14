@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
+using RedShirt.Example.Api.Attributes.Authorization;
 using RedShirt.Example.Api.Connectors.Foo.Core.Models;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Foo.Commands.Create;
@@ -16,6 +17,7 @@ namespace RedShirt.Example.Api.Controllers;
 public class FooController : ControllerBase
 {
     [HttpGet("{id:int}")]
+    [ApproveReadOnly]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GetFooConnectorResponse))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
