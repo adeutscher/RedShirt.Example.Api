@@ -125,6 +125,19 @@ authorization does not depend on the identity provider sending both role claims.
 
 See `test/local/` for Keycloak users, token helper flags, and `curl` examples.
 
+## Resource-Based Authorization
+
+As mentioned as an item in the [Policies](#policies) section, this template applies scoped permissions to within the
+logic of an Order endpoint. When reading/searching Order objects, non-admin users (lacking the `api:unrestricted`
+permission) have their view constrained to only be able to access records that match their customer ID.
+
+* On the get-by-id endpoint, if a record is retrieved that the user does not own then an HTTP 404 is returned instead of
+  the record.
+    * Important note: It is strongly encouraged to return an HTTP 404 (Not Found) as opposed to an HTTP 403 (Forbidden)
+      in this case, as selectively responding with an HTTP 403 could imply the existence of a record.
+* On the search endpoint, the customer ID in the search query is constrained to that of the customer ID in the user's
+  claim.
+
 # Development
 
 Tips for local development.
