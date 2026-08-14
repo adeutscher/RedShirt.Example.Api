@@ -8,8 +8,8 @@ Roslyn-generated data access, OpenAPI clients via NSwag, and a local Docker Comp
 Repo features in more detail:
 
 * Initialisation script for quick and convenient namespace adjustment.
-* Use of [NSwag](https://github.com/RicoSuter/NSwag) to automatically document endpoints to OpenAPI standard and to generate client code for
-  an interop package.
+* Use of [NSwag](https://github.com/RicoSuter/NSwag) to automatically document endpoints to OpenAPI standard and to
+  generate client code for an interop package.
     * Recommended next step: Exporting the interop package as a NuGet for use in other projects.
 * [Roslyn](https://github.com/dotnet/roslyn) source generation for MariaDB/Dapper data-access scaffolding (services,
   repositories, search requests, and related DI) from annotated DTO models.
