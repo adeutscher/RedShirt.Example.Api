@@ -8,7 +8,7 @@
 
     <ItemGroup>
         <PackageReference Include="Dapper.SqlBuilder" Version="2.1.66"/>
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11"/>
         <PackageReference Include="MySql.Data" Version="26.7.0"/>
         <PackageReference Include="Polly" Version="8.7.0"/>
     </ItemGroup>
