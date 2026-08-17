@@ -3,6 +3,18 @@
 Forkable ASP.NET Core API template: rename the namespace, keep the scaffolding. Includes JWT authorization,
 Roslyn-generated data access, OpenAPI clients via NSwag, and a local Docker Compose stack.
 
+# Template
+
+## Template Philosophy
+
+The central philosophy of this template is flexibility and preparedness. A template maintained with lessons from past
+projects can provide a stable foundation from which to launch future projects. The use of a template is more sustainable
+and resource-efficient than adapting directly from past projects.
+
+This template on its own will likely be more feature-rich than any one project needs. Because of this, this template is
+designed to make it convenient to prune away unused components. It is much easier to delete an unneeded component than
+it is to generate a new component.
+
 ## Features
 
 Repo features in more detail:
