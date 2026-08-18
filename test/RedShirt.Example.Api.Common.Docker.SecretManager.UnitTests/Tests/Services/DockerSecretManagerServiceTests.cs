@@ -22,11 +22,6 @@ public class DockerSecretManagerServiceTests
             }));
         }
 
-        public void Write(string fileName, string contents)
-        {
-            File.WriteAllText(System.IO.Path.Combine(Path, fileName), contents);
-        }
-
         public void Dispose()
         {
             try
@@ -36,6 +31,11 @@ public class DockerSecretManagerServiceTests
             catch (DirectoryNotFoundException)
             {
             }
+        }
+
+        public void Write(string fileName, string contents)
+        {
+            File.WriteAllText(System.IO.Path.Combine(Path, fileName), contents);
         }
     }
 
@@ -172,18 +172,6 @@ public class DockerSecretManagerServiceTests
         }
 
         [Fact]
-        public async Task ReturnsJsonFallbackWhenOnlyJsonExists()
-        {
-            var key = Guid.NewGuid().ToString("N");
-            using var secrets = new SecretDirectory();
-            secrets.Write($"{key}.json", "{\"secret\":\"value\"}");
-
-            var result = await secrets.Service.GetSecretAsync(key, TestContext.Current.CancellationToken);
-
-            Assert.Equal("{\"secret\":\"value\"}", result);
-        }
-
-        [Fact]
         public async Task ReturnsFileContents()
         {
             var key = Guid.NewGuid().ToString("N");
@@ -194,6 +182,18 @@ public class DockerSecretManagerServiceTests
             var result = await secrets.Service.GetSecretAsync(key, TestContext.Current.CancellationToken);
 
             Assert.Equal(value, result);
+        }
+
+        [Fact]
+        public async Task ReturnsJsonFallbackWhenOnlyJsonExists()
+        {
+            var key = Guid.NewGuid().ToString("N");
+            using var secrets = new SecretDirectory();
+            secrets.Write($"{key}.json", "{\"secret\":\"value\"}");
+
+            var result = await secrets.Service.GetSecretAsync(key, TestContext.Current.CancellationToken);
+
+            Assert.Equal("{\"secret\":\"value\"}", result);
         }
 
         [Fact]
@@ -208,12 +208,10 @@ public class DockerSecretManagerServiceTests
             Assert.Equal("value ", result);
         }
 
-        [Theory]
-        [InlineData("a")]
-        [InlineData("secret-name")]
-        [InlineData("Secret_Name-123")]
-        public async Task ValidKey_ReturnsSecretValue(string key)
+        [Fact]
+        public async Task ValidKeyOfMaxLength_ReturnsSecretValue()
         {
+            var key = new string('a', 250);
             var value = Guid.NewGuid().ToString("N");
             using var secrets = new SecretDirectory();
             secrets.Write(key, value);
@@ -223,10 +221,12 @@ public class DockerSecretManagerServiceTests
             Assert.Equal(value, result);
         }
 
-        [Fact]
-        public async Task ValidKeyOfMaxLength_ReturnsSecretValue()
+        [Theory]
+        [InlineData("a")]
+        [InlineData("secret-name")]
+        [InlineData("Secret_Name-123")]
+        public async Task ValidKey_ReturnsSecretValue(string key)
         {
-            var key = new string('a', 250);
             var value = Guid.NewGuid().ToString("N");
             using var secrets = new SecretDirectory();
             secrets.Write(key, value);
