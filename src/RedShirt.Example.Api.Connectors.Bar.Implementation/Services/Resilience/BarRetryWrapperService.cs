@@ -77,14 +77,26 @@ internal sealed class BarRetryWrapperService(
             .Build();
     }
 
-    private Exception WrapIfNeeded(Exception exception)
+    /// <summary>
+    ///     Try to get the wrapped exception.
+    /// </summary>
+    /// <param name="exception">Exception to be judged.</param>
+    /// <param name="wrappedException">
+    ///     If wrapping was appropriate, then will be <see cref="BarConnectorException" /> wrapped around the
+    ///     <paramref name="exception" />.
+    ///     If wrapping was not appropriate, then will be <c>null</c>.
+    /// </param>
+    /// <returns><c>true</c> if the exception was wrapped, else <c>false</c></returns>
+    private bool TryGetWrappedException(Exception exception, out Exception? wrappedException)
     {
+        wrappedException = null;
+
         /* Handle Special Exceptions */
 
         // Domain not-found is a specific connector outcome. Do not wrap as BarConnectorException.
         if (exception is BarRecordNotFoundException)
         {
-            return exception;
+            return false;
         }
 
         /* Handle General Exceptions */
@@ -94,21 +106,22 @@ internal sealed class BarRetryWrapperService(
         // ReSharper disable once DuplicatedSequentialIfBodies
         if (report.AlreadyHandled && exception is BarConnectorException)
         {
-            return exception;
+            return false;
         }
 
         if (!report.IsExpected)
         {
             // Throw raw unexpected exception
-            return exception;
+            return false;
         }
 
-        return new BarConnectorException(exception)
+        wrappedException = new BarConnectorException(exception)
         {
             CouldBeTransient = report.CouldBeTransient,
             IsHandled = true,
             CouldBeExternallySolvable = report.CouldBeExternallySolvable
         };
+        return true;
     }
 
     public async Task<T> RunAsync<T>(Func<CancellationToken, Task<T>> func,
@@ -126,7 +139,13 @@ internal sealed class BarRetryWrapperService(
         }
         catch (Exception exception)
         {
-            throw WrapIfNeeded(exception);
+            if (TryGetWrappedException(exception, out var wrappedException) && wrappedException is not null)
+            {
+                throw wrappedException;
+            }
+
+            // Do a flat throw to preserve stack trace
+            throw;
         }
     }
 
@@ -144,7 +163,13 @@ internal sealed class BarRetryWrapperService(
         }
         catch (Exception exception)
         {
-            throw WrapIfNeeded(exception);
+            if (TryGetWrappedException(exception, out var wrappedException) && wrappedException is not null)
+            {
+                throw wrappedException;
+            }
+
+            // Do a flat throw to preserve stack trace
+            throw;
         }
     }
 
