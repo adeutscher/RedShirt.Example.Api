@@ -36,6 +36,7 @@ internal static class ServiceCollectionExtensions
             ////
             // If you wish to swap out SSM for Azure Key Vault as your secret manager provider, adjust the below code
             //.AddSecretManagerAzureKeyVault(configuration)
+            //.AddSecretManagerDocker(configuration)
             .AddSecretManagerSsm(configuration)
             // Add distributed services (read: Redis). Note that Redis requires a secret manager for the connection string
             ////
