@@ -16,6 +16,8 @@
         <Project Path="src/RedShirt.Example.Api.Common.Azure/RedShirt.Example.Api.Common.Azure.csproj"/>
         <Project Path="src/RedShirt.Example.Api.Common.Database/RedShirt.Example.Api.Common.Database.csproj"/>
         <Project Path="src/RedShirt.Example.Api.Common.Distributed/RedShirt.Example.Api.Common.Distributed.csproj"/>
+        <Project
+                Path="src/RedShirt.Example.Api.Common.Docker.SecretManager/RedShirt.Example.Api.Common.Docker.SecretManager.csproj"/>
         <Project Path="src/RedShirt.Example.Api.Common.Exceptions/RedShirt.Example.Api.Common.Exceptions.csproj"/>
         <Project
                 Path="src/RedShirt.Example.Api.Common.SecretManagers.Core/RedShirt.Example.Api.Common.SecretManagers.Core.csproj"/>
