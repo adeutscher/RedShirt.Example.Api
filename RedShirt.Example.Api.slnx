@@ -76,6 +76,8 @@
         <Project
                 Path="test/RedShirt.Example.Api.Common.Distributed.UnitTests/RedShirt.Example.Api.Common.Distributed.UnitTests.csproj"/>
         <Project
+                Path="test/RedShirt.Example.Api.Common.Docker.SecretManager.UnitTests/RedShirt.Example.Api.Common.Docker.SecretManager.UnitTests.csproj"/>
+        <Project
                 Path="test/RedShirt.Example.Api.Common.RateLimiting.UnitTests/RedShirt.Example.Api.Common.RateLimiting.UnitTests.csproj"/>
         <Project
                 Path="test/RedShirt.Example.Api.Common.SecretManagers.Core.UnitTests/RedShirt.Example.Api.Common.SecretManagers.Core.UnitTests.csproj"/>
