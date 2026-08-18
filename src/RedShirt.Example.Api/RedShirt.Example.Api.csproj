@@ -18,6 +18,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Docker.SecretManager\RedShirt.Example.Api.Common.Docker.SecretManager.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Connectors.Bar.Implementation\RedShirt.Example.Api.Connectors.Bar.Implementation.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Connectors.Foo.Implementation\RedShirt.Example.Api.Connectors.Foo.Implementation.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Aws.SsmSecretManager\RedShirt.Example.Api.Common.Aws.SsmSecretManager.csproj"/>
