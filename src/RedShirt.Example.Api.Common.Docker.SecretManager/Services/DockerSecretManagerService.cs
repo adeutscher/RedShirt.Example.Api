@@ -65,22 +65,17 @@ internal sealed partial class DockerSecretManagerService(
 
     private static IEnumerable<string> EnumerateCandidates(string key, string directory)
     {
-        // Allow callers to pass the mount path explicitly (e.g. /run/secrets/client-secret).
-        if (Path.IsPathRooted(key))
-        {
-            yield return key;
-        }
-
-        var relative = key.TrimStart('/', '\\');
-
-        // Plain Compose secret name or nested path under the secrets directory.
-        yield return Path.Combine(directory, relative);
-
-        // SSM-style hierarchical keys → single flat file (downloadtracker-oauth-client-id).
-        if (relative.Contains('/', StringComparison.Ordinal) || relative.Contains('\\', StringComparison.Ordinal))
-        {
-            yield return Path.Combine(directory, relative.Replace('\\', '-').Replace('/', '-'));
-        }
+        yield return Path.Combine(directory, key);
+        /*
+         * Try some common file extensions.
+         *
+         * Realistically, I doubt anyone's going to be going through the trouble about naming their target file the same
+         * as their key but with an extension. This is largely in deference to Cursor's first crack at this implementation.
+         * The original implementation took way too much inspiration from SSM paths and assumed that the same format
+         * could be conveniently mapped to Docker secret paths.
+         */
+        yield return Path.Combine(directory, $"{key}.txt");
+        yield return Path.Combine(directory, $"{key}.json");
     }
 
     public async Task<string> GetSecretAsync(string key, CancellationToken cancellationToken = default)
