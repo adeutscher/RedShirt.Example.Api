@@ -23,6 +23,7 @@
         <ProjectReference Include="..\RedShirt.Example.Api.Connectors.Foo.Implementation\RedShirt.Example.Api.Connectors.Foo.Implementation.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Aws.SsmSecretManager\RedShirt.Example.Api.Common.Aws.SsmSecretManager.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager\RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Database.EntityFramework\RedShirt.Example.Api.Common.Database.EntityFramework.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Distributed\RedShirt.Example.Api.Common.Distributed.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.RateLimiting\RedShirt.Example.Api.Common.RateLimiting.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.SecretManagers.Core\RedShirt.Example.Api.Common.SecretManagers.Core.csproj"/>

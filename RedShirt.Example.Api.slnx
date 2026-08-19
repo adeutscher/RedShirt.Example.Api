@@ -23,6 +23,8 @@
                 Path="src/RedShirt.Example.Api.Common.SecretManagers.Core/RedShirt.Example.Api.Common.SecretManagers.Core.csproj"/>
         <Project
                 Path="src\RedShirt.Example.Api.Common.Database.DapperMySql\RedShirt.Example.Api.Common.Database.DapperMySql.csproj"/>
+        <Project
+                Path="src\RedShirt.Example.Api.Common.Database.EntityFramework\RedShirt.Example.Api.Common.Database.EntityFramework.csproj"/>
         <Project Path="src\RedShirt.Example.Api.Common.RateLimiting\RedShirt.Example.Api.Common.RateLimiting.csproj"/>
         <Project Path="src\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>
     </Folder>
@@ -73,6 +75,8 @@
                 Path="test/RedShirt.Example.Api.Common.Azure.UnitTests/RedShirt.Example.Api.Common.Azure.UnitTests.csproj"/>
         <Project
                 Path="test/RedShirt.Example.Api.Common.Database.DapperMySql.UnitTests/RedShirt.Example.Api.Common.Database.DapperMySql.UnitTests.csproj"/>
+        <Project
+                Path="test/RedShirt.Example.Api.Common.Database.EntityFramework.UnitTests/RedShirt.Example.Api.Common.Database.EntityFramework.UnitTests.csproj"/>
         <Project
                 Path="test/RedShirt.Example.Api.Common.Distributed.UnitTests/RedShirt.Example.Api.Common.Distributed.UnitTests.csproj"/>
         <Project
