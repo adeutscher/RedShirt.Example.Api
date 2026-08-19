@@ -95,10 +95,28 @@ public class DistributedLockTests
         retry.VerifyNoOtherCalls();
     }
 
+    [Fact]
+    public async Task UnlockAsync_WhenRetryThrowsUnexpectedException_Propagates()
+    {
+        var expected = new InvalidOperationException("unexpected unlock failure");
+        var retry = new Mock<IDistributedRetryWrapperService>(MockBehavior.Strict);
+        retry
+            .Setup(r => r.RunAsync(It.IsAny<Func<CancellationToken, Task>>(),
+                TestContext.Current.CancellationToken))
+            .ThrowsAsync(expected);
+
+        var @lock = new RedisLockService.DistributedLock(retry.Object, CreateOpaqueHandle());
+
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            @lock.UnlockAsync(TestContext.Current.CancellationToken));
+
+        Assert.Same(expected, thrown);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task UnlockAsync_WhenRetryThrowsApiDistributedException_Swallows(bool isTransient)
+    public async Task UnlockAsync_WhenRetryThrowsWorkerDistributedException_Swallows(bool isTransient)
     {
         var retry = new Mock<IDistributedRetryWrapperService>(MockBehavior.Strict);
         retry
@@ -117,23 +135,5 @@ public class DistributedLockTests
             r => r.RunAsync(It.IsAny<Func<CancellationToken, Task>>(),
                 TestContext.Current.CancellationToken),
             Times.Once);
-    }
-
-    [Fact]
-    public async Task UnlockAsync_WhenRetryThrowsUnexpectedException_Propagates()
-    {
-        var expected = new InvalidOperationException("unexpected unlock failure");
-        var retry = new Mock<IDistributedRetryWrapperService>(MockBehavior.Strict);
-        retry
-            .Setup(r => r.RunAsync(It.IsAny<Func<CancellationToken, Task>>(),
-                TestContext.Current.CancellationToken))
-            .ThrowsAsync(expected);
-
-        var @lock = new RedisLockService.DistributedLock(retry.Object, CreateOpaqueHandle());
-
-        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            @lock.UnlockAsync(TestContext.Current.CancellationToken));
-
-        Assert.Same(expected, thrown);
     }
 }
