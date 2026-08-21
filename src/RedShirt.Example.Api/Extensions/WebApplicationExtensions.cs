@@ -4,11 +4,11 @@ internal static class WebApplicationExtensions
 {
     public static WebApplication ConsiderAddingPathBase(this WebApplication app)
     {
-        var basePath = app.Configuration.GetSection("API").Get<ConfigurationModel>()?.BasePath;
+        var pathBase = app.Configuration.GetSection("API").Get<ConfigurationModel>()?.PathBase;
 
-        if (!string.IsNullOrWhiteSpace(basePath))
+        if (!string.IsNullOrWhiteSpace(pathBase))
         {
-            app.UsePathBase(basePath);
+            app.UsePathBase(pathBase);
         }
 
         return app;
@@ -16,6 +16,6 @@ internal static class WebApplicationExtensions
 
     private sealed class ConfigurationModel
     {
-        public required string? BasePath { get; init; }
+        public required string? PathBase { get; init; }
     }
 }

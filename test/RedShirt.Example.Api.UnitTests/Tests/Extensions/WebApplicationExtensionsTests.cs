@@ -11,50 +11,15 @@ public class WebApplicationExtensionsTests
 {
     public class ConsiderAddingPathBase
     {
-        [Fact]
-        public void ReturnsSameApplicationInstance()
+        private static Dictionary<string, string?> ConfigurationWithPathBase(string? pathBase)
         {
-            var builder = WebApplication.CreateBuilder();
-            builder.WebHost.UseTestServer();
-            var app = builder.Build();
-
-            var result = app.ConsiderAddingPathBase();
-
-            Assert.Same(app, result);
-        }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public async Task DoesNotSetPathBase_WhenBasePathMissingOrWhitespace(string? basePath)
-        {
-            var builder = WebApplication.CreateBuilder();
-            builder.WebHost.UseTestServer();
-            builder.Configuration.AddInMemoryCollection(ConfigurationWithBasePath(basePath));
-            builder.Services.AddRouting();
-
-            string? capturedPathBase = null;
-            string? capturedPath = null;
-
-            await using var app = builder.Build();
-            app.ConsiderAddingPathBase();
-            app.UseRouting();
-            app.MapGet("/ping", (HttpContext context) =>
+            var values = new Dictionary<string, string?>();
+            if (pathBase is not null)
             {
-                capturedPathBase = context.Request.PathBase.Value;
-                capturedPath = context.Request.Path.Value;
-                return Results.NoContent();
-            });
+                values["API:PathBase"] = pathBase;
+            }
 
-            await app.StartAsync(TestContext.Current.CancellationToken);
-            var client = app.GetTestClient();
-            var response = await client.GetAsync(new Uri("/ping", UriKind.Relative),
-                TestContext.Current.CancellationToken);
-
-            Assert.Equal(StatusCodes.Status204NoContent, (int) response.StatusCode);
-            Assert.True(string.IsNullOrEmpty(capturedPathBase));
-            Assert.Equal("/ping", capturedPath);
+            return values;
         }
 
         [Fact]
@@ -84,6 +49,52 @@ public class WebApplicationExtensionsTests
             Assert.True(string.IsNullOrEmpty(capturedPathBase));
         }
 
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task DoesNotSetPathBase_WhenPathBaseMissingOrWhitespace(string? pathBase)
+        {
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseTestServer();
+            builder.Configuration.AddInMemoryCollection(ConfigurationWithPathBase(pathBase));
+            builder.Services.AddRouting();
+
+            string? capturedPathBase = null;
+            string? capturedPath = null;
+
+            await using var app = builder.Build();
+            app.ConsiderAddingPathBase();
+            app.UseRouting();
+            app.MapGet("/ping", (HttpContext context) =>
+            {
+                capturedPathBase = context.Request.PathBase.Value;
+                capturedPath = context.Request.Path.Value;
+                return Results.NoContent();
+            });
+
+            await app.StartAsync(TestContext.Current.CancellationToken);
+            var client = app.GetTestClient();
+            var response = await client.GetAsync(new Uri("/ping", UriKind.Relative),
+                TestContext.Current.CancellationToken);
+
+            Assert.Equal(StatusCodes.Status204NoContent, (int) response.StatusCode);
+            Assert.True(string.IsNullOrEmpty(capturedPathBase));
+            Assert.Equal("/ping", capturedPath);
+        }
+
+        [Fact]
+        public void ReturnsSameApplicationInstance()
+        {
+            var builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseTestServer();
+            var app = builder.Build();
+
+            var result = app.ConsiderAddingPathBase();
+
+            Assert.Same(app, result);
+        }
+
         [Fact]
         public async Task SetsPathBase_WhenConfigured()
         {
@@ -91,7 +102,7 @@ public class WebApplicationExtensionsTests
 
             var builder = WebApplication.CreateBuilder();
             builder.WebHost.UseTestServer();
-            builder.Configuration.AddInMemoryCollection(ConfigurationWithBasePath(pathBase));
+            builder.Configuration.AddInMemoryCollection(ConfigurationWithPathBase(pathBase));
             builder.Services.AddRouting();
 
             string? capturedPathBase = null;
@@ -115,17 +126,6 @@ public class WebApplicationExtensionsTests
             Assert.Equal(StatusCodes.Status204NoContent, (int) response.StatusCode);
             Assert.Equal(pathBase, capturedPathBase);
             Assert.Equal("/ping", capturedPath);
-        }
-
-        private static Dictionary<string, string?> ConfigurationWithBasePath(string? basePath)
-        {
-            var values = new Dictionary<string, string?>();
-            if (basePath is not null)
-            {
-                values["API:BasePath"] = basePath;
-            }
-
-            return values;
         }
     }
 }

@@ -89,7 +89,7 @@ services:
       ##
       ASPNETCORE_ENVIRONMENT: Development # Enable swagger
       ASPNETCORE_URLS: http://*:8080
-      API__BASE_PATH: null
+      API__PATH_BASE: null
       # AWS Settings
       ##
       AWS_SERVICE_URL: http://ministack:4566
