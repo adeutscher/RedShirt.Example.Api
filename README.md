@@ -109,6 +109,12 @@ configuration.
 
 For configuration examples, see the `api` section of the `test/local/docker-compose.yaml` file.
 
+## Path Base
+
+When the API is hosted under a URL prefix (for example behind a reverse proxy at `/example`), set
+`API__PATH_BASE` to that prefix (for example `/example`) so that routing and link generation treat requests relative to
+that base. Leave it unset (or null, or blank) when the app is served at the site root.
+
 ## Rate Limiting Configuration
 
 This API is built with the option for rate limiting, using a sliding window system backed either by Redis or an

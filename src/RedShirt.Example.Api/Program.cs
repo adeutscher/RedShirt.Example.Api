@@ -24,7 +24,10 @@ builder.Services
 
 var app = builder.Build();
 
-app.UseExceptionHandler();
+app
+    // If we add a path base, then it must be the first middleware that we set.
+    .ConsiderAddingPathBase()
+    .UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
