@@ -136,7 +136,7 @@ To do so, you can do the following:
 
 Doing this could be useful for:
 
-* Internal maintenance within the scope of the API.
+* Periodic internal maintenance within the scope of the API.
 * When there is a single instance of the API, it could be used for broader app maintenance such as periodically invoking
   CQRS handlers.
     * This case is an infrastructure shortcut to avoid the overhead of creating/maintaining a separate worker
