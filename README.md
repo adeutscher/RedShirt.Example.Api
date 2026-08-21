@@ -102,12 +102,62 @@ Other notes:
       with this template's Docker secret manager.
 * The implementation has not been tested under Docker Swarm, and as such hasn't been tested with external secrets.
 
+## Background Services
+
+In addition to acting as an API, this application can also run background services.
+
+To do so, you can do the following:
+
+1. Declare class that inherits from `BackgroundService`
+
+    ```csharp
+    public sealed class ExampleHostedService(IStuffDoerService stuffDoerService) : BackgroundService
+    {
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            try
+            {
+                // Perform action. It's assumed that the implementation runs continually.
+                await stuffDoerService.DoStuffAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+            }
+        }
+    }
+
+    ```
+
+2. Add a hosted service when setting up your service collection:
+
+    ```csharp
+    services.AddHostedService<ExampleHostedService>()
+    ```
+
+Doing this could be useful for:
+
+* Periodic internal maintenance within the scope of the API.
+* When there is a single instance of the API, it could be used for broader app maintenance such as periodically invoking
+  CQRS handlers.
+    * This case is an infrastructure shortcut to avoid the overhead of creating/maintaining a separate worker
+      application for simple tasks. This option should not be explored or extracted out into a worker application the
+      moment the environment plan involves multiple instances of the API running in an environment.
+
+This a standard feature of a hosted .NET application and not a special feature of this template, but I figured that it
+was worth documenting here.
+
 # Configuration
 
 This API is expected to be run out of a docker container, so it relies on environment variables for most of its
 configuration.
 
 For configuration examples, see the `api` section of the `test/local/docker-compose.yaml` file.
+
+## Path Base
+
+When the API is hosted under a URL prefix (for example behind a reverse proxy at `/example`), set
+`API__PATH_BASE` to that prefix (for example `/example`) so that routing and link generation treat requests relative to
+that base. Leave it unset (or null, or blank) when the app is served at the site root.
 
 ## Rate Limiting Configuration
 
