@@ -17,6 +17,79 @@ internal sealed class CustomerRepository(
     private const int MaxPageSize = 100;
     private const string ConnectionStringName = DatabaseConstants.PrimaryDatabaseConnectionStringName;
 
+    private static PredicateBuilder<CustomerEntity> BuildSearchPredicate(CustomerServiceSearchRequest parameters)
+    {
+        var builder = new PredicateBuilder<CustomerEntity>();
+
+        if (parameters.Id.HasValue)
+        {
+            var id = parameters.Id.Value;
+            builder.And(c => c.Id == id);
+        }
+
+        if (parameters.CreatedBeforeUtc.HasValue)
+        {
+            var createdBefore = parameters.CreatedBeforeUtc.Value;
+            builder.And(c => c.CreatedAtUtc < createdBefore);
+        }
+
+        if (parameters.CreatedAfterUtc.HasValue)
+        {
+            var createdAfter = parameters.CreatedAfterUtc.Value;
+            builder.And(c => c.CreatedAtUtc > createdAfter);
+        }
+
+        if (parameters.UpdatedBeforeUtc.HasValue)
+        {
+            var updatedBefore = parameters.UpdatedBeforeUtc.Value;
+            builder.And(c => c.UpdatedAtUtc < updatedBefore);
+        }
+
+        if (parameters.UpdatedAfterUtc.HasValue)
+        {
+            var updatedAfter = parameters.UpdatedAfterUtc.Value;
+            builder.And(c => c.UpdatedAtUtc > updatedAfter);
+        }
+
+        if (!string.IsNullOrWhiteSpace(parameters.Email))
+        {
+            var email = parameters.Email;
+            builder.And(c => c.Email == email);
+        }
+
+        if (!string.IsNullOrWhiteSpace(parameters.EmailContains))
+        {
+            var emailContains = parameters.EmailContains;
+            builder.And(c => c.Email.Contains(emailContains));
+        }
+
+        if (!string.IsNullOrWhiteSpace(parameters.DisplayName))
+        {
+            var displayName = parameters.DisplayName;
+            builder.And(c => c.DisplayName == displayName);
+        }
+
+        if (!string.IsNullOrWhiteSpace(parameters.DisplayNameContains))
+        {
+            var displayNameContains = parameters.DisplayNameContains;
+            builder.And(c => c.DisplayName.Contains(displayNameContains));
+        }
+
+        return builder;
+    }
+
+    private static CustomerDto ToDto(CustomerEntity entity)
+    {
+        return new CustomerDto
+        {
+            Id = entity.Id,
+            CreatedAtUtc = entity.CreatedAtUtc,
+            UpdatedAtUtc = entity.UpdatedAtUtc,
+            Email = entity.Email,
+            DisplayName = entity.DisplayName
+        };
+    }
+
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync(ConnectionStringName, cancellationToken);
@@ -129,79 +202,6 @@ internal sealed class CustomerRepository(
         {
             Records = records,
             ContinuationToken = continuationToken
-        };
-    }
-
-    private static PredicateBuilder<CustomerEntity> BuildSearchPredicate(CustomerServiceSearchRequest parameters)
-    {
-        var builder = new PredicateBuilder<CustomerEntity>();
-
-        if (parameters.Id.HasValue)
-        {
-            var id = parameters.Id.Value;
-            builder.And(c => c.Id == id);
-        }
-
-        if (parameters.CreatedBeforeUtc.HasValue)
-        {
-            var createdBefore = parameters.CreatedBeforeUtc.Value;
-            builder.And(c => c.CreatedAtUtc < createdBefore);
-        }
-
-        if (parameters.CreatedAfterUtc.HasValue)
-        {
-            var createdAfter = parameters.CreatedAfterUtc.Value;
-            builder.And(c => c.CreatedAtUtc > createdAfter);
-        }
-
-        if (parameters.UpdatedBeforeUtc.HasValue)
-        {
-            var updatedBefore = parameters.UpdatedBeforeUtc.Value;
-            builder.And(c => c.UpdatedAtUtc < updatedBefore);
-        }
-
-        if (parameters.UpdatedAfterUtc.HasValue)
-        {
-            var updatedAfter = parameters.UpdatedAfterUtc.Value;
-            builder.And(c => c.UpdatedAtUtc > updatedAfter);
-        }
-
-        if (!string.IsNullOrWhiteSpace(parameters.Email))
-        {
-            var email = parameters.Email;
-            builder.And(c => c.Email == email);
-        }
-
-        if (!string.IsNullOrWhiteSpace(parameters.EmailContains))
-        {
-            var emailContains = parameters.EmailContains;
-            builder.And(c => c.Email.Contains(emailContains));
-        }
-
-        if (!string.IsNullOrWhiteSpace(parameters.DisplayName))
-        {
-            var displayName = parameters.DisplayName;
-            builder.And(c => c.DisplayName == displayName);
-        }
-
-        if (!string.IsNullOrWhiteSpace(parameters.DisplayNameContains))
-        {
-            var displayNameContains = parameters.DisplayNameContains;
-            builder.And(c => c.DisplayName.Contains(displayNameContains));
-        }
-
-        return builder;
-    }
-
-    private static CustomerDto ToDto(CustomerEntity entity)
-    {
-        return new CustomerDto
-        {
-            Id = entity.Id,
-            CreatedAtUtc = entity.CreatedAtUtc,
-            UpdatedAtUtc = entity.UpdatedAtUtc,
-            Email = entity.Email,
-            DisplayName = entity.DisplayName
         };
     }
 

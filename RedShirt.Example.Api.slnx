@@ -103,6 +103,12 @@
     </Folder>
     <Folder Name="/test/data-stores/">
         <Project
+                Path="test\RedShirt.Example.Api.DataStores.Customer.Core.UnitTests\RedShirt.Example.Api.DataStores.Customer.Core.UnitTests.csproj"/>
+        <Project
+                Path="test\RedShirt.Example.Api.DataStores.Customer.Implementation.UnitTests\RedShirt.Example.Api.DataStores.Customer.Implementation.UnitTests.csproj"/>
+        <Project
+                Path="test\RedShirt.Example.Api.DataStores.Customer.IntegrationTests\RedShirt.Example.Api.DataStores.Customer.IntegrationTests.csproj"/>
+        <Project
                 Path="test\RedShirt.Example.Api.DataStores.ExampleItem.UnitTests\RedShirt.Example.Api.DataStores.ExampleItem.UnitTests.csproj"/>
         <Project
                 Path="test\RedShirt.Example.Api.DataStores.Order.UnitTests\RedShirt.Example.Api.DataStores.Order.UnitTests.csproj"/>

@@ -15,7 +15,6 @@ internal sealed class CustomerDbContext(DbContextOptions<CustomerDbContext> opti
     {
         modelBuilder.Entity<CustomerEntity>(entity =>
         {
-            entity.ToTable("Customer");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Email).HasMaxLength(320).IsRequired();
             entity.Property(e => e.DisplayName).HasMaxLength(256).IsRequired();

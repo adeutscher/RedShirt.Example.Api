@@ -10,27 +10,6 @@ internal sealed class PredicateBuilder<T>
 {
     private Expression<Func<T, bool>>? _predicate;
 
-    public PredicateBuilder<T> And(Expression<Func<T, bool>> expression)
-    {
-        ArgumentNullException.ThrowIfNull(expression);
-        _predicate = _predicate is null ? expression : Combine(_predicate, expression, Expression.AndAlso);
-        return this;
-    }
-
-    public PredicateBuilder<T> Or(Expression<Func<T, bool>> expression)
-    {
-        ArgumentNullException.ThrowIfNull(expression);
-        _predicate = _predicate is null ? expression : Combine(_predicate, expression, Expression.OrElse);
-        return this;
-    }
-
-    public bool HasPredicate => _predicate is not null;
-
-    public Expression<Func<T, bool>> Build()
-    {
-        return _predicate ?? (static _ => true);
-    }
-
     private static Expression<Func<T, bool>> Combine(
         Expression<Func<T, bool>> left,
         Expression<Func<T, bool>> right,
@@ -45,6 +24,27 @@ internal sealed class PredicateBuilder<T>
     private static Expression ReplaceParameter(Expression body, ParameterExpression source, ParameterExpression target)
     {
         return new ParameterReplacer(source, target).Visit(body);
+    }
+
+    public bool HasPredicate => _predicate is not null;
+
+    public PredicateBuilder<T> And(Expression<Func<T, bool>> expression)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        _predicate = _predicate is null ? expression : Combine(_predicate, expression, Expression.AndAlso);
+        return this;
+    }
+
+    public Expression<Func<T, bool>> Build()
+    {
+        return _predicate ?? (static _ => true);
+    }
+
+    public PredicateBuilder<T> Or(Expression<Func<T, bool>> expression)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        _predicate = _predicate is null ? expression : Combine(_predicate, expression, Expression.OrElse);
+        return this;
     }
 
     private sealed class ParameterReplacer(ParameterExpression source, ParameterExpression target) : ExpressionVisitor

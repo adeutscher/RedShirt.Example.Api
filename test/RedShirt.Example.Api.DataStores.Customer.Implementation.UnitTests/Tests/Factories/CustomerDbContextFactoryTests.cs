@@ -1,11 +1,11 @@
 using Moq;
-using RedShirt.Example.Api.Common.Database.EntityFramework.Data;
-using RedShirt.Example.Api.Common.Database.EntityFramework.Factories;
 using RedShirt.Example.Api.Common.Database.Services;
+using RedShirt.Example.Api.DataStores.Customer.Implementation.Data;
+using RedShirt.Example.Api.DataStores.Customer.Implementation.Factories;
 
-namespace RedShirt.Example.Api.Common.Database.EntityFramework.UnitTests.Tests.Factories;
+namespace RedShirt.Example.Api.DataStores.Customer.Implementation.UnitTests.Tests.Factories;
 
-public class ExampleApiDbContextFactoryTests
+public class CustomerDbContextFactoryTests
 {
     [Fact]
     public async Task CreateDbContextAsync_ResolvesNamedConnectionStringAndReturnsContext()
@@ -18,12 +18,12 @@ public class ExampleApiDbContextFactoryTests
             .Setup(s => s.GetConnectionStringAsync(connectionStringName, It.IsAny<CancellationToken>()))
             .ReturnsAsync(connectionString);
 
-        var factory = new ExampleApiDbContextFactory(source.Object);
+        var factory = new CustomerDbContextFactory(source.Object);
 
         await using var context = await factory.CreateDbContextAsync(connectionStringName,
             TestContext.Current.CancellationToken);
 
-        Assert.IsType<ExampleApiDbContext>(context);
+        Assert.IsType<CustomerDbContext>(context);
         Assert.NotNull(context.Customers);
         source.Verify(
             s => s.GetConnectionStringAsync(connectionStringName, It.IsAny<CancellationToken>()),
