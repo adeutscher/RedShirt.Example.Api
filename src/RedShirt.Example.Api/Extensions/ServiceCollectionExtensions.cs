@@ -1,6 +1,5 @@
 using RedShirt.Example.Api.Common.Aws.SsmSecretManager.Extensions;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Extensions;
-using RedShirt.Example.Api.Common.Database.EntityFramework.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Extensions;
 using RedShirt.Example.Api.Common.RateLimiting.Extensions;
@@ -8,6 +7,7 @@ using RedShirt.Example.Api.Common.SecretManagers.Core.Extensions;
 using RedShirt.Example.Api.Connectors.Bar.Implementation.Extensions;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Extensions;
 using RedShirt.Example.Api.Core.Extensions;
+using RedShirt.Example.Api.DataStores.Customer.Implementation.Extensions;
 using RedShirt.Example.Api.DataStores.ExampleItem.Extensions;
 using RedShirt.Example.Api.DataStores.Order.Extensions;
 using RedShirt.Example.Api.DataStores.Product.Implementation.Extensions;
@@ -54,7 +54,7 @@ internal static class ServiceCollectionExtensions
             // Data Stores
             .AddExampleItem(configuration)
             .AddDapperMySql(configuration) // Add Dapper support for MySQL-based database servers.
-            .AddEntityFramework() // Add Entity Framework Core support for MySQL-based database servers. 
+            .AddCustomers(configuration) // Customer store via Entity Framework Core (MariaDB / MySQL).
             .AddOrders()
             .AddProducts(configuration);
     }

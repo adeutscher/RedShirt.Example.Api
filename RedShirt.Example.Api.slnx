@@ -23,8 +23,6 @@
                 Path="src/RedShirt.Example.Api.Common.SecretManagers.Core/RedShirt.Example.Api.Common.SecretManagers.Core.csproj"/>
         <Project
                 Path="src\RedShirt.Example.Api.Common.Database.DapperMySql\RedShirt.Example.Api.Common.Database.DapperMySql.csproj"/>
-        <Project
-                Path="src\RedShirt.Example.Api.Common.Database.EntityFramework\RedShirt.Example.Api.Common.Database.EntityFramework.csproj"/>
         <Project Path="src\RedShirt.Example.Api.Common.RateLimiting\RedShirt.Example.Api.Common.RateLimiting.csproj"/>
         <Project Path="src\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>
     </Folder>
@@ -48,6 +46,10 @@
     </Folder>
     <Folder Name="/src/data-stores/">
         <Project Path="src\RedShirt.Example.Api.DataStores.Constants\RedShirt.Example.Api.DataStores.Constants.csproj"/>
+        <Project
+                Path="src\RedShirt.Example.Api.DataStores.Customer.Core\RedShirt.Example.Api.DataStores.Customer.Core.csproj"/>
+        <Project
+                Path="src\RedShirt.Example.Api.DataStores.Customer.Implementation\RedShirt.Example.Api.DataStores.Customer.Implementation.csproj"/>
         <Project
                 Path="src\RedShirt.Example.Api.DataStores.ExampleItem\RedShirt.Example.Api.DataStores.ExampleItem.csproj"/>
         <Project Path="src\RedShirt.Example.Api.DataStores.Order\RedShirt.Example.Api.DataStores.Order.csproj"/>
@@ -75,8 +77,6 @@
                 Path="test/RedShirt.Example.Api.Common.Azure.UnitTests/RedShirt.Example.Api.Common.Azure.UnitTests.csproj"/>
         <Project
                 Path="test/RedShirt.Example.Api.Common.Database.DapperMySql.UnitTests/RedShirt.Example.Api.Common.Database.DapperMySql.UnitTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Common.Database.EntityFramework.UnitTests/RedShirt.Example.Api.Common.Database.EntityFramework.UnitTests.csproj"/>
         <Project
                 Path="test/RedShirt.Example.Api.Common.Distributed.UnitTests/RedShirt.Example.Api.Common.Distributed.UnitTests.csproj"/>
         <Project

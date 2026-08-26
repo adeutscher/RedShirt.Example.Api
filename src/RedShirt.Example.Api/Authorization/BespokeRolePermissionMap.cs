@@ -16,7 +16,9 @@ internal static class BespokeRolePermissionMap
             BespokeAuthorizationPermissions.ProductRead,
             BespokeAuthorizationPermissions.ProductWrite,
             BespokeAuthorizationPermissions.OrderRead,
-            BespokeAuthorizationPermissions.OrderWrite
+            BespokeAuthorizationPermissions.OrderWrite,
+            BespokeAuthorizationPermissions.CustomerRead,
+            BespokeAuthorizationPermissions.CustomerWrite
         ],
         StringComparer.Ordinal);
 

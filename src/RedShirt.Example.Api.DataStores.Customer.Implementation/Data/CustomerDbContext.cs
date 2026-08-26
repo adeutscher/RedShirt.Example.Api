@@ -1,19 +1,19 @@
 using Microsoft.EntityFrameworkCore;
-using RedShirt.Example.Api.Common.Database.EntityFramework.Models;
+using RedShirt.Example.Api.DataStores.Customer.Implementation.Entities;
 
-namespace RedShirt.Example.Api.Common.Database.EntityFramework.Data;
+namespace RedShirt.Example.Api.DataStores.Customer.Implementation.Data;
 
 /// <summary>
-///     Entity Framework Core <see cref="DbContext" /> for MariaDB / MySQL.
+///     Entity Framework Core <see cref="DbContext" /> for the Customer table on MariaDB / MySQL.
 ///     Schema is owned by the separate Schema repository; this context maps to existing tables.
 /// </summary>
-public sealed class ExampleApiDbContext(DbContextOptions<ExampleApiDbContext> options) : DbContext(options)
+internal sealed class CustomerDbContext(DbContextOptions<CustomerDbContext> options) : DbContext(options)
 {
-    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<CustomerEntity> Customers => Set<CustomerEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Customer>(entity =>
+        modelBuilder.Entity<CustomerEntity>(entity =>
         {
             entity.ToTable("Customer");
             entity.HasKey(e => e.Id);

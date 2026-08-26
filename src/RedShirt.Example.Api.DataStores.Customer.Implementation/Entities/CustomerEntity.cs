@@ -1,10 +1,10 @@
-namespace RedShirt.Example.Api.Common.Database.EntityFramework.Models;
+namespace RedShirt.Example.Api.DataStores.Customer.Implementation.Entities;
 
 /// <summary>
-///     Persistence model for a customer.
+///     Entity Framework persistence model for a customer.
 ///     Complements the existing Product and Order stores: an order is placed by a customer.
 /// </summary>
-public sealed class Customer
+internal sealed class CustomerEntity
 {
     public required Guid Id { get; set; }
     public required DateTime CreatedAtUtc { get; set; }
