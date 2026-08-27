@@ -66,11 +66,15 @@ public class BespokeRolePermissionClaimsTransformationTests
 
         var principal = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.Developer));
 
-        var permissions = principal.FindAll(BespokeAuthorizationPermissions.ClaimType).Select(claim => claim.Value);
+        var permissions = principal.FindAll(BespokeAuthorizationPermissions.ClaimType)
+            .Select(claim => claim.Value)
+            .ToList();
         Assert.Equal(
             [
                 BespokeAuthorizationPermissions.Read,
                 BespokeAuthorizationPermissions.Write,
+                BespokeAuthorizationPermissions.CustomerRead,
+                BespokeAuthorizationPermissions.CustomerWrite,
                 BespokeAuthorizationPermissions.OrderRead,
                 BespokeAuthorizationPermissions.OrderWrite,
                 BespokeAuthorizationPermissions.ProductRead,

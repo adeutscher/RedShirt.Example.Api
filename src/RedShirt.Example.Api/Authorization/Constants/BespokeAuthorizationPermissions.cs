@@ -28,4 +28,8 @@ public static class BespokeAuthorizationPermissions
     public const string OrderRead = "order:read";
 
     public const string OrderWrite = "order:write";
+
+    public const string CustomerRead = "customer:read";
+
+    public const string CustomerWrite = "customer:write";
 }

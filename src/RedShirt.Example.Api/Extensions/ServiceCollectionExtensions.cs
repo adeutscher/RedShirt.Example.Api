@@ -7,6 +7,7 @@ using RedShirt.Example.Api.Common.SecretManagers.Core.Extensions;
 using RedShirt.Example.Api.Connectors.Bar.Implementation.Extensions;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Extensions;
 using RedShirt.Example.Api.Core.Extensions;
+using RedShirt.Example.Api.DataStores.Customer.Implementation.Extensions;
 using RedShirt.Example.Api.DataStores.ExampleItem.Extensions;
 using RedShirt.Example.Api.DataStores.Order.Extensions;
 using RedShirt.Example.Api.DataStores.Product.Implementation.Extensions;
@@ -52,7 +53,8 @@ internal static class ServiceCollectionExtensions
             .AddBarConnector(configuration)
             // Data Stores
             .AddExampleItem(configuration)
-            .AddDapperMySql(configuration) // Add Dapper support for MySQL-based database servers. 
+            .AddDapperMySql(configuration) // Add Dapper support for MySQL-based database servers.
+            .AddCustomers(configuration) // Customer store via Entity Framework Core (MariaDB / MySQL).
             .AddOrders()
             .AddProducts(configuration);
     }

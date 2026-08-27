@@ -41,6 +41,16 @@ public static class BespokeAuthorizationPolicies
     public const string OrderReadApproved = "OrderReadApproved";
 
     /// <summary>
+    ///     Customer write access: requires <see cref="BespokeAuthorizationPermissions.CustomerWrite" />.
+    /// </summary>
+    public const string CustomerWrite = "CustomerWrite";
+
+    /// <summary>
+    ///     Approved Customer read: <see cref="BespokeAuthorizationPermissions.CustomerRead" /> on an HTTP GET.
+    /// </summary>
+    public const string CustomerReadApproved = "CustomerReadApproved";
+
+    /// <summary>
     ///     Resource-based access to a customer-scoped record (for example an order).
     ///     Invoked with an explicit resource via <c>IAuthorizationService</c>, not as an
     ///     endpoint attribute (the resource is not available until the row is loaded).
