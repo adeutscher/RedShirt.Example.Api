@@ -69,6 +69,7 @@ internal sealed class CustomerRepository(
             builder.And(c => c.DisplayName == displayName);
         }
 
+        // ReSharper disable once InvertIf
         if (!string.IsNullOrWhiteSpace(parameters.DisplayNameContains))
         {
             var displayNameContains = parameters.DisplayNameContains;
@@ -183,6 +184,8 @@ internal sealed class CustomerRepository(
         var records = entities.Select(ToDto).ToList();
 
         continuationToken = records.Count >= pageSize ? Guid.NewGuid() : null;
+
+        // ReSharper disable once InvertIf
         if (continuationToken.HasValue)
         {
             var lastRecord = records[^1];
