@@ -1,7 +1,7 @@
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using RedShirt.Example.Api.DataStores.Customer.Implementation.Data;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection;
 
 namespace RedShirt.Example.Api.DataStores.Customer.IntegrationTests.Tests.Data;
 

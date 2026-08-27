@@ -115,20 +115,6 @@ public class CustomerServiceTests
     }
 
     [Fact]
-    public async Task PatchAsync_ThrowsNoChanges_WhenNoFieldsProvided()
-    {
-        var service = CreateService();
-
-        await Assert.ThrowsAsync<NoChangesToModifyException>(() =>
-            service.PatchAsync(new CustomerServicePatchRequest
-            {
-                Id = Guid.NewGuid(),
-                Email = null,
-                DisplayName = null
-            }, TestContext.Current.CancellationToken));
-    }
-
-    [Fact]
     public async Task PatchAsync_ThrowsNoChanges_WhenMergedValuesMatchExisting()
     {
         var existing = CreateDto(email: "user@example.com", displayName: "Example User");
@@ -147,6 +133,20 @@ public class CustomerServiceTests
             }, TestContext.Current.CancellationToken));
 
         repository.Verify(r => r.UpsertAsync(It.IsAny<CustomerDto>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task PatchAsync_ThrowsNoChanges_WhenNoFieldsProvided()
+    {
+        var service = CreateService();
+
+        await Assert.ThrowsAsync<NoChangesToModifyException>(() =>
+            service.PatchAsync(new CustomerServicePatchRequest
+            {
+                Id = Guid.NewGuid(),
+                Email = null,
+                DisplayName = null
+            }, TestContext.Current.CancellationToken));
     }
 
     [Fact]

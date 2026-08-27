@@ -17,6 +17,14 @@ public class CustomerDbContextTests
     }
 
     [Fact]
+    public void Customers_DbSet_IsAvailable()
+    {
+        using var context = CreateContext();
+
+        Assert.NotNull(context.Customers);
+    }
+
+    [Fact]
     public void Model_MapsCustomerEntityToCustomersTableWithExpectedShape()
     {
         using var context = CreateContext();
@@ -29,13 +37,5 @@ public class CustomerDbContextTests
         Assert.Equal(256, entityType.FindProperty(nameof(CustomerEntity.DisplayName))?.GetMaxLength());
         Assert.Contains(entityType.GetIndexes(),
             index => index.IsUnique && index.Properties.Single().Name == nameof(CustomerEntity.Email));
-    }
-
-    [Fact]
-    public void Customers_DbSet_IsAvailable()
-    {
-        using var context = CreateContext();
-
-        Assert.NotNull(context.Customers);
     }
 }
