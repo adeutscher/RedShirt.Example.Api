@@ -1,5 +1,4 @@
 using RedShirt.Example.Api.Core.UseCases.Order.Queries.SearchRecords;
-using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 
 namespace RedShirt.Example.Api.Core.UnitTests.Tests.UseCases.Order.Queries.SearchRecords;
 
@@ -10,31 +9,60 @@ public class SearchOrderRecordsQueryValidatorTests
 {
     private readonly SearchOrderRecordsQueryValidator _validator = new();
 
-    [Fact]
-    public async Task Validate_Succeeds_ForValidSearchRequest()
+    private static SearchOrderRecordsQuery CreateQuery(string propertyName, string? value)
     {
-        var query = new SearchOrderRecordsQuery(
-            new OrderServiceSearchRequest
-            {
-                PageSize = 10,
-                CreatedBeforeUtc = null,
-                CreatedAfterUtc = null,
-                UpdatedBeforeUtc = null,
-                UpdatedAfterUtc = null,
-                CustomerId = null,
-                Status = null,
-                StatusContains = null,
-                TotalAmount = 42.00m,
-                TotalAmountGreaterThan = null,
-                TotalAmountLessThan = null,
-                TotalPrice = null,
-                TotalPriceGreaterThan = null,
-                TotalPriceLessThan = null,
-                TotalPriceIsNull = false
-            },
+        return new SearchOrderRecordsQuery(
+            new OrderQuerySearchParameters(
+                10,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                propertyName == nameof(OrderQuerySearchParameters.TotalAmount) ? value : null,
+                propertyName == nameof(OrderQuerySearchParameters.TotalAmountGreaterThan) ? value : null,
+                propertyName == nameof(OrderQuerySearchParameters.TotalAmountLessThan) ? value : null,
+                propertyName == nameof(OrderQuerySearchParameters.TotalPrice) ? value : null,
+                propertyName == nameof(OrderQuerySearchParameters.TotalPriceGreaterThan) ? value : null,
+                propertyName == nameof(OrderQuerySearchParameters.TotalPriceLessThan) ? value : null,
+                false),
             null);
+    }
 
-        var result = await _validator.ValidateAsync(query, TestContext.Current.CancellationToken);
+    [Theory]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalAmount), "not-a-decimal")]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalAmountGreaterThan), "12.34.56")]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalAmountLessThan), "abc")]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalPrice), "nope")]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalPriceGreaterThan), "1.2.3")]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalPriceLessThan), "xyz")]
+    public async Task Validate_Fails_WhenDecimalFilterIsInvalid(string propertyName, string value)
+    {
+        var result = await _validator.ValidateAsync(
+            CreateQuery(propertyName, value),
+            TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors,
+            error => error.ErrorMessage.Contains("must be a valid decimal number", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalAmount), null)]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalAmount), "42.00")]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalAmountGreaterThan), "0")]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalAmountLessThan), "100")]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalPrice), null)]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalPrice), "9.99")]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalPriceGreaterThan), "-1.5")]
+    [InlineData(nameof(OrderQuerySearchParameters.TotalPriceLessThan), "1000")]
+    public async Task Validate_Succeeds_WhenDecimalFilterIsNullOrValid(string propertyName, string? value)
+    {
+        var result = await _validator.ValidateAsync(
+            CreateQuery(propertyName, value),
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsValid);
     }

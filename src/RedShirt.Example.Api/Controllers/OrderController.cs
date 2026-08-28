@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
 using RedShirt.Example.Api.Attributes.Authorization;
 using RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
-using RedShirt.Example.Api.Common.Database.DapperMySql.Utility;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Order.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.Order.Commands.Delete;
@@ -23,13 +22,6 @@ namespace RedShirt.Example.Api.Controllers;
 [ProducesJson]
 public class OrderController : ControllerBase
 {
-    private static decimal? ParseOptionalSearchDecimal(string? value, string propertyName)
-    {
-        return string.IsNullOrWhiteSpace(value)
-            ? null
-            : StoredAsDecimalHelper.ParseRequiredDecimal(value, propertyName);
-    }
-
     [HttpDelete("{id:guid}")]
     [AuthorizeOrderWrite]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -175,30 +167,22 @@ public class OrderController : ControllerBase
         var customerId = customerScopedResourceEnforcer.ConstrainSearchCustomerId(User, request.CustomerId);
         var model = await searchOrderRecordsQueryHandler.Handle(
             new SearchOrderRecordsQuery(
-                new OrderServiceSearchRequest
-                {
-                    PageSize = request.PageSize,
-                    CreatedBeforeUtc = request.CreatedBeforeUtc,
-                    CreatedAfterUtc = request.CreatedAfterUtc,
-                    UpdatedBeforeUtc = request.UpdatedBeforeUtc,
-                    UpdatedAfterUtc = request.UpdatedAfterUtc,
-                    CustomerId = customerId,
-                    Status = request.Status,
-                    StatusContains = request.StatusContains,
-                    TotalAmount = ParseOptionalSearchDecimal(request.TotalAmount,
-                        nameof(OrderSearchRequest.TotalAmount)),
-                    TotalAmountGreaterThan = ParseOptionalSearchDecimal(request.TotalAmountGreaterThan,
-                        nameof(OrderSearchRequest.TotalAmountGreaterThan)),
-                    TotalAmountLessThan = ParseOptionalSearchDecimal(request.TotalAmountLessThan,
-                        nameof(OrderSearchRequest.TotalAmountLessThan)),
-                    TotalPrice = ParseOptionalSearchDecimal(request.TotalPrice,
-                        nameof(OrderSearchRequest.TotalPrice)),
-                    TotalPriceGreaterThan = ParseOptionalSearchDecimal(request.TotalPriceGreaterThan,
-                        nameof(OrderSearchRequest.TotalPriceGreaterThan)),
-                    TotalPriceLessThan = ParseOptionalSearchDecimal(request.TotalPriceLessThan,
-                        nameof(OrderSearchRequest.TotalPriceLessThan)),
-                    TotalPriceIsNull = request.TotalPriceIsNull
-                },
+                new OrderQuerySearchParameters(
+                    request.PageSize,
+                    request.CreatedBeforeUtc,
+                    request.CreatedAfterUtc,
+                    request.UpdatedBeforeUtc,
+                    request.UpdatedAfterUtc,
+                    customerId,
+                    request.Status,
+                    request.StatusContains,
+                    request.TotalAmount,
+                    request.TotalAmountGreaterThan,
+                    request.TotalAmountLessThan,
+                    request.TotalPrice,
+                    request.TotalPriceGreaterThan,
+                    request.TotalPriceLessThan,
+                    request.TotalPriceIsNull),
                 request.ContinuationToken),
             cancellationToken);
         return Ok(model);
