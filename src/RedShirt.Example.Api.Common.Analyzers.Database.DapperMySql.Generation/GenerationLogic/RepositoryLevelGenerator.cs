@@ -137,10 +137,10 @@ public static class RepositoryLevelGenerator
     }
 
     /// <summary>
-    ///     Add generic CRUD through Generic DTO Storage
-    ///     We could eventually cut GenericDtoStorage out of the loop here in the generator, but it will never be completely
-    ///     obsolete,
-    ///     as surely some storage classes will still need bespoke implementations of core/SQL storage (e.g. Icons).
+    ///     Add generic CRUD through Generic DTO Storage.
+    ///     We could eventually cut GenericDtoStorage out of the loop here in the generator. However, it will never be
+    ///     completely
+    ///     obsolete because surely some storage classes will still need bespoke implementations of core/SQL storage.
     /// </summary>
     /// <param name="sb"></param>
     /// <param name="classSummaryModel"></param>
