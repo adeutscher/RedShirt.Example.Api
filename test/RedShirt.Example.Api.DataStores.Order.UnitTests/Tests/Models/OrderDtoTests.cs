@@ -29,6 +29,15 @@ public class OrderDtoTests
     }
 
     [Fact]
+    public void IOrderService_ReturnsInternalDto()
+    {
+        var getById = typeof(IOrderService).GetMethod(nameof(IOrderService.GetByIdAsync));
+
+        Assert.NotNull(getById);
+        Assert.Equal(typeof(Task<OrderInternalDto>), getById!.ReturnType);
+    }
+
+    [Fact]
     public void OrderDto_HasExpectedTableMetadata()
     {
         var attribute = typeof(OrderDto).GetCustomAttribute<DbTableAttribute>();
@@ -54,5 +63,27 @@ public class OrderDtoTests
 
         Assert.NotNull(property);
         Assert.NotNull(property!.GetCustomAttribute<StoredAsDecimalAttribute>());
+    }
+
+    [Fact]
+    public void OrderInternalDto_MapsToPublicOrderDto()
+    {
+        var internalDto = new OrderInternalDto
+        {
+            Id = Guid.NewGuid(),
+            CreatedAtUtc = DateTime.UtcNow.AddDays(-1),
+            UpdatedAtUtc = DateTime.UtcNow,
+            CustomerId = Guid.NewGuid(),
+            Status = "Pending",
+            TotalAmount = 12.34m,
+            TotalPrice = 56.78m
+        };
+
+        var dto = internalDto.ToDto();
+
+        Assert.Equal(internalDto.Id, dto.Id);
+        Assert.Equal(internalDto.Status, dto.Status);
+        Assert.Equal("12.34", dto.TotalAmount);
+        Assert.Equal("56.78", dto.TotalPrice);
     }
 }

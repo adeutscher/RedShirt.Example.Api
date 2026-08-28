@@ -60,6 +60,29 @@ public class ClassSummaryModel
     public string BaseName => DtoName.Replace("Dto", "");
 
     /// <summary>
+    ///     True when any property is marked with StoredAsDecimalAttribute.
+    /// </summary>
+    public bool HasStoredAsDecimalProperties =>
+        Properties.Any(p => p.IsStoredAsDecimal);
+
+    /// <summary>
+    ///     Internal DTO name (e.g. OrderInternalDto) used by services when StoredAsDecimal properties exist.
+    /// </summary>
+    public string InternalDtoName => $"{BaseName}InternalDto";
+
+    /// <summary>
+    ///     Fully-qualified path to the internal DTO.
+    /// </summary>
+    public string FullInternalDtoName => $"{GeneratedNamespace}.{InternalDtoName}";
+
+    /// <summary>
+    ///     DTO type used by services and repositories.
+    ///     When StoredAsDecimal properties exist this is the internal DTO; otherwise the developer-defined DTO.
+    /// </summary>
+    public string FullServiceDtoName =>
+        HasStoredAsDecimalProperties ? FullInternalDtoName : FullDtoName;
+
+    /// <summary>
     ///     Skip generating POST-related classes/methods for this service.
     ///     Suggests that this DTO is for a supporting attribute whose primary key refers to the primary key of another object.
     /// </summary>
@@ -103,5 +126,17 @@ public class ClassSummaryModel
     public string RequestClassPost => $"{ServiceClassName}PostRequest";
     public string RequestClassPut => $"{ServiceClassName}PutRequest";
     public string RequestClassSearch => $"{ServiceClassName}SearchRequest";
+
+    /// <summary>
+    ///     Public/API-facing search response (always uses the developer-defined DTO in Records).
+    /// </summary>
     public string ResponseClassSearch => $"{BaseName}SearchResponse";
+
+    /// <summary>
+    ///     Search response returned by the service/repository layer.
+    /// </summary>
+    public string ServiceResponseClassSearch =>
+        HasStoredAsDecimalProperties ? $"{BaseName}ServiceSearchResponse" : ResponseClassSearch;
+
+    public string FullServiceResponseClassSearch => $"{GeneratedNamespace}.{ServiceResponseClassSearch}";
 }

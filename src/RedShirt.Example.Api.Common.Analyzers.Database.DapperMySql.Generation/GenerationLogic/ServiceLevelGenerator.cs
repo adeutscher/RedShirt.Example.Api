@@ -12,6 +12,11 @@ namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.
 
 public static class ServiceLevelGenerator
 {
+    private static bool UsesHasValueForChangeCheck(PropertyModel property)
+    {
+        return property.IsStoredAsDecimal || property.Category != PropertyModel.PropertyCategory.String;
+    }
+
     private static StringBuilder WriteSupportingExtensions(this StringBuilder sb, ClassSummaryModel classSummaryModel)
     {
         var partsForIsTheSameAs = classSummaryModel
@@ -21,7 +26,7 @@ public static class ServiceLevelGenerator
 
         sb.AppendLine("internal static class SupportingExtensions {")
             .AppendLineWithIndent(
-                $"public static bool IsTheSameAs(this {classSummaryModel.FullDtoName} a, {classSummaryModel.FullDtoName} b)")
+                $"public static bool IsTheSameAs(this {classSummaryModel.FullServiceDtoName} a, {classSummaryModel.FullServiceDtoName} b)")
             .OpenBracket()
             .AppendLineWithIndent($"return {string.Join(" && ", partsForIsTheSameAs)};")
             .CloseBracket();
@@ -33,18 +38,13 @@ public static class ServiceLevelGenerator
             {
                 var returnList = new List<string>();
 
-                if (p.IsInternallyManaged)
+                if (UsesHasValueForChangeCheck(p))
                 {
-                    return returnList;
-                }
-
-                if (p.Category == PropertyModel.PropertyCategory.String)
-                {
-                    returnList.Add($"!string.IsNullOrWhiteSpace(subject.{p.Name})");
+                    returnList.Add($"subject.{p.Name}.HasValue");
                 }
                 else
                 {
-                    returnList.Add($"subject.{p.Name}.HasValue");
+                    returnList.Add($"!string.IsNullOrWhiteSpace(subject.{p.Name})");
                 }
 
                 if (p.IsNullable)
@@ -73,7 +73,7 @@ public static class ServiceLevelGenerator
             {
                 case PropertyModel.PropertyCategory.String:
 
-                    if (property.IsNullable)
+                    if (property.IsNullable || property.IsStoredAsDecimal)
                     {
                         break;
                     }
@@ -100,6 +100,8 @@ public static class ServiceLevelGenerator
             return sb;
         }
 
+        var serviceDto = classSummaryModel.FullServiceDtoName;
+
         sb.AppendLine(
             $"internal partial class {classSummaryModel.ServiceClassName}({classSummaryModel.RepositoryInterfaceName} repository) : {classSummaryModel.ServiceInterfaceName}" +
             " {");
@@ -119,7 +121,7 @@ public static class ServiceLevelGenerator
 
         /* Get */
         sb.AppendLineWithIndent(
-                $"public async {Helper.Taskify($"{classSummaryModel.FullDtoName}")} GetByIdAsync(Guid id, {typeof(CancellationToken).FullName} cancellationToken = default)")
+                $"public async {Helper.Taskify(serviceDto)} GetByIdAsync(Guid id, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
             .AppendLineWithIndent("if (await repository.GetByIdAsync(id, cancellationToken) is not { } entry)", 2)
             .OpenBracket(2)
@@ -132,7 +134,7 @@ public static class ServiceLevelGenerator
 
         /* Patch */
         sb.AppendLineWithIndent(
-                $"public async {Helper.Taskify(classSummaryModel.FullDtoName)} PatchAsync({classSummaryModel.RequestClassPatch} request, {typeof(CancellationToken).FullName} cancellationToken = default)")
+                $"public async {Helper.Taskify(serviceDto)} PatchAsync({classSummaryModel.RequestClassPatch} request, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
             .AppendLineWithIndent(2, "if (!request.AreChangesRequested())")
             .OpenBracket(2)
@@ -148,7 +150,7 @@ public static class ServiceLevelGenerator
                 $"throw new {classSummaryModel.BaseNamespace}.Common.Exceptions.Responses.ResourceNotFoundException();",
                 3)
             .CloseBracket(2)
-            .AppendLineWithIndent(2, $"var candidate = new {classSummaryModel.FullDtoName}")
+            .AppendLineWithIndent(2, $"var candidate = new {serviceDto}")
             .OpenBracket(2)
             .AppendLineWithIndent(3, $"{classSummaryModel.Key.Name} = request.{classSummaryModel.Key.Name},")
             .AppendLineWithIndent(3,
@@ -190,11 +192,11 @@ public static class ServiceLevelGenerator
         if (!classSummaryModel.DoNotGeneratePost)
         {
             sb.AppendLineWithIndent(
-                    $"public async {Helper.Taskify(classSummaryModel.FullDtoName)} PostAsync({classSummaryModel.RequestClassPost} request, {typeof(CancellationToken).FullName} cancellationToken = default)")
+                    $"public async {Helper.Taskify(serviceDto)} PostAsync({classSummaryModel.RequestClassPost} request, {typeof(CancellationToken).FullName} cancellationToken = default)")
                 .OpenBracket()
                 .InsertValidation(classSummaryModel)
                 .AppendLineWithIndent(2, "var createdAt = DateTime.UtcNow;")
-                .AppendLineWithIndent(2, $"var dto = new {classSummaryModel.FullDtoName}")
+                .AppendLineWithIndent(2, $"var dto = new {serviceDto}")
                 .OpenBracket(2)
                 .AppendLineWithIndent(3, $"{classSummaryModel.Key.Name} = {typeof(Guid).FullName}.NewGuid(),")
                 .AppendLineWithIndent(3, $"{classSummaryModel.CreatedAt.Name} = createdAt,")
@@ -219,13 +221,13 @@ public static class ServiceLevelGenerator
 
         /* Put */
         sb.AppendLineWithIndent(
-                $"public async {Helper.Taskify(classSummaryModel.FullDtoName)} PutAsync({classSummaryModel.RequestClassPut} request, {typeof(CancellationToken).FullName} cancellationToken = default)")
+                $"public async {Helper.Taskify(serviceDto)} PutAsync({classSummaryModel.RequestClassPut} request, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
             .InsertValidation(classSummaryModel)
             .AppendLineWithIndent(2,
                 $"var existing = await repository.GetByIdAsync(request.{classSummaryModel.Key.Name}, cancellationToken);")
             .AppendLineWithIndent(2, "var createdAt = DateTime.UtcNow;")
-            .AppendLineWithIndent(2, $"var dto = new {classSummaryModel.FullDtoName}")
+            .AppendLineWithIndent(2, $"var dto = new {serviceDto}")
             .OpenBracket(2)
             .AppendLineWithIndent(3, $"{classSummaryModel.Key.Name} = request.{classSummaryModel.Key.Name},")
             .AppendLineWithIndent(3,
@@ -254,7 +256,7 @@ public static class ServiceLevelGenerator
 
         /* Search */
         sb.AppendLineWithIndent(
-                $"public {Helper.Taskify(classSummaryModel.ResponseClassSearch)} SearchAsync({classSummaryModel.RequestClassSearch} parameters,{typeof(Guid).FullName}? continuationToken,{typeof(CancellationToken).FullName} cancellationToken = default)")
+                $"public {Helper.Taskify(classSummaryModel.ServiceResponseClassSearch)} SearchAsync({classSummaryModel.RequestClassSearch} parameters,{typeof(Guid).FullName}? continuationToken,{typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
             .AppendLineWithIndent(2, "return repository.SearchAsync(parameters, continuationToken, cancellationToken);")
             .CloseBracket();
@@ -266,23 +268,25 @@ public static class ServiceLevelGenerator
 
     private static StringBuilder WriteServiceInterface(this StringBuilder sb, ClassSummaryModel classSummaryModel)
     {
+        var serviceDto = classSummaryModel.FullServiceDtoName;
+
         sb.AppendLine($"public partial interface {classSummaryModel.ServiceInterfaceName} " + "{");
         sb.AppendLineWithIndent(
             $"{typeof(Task).FullName} DeleteAsync({typeof(Guid).FullName} id, {typeof(CancellationToken).FullName} cancellationToken = default);");
         sb.AppendLineWithIndent(
-            $"{Helper.Taskify($"{classSummaryModel.FullDtoName}")} GetByIdAsync(Guid id, {typeof(CancellationToken).FullName} cancellationToken = default);");
+            $"{Helper.Taskify(serviceDto)} GetByIdAsync(Guid id, {typeof(CancellationToken).FullName} cancellationToken = default);");
         sb.AppendLineWithIndent(
-            $"{Helper.Taskify($"{classSummaryModel.FullDtoName}")} PatchAsync({classSummaryModel.RequestClassPatch} request, {typeof(CancellationToken).FullName} cancellationToken = default);");
+            $"{Helper.Taskify(serviceDto)} PatchAsync({classSummaryModel.RequestClassPatch} request, {typeof(CancellationToken).FullName} cancellationToken = default);");
         if (!classSummaryModel.DoNotGeneratePost)
         {
             sb.AppendLineWithIndent(
-                $"{Helper.Taskify($"{classSummaryModel.FullDtoName}")} PostAsync({classSummaryModel.RequestClassPost} request, {typeof(CancellationToken).FullName} cancellationToken = default);");
+                $"{Helper.Taskify(serviceDto)} PostAsync({classSummaryModel.RequestClassPost} request, {typeof(CancellationToken).FullName} cancellationToken = default);");
         }
 
         sb.AppendLineWithIndent(
-            $"{Helper.Taskify($"{classSummaryModel.FullDtoName}")} PutAsync({classSummaryModel.RequestClassPut} request, {typeof(CancellationToken).FullName} cancellationToken = default);");
+            $"{Helper.Taskify(serviceDto)} PutAsync({classSummaryModel.RequestClassPut} request, {typeof(CancellationToken).FullName} cancellationToken = default);");
         sb.AppendLineWithIndent(
-            $"{Helper.Taskify(classSummaryModel.ResponseClassSearch)} SearchAsync({classSummaryModel.RequestClassSearch} parameters,{typeof(Guid).FullName}? continuationToken,{typeof(CancellationToken).FullName} cancellationToken = default);");
+            $"{Helper.Taskify(classSummaryModel.ServiceResponseClassSearch)} SearchAsync({classSummaryModel.RequestClassSearch} parameters,{typeof(Guid).FullName}? continuationToken,{typeof(CancellationToken).FullName} cancellationToken = default);");
         sb.AppendLine("}");
 
         return sb;
@@ -290,16 +294,18 @@ public static class ServiceLevelGenerator
 
     private static StringBuilder WriteRepositoryInterface(this StringBuilder sb, ClassSummaryModel classSummaryModel)
     {
+        var serviceDto = classSummaryModel.FullServiceDtoName;
+
         sb.AppendLine($"internal interface {classSummaryModel.RepositoryInterfaceName} " + "{");
 
         sb.AppendLineWithIndent(
             $"{Helper.Taskify("bool")} DeleteAsync({typeof(Guid).FullName} id, {typeof(CancellationToken).FullName} cancellationToken = default);");
         sb.AppendLineWithIndent(
-            $"{Helper.Taskify($"{classSummaryModel.FullDtoName}?")} GetByIdAsync(Guid id, {typeof(CancellationToken).FullName} cancellationToken = default);");
+            $"{Helper.Taskify($"{serviceDto}?")} GetByIdAsync(Guid id, {typeof(CancellationToken).FullName} cancellationToken = default);");
         sb.AppendLineWithIndent(
-            $"{Helper.Taskify(classSummaryModel.ResponseClassSearch)}  SearchAsync({classSummaryModel.RequestClassSearch} parameters, {typeof(Guid).FullName}? continuationToken,{typeof(CancellationToken).FullName} cancellationToken = default);");
+            $"{Helper.Taskify(classSummaryModel.ServiceResponseClassSearch)}  SearchAsync({classSummaryModel.RequestClassSearch} parameters, {typeof(Guid).FullName}? continuationToken,{typeof(CancellationToken).FullName} cancellationToken = default);");
         sb.AppendLineWithIndent(
-            $"{Helper.Taskify($"{classSummaryModel.FullDtoName}")} UpsertAsync({classSummaryModel.FullDtoName} item, {typeof(CancellationToken).FullName} cancellationToken = default);");
+            $"{Helper.Taskify(serviceDto)} UpsertAsync({serviceDto} item, {typeof(CancellationToken).FullName} cancellationToken = default);");
 
         sb.AppendLine("}");
 
@@ -320,7 +326,7 @@ public static class ServiceLevelGenerator
                 continue;
             }
 
-            property.Write(sb, true);
+            property.Write(sb, true, useServiceType: true);
 
             // ReSharper disable once InvertIf
             if (property.IsNullable)
@@ -360,7 +366,7 @@ public static class ServiceLevelGenerator
                 continue;
             }
 
-            property.Write(sb);
+            property.Write(sb, useServiceType: true);
         }
 
         sb.AppendLine("}");
@@ -381,7 +387,7 @@ public static class ServiceLevelGenerator
                 continue;
             }
 
-            property.Write(sb);
+            property.Write(sb, useServiceType: true);
         }
 
         sb.AppendLine("}");
@@ -418,13 +424,13 @@ public static class ServiceLevelGenerator
                     var arrayProperty = new PropertyModel
                     {
                         Name = $"{property.Name}Range",
-                        Type = $"{property.Type}[]"
+                        Type = $"{property.ServiceType}[]"
                     };
                     arrayProperty.Write(sb);
                 }
                 else
                 {
-                    property.Write(sb, true);
+                    property.Write(sb, true, useServiceType: true);
                 }
             }
 
@@ -476,14 +482,14 @@ public static class ServiceLevelGenerator
                     var greaterThan = new PropertyModel
                     {
                         Name = $"{property.Name}GreaterThan",
-                        Type = property.Type,
+                        Type = property.ServiceType,
                         IsNullable = true
                     };
                     greaterThan.Write(sb);
                     var lessThan = new PropertyModel
                     {
                         Name = $"{property.Name}LessThan",
-                        Type = property.Type,
+                        Type = property.ServiceType,
                         IsNullable = true
                     };
                     lessThan.Write(sb);
@@ -509,9 +515,9 @@ public static class ServiceLevelGenerator
         return sb;
     }
 
-    private static StringBuilder WriteSearchResponse(this StringBuilder sb, ClassSummaryModel classSummaryModel)
+    private static void WriteSearchResponseClass(StringBuilder sb, string className, string recordDtoType)
     {
-        sb.AppendLine($"public class {classSummaryModel.ResponseClassSearch} " + "{");
+        sb.AppendLine($"public class {className} " + "{");
 
         var ct = new PropertyModel
         {
@@ -524,12 +530,24 @@ public static class ServiceLevelGenerator
         var items = new PropertyModel
         {
             Name = "Records",
-            Type = Helper.Listify(classSummaryModel.FullDtoName),
+            Type = Helper.Listify(recordDtoType),
             IsNullable = false
         };
         items.Write(sb);
 
         sb.AppendLine("}");
+    }
+
+    private static StringBuilder WriteSearchResponse(this StringBuilder sb, ClassSummaryModel classSummaryModel)
+    {
+        // Public/API-facing search response always uses the developer-defined DTO.
+        WriteSearchResponseClass(sb, classSummaryModel.ResponseClassSearch, classSummaryModel.FullDtoName);
+
+        if (classSummaryModel.HasStoredAsDecimalProperties)
+        {
+            WriteSearchResponseClass(sb, classSummaryModel.ServiceResponseClassSearch,
+                classSummaryModel.FullServiceDtoName);
+        }
 
         return sb;
     }

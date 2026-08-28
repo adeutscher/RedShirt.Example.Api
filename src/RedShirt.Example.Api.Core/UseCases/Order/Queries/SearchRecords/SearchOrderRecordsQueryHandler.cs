@@ -8,9 +8,15 @@ public interface ISearchOrderRecordsQueryHandler : ICqrsHandler<SearchOrderRecor
 internal class SearchOrderRecordsQueryHandler(IOrderService orderService)
     : ISearchOrderRecordsQueryHandler
 {
-    public Task<OrderSearchResponse> Handle(SearchOrderRecordsQuery query,
+    public async Task<OrderSearchResponse> Handle(SearchOrderRecordsQuery query,
         CancellationToken cancellationToken = default)
     {
-        return orderService.SearchAsync(query.Parameters, query.ContinuationToken, cancellationToken);
+        var result = await orderService.SearchAsync(query.Parameters, query.ContinuationToken, cancellationToken);
+        return new OrderSearchResponse
+        {
+            ContinuationToken = result.ContinuationToken,
+            // ReSharper disable once UseCollectionExpression
+            Records = result.Records.Select(record => record.ToDto()).ToList()
+        };
     }
 }

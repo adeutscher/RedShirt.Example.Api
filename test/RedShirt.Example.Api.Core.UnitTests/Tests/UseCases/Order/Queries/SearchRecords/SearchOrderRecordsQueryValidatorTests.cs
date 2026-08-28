@@ -10,9 +10,10 @@ public class SearchOrderRecordsQueryValidatorTests
 {
     private readonly SearchOrderRecordsQueryValidator _validator = new();
 
-    private static SearchOrderRecordsQuery CreateQuery(string propertyName, string? value)
+    [Fact]
+    public async Task Validate_Succeeds_ForValidSearchRequest()
     {
-        return new SearchOrderRecordsQuery(
+        var query = new SearchOrderRecordsQuery(
             new OrderServiceSearchRequest
             {
                 PageSize = 10,
@@ -23,53 +24,17 @@ public class SearchOrderRecordsQueryValidatorTests
                 CustomerId = null,
                 Status = null,
                 StatusContains = null,
-                TotalAmount = propertyName == nameof(OrderServiceSearchRequest.TotalAmount) ? value : null,
-                TotalAmountGreaterThan =
-                    propertyName == nameof(OrderServiceSearchRequest.TotalAmountGreaterThan) ? value : null,
-                TotalAmountLessThan =
-                    propertyName == nameof(OrderServiceSearchRequest.TotalAmountLessThan) ? value : null,
-                TotalPrice = propertyName == nameof(OrderServiceSearchRequest.TotalPrice) ? value : null,
-                TotalPriceGreaterThan =
-                    propertyName == nameof(OrderServiceSearchRequest.TotalPriceGreaterThan) ? value : null,
-                TotalPriceLessThan =
-                    propertyName == nameof(OrderServiceSearchRequest.TotalPriceLessThan) ? value : null,
+                TotalAmount = 42.00m,
+                TotalAmountGreaterThan = null,
+                TotalAmountLessThan = null,
+                TotalPrice = null,
+                TotalPriceGreaterThan = null,
+                TotalPriceLessThan = null,
                 TotalPriceIsNull = false
             },
             null);
-    }
 
-    [Theory]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmount), "not-a-decimal")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmountGreaterThan), "12.34.56")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmountLessThan), "abc")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPrice), "nope")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPriceGreaterThan), "1.2.3")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPriceLessThan), "xyz")]
-    public async Task Validate_Fails_WhenDecimalFilterIsInvalid(string propertyName, string value)
-    {
-        var result = await _validator.ValidateAsync(
-            CreateQuery(propertyName, value),
-            TestContext.Current.CancellationToken);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors,
-            error => error.ErrorMessage.Contains("must be a valid decimal number", StringComparison.Ordinal));
-    }
-
-    [Theory]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmount), null)]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmount), "42.00")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmountGreaterThan), "0")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmountLessThan), "100")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPrice), null)]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPrice), "9.99")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPriceGreaterThan), "-1.5")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPriceLessThan), "1000")]
-    public async Task Validate_Succeeds_WhenDecimalFilterIsNullOrValid(string propertyName, string? value)
-    {
-        var result = await _validator.ValidateAsync(
-            CreateQuery(propertyName, value),
-            TestContext.Current.CancellationToken);
+        var result = await _validator.ValidateAsync(query, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsValid);
     }

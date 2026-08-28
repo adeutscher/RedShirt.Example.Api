@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
 using RedShirt.Example.Api.Attributes.Authorization;
 using RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
+using RedShirt.Example.Api.Common.Database.DapperMySql.Utility;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Order.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.Order.Commands.Delete;
@@ -22,6 +23,13 @@ namespace RedShirt.Example.Api.Controllers;
 [ProducesJson]
 public class OrderController : ControllerBase
 {
+    private static decimal? ParseOptionalSearchDecimal(string? value, string propertyName)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : StoredAsDecimalHelper.ParseRequiredDecimal(value, propertyName);
+    }
+
     [HttpDelete("{id:guid}")]
     [AuthorizeOrderWrite]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -177,12 +185,18 @@ public class OrderController : ControllerBase
                     CustomerId = customerId,
                     Status = request.Status,
                     StatusContains = request.StatusContains,
-                    TotalAmount = request.TotalAmount,
-                    TotalAmountGreaterThan = request.TotalAmountGreaterThan,
-                    TotalAmountLessThan = request.TotalAmountLessThan,
-                    TotalPrice = request.TotalPrice,
-                    TotalPriceGreaterThan = request.TotalPriceGreaterThan,
-                    TotalPriceLessThan = request.TotalPriceLessThan,
+                    TotalAmount = ParseOptionalSearchDecimal(request.TotalAmount,
+                        nameof(OrderSearchRequest.TotalAmount)),
+                    TotalAmountGreaterThan = ParseOptionalSearchDecimal(request.TotalAmountGreaterThan,
+                        nameof(OrderSearchRequest.TotalAmountGreaterThan)),
+                    TotalAmountLessThan = ParseOptionalSearchDecimal(request.TotalAmountLessThan,
+                        nameof(OrderSearchRequest.TotalAmountLessThan)),
+                    TotalPrice = ParseOptionalSearchDecimal(request.TotalPrice,
+                        nameof(OrderSearchRequest.TotalPrice)),
+                    TotalPriceGreaterThan = ParseOptionalSearchDecimal(request.TotalPriceGreaterThan,
+                        nameof(OrderSearchRequest.TotalPriceGreaterThan)),
+                    TotalPriceLessThan = ParseOptionalSearchDecimal(request.TotalPriceLessThan,
+                        nameof(OrderSearchRequest.TotalPriceLessThan)),
                     TotalPriceIsNull = request.TotalPriceIsNull
                 },
                 request.ContinuationToken),
