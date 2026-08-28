@@ -178,6 +178,7 @@ public static class CentralContentGenerator
         sb.AppendLine($"// Built: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
         sb.AppendLine("#nullable enable");
         sb.AppendLine($"namespace {classSummary.GeneratedNamespace};");
+        sb.WriteEntityInfo(classSummary);
         sb
             .WriteServiceInfo(classSummary)
             .WriteRepositoryInfo(classSummary)

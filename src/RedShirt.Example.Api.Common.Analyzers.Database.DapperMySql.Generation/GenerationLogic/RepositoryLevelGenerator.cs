@@ -37,7 +37,7 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(2, "[")
             .AppendLineWithIndent(3,
                 "$\"{" +
-                $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullDtoName}.{classSummaryModel.UpdatedAt.Name}))" +
+                $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullEntityName}.{classSummaryModel.UpdatedAt.Name}))" +
                 "} DESC\"")
             .AppendLineWithIndent(2, "];")
             .AppendLine()
@@ -57,9 +57,9 @@ public static class RepositoryLevelGenerator
             .OpenBracket(2)
             .AppendLineWithIndent(3, "queryBuilder = queryBuilder.Where(")
             .AppendLineWithIndent(4, "$\"{"
-                                     + $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullDtoName}.{classSummaryModel.UpdatedAt.Name}))"
+                                     + $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullEntityName}.{classSummaryModel.UpdatedAt.Name}))"
                                      + "} <= @checkpoint AND {"
-                                     + $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullDtoName}.{classSummaryModel.Key.Name}))"
+                                     + $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullEntityName}.{classSummaryModel.Key.Name}))"
                                      + "} != @id\",")
             .AppendLineWithIndent(4, "new")
             .OpenBracket(4)
@@ -79,7 +79,7 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(2, "/* Declare SQL Command */")
             .AppendLineWithIndent(2, "var @params = new { paramTake = pageSize };")
             .AppendLineWithIndent(2,
-                $"var selectList = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.BuildSelectClause(typeof({classSummaryModel.FullDtoName}));")
+                $"var selectList = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.BuildSelectClause(typeof({classSummaryModel.FullEntityName}));")
             .AppendLineWithIndent(2, $"var template = queryBuilder.AddTemplate($\"SELECT {{selectList}} FROM {{"
                                      + $"{classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.DatabaseUtility.QuoteResource(genericDtoStorage.GetTableName())"
                                      + "} /**where**/ /**orderby**/ LIMIT @paramTake\", @params);")
@@ -89,8 +89,8 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(2,
                 "// Note: Generated code needs to use extension method directly as we aren't importing any using directives")
             .AppendLineWithIndent(2,
-                $"var response = await retryWrapperService.RunAsync(_ => Dapper.SqlMapper.QueryAsync<{classSummaryModel.FullDtoName}>(dbConnection, sql: template.RawSql, param: template.Parameters), cancellationToken);")
-            .AppendLineWithIndent(2, "var records = response.ToList();")
+                $"var response = await retryWrapperService.RunAsync(_ => Dapper.SqlMapper.QueryAsync<{classSummaryModel.FullEntityName}>(dbConnection, sql: template.RawSql, param: template.Parameters), cancellationToken);")
+            .AppendLineWithIndent(2, "var records = response.Select(ToDto).ToList();")
             .AppendLine()
             // Store continuation parameters
             .AppendLineWithIndent(2, "// Hijack continuation token variable")
@@ -158,18 +158,20 @@ public static class RepositoryLevelGenerator
             .AppendLine()
             // GetById
             .AppendLineWithIndent(
-                $"public {Helper.Taskify(classSummaryModel.FullDtoName + "?")} GetByIdAsync({typeof(Guid).FullName} id, {typeof(CancellationToken).FullName} cancellationToken = default)")
+                $"public async {Helper.Taskify(classSummaryModel.FullDtoName + "?")} GetByIdAsync({typeof(Guid).FullName} id, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
             .AppendLineWithIndent(2,
-                $"return genericDtoStorage.GetByKeyAsync(\"{classSummaryModel.ConnectionStringName}\", id, cancellationToken);")
+                $"var entity = await genericDtoStorage.GetByKeyAsync(\"{classSummaryModel.ConnectionStringName}\", id, cancellationToken);")
+            .AppendLineWithIndent(2, "return entity is null ? null : ToDto(entity);")
             .CloseBracket()
             .AppendLine()
             // Upsert
             .AppendLineWithIndent(
-                $"public {Helper.Taskify(classSummaryModel.FullDtoName)} UpsertAsync({classSummaryModel.FullDtoName} item, {typeof(CancellationToken).FullName} cancellationToken = default)")
+                $"public async {Helper.Taskify(classSummaryModel.FullDtoName)} UpsertAsync({classSummaryModel.FullDtoName} item, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
             .AppendLineWithIndent(2,
-                $"return genericDtoStorage.UpsertAsync(\"{classSummaryModel.ConnectionStringName}\", item, cancellationToken);")
+                $"var entity = await genericDtoStorage.UpsertAsync(\"{classSummaryModel.ConnectionStringName}\", ToEntity(item), cancellationToken);")
+            .AppendLineWithIndent(2, "return ToDto(entity);")
             .CloseBracket();
     }
 
@@ -208,7 +210,7 @@ public static class RepositoryLevelGenerator
                     .OpenBracket(baseIndentLevel)
                     .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                     .AppendLineWithIndent(baseIndentLevel + 2,
-                        WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                        WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                             dtoProperty.Name, "IS NULL"))
                     .AppendLineWithIndent(baseIndentLevel + 1, ");")
                     .CloseBracket(baseIndentLevel)
@@ -236,7 +238,7 @@ public static class RepositoryLevelGenerator
                         .OpenBracket(baseIndentLevel)
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                 dtoProperty.Name, $"= @{paramName}") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName + $" = parameters.{dtoProperty.Name}.Value" + "}")
@@ -254,7 +256,7 @@ public static class RepositoryLevelGenerator
                             .OpenBracket(baseIndentLevel)
                             .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                             .AppendLineWithIndent(baseIndentLevel + 2,
-                                WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                                WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                     dtoProperty.Name, $"IN @{paramName}") + ",")
                             .AppendLineWithIndent(baseIndentLevel + 2,
                                 "new {" + paramName + $" = parameters.{dtoProperty.Name}Range" + "}")
@@ -268,7 +270,7 @@ public static class RepositoryLevelGenerator
                             .OpenBracket(baseIndentLevel)
                             .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                             .AppendLineWithIndent(baseIndentLevel + 2,
-                                WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                                WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                     dtoProperty.Name, $"= @{paramName}") + ",")
                             .AppendLineWithIndent(baseIndentLevel + 2,
                                 "new {" + paramName + $" = parameters.{dtoProperty.Name}.Value" + "}")
@@ -287,7 +289,7 @@ public static class RepositoryLevelGenerator
                             .OpenBracket(baseIndentLevel)
                             .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                             .AppendLineWithIndent(baseIndentLevel + 2,
-                                WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                                WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                     dtoProperty.Name, $"= @{paramName}") + ",")
                             .AppendLineWithIndent(baseIndentLevel + 2,
                                 "new {" + paramName + $" = parameters.{dtoProperty.Name}.Value" + "}")
@@ -302,7 +304,7 @@ public static class RepositoryLevelGenerator
                         .OpenBracket(baseIndentLevel)
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                 dtoProperty.Name, $"> @{paramName}") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName + $" = parameters.{dtoProperty.Name}GreaterThan.Value" + "}")
@@ -314,7 +316,7 @@ public static class RepositoryLevelGenerator
                         .OpenBracket(baseIndentLevel)
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                 dtoProperty.Name, $"< @{paramName}LessThan") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName + $"LessThan = parameters.{dtoProperty.Name}LessThan.Value" + "}")
@@ -331,7 +333,7 @@ public static class RepositoryLevelGenerator
                         .OpenBracket(baseIndentLevel)
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                 dtoProperty.Name, $"= @{paramName}") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName +
@@ -349,7 +351,7 @@ public static class RepositoryLevelGenerator
                         .OpenBracket(baseIndentLevel)
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                 dtoProperty.Name, $"> @{paramName}") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName +
@@ -364,7 +366,7 @@ public static class RepositoryLevelGenerator
                         .OpenBracket(baseIndentLevel)
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                 dtoProperty.Name, $"< @{paramName}") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName +
@@ -392,7 +394,7 @@ public static class RepositoryLevelGenerator
                         .OpenBracket(baseIndentLevel)
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                 dtoProperty.Name, $"< @{malleableName.ToLower()}Before") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + malleableName.ToLower() +
@@ -407,7 +409,7 @@ public static class RepositoryLevelGenerator
                         .OpenBracket(baseIndentLevel)
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                 dtoProperty.Name, $"> @{malleableName.ToLower()}After") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + malleableName.ToLower() +
@@ -426,7 +428,7 @@ public static class RepositoryLevelGenerator
                         .OpenBracket(baseIndentLevel)
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                 dtoProperty.Name, $"= @{paramName}") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName + $" = parameters.{dtoProperty.Name}" + "}")
@@ -439,7 +441,7 @@ public static class RepositoryLevelGenerator
                         .OpenBracket(baseIndentLevel)
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullDtoName,
+                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                 dtoProperty.Name, $"LIKE @{paramName}") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName + $" = parameters.{dtoProperty.Name}Contains" + "}")
@@ -503,7 +505,7 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(2,
                 $"{baseNamespace}.Common.Distributed.Services.Abstractions.IRemoteCacheService cacheService,")
             .AppendLineWithIndent(2,
-                $"{baseNamespace}.Common.Database.DapperMySql.Services.IGenericMySqlDtoStorage<{classSummaryModel.FullDtoName}, {classSummaryModel.Key.Type}> genericDtoStorage,")
+                $"{baseNamespace}.Common.Database.DapperMySql.Services.IGenericMySqlDtoStorage<{classSummaryModel.FullEntityName}, {classSummaryModel.Key.Type}> genericDtoStorage,")
             .AppendLineWithIndent(2,
                 $"{baseNamespace}.Common.Database.DapperMySql.Factories.ISqlConnectionFactory sqlConnectionFactory,")
             .AppendLineWithIndent(2,
@@ -514,6 +516,7 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent($"private const int MaxPageSize = {classSummaryModel.MaxSearchPageSize};");
 
         sb
+            .WriteDtoEntityMapping(classSummaryModel)
             .AddWhereQueries(classSummaryModel)
             .AddGenericCrud(classSummaryModel)
             .AddSearchMethod(classSummaryModel)
