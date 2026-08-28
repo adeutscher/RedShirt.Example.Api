@@ -32,7 +32,7 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(3, "parameters = continuationParameters.SearchParameters;")
             .CloseBracket(2)
             .AppendLine()
-            // declare orderbys
+            // declare order-bys
             .AppendLineWithIndent(2, "var orderBys = continuationParameters?.OrderBys ??")
             .AppendLineWithIndent(2, "[")
             .AppendLineWithIndent(3,

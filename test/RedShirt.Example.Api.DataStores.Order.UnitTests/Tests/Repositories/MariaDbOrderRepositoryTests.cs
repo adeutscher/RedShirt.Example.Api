@@ -7,6 +7,7 @@ using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.DataStores.Constants;
 using RedShirt.Example.Api.DataStores.Order.Models;
+using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 using System.Data;
 using System.Globalization;
 using System.Text.Json;
