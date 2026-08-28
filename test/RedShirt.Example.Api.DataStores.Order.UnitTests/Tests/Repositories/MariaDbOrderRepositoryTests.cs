@@ -2,12 +2,14 @@ using Moq;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Factories;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Services;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Services.Resilience;
+using RedShirt.Example.Api.Common.Database.DapperMySql.Utility;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.DataStores.Constants;
 using RedShirt.Example.Api.DataStores.Order.Models;
 using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 using System.Data;
+using System.Globalization;
 using System.Text.Json;
 
 namespace RedShirt.Example.Api.DataStores.Order.UnitTests.Tests.Repositories;
@@ -31,6 +33,25 @@ public class MariaDbOrderRepositoryTests
             Status = "Pending",
             TotalAmount = "10.00",
             TotalPrice = null
+        };
+    }
+
+    private static OrderEntity CreateEntity(
+        Guid? id = null,
+        DateTime? updatedAtUtc = null)
+    {
+        var dto = CreateDto(id, updatedAtUtc);
+        return new OrderEntity
+        {
+            Id = dto.Id,
+            CreatedAtUtc = dto.CreatedAtUtc,
+            UpdatedAtUtc = dto.UpdatedAtUtc,
+            CustomerId = dto.CustomerId,
+            Status = dto.Status,
+            TotalAmount = StoredAsDecimalHelper.ParseRequiredDecimal(dto.TotalAmount, nameof(OrderDto.TotalAmount)),
+            TotalPrice = dto.TotalPrice is null
+                ? null
+                : StoredAsDecimalHelper.ParseRequiredDecimal(dto.TotalPrice, nameof(OrderDto.TotalPrice))
         };
     }
 
@@ -62,11 +83,11 @@ public class MariaDbOrderRepositoryTests
 
     private static MariaDbOrderRepository CreateRepository(
         IRemoteCacheService? cacheService = null,
-        IGenericMySqlDtoStorage<OrderDto, Guid>? storage = null,
+        IGenericMySqlDtoStorage<OrderEntity, Guid>? storage = null,
         ISqlConnectionFactory? sqlConnectionFactory = null,
         IMySqlRetryWrapperService? retryWrapperService = null)
     {
-        var storageMock = storage is null ? new Mock<IGenericMySqlDtoStorage<OrderDto, Guid>>() : null;
+        var storageMock = storage is null ? new Mock<IGenericMySqlDtoStorage<OrderEntity, Guid>>() : null;
         storageMock?.Setup(s => s.GetTableName()).Returns("Order");
 
         var factoryMock = sqlConnectionFactory is null ? new Mock<ISqlConnectionFactory>() : null;
@@ -83,12 +104,12 @@ public class MariaDbOrderRepositoryTests
             retryWrapperService ?? new Mock<IMySqlRetryWrapperService>().Object);
     }
 
-    private static Mock<IMySqlRetryWrapperService> CreateRetryReturning(IEnumerable<OrderDto> records)
+    private static Mock<IMySqlRetryWrapperService> CreateRetryReturning(IEnumerable<OrderEntity> records)
     {
         var retry = new Mock<IMySqlRetryWrapperService>();
         retry
             .Setup(r => r.RunAsync(
-                It.IsAny<Func<CancellationToken, Task<IEnumerable<OrderDto>>>>(),
+                It.IsAny<Func<CancellationToken, Task<IEnumerable<OrderEntity>>>>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(records);
         return retry;
@@ -98,7 +119,7 @@ public class MariaDbOrderRepositoryTests
     public async Task DeleteAsync_DelegatesToStorage_WithPrimaryConnection()
     {
         var id = Guid.NewGuid();
-        var storage = new Mock<IGenericMySqlDtoStorage<OrderDto, Guid>>();
+        var storage = new Mock<IGenericMySqlDtoStorage<OrderEntity, Guid>>();
         storage
             .Setup(s => s.DeleteByKeyAsync(
                 DatabaseConstants.PrimaryDatabaseConnectionStringName,
@@ -117,31 +138,34 @@ public class MariaDbOrderRepositoryTests
     }
 
     [Fact]
-    public async Task GetByIdAsync_DelegatesToStorage_WithPrimaryConnection()
+    public async Task GetByIdAsync_DelegatesToStorage_AndReturnsDto()
     {
-        var dto = CreateDto();
-        var storage = new Mock<IGenericMySqlDtoStorage<OrderDto, Guid>>();
+        var entity = CreateEntity();
+        var storage = new Mock<IGenericMySqlDtoStorage<OrderEntity, Guid>>();
         storage
             .Setup(s => s.GetByKeyAsync(
                 DatabaseConstants.PrimaryDatabaseConnectionStringName,
-                dto.Id,
+                entity.Id,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(dto);
+            .ReturnsAsync(entity);
         var repository = CreateRepository(storage: storage.Object);
 
-        var result = await repository.GetByIdAsync(dto.Id, TestContext.Current.CancellationToken);
+        var result = await repository.GetByIdAsync(entity.Id, TestContext.Current.CancellationToken);
 
-        Assert.Same(dto, result);
+        Assert.NotNull(result);
+        Assert.Equal(entity.Id, result.Id);
+        Assert.Equal(entity.Status, result.Status);
+        Assert.Equal(entity.TotalAmount.ToString(CultureInfo.InvariantCulture), result.TotalAmount);
         storage.Verify(s => s.GetByKeyAsync(
             DatabaseConstants.PrimaryDatabaseConnectionStringName,
-            dto.Id,
+            entity.Id,
             TestContext.Current.CancellationToken), Times.Once);
     }
 
     [Fact]
     public async Task SearchAsync_ReturnsRecords_WithoutContinuation_WhenPageNotFull()
     {
-        var records = new List<OrderDto> {CreateDto(), CreateDto()};
+        var records = new List<OrderEntity> {CreateEntity(), CreateEntity()};
         var repository = CreateRepository(retryWrapperService: CreateRetryReturning(records).Object);
 
         var result = await repository.SearchAsync(
@@ -156,7 +180,7 @@ public class MariaDbOrderRepositoryTests
     [Fact]
     public async Task SearchAsync_StoresContinuation_WhenPageIsFull()
     {
-        var records = Enumerable.Range(0, 10).Select(_ => CreateDto()).ToList();
+        var records = Enumerable.Range(0, 10).Select(_ => CreateEntity()).ToList();
         var cache = new Mock<IRemoteCacheService>();
         string? storedKey = null;
         string? storedValue = null;
@@ -223,7 +247,7 @@ public class MariaDbOrderRepositoryTests
             .ReturnsAsync(cachedJson);
         var repository = CreateRepository(
             cache.Object,
-            retryWrapperService: CreateRetryReturning([CreateDto()]).Object);
+            retryWrapperService: CreateRetryReturning([CreateEntity()]).Object);
 
         var result = await repository.SearchAsync(
             CreateSearchRequest(99, status: "Ignored"),
@@ -238,24 +262,31 @@ public class MariaDbOrderRepositoryTests
     }
 
     [Fact]
-    public async Task UpsertAsync_DelegatesToStorage_WithPrimaryConnection()
+    public async Task UpsertAsync_DelegatesToStorage_AndReturnsDto()
     {
         var dto = CreateDto();
-        var storage = new Mock<IGenericMySqlDtoStorage<OrderDto, Guid>>();
+        var entity = CreateEntity(dto.Id, dto.UpdatedAtUtc);
+        var storage = new Mock<IGenericMySqlDtoStorage<OrderEntity, Guid>>();
         storage
             .Setup(s => s.UpsertAsync(
                 DatabaseConstants.PrimaryDatabaseConnectionStringName,
-                dto,
+                It.IsAny<OrderEntity>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(dto);
+            .ReturnsAsync(entity);
         var repository = CreateRepository(storage: storage.Object);
 
         var result = await repository.UpsertAsync(dto, TestContext.Current.CancellationToken);
 
-        Assert.Same(dto, result);
+        Assert.Equal(dto.Id, result.Id);
+        Assert.Equal(dto.Status, result.Status);
+        Assert.Equal(dto.TotalAmount, result.TotalAmount);
         storage.Verify(s => s.UpsertAsync(
             DatabaseConstants.PrimaryDatabaseConnectionStringName,
-            dto,
+            It.Is<OrderEntity>(e =>
+                e.Id == dto.Id
+                && e.Status == dto.Status
+                && e.TotalAmount == StoredAsDecimalHelper.ParseRequiredDecimal(dto.TotalAmount,
+                    nameof(OrderDto.TotalAmount))),
             TestContext.Current.CancellationToken), Times.Once);
     }
 }

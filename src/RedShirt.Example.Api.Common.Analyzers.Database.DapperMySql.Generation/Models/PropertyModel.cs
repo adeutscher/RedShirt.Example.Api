@@ -27,6 +27,13 @@ public class PropertyModel
     public bool CannotFilterBy { get; set; }
     public int FilterPriorityWeight { get; set; }
 
+    /// <summary>
+    ///     CLR type used on the generated persistence entity.
+    ///     <see cref="StoredAsDecimalAttribute" /> string DTO properties map to <see cref="decimal" />.
+    /// </summary>
+    public string EntityType =>
+        IsStoredAsDecimal && Category == PropertyCategory.String ? typeof(decimal).FullName! : Type;
+
     public PropertyCategory Category
     {
         get

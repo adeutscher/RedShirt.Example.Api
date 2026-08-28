@@ -40,6 +40,21 @@ public class ClassSummaryModel
     public string FullDtoName => $"{Namespace}.{DtoName}";
 
     /// <summary>
+    ///     Persistence entity name (e.g. OrderEntity).
+    /// </summary>
+    public string EntityName => $"{BaseName}Entity";
+
+    /// <summary>
+    ///     Namespace for generated persistence entities.
+    /// </summary>
+    public string EntitiesNamespace => GeneratedNamespace;
+
+    /// <summary>
+    ///     Fully-qualified path to generated persistence entity.
+    /// </summary>
+    public string FullEntityName => $"{EntitiesNamespace}.{EntityName}";
+
+    /// <summary>
     ///     Name of C# object minus 'Dto'
     /// </summary>
     public string BaseName => DtoName.Replace("Dto", "");
