@@ -6,8 +6,4 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\RedShirt.Example.Api.Common.Exceptions\RedShirt.Example.Api.Common.Exceptions.csproj"/>
-    </ItemGroup>
-
 </Project>

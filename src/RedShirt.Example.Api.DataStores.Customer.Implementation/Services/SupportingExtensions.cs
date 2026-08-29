@@ -1,6 +1,6 @@
 using RedShirt.Example.Api.DataStores.Customer.Core.Models;
 
-namespace RedShirt.Example.Api.DataStores.Customer.Core.Services;
+namespace RedShirt.Example.Api.DataStores.Customer.Implementation.Services;
 
 internal static class SupportingExtensions
 {
@@ -12,6 +12,7 @@ internal static class SupportingExtensions
 
     public static bool IsTheSameAs(this CustomerDto a, CustomerDto b)
     {
-        return a.Email == b.Email && a.DisplayName == b.DisplayName;
+        return a.Email == b.Email
+               && a.DisplayName == b.DisplayName;
     }
 }
