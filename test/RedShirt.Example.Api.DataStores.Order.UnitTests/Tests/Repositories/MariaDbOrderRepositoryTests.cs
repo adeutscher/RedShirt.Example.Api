@@ -2,14 +2,10 @@ using Moq;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Factories;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Services;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Services.Resilience;
-using RedShirt.Example.Api.Common.Database.DapperMySql.Utility;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
-using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.DataStores.Constants;
-using RedShirt.Example.Api.DataStores.Order.Models;
 using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 using System.Data;
-using System.Globalization;
 using System.Text.Json;
 
 namespace RedShirt.Example.Api.DataStores.Order.UnitTests.Tests.Repositories;
@@ -19,19 +15,19 @@ namespace RedShirt.Example.Api.DataStores.Order.UnitTests.Tests.Repositories;
 /// </summary>
 public class MariaDbOrderRepositoryTests
 {
-    private static OrderDto CreateDto(
+    private static OrderInternalDto CreateDto(
         Guid? id = null,
         DateTime? updatedAtUtc = null)
     {
         var updated = updatedAtUtc ?? DateTime.UtcNow;
-        return new OrderDto
+        return new OrderInternalDto
         {
             Id = id ?? Guid.NewGuid(),
             CreatedAtUtc = updated.AddDays(-1),
             UpdatedAtUtc = updated,
             CustomerId = Guid.NewGuid(),
             Status = "Pending",
-            TotalAmount = "10.00",
+            TotalAmount = 10.00m,
             TotalPrice = null
         };
     }
@@ -48,10 +44,8 @@ public class MariaDbOrderRepositoryTests
             UpdatedAtUtc = dto.UpdatedAtUtc,
             CustomerId = dto.CustomerId,
             Status = dto.Status,
-            TotalAmount = StoredAsDecimalHelper.ParseRequiredDecimal(dto.TotalAmount, nameof(OrderDto.TotalAmount)),
-            TotalPrice = dto.TotalPrice is null
-                ? null
-                : StoredAsDecimalHelper.ParseRequiredDecimal(dto.TotalPrice, nameof(OrderDto.TotalPrice))
+            TotalAmount = dto.TotalAmount,
+            TotalPrice = dto.TotalPrice
         };
     }
 
@@ -59,7 +53,7 @@ public class MariaDbOrderRepositoryTests
         int pageSize = 10,
         Guid? customerId = null,
         string? status = null,
-        string? totalAmount = null)
+        decimal? totalAmount = null)
     {
         return new OrderServiceSearchRequest
         {
@@ -155,7 +149,7 @@ public class MariaDbOrderRepositoryTests
         Assert.NotNull(result);
         Assert.Equal(entity.Id, result.Id);
         Assert.Equal(entity.Status, result.Status);
-        Assert.Equal(entity.TotalAmount.ToString(CultureInfo.InvariantCulture), result.TotalAmount);
+        Assert.Equal(entity.TotalAmount, result.TotalAmount);
         storage.Verify(s => s.GetByKeyAsync(
             DatabaseConstants.PrimaryDatabaseConnectionStringName,
             entity.Id,
@@ -215,20 +209,6 @@ public class MariaDbOrderRepositoryTests
     }
 
     [Fact]
-    public async Task SearchAsync_ThrowsBadRequest_WhenTotalAmountIsInvalid()
-    {
-        var repository = CreateRepository();
-
-        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
-            repository.SearchAsync(
-                CreateSearchRequest(totalAmount: "not-a-decimal"),
-                null,
-                TestContext.Current.CancellationToken));
-
-        Assert.Equal("Invalid decimal value for 'TotalAmount'.", exception.Message);
-    }
-
-    [Fact]
     public async Task SearchAsync_UsesCachedParameters_WhenContinuationTokenProvided()
     {
         var continuationToken = Guid.NewGuid();
@@ -285,8 +265,7 @@ public class MariaDbOrderRepositoryTests
             It.Is<OrderEntity>(e =>
                 e.Id == dto.Id
                 && e.Status == dto.Status
-                && e.TotalAmount == StoredAsDecimalHelper.ParseRequiredDecimal(dto.TotalAmount,
-                    nameof(OrderDto.TotalAmount))),
+                && e.TotalAmount == dto.TotalAmount),
             TestContext.Current.CancellationToken), Times.Once);
     }
 }

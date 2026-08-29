@@ -38,7 +38,9 @@ public class OrderController : ControllerBase
         IDeleteOrderCommandHandler deleteOrderCommandHandler,
         CancellationToken cancellationToken)
     {
-        var existing = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
+        var existing =
+            await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id),
+                cancellationToken);
         await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
         await deleteOrderCommandHandler.Handle(new DeleteOrderCommand(id), cancellationToken);
         return Ok();
@@ -58,7 +60,8 @@ public class OrderController : ControllerBase
         ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
         CancellationToken cancellationToken)
     {
-        var model = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
+        var model = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id),
+            cancellationToken);
         await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, model.CustomerId);
         return Ok(model);
     }
@@ -81,7 +84,9 @@ public class OrderController : ControllerBase
         IPatchOrderCommandHandler patchOrderCommandHandler,
         CancellationToken cancellationToken)
     {
-        var existing = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
+        var existing =
+            await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id),
+                cancellationToken);
         await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
         var model = await patchOrderCommandHandler.Handle(
             new PatchOrderCommand(
@@ -139,7 +144,9 @@ public class OrderController : ControllerBase
         IUpdateOrderCommandHandler updateOrderCommandHandler,
         CancellationToken cancellationToken)
     {
-        var existing = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
+        var existing =
+            await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id),
+                cancellationToken);
         await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
         var model = await updateOrderCommandHandler.Handle(
             new UpdateOrderCommand(
@@ -164,27 +171,26 @@ public class OrderController : ControllerBase
         ISearchOrderRecordsQueryHandler searchOrderRecordsQueryHandler,
         CancellationToken cancellationToken)
     {
-        var customerId = customerScopedResourceEnforcer.ConstrainSearchCustomerId(User, request.CustomerId);
+        var customerId =
+            customerScopedResourceEnforcer.ConstrainSearchCustomerId(User,
+                request.CustomerId);
         var model = await searchOrderRecordsQueryHandler.Handle(
             new SearchOrderRecordsQuery(
-                new OrderServiceSearchRequest
-                {
-                    PageSize = request.PageSize,
-                    CreatedBeforeUtc = request.CreatedBeforeUtc,
-                    CreatedAfterUtc = request.CreatedAfterUtc,
-                    UpdatedBeforeUtc = request.UpdatedBeforeUtc,
-                    UpdatedAfterUtc = request.UpdatedAfterUtc,
-                    CustomerId = customerId,
-                    Status = request.Status,
-                    StatusContains = request.StatusContains,
-                    TotalAmount = request.TotalAmount,
-                    TotalAmountGreaterThan = request.TotalAmountGreaterThan,
-                    TotalAmountLessThan = request.TotalAmountLessThan,
-                    TotalPrice = request.TotalPrice,
-                    TotalPriceGreaterThan = request.TotalPriceGreaterThan,
-                    TotalPriceLessThan = request.TotalPriceLessThan,
-                    TotalPriceIsNull = request.TotalPriceIsNull
-                },
+                request.PageSize,
+                request.CreatedBeforeUtc,
+                request.CreatedAfterUtc,
+                request.UpdatedBeforeUtc,
+                request.UpdatedAfterUtc,
+                customerId,
+                request.Status,
+                request.StatusContains,
+                request.TotalAmount,
+                request.TotalAmountGreaterThan,
+                request.TotalAmountLessThan,
+                request.TotalPrice,
+                request.TotalPriceGreaterThan,
+                request.TotalPriceLessThan,
+                request.TotalPriceIsNull,
                 request.ContinuationToken),
             cancellationToken);
         return Ok(model);

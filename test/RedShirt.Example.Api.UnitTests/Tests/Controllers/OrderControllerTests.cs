@@ -51,7 +51,8 @@ public class OrderControllerTests
         var deleteHandler = new Mock<IDeleteOrderCommandHandler>();
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
-            _controller.Delete(OrderId, getHandler.Object, authorizer.Object, deleteHandler.Object,
+            _controller.Delete(OrderId, getHandler.Object,
+                authorizer.Object, deleteHandler.Object,
                 TestContext.Current.CancellationToken));
 
         deleteHandler.Verify(
@@ -72,7 +73,9 @@ public class OrderControllerTests
             .ThrowsAsync(new ResourceNotFoundException());
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
-            _controller.Get(OrderId, getHandler.Object, authorizer.Object, TestContext.Current.CancellationToken));
+            _controller.Get(OrderId, getHandler.Object,
+                authorizer.Object,
+                TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -86,7 +89,8 @@ public class OrderControllerTests
             .ReturnsAsync(expected);
         var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
 
-        var result = await _controller.Get(OrderId, getHandler.Object, authorizer.Object,
+        var result = await _controller.Get(OrderId, getHandler.Object,
+            authorizer.Object,
             TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -110,11 +114,12 @@ public class OrderControllerTests
         var searchHandler = new Mock<ISearchOrderRecordsQueryHandler>();
         searchHandler
             .Setup(handler => handler.Handle(
-                It.Is<SearchOrderRecordsQuery>(query => query.Parameters.CustomerId == CustomerId),
+                It.Is<SearchOrderRecordsQuery>(query => query.CustomerId == CustomerId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
 
-        var result = await _controller.Search(new OrderSearchRequest(), authorizer.Object, searchHandler.Object,
+        var result = await _controller.Search(new OrderSearchRequest(),
+            authorizer.Object, searchHandler.Object,
             TestContext.Current.CancellationToken);
 
         var ok = Assert.IsType<OkObjectResult>(result);

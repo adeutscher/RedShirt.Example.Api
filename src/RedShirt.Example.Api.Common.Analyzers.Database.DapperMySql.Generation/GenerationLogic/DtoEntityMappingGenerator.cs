@@ -19,79 +19,39 @@ public static class DtoEntityMappingGenerator
         }
     }
 
-    private static string GetToDtoAssignment(PropertyModel property)
-    {
-        if (property is {IsStoredAsDecimal: true, Category: PropertyModel.PropertyCategory.String})
-        {
-            if (property.IsNullable)
-            {
-                return
-                    $"entity.{property.Name}.HasValue ? entity.{property.Name}.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : null";
-            }
-
-            return $"entity.{property.Name}.ToString(System.Globalization.CultureInfo.InvariantCulture)";
-        }
-
-        return $"entity.{property.Name}";
-    }
-
-    private static string GetToEntityAssignment(
-        PropertyModel property,
-        ClassSummaryModel classSummaryModel,
-        string parseDecimal)
-    {
-        if (property is {IsStoredAsDecimal: true, Category: PropertyModel.PropertyCategory.String})
-        {
-            if (property.IsNullable)
-            {
-                return
-                    $"dto.{property.Name} is null ? null : {parseDecimal}(dto.{property.Name}, nameof({classSummaryModel.FullDtoName}.{property.Name}))";
-            }
-
-            return $"{parseDecimal}(dto.{property.Name}, nameof({classSummaryModel.FullDtoName}.{property.Name}))";
-        }
-
-        return $"dto.{property.Name}";
-    }
-
     public static StringBuilder WriteDtoEntityMapping(this StringBuilder sb, ClassSummaryModel classSummaryModel)
     {
-        var baseNamespace = classSummaryModel.BaseNamespace;
-        var parseDecimal =
-            $"{baseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal";
+        var serviceDto = classSummaryModel.FullServiceDtoName;
 
         sb.AppendLineWithIndent(
-                $"private static {classSummaryModel.FullDtoName} ToDto({classSummaryModel.FullEntityName} entity)")
+                $"private static {serviceDto} ToDto({classSummaryModel.FullEntityName} entity)")
             .OpenBracket()
-            .AppendLineWithIndent(2, $"return new {classSummaryModel.FullDtoName}")
+            .AppendLineWithIndent(2, $"return new {serviceDto}")
             .OpenBracket(2);
 
         foreach (var property in GetAllMappedProperties(classSummaryModel))
         {
-            sb.AppendLineWithIndent(3, $"{property.Name} = {GetToDtoAssignment(property)},");
+            sb.AppendLineWithIndent(3, $"{property.Name} = entity.{property.Name},");
         }
 
         sb
-            // Close bracket without a newline just for semicolon
             .AppendLineWithIndent(2, "};")
             .CloseBracket()
             .AppendLine();
 
         sb.AppendLineWithIndent(
-                $"private static {classSummaryModel.FullEntityName} ToEntity({classSummaryModel.FullDtoName} dto)")
+                $"private static {classSummaryModel.FullEntityName} ToEntity({serviceDto} dto)")
             .OpenBracket()
             .AppendLineWithIndent(2, $"return new {classSummaryModel.FullEntityName}")
             .OpenBracket(2);
 
         foreach (var property in GetAllMappedProperties(classSummaryModel))
         {
-            sb.AppendLineWithIndent(3,
-                $"{property.Name} = {GetToEntityAssignment(property, classSummaryModel, parseDecimal)},");
+            sb.AppendLineWithIndent(3, $"{property.Name} = dto.{property.Name},");
         }
 
         return sb
-            .CloseBracket(2)
-            .AppendLineWithIndent(2, ";")
+            .AppendLineWithIndent(2, "};")
             .CloseBracket()
             .AppendLine();
     }

@@ -14,7 +14,7 @@ public static class RepositoryLevelGenerator
     private static StringBuilder AddSearchMethod(this StringBuilder sb, ClassSummaryModel classSummaryModel)
     {
         return sb.AppendLineWithIndent(
-                $"public async {Helper.Taskify(classSummaryModel.ResponseClassSearch)} SearchAsync"
+                $"public async {Helper.Taskify(classSummaryModel.ServiceResponseClassSearch)} SearchAsync"
                 + $"({classSummaryModel.RequestClassSearch} parameters,"
                 + $" {typeof(Guid).FullName}? continuationToken, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
@@ -111,7 +111,7 @@ public static class RepositoryLevelGenerator
             .CloseBracket(2)
             // Send response
             .AppendLineWithIndent(2,
-                $"return new {classSummaryModel.ResponseClassSearch}")
+                $"return new {classSummaryModel.ServiceResponseClassSearch}")
             .OpenBracket(2)
             .AppendLineWithIndent(3, "Records = records,")
             .AppendLineWithIndent(3, "ContinuationToken = continuationToken")
@@ -158,7 +158,7 @@ public static class RepositoryLevelGenerator
             .AppendLine()
             // GetById
             .AppendLineWithIndent(
-                $"public async {Helper.Taskify(classSummaryModel.FullDtoName + "?")} GetByIdAsync({typeof(Guid).FullName} id, {typeof(CancellationToken).FullName} cancellationToken = default)")
+                $"public async {Helper.Taskify(classSummaryModel.FullServiceDtoName + "?")} GetByIdAsync({typeof(Guid).FullName} id, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
             .AppendLineWithIndent(2,
                 $"var entity = await genericDtoStorage.GetByKeyAsync(\"{classSummaryModel.ConnectionStringName}\", id, cancellationToken);")
@@ -167,7 +167,7 @@ public static class RepositoryLevelGenerator
             .AppendLine()
             // Upsert
             .AppendLineWithIndent(
-                $"public async {Helper.Taskify(classSummaryModel.FullDtoName)} UpsertAsync({classSummaryModel.FullDtoName} item, {typeof(CancellationToken).FullName} cancellationToken = default)")
+                $"public async {Helper.Taskify(classSummaryModel.FullServiceDtoName)} UpsertAsync({classSummaryModel.FullServiceDtoName} item, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
             .AppendLineWithIndent(2,
                 $"var entity = await genericDtoStorage.UpsertAsync(\"{classSummaryModel.ConnectionStringName}\", ToEntity(item), cancellationToken);")
@@ -329,16 +329,14 @@ public static class RepositoryLevelGenerator
                     /* Equals */
 
                     sb.AppendLineWithIndent(baseIndentLevel,
-                            $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}))")
+                            $"if(parameters.{dtoProperty.Name}.HasValue)")
                         .OpenBracket(baseIndentLevel)
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                 dtoProperty.Name, $"= @{paramName}") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            "new {" + paramName +
-                            $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}))" +
-                            "}")
+                            "new {" + paramName + $" = parameters.{dtoProperty.Name}.Value" + "}")
                         .AppendLineWithIndent(baseIndentLevel + 1, ");")
                         .CloseBracket(baseIndentLevel);
 
@@ -347,31 +345,27 @@ public static class RepositoryLevelGenerator
                     // Greater Than
 
                     sb.AppendLineWithIndent(baseIndentLevel,
-                            $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}GreaterThan))")
+                            $"if(parameters.{dtoProperty.Name}GreaterThan.HasValue)")
                         .OpenBracket(baseIndentLevel)
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                 dtoProperty.Name, $"> @{paramName}") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            "new {" + paramName +
-                            $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}GreaterThan, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}GreaterThan))" +
-                            "}")
+                            "new {" + paramName + $" = parameters.{dtoProperty.Name}GreaterThan.Value" + "}")
                         .AppendLineWithIndent(baseIndentLevel + 1, ");")
                         .CloseBracket(baseIndentLevel);
 
                     // Less Than
                     sb.AppendLineWithIndent(baseIndentLevel,
-                            $"if(!string.IsNullOrWhiteSpace(parameters.{dtoProperty.Name}LessThan))")
+                            $"if(parameters.{dtoProperty.Name}LessThan.HasValue)")
                         .OpenBracket(baseIndentLevel)
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
                                 dtoProperty.Name, $"< @{paramName}") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            "new {" + paramName +
-                            $" = {classSummaryModel.BaseNamespace}.Common.Database.DapperMySql.Utility.StoredAsDecimalHelper.ParseRequiredDecimal(parameters.{dtoProperty.Name}LessThan, nameof({classSummaryModel.RequestClassSearch}.{dtoProperty.Name}LessThan))" +
-                            "}")
+                            "new {" + paramName + $" = parameters.{dtoProperty.Name}LessThan.Value" + "}")
                         .AppendLineWithIndent(baseIndentLevel + 1, ");")
                         .CloseBracket(baseIndentLevel);
 

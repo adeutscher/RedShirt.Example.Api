@@ -179,6 +179,7 @@ public static class CentralContentGenerator
         sb.AppendLine("#nullable enable");
         sb.AppendLine($"namespace {classSummary.GeneratedNamespace};");
         sb.WriteEntityInfo(classSummary);
+        sb.WriteInternalDtoInfo(classSummary);
         sb
             .WriteServiceInfo(classSummary)
             .WriteRepositoryInfo(classSummary)

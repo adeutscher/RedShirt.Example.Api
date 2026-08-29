@@ -1,4 +1,5 @@
 ﻿**/.dockerignore
+**/.editorconfig
 **/.env
 **/.git
 **/.gitignore

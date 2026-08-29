@@ -1,5 +1,4 @@
 using RedShirt.Example.Api.Core.UseCases.Product.Queries.SearchRecords;
-using RedShirt.Example.Api.DataStores.Product.Core.Models;
 
 namespace RedShirt.Example.Api.Core.UnitTests.Tests.UseCases.Product.Queries.SearchRecords;
 
@@ -13,30 +12,25 @@ public class SearchProductRecordsQueryValidatorTests
     private static SearchProductRecordsQuery CreateQuery(string propertyName, string? value)
     {
         return new SearchProductRecordsQuery(
-            new ProductServiceSearchRequest
-            {
-                PageSize = 10,
-                CreatedBeforeUtc = null,
-                CreatedAfterUtc = null,
-                UpdatedBeforeUtc = null,
-                UpdatedAfterUtc = null,
-                Sku = null,
-                SkuContains = null,
-                Name = null,
-                NameContains = null,
-                Price = propertyName == nameof(ProductServiceSearchRequest.Price) ? value : null,
-                PriceGreaterThan = propertyName == nameof(ProductServiceSearchRequest.PriceGreaterThan)
-                    ? value
-                    : null,
-                PriceLessThan = propertyName == nameof(ProductServiceSearchRequest.PriceLessThan) ? value : null
-            },
+            10,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            propertyName == nameof(SearchProductRecordsQuery.Price) ? value : null,
+            propertyName == nameof(SearchProductRecordsQuery.PriceGreaterThan) ? value : null,
+            propertyName == nameof(SearchProductRecordsQuery.PriceLessThan) ? value : null,
             null);
     }
 
     [Theory]
-    [InlineData(nameof(ProductServiceSearchRequest.Price), "not-a-decimal")]
-    [InlineData(nameof(ProductServiceSearchRequest.PriceGreaterThan), "12.34.56")]
-    [InlineData(nameof(ProductServiceSearchRequest.PriceLessThan), "abc")]
+    [InlineData(nameof(SearchProductRecordsQuery.Price), "not-a-decimal")]
+    [InlineData(nameof(SearchProductRecordsQuery.PriceGreaterThan), "12.34.56")]
+    [InlineData(nameof(SearchProductRecordsQuery.PriceLessThan), "abc")]
     public async Task Validate_Fails_WhenDecimalFilterIsInvalid(string propertyName, string value)
     {
         var result = await _validator.ValidateAsync(
@@ -45,14 +39,15 @@ public class SearchProductRecordsQueryValidatorTests
 
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors,
-            error => error.ErrorMessage.Contains("must be a valid decimal number", StringComparison.Ordinal));
+            error => error.ErrorMessage.Contains("must be a valid decimal number",
+                StringComparison.Ordinal));
     }
 
     [Theory]
-    [InlineData(nameof(ProductServiceSearchRequest.Price), null)]
-    [InlineData(nameof(ProductServiceSearchRequest.Price), "9.99")]
-    [InlineData(nameof(ProductServiceSearchRequest.PriceGreaterThan), "0")]
-    [InlineData(nameof(ProductServiceSearchRequest.PriceLessThan), "-1.5")]
+    [InlineData(nameof(SearchProductRecordsQuery.Price), null)]
+    [InlineData(nameof(SearchProductRecordsQuery.Price), "9.99")]
+    [InlineData(nameof(SearchProductRecordsQuery.PriceGreaterThan), "0")]
+    [InlineData(nameof(SearchProductRecordsQuery.PriceLessThan), "-1.5")]
     public async Task Validate_Succeeds_WhenDecimalFilterIsNullOrValid(string propertyName, string? value)
     {
         var result = await _validator.ValidateAsync(

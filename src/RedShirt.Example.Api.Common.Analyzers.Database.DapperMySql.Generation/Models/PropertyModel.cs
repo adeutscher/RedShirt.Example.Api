@@ -34,6 +34,12 @@ public class PropertyModel
     public string EntityType =>
         IsStoredAsDecimal && Category == PropertyCategory.String ? typeof(decimal).FullName! : Type;
 
+    /// <summary>
+    ///     CLR type used on the service-layer DTO and request objects.
+    ///     <see cref="StoredAsDecimalAttribute" /> string DTO properties map to <see cref="decimal" />.
+    /// </summary>
+    public string ServiceType => EntityType;
+
     public PropertyCategory Category
     {
         get

@@ -8,10 +8,10 @@ internal static class SupportingExtensions
     {
         return !string.IsNullOrWhiteSpace(subject.Sku)
                || !string.IsNullOrWhiteSpace(subject.Name)
-               || !string.IsNullOrWhiteSpace(subject.Price);
+               || subject.Price.HasValue;
     }
 
-    public static bool IsTheSameAs(this ProductDto a, ProductDto b)
+    public static bool IsTheSameAs(this ProductInternalDto a, ProductInternalDto b)
     {
         return a.Sku == b.Sku && a.Name == b.Name && a.Price == b.Price;
     }

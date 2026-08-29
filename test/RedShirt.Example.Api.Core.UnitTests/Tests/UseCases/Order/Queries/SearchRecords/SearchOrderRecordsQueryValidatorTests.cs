@@ -1,5 +1,4 @@
 using RedShirt.Example.Api.Core.UseCases.Order.Queries.SearchRecords;
-using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 
 namespace RedShirt.Example.Api.Core.UnitTests.Tests.UseCases.Order.Queries.SearchRecords;
 
@@ -13,38 +12,31 @@ public class SearchOrderRecordsQueryValidatorTests
     private static SearchOrderRecordsQuery CreateQuery(string propertyName, string? value)
     {
         return new SearchOrderRecordsQuery(
-            new OrderServiceSearchRequest
-            {
-                PageSize = 10,
-                CreatedBeforeUtc = null,
-                CreatedAfterUtc = null,
-                UpdatedBeforeUtc = null,
-                UpdatedAfterUtc = null,
-                CustomerId = null,
-                Status = null,
-                StatusContains = null,
-                TotalAmount = propertyName == nameof(OrderServiceSearchRequest.TotalAmount) ? value : null,
-                TotalAmountGreaterThan =
-                    propertyName == nameof(OrderServiceSearchRequest.TotalAmountGreaterThan) ? value : null,
-                TotalAmountLessThan =
-                    propertyName == nameof(OrderServiceSearchRequest.TotalAmountLessThan) ? value : null,
-                TotalPrice = propertyName == nameof(OrderServiceSearchRequest.TotalPrice) ? value : null,
-                TotalPriceGreaterThan =
-                    propertyName == nameof(OrderServiceSearchRequest.TotalPriceGreaterThan) ? value : null,
-                TotalPriceLessThan =
-                    propertyName == nameof(OrderServiceSearchRequest.TotalPriceLessThan) ? value : null,
-                TotalPriceIsNull = false
-            },
+            10,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            propertyName == nameof(SearchOrderRecordsQuery.TotalAmount) ? value : null,
+            propertyName == nameof(SearchOrderRecordsQuery.TotalAmountGreaterThan) ? value : null,
+            propertyName == nameof(SearchOrderRecordsQuery.TotalAmountLessThan) ? value : null,
+            propertyName == nameof(SearchOrderRecordsQuery.TotalPrice) ? value : null,
+            propertyName == nameof(SearchOrderRecordsQuery.TotalPriceGreaterThan) ? value : null,
+            propertyName == nameof(SearchOrderRecordsQuery.TotalPriceLessThan) ? value : null,
+            false,
             null);
     }
 
     [Theory]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmount), "not-a-decimal")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmountGreaterThan), "12.34.56")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmountLessThan), "abc")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPrice), "nope")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPriceGreaterThan), "1.2.3")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPriceLessThan), "xyz")]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmount), "not-a-decimal")]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmountGreaterThan), "12.34.56")]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmountLessThan), "abc")]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalPrice), "nope")]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalPriceGreaterThan), "1.2.3")]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalPriceLessThan), "xyz")]
     public async Task Validate_Fails_WhenDecimalFilterIsInvalid(string propertyName, string value)
     {
         var result = await _validator.ValidateAsync(
@@ -53,18 +45,19 @@ public class SearchOrderRecordsQueryValidatorTests
 
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors,
-            error => error.ErrorMessage.Contains("must be a valid decimal number", StringComparison.Ordinal));
+            error => error.ErrorMessage.Contains("must be a valid decimal number",
+                StringComparison.Ordinal));
     }
 
     [Theory]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmount), null)]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmount), "42.00")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmountGreaterThan), "0")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalAmountLessThan), "100")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPrice), null)]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPrice), "9.99")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPriceGreaterThan), "-1.5")]
-    [InlineData(nameof(OrderServiceSearchRequest.TotalPriceLessThan), "1000")]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmount), null)]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmount), "42.00")]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmountGreaterThan), "0")]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmountLessThan), "100")]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalPrice), null)]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalPrice), "9.99")]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalPriceGreaterThan), "-1.5")]
+    [InlineData(nameof(SearchOrderRecordsQuery.TotalPriceLessThan), "1000")]
     public async Task Validate_Succeeds_WhenDecimalFilterIsNullOrValid(string propertyName, string? value)
     {
         var result = await _validator.ValidateAsync(

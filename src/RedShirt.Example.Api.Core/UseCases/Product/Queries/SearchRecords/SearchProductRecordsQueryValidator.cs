@@ -7,13 +7,13 @@ public class SearchProductRecordsQueryValidator : AbstractValidator<SearchProduc
 {
     public SearchProductRecordsQueryValidator()
     {
-        RuleFor(query => query.Parameters.Price)
+        RuleFor(query => query.Price)
             .MustBeValidStoredDecimalWhenPresent();
 
-        RuleFor(query => query.Parameters.PriceGreaterThan)
+        RuleFor(query => query.PriceGreaterThan)
             .MustBeValidStoredDecimalWhenPresent();
 
-        RuleFor(query => query.Parameters.PriceLessThan)
+        RuleFor(query => query.PriceLessThan)
             .MustBeValidStoredDecimalWhenPresent();
     }
 }

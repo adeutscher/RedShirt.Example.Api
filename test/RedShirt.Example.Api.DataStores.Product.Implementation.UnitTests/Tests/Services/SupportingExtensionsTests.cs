@@ -9,44 +9,57 @@ namespace RedShirt.Example.Api.DataStores.Product.Implementation.UnitTests.Tests
 public class SupportingExtensionsTests
 {
     [Theory]
-    [InlineData("sku", null, null, true)]
-    [InlineData(null, "name", null, true)]
-    [InlineData(null, null, "1.00", true)]
-    [InlineData(null, null, null, false)]
-    [InlineData(" ", " ", " ", false)]
-    public void AreChangesRequested_ReturnsExpected(string? sku, string? name, string? price, bool expected)
+    [InlineData("sku", null, true)]
+    [InlineData(null, "name", true)]
+    [InlineData(null, null, false)]
+    [InlineData(" ", " ", false)]
+    public void AreChangesRequested_ReturnsExpected(string? sku, string? name, bool expected)
     {
         var request = new ProductServicePatchRequest
         {
             Id = Guid.NewGuid(),
             Sku = sku,
             Name = name,
-            Price = price
+            Price = null
         };
 
         Assert.Equal(expected, request.AreChangesRequested());
     }
 
     [Fact]
+    public void AreChangesRequested_ReturnsTrue_WhenPriceProvided()
+    {
+        var request = new ProductServicePatchRequest
+        {
+            Id = Guid.NewGuid(),
+            Sku = null,
+            Name = null,
+            Price = 1.00m
+        };
+
+        Assert.True(request.AreChangesRequested());
+    }
+
+    [Fact]
     public void IsTheSameAs_ReturnsFalse_WhenBusinessFieldsDiffer()
     {
-        var a = new ProductDto
+        var a = new ProductInternalDto
         {
             Id = Guid.NewGuid(),
             CreatedAtUtc = DateTime.UtcNow,
             UpdatedAtUtc = DateTime.UtcNow,
             Sku = "SKU-1",
             Name = "Widget",
-            Price = "9.99"
+            Price = 9.99m
         };
-        var b = new ProductDto
+        var b = new ProductInternalDto
         {
             Id = a.Id,
             CreatedAtUtc = a.CreatedAtUtc,
             UpdatedAtUtc = a.UpdatedAtUtc,
             Sku = "SKU-2",
             Name = "Widget",
-            Price = "9.99"
+            Price = 9.99m
         };
 
         Assert.False(a.IsTheSameAs(b));
@@ -55,24 +68,23 @@ public class SupportingExtensionsTests
     [Fact]
     public void IsTheSameAs_ReturnsTrue_WhenBusinessFieldsMatch()
     {
-        var id = Guid.NewGuid();
-        var a = new ProductDto
+        var a = new ProductInternalDto
         {
-            Id = id,
+            Id = Guid.NewGuid(),
             CreatedAtUtc = DateTime.UtcNow,
             UpdatedAtUtc = DateTime.UtcNow,
             Sku = "SKU-1",
             Name = "Widget",
-            Price = "9.99"
+            Price = 9.99m
         };
-        var b = new ProductDto
+        var b = new ProductInternalDto
         {
             Id = Guid.NewGuid(),
             CreatedAtUtc = DateTime.UtcNow.AddDays(-1),
             UpdatedAtUtc = DateTime.UtcNow.AddDays(-1),
             Sku = "SKU-1",
             Name = "Widget",
-            Price = "9.99"
+            Price = 9.99m
         };
 
         Assert.True(a.IsTheSameAs(b));

@@ -1,4 +1,5 @@
 using RedShirt.Example.Api.DataStores.Product.Core.Models;
+using RedShirt.Example.Api.DataStores.Product.Core.Services;
 
 namespace RedShirt.Example.Api.DataStores.Product.Core.UnitTests.Tests.Models;
 
@@ -7,6 +8,15 @@ namespace RedShirt.Example.Api.DataStores.Product.Core.UnitTests.Tests.Models;
 /// </summary>
 public class ProductDtoTests
 {
+    [Fact]
+    public void IProductService_ReturnsInternalDto()
+    {
+        var getById = typeof(IProductService).GetMethod(nameof(IProductService.GetByIdAsync));
+
+        Assert.NotNull(getById);
+        Assert.Equal(typeof(Task<ProductInternalDto>), getById!.ReturnType);
+    }
+
     [Fact]
     public void ProductDto_CanBeConstructedWithRequiredFields()
     {
@@ -29,6 +39,27 @@ public class ProductDtoTests
         Assert.Equal(updated, dto.UpdatedAtUtc);
         Assert.Equal("SKU-1", dto.Sku);
         Assert.Equal("Widget", dto.Name);
+        Assert.Equal("12.34", dto.Price);
+    }
+
+    [Fact]
+    public void ProductInternalDto_MapsToPublicProductDto()
+    {
+        var internalDto = new ProductInternalDto
+        {
+            Id = Guid.NewGuid(),
+            CreatedAtUtc = DateTime.UtcNow.AddDays(-1),
+            UpdatedAtUtc = DateTime.UtcNow,
+            Sku = "SKU-1",
+            Name = "Widget",
+            Price = 12.34m
+        };
+
+        var dto = internalDto.ToDto();
+
+        Assert.Equal(internalDto.Id, dto.Id);
+        Assert.Equal(internalDto.Sku, dto.Sku);
+        Assert.Equal(internalDto.Name, dto.Name);
         Assert.Equal("12.34", dto.Price);
     }
 }

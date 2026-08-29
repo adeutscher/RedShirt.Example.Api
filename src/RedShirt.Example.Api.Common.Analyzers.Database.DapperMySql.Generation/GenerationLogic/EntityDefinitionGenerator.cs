@@ -4,7 +4,7 @@ using System.Text;
 
 namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.GenerationLogic;
 
-public static class EntityLevelGenerator
+public static class EntityDefinitionGenerator
 {
     private const string AttributesNamespace =
         "RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes";
