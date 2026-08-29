@@ -3,7 +3,6 @@ using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
 using RedShirt.Example.Api.DataStores.Constants;
 using RedShirt.Example.Api.DataStores.Customer.Core.Models;
-using RedShirt.Example.Api.DataStores.Customer.Core.Repositories;
 using RedShirt.Example.Api.DataStores.Customer.Implementation.Entities;
 using RedShirt.Example.Api.DataStores.Customer.Implementation.Factories;
 using RedShirt.Example.Api.DataStores.Customer.Implementation.Predicates;

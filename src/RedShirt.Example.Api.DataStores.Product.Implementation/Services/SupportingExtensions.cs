@@ -13,6 +13,8 @@ internal static class SupportingExtensions
 
     public static bool IsTheSameAs(this ProductInternalDto a, ProductInternalDto b)
     {
-        return a.Sku == b.Sku && a.Name == b.Name && a.Price == b.Price;
+        return a.Sku == b.Sku
+               && a.Name == b.Name
+               && a.Price == b.Price;
     }
 }

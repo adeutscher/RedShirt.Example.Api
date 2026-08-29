@@ -3,11 +3,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using RedShirt.Example.Api.Common.Database.Services;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
-using RedShirt.Example.Api.DataStores.Customer.Core.Repositories;
 using RedShirt.Example.Api.DataStores.Customer.Core.Services;
 using RedShirt.Example.Api.DataStores.Customer.Implementation.Extensions;
 using RedShirt.Example.Api.DataStores.Customer.Implementation.Factories;
 using RedShirt.Example.Api.DataStores.Customer.Implementation.Repositories;
+using RedShirt.Example.Api.DataStores.Customer.Implementation.Services;
 
 namespace RedShirt.Example.Api.DataStores.Customer.Implementation.UnitTests.Tests.Extensions;
 

@@ -1,10 +1,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RedShirt.Example.Api.Common.Database.Extensions;
-using RedShirt.Example.Api.DataStores.Customer.Core.Repositories;
 using RedShirt.Example.Api.DataStores.Customer.Core.Services;
 using RedShirt.Example.Api.DataStores.Customer.Implementation.Factories;
 using RedShirt.Example.Api.DataStores.Customer.Implementation.Repositories;
+using RedShirt.Example.Api.DataStores.Customer.Implementation.Services;
 
 namespace RedShirt.Example.Api.DataStores.Customer.Implementation.Extensions;
 

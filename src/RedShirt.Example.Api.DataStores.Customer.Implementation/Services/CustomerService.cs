@@ -1,10 +1,11 @@
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.DataStores.Customer.Core.Models;
-using RedShirt.Example.Api.DataStores.Customer.Core.Repositories;
+using RedShirt.Example.Api.DataStores.Customer.Core.Services;
+using RedShirt.Example.Api.DataStores.Customer.Implementation.Repositories;
 
-namespace RedShirt.Example.Api.DataStores.Customer.Core.Services;
+namespace RedShirt.Example.Api.DataStores.Customer.Implementation.Services;
 
-public sealed class CustomerService(ICustomerRepository repository) : ICustomerService
+internal sealed class CustomerService(ICustomerRepository repository) : ICustomerService
 {
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {

@@ -1,8 +1,8 @@
 using RedShirt.Example.Api.DataStores.Customer.Core.Models;
 
-namespace RedShirt.Example.Api.DataStores.Customer.Core.Repositories;
+namespace RedShirt.Example.Api.DataStores.Customer.Implementation.Repositories;
 
-public interface ICustomerRepository
+internal interface ICustomerRepository
 {
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
     Task<CustomerDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
