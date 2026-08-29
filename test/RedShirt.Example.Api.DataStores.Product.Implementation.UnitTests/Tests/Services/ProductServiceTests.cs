@@ -11,16 +11,16 @@ namespace RedShirt.Example.Api.DataStores.Product.Implementation.UnitTests.Tests
 /// </summary>
 public class ProductServiceTests
 {
-    private static ProductDto CreateDto(
+    private static ProductInternalDto CreateDto(
         Guid? id = null,
         string sku = "SKU-1",
         string name = "Widget",
-        string price = "9.99",
+        decimal price = 9.99m,
         DateTime? createdAtUtc = null,
         DateTime? updatedAtUtc = null)
     {
         var created = createdAtUtc ?? DateTime.UtcNow.AddDays(-1);
-        return new ProductDto
+        return new ProductInternalDto
         {
             Id = id ?? Guid.NewGuid(),
             CreatedAtUtc = created,
@@ -87,7 +87,7 @@ public class ProductServiceTests
         var repository = new Mock<IProductRepository>();
         repository
             .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ProductDto?) null);
+            .ReturnsAsync((ProductInternalDto?) null);
         var service = CreateService(repository.Object);
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
@@ -97,14 +97,14 @@ public class ProductServiceTests
     [Fact]
     public async Task PatchAsync_MergesFields_AndUpserts()
     {
-        var existing = CreateDto(sku: "SKU-1", name: "Widget", price: "9.99");
+        var existing = CreateDto(sku: "SKU-1", name: "Widget", price: 9.99m);
         var repository = new Mock<IProductRepository>();
         repository
             .Setup(r => r.GetByIdAsync(existing.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
         repository
-            .Setup(r => r.UpsertAsync(It.IsAny<ProductDto>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ProductDto item, CancellationToken _) => item);
+            .Setup(r => r.UpsertAsync(It.IsAny<ProductInternalDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProductInternalDto item, CancellationToken _) => item);
         var service = CreateService(repository.Object);
 
         var result = await service.PatchAsync(new ProductServicePatchRequest
@@ -143,7 +143,7 @@ public class ProductServiceTests
         var repository = new Mock<IProductRepository>();
         repository
             .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ProductDto?) null);
+            .ReturnsAsync((ProductInternalDto?) null);
         var service = CreateService(repository.Object);
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
@@ -166,7 +166,7 @@ public class ProductServiceTests
             {
                 Sku = "SKU-1",
                 Name = "",
-                Price = "1.00"
+                Price = 1.00m
             }, TestContext.Current.CancellationToken));
 
         Assert.Equal("Name cannot be empty.", exception.Message);
@@ -182,7 +182,7 @@ public class ProductServiceTests
             {
                 Sku = " ",
                 Name = "Widget",
-                Price = "1.00"
+                Price = 1.00m
             }, TestContext.Current.CancellationToken));
 
         Assert.Equal("Sku cannot be empty.", exception.Message);
@@ -192,10 +192,10 @@ public class ProductServiceTests
     public async Task PostAsync_UpsertsNewDto()
     {
         var repository = new Mock<IProductRepository>();
-        ProductDto? upserted = null;
+        ProductInternalDto? upserted = null;
         repository
-            .Setup(r => r.UpsertAsync(It.IsAny<ProductDto>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ProductDto item, CancellationToken _) =>
+            .Setup(r => r.UpsertAsync(It.IsAny<ProductInternalDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProductInternalDto item, CancellationToken _) =>
             {
                 upserted = item;
                 return item;
@@ -206,13 +206,13 @@ public class ProductServiceTests
         {
             Sku = "SKU-1",
             Name = "Widget",
-            Price = "12.50"
+            Price = 12.50m
         }, TestContext.Current.CancellationToken);
 
         Assert.NotEqual(Guid.Empty, result.Id);
         Assert.Equal("SKU-1", result.Sku);
         Assert.Equal("Widget", result.Name);
-        Assert.Equal("12.50", result.Price);
+        Assert.Equal(12.50m, result.Price);
         Assert.Same(upserted, result);
     }
 
@@ -226,8 +226,8 @@ public class ProductServiceTests
             .Setup(r => r.GetByIdAsync(existing.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
         repository
-            .Setup(r => r.UpsertAsync(It.IsAny<ProductDto>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((ProductDto item, CancellationToken _) => item);
+            .Setup(r => r.UpsertAsync(It.IsAny<ProductInternalDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ProductInternalDto item, CancellationToken _) => item);
         var service = CreateService(repository.Object);
 
         var result = await service.PutAsync(new ProductServicePutRequest
@@ -235,19 +235,19 @@ public class ProductServiceTests
             Id = existing.Id,
             Sku = "SKU-2",
             Name = "Gadget",
-            Price = "19.99"
+            Price = 19.99m
         }, TestContext.Current.CancellationToken);
 
         Assert.Equal(createdAt, result.CreatedAtUtc);
         Assert.Equal("SKU-2", result.Sku);
         Assert.Equal("Gadget", result.Name);
-        Assert.Equal("19.99", result.Price);
+        Assert.Equal(19.99m, result.Price);
     }
 
     [Fact]
     public async Task PutAsync_ThrowsNoChanges_WhenExistingMatches()
     {
-        var existing = CreateDto(sku: "SKU-1", name: "Widget", price: "9.99");
+        var existing = CreateDto(sku: "SKU-1", name: "Widget", price: 9.99m);
         var repository = new Mock<IProductRepository>();
         repository
             .Setup(r => r.GetByIdAsync(existing.Id, It.IsAny<CancellationToken>()))
@@ -263,7 +263,8 @@ public class ProductServiceTests
                 Price = existing.Price
             }, TestContext.Current.CancellationToken));
 
-        repository.Verify(r => r.UpsertAsync(It.IsAny<ProductDto>(), It.IsAny<CancellationToken>()), Times.Never);
+        repository.Verify(r => r.UpsertAsync(It.IsAny<ProductInternalDto>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -285,7 +286,7 @@ public class ProductServiceTests
             PriceLessThan = null
         };
         var continuation = Guid.NewGuid();
-        var expected = new ProductSearchResponse
+        var expected = new ProductServiceSearchResponse
         {
             ContinuationToken = null,
             Records = [CreateDto()]
@@ -296,7 +297,8 @@ public class ProductServiceTests
             .ReturnsAsync(expected);
         var service = CreateService(repository.Object);
 
-        var result = await service.SearchAsync(parameters, continuation, TestContext.Current.CancellationToken);
+        var result = await service.SearchAsync(parameters, continuation,
+            TestContext.Current.CancellationToken);
 
         Assert.Same(expected, result);
     }

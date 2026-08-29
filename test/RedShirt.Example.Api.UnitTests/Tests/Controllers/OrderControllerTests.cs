@@ -43,7 +43,7 @@ public class OrderControllerTests
         var getHandler = new Mock<IGetOrderRecordQueryHandler>();
         getHandler
             .Setup(handler => handler.Handle(It.IsAny<GetOrderRecordQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Order(customerId: CustomerId));
+            .ReturnsAsync(Order(CustomerId));
         var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
         authorizer
             .Setup(a => a.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(), CustomerId))
@@ -51,13 +51,13 @@ public class OrderControllerTests
         var deleteHandler = new Mock<IDeleteOrderCommandHandler>();
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
-            _controller.Delete(id: OrderId, getOrderRecordQueryHandler: getHandler.Object,
-                customerScopedResourceEnforcer: authorizer.Object, deleteOrderCommandHandler: deleteHandler.Object,
-                cancellationToken: TestContext.Current.CancellationToken));
+            _controller.Delete(OrderId, getHandler.Object,
+                authorizer.Object, deleteHandler.Object,
+                TestContext.Current.CancellationToken));
 
         deleteHandler.Verify(
             handler => handler.Handle(It.IsAny<DeleteOrderCommand>(), It.IsAny<CancellationToken>()),
-            times: Times.Never);
+            Times.Never);
     }
 
     [Fact]
@@ -66,37 +66,37 @@ public class OrderControllerTests
         var getHandler = new Mock<IGetOrderRecordQueryHandler>();
         getHandler
             .Setup(handler => handler.Handle(It.IsAny<GetOrderRecordQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Order(customerId: CustomerId));
+            .ReturnsAsync(Order(CustomerId));
         var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
         authorizer
             .Setup(a => a.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(), CustomerId))
             .ThrowsAsync(new ResourceNotFoundException());
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
-            _controller.Get(id: OrderId, getOrderRecordQueryHandler: getHandler.Object,
-                customerScopedResourceEnforcer: authorizer.Object,
-                cancellationToken: TestContext.Current.CancellationToken));
+            _controller.Get(OrderId, getHandler.Object,
+                authorizer.Object,
+                TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task Get_ReturnsOk_AfterResourceAuthorization()
     {
-        var expected = Order(customerId: CustomerId);
+        var expected = Order(CustomerId);
         var getHandler = new Mock<IGetOrderRecordQueryHandler>();
         getHandler
             .Setup(handler => handler.Handle(It.Is<GetOrderRecordQuery>(query => query.Id == OrderId),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(value: expected);
+            .ReturnsAsync(expected);
         var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
 
-        var result = await _controller.Get(id: OrderId, getOrderRecordQueryHandler: getHandler.Object,
-            customerScopedResourceEnforcer: authorizer.Object,
-            cancellationToken: TestContext.Current.CancellationToken);
+        var result = await _controller.Get(OrderId, getHandler.Object,
+            authorizer.Object,
+            TestContext.Current.CancellationToken);
 
-        var ok = Assert.IsType<OkObjectResult>(@object: result);
-        Assert.Same(expected: expected, actual: ok.Value);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(expected, ok.Value);
         authorizer.Verify(a => a.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(), CustomerId),
-            times: Times.Once);
+            Times.Once);
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class OrderControllerTests
         var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
         authorizer
             .Setup(a => a.ConstrainSearchCustomerId(It.IsAny<ClaimsPrincipal>(), null))
-            .Returns(value: CustomerId);
+            .Returns(CustomerId);
         var expected = new OrderSearchResponse
         {
             ContinuationToken = null,
@@ -116,13 +116,13 @@ public class OrderControllerTests
             .Setup(handler => handler.Handle(
                 It.Is<SearchOrderRecordsQuery>(query => query.CustomerId == CustomerId),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(value: expected);
+            .ReturnsAsync(expected);
 
         var result = await _controller.Search(new OrderSearchRequest(),
-            customerScopedResourceEnforcer: authorizer.Object, searchOrderRecordsQueryHandler: searchHandler.Object,
-            cancellationToken: TestContext.Current.CancellationToken);
+            authorizer.Object, searchHandler.Object,
+            TestContext.Current.CancellationToken);
 
-        var ok = Assert.IsType<OkObjectResult>(@object: result);
-        Assert.Same(expected: expected, actual: ok.Value);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(expected, ok.Value);
     }
 }

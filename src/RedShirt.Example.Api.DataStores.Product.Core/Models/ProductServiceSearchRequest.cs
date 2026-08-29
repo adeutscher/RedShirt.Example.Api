@@ -11,7 +11,7 @@ public class ProductServiceSearchRequest
     public required string? SkuContains { get; init; }
     public required string? Name { get; init; }
     public required string? NameContains { get; init; }
-    public required string? Price { get; init; }
-    public required string? PriceGreaterThan { get; init; }
-    public required string? PriceLessThan { get; init; }
+    public required decimal? Price { get; init; }
+    public required decimal? PriceGreaterThan { get; init; }
+    public required decimal? PriceLessThan { get; init; }
 }

@@ -15,6 +15,6 @@ internal class GetProductRecordQueryHandler(
         CancellationToken cancellationToken = default)
     {
         await coreRequestValidator.ValidateAsync(query, cancellationToken);
-        return await productService.GetByIdAsync(query.Id, cancellationToken);
+        return (await productService.GetByIdAsync(query.Id, cancellationToken)).ToDto();
     }
 }

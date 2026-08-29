@@ -40,13 +40,13 @@ public class SearchOrderRecordsQueryValidatorTests
     public async Task Validate_Fails_WhenDecimalFilterIsInvalid(string propertyName, string value)
     {
         var result = await _validator.ValidateAsync(
-            CreateQuery(propertyName: propertyName, value: value),
-            cancellation: TestContext.Current.CancellationToken);
+            CreateQuery(propertyName, value),
+            TestContext.Current.CancellationToken);
 
-        Assert.False(condition: result.IsValid);
-        Assert.Contains(collection: result.Errors,
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors,
             error => error.ErrorMessage.Contains("must be a valid decimal number",
-                comparisonType: StringComparison.Ordinal));
+                StringComparison.Ordinal));
     }
 
     [Theory]
@@ -61,9 +61,9 @@ public class SearchOrderRecordsQueryValidatorTests
     public async Task Validate_Succeeds_WhenDecimalFilterIsNullOrValid(string propertyName, string? value)
     {
         var result = await _validator.ValidateAsync(
-            CreateQuery(propertyName: propertyName, value: value),
-            cancellation: TestContext.Current.CancellationToken);
+            CreateQuery(propertyName, value),
+            TestContext.Current.CancellationToken);
 
-        Assert.True(condition: result.IsValid);
+        Assert.True(result.IsValid);
     }
 }

@@ -1,7 +1,6 @@
 using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Extensions;
 using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Models;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.GenerationLogic;
@@ -18,6 +17,22 @@ public static class InternalDtoLevelGenerator
         {
             yield return property;
         }
+    }
+
+    private static string GetToPublicDtoAssignment(PropertyModel property)
+    {
+        if (property is {IsStoredAsDecimal: true, Category: PropertyModel.PropertyCategory.String})
+        {
+            if (property.IsNullable)
+            {
+                return
+                    $"source.{property.Name}.HasValue ? source.{property.Name}.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : null";
+            }
+
+            return $"source.{property.Name}.ToString(System.Globalization.CultureInfo.InvariantCulture)";
+        }
+
+        return $"source.{property.Name}";
     }
 
     public static StringBuilder WriteInternalDtoInfo(this StringBuilder sb, ClassSummaryModel classSummaryModel)
@@ -60,21 +75,5 @@ public static class InternalDtoLevelGenerator
             .CloseBracket()
             .CloseBracket(0)
             .AppendLine();
-    }
-
-    private static string GetToPublicDtoAssignment(PropertyModel property)
-    {
-        if (property is {IsStoredAsDecimal: true, Category: PropertyModel.PropertyCategory.String})
-        {
-            if (property.IsNullable)
-            {
-                return
-                    $"source.{property.Name}.HasValue ? source.{property.Name}.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : null";
-            }
-
-            return $"source.{property.Name}.ToString(System.Globalization.CultureInfo.InvariantCulture)";
-        }
-
-        return $"source.{property.Name}";
     }
 }

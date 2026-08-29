@@ -32,7 +32,8 @@ public class ProductController : ControllerBase
         IDeleteProductCommandHandler deleteProductCommandHandler,
         CancellationToken cancellationToken)
     {
-        await deleteProductCommandHandler.Handle(new DeleteProductCommand(id), cancellationToken);
+        await deleteProductCommandHandler.Handle(new DeleteProductCommand(id),
+            cancellationToken);
         return Ok();
     }
 
@@ -48,7 +49,8 @@ public class ProductController : ControllerBase
         IGetProductRecordQueryHandler getProductRecordQueryHandler,
         CancellationToken cancellationToken)
     {
-        var model = await getProductRecordQueryHandler.Handle(new GetProductRecordQuery(id), cancellationToken);
+        var model = await getProductRecordQueryHandler.Handle(new GetProductRecordQuery(id),
+            cancellationToken);
         return Ok(model);
     }
 
@@ -128,21 +130,18 @@ public class ProductController : ControllerBase
     {
         var model = await searchProductRecordsQueryHandler.Handle(
             new SearchProductRecordsQuery(
-                new ProductServiceSearchRequest
-                {
-                    PageSize = request.PageSize,
-                    CreatedBeforeUtc = request.CreatedBeforeUtc,
-                    CreatedAfterUtc = request.CreatedAfterUtc,
-                    UpdatedBeforeUtc = request.UpdatedBeforeUtc,
-                    UpdatedAfterUtc = request.UpdatedAfterUtc,
-                    Sku = request.Sku,
-                    SkuContains = request.SkuContains,
-                    Name = request.Name,
-                    NameContains = request.NameContains,
-                    Price = request.Price,
-                    PriceGreaterThan = request.PriceGreaterThan,
-                    PriceLessThan = request.PriceLessThan
-                },
+                request.PageSize,
+                request.CreatedBeforeUtc,
+                request.CreatedAfterUtc,
+                request.UpdatedBeforeUtc,
+                request.UpdatedAfterUtc,
+                request.Sku,
+                request.SkuContains,
+                request.Name,
+                request.NameContains,
+                request.Price,
+                request.PriceGreaterThan,
+                request.PriceLessThan,
                 request.ContinuationToken),
             cancellationToken);
         return Ok(model);

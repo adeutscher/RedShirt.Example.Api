@@ -15,7 +15,7 @@ internal sealed class ProductService(IProductRepository repository) : IProductSe
         }
     }
 
-    public async Task<ProductDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<ProductInternalDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         if (await repository.GetByIdAsync(id, cancellationToken) is not { } entry)
         {
@@ -25,7 +25,7 @@ internal sealed class ProductService(IProductRepository repository) : IProductSe
         return entry;
     }
 
-    public async Task<ProductDto> PatchAsync(ProductServicePatchRequest request,
+    public async Task<ProductInternalDto> PatchAsync(ProductServicePatchRequest request,
         CancellationToken cancellationToken = default)
     {
         if (!request.AreChangesRequested())
@@ -38,7 +38,7 @@ internal sealed class ProductService(IProductRepository repository) : IProductSe
             throw new ResourceNotFoundException();
         }
 
-        var candidate = new ProductDto
+        var candidate = new ProductInternalDto
         {
             Id = request.Id,
             CreatedAtUtc = existing.CreatedAtUtc,
@@ -56,7 +56,7 @@ internal sealed class ProductService(IProductRepository repository) : IProductSe
         return await repository.UpsertAsync(candidate, cancellationToken);
     }
 
-    public async Task<ProductDto> PostAsync(ProductServicePostRequest request,
+    public async Task<ProductInternalDto> PostAsync(ProductServicePostRequest request,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.Sku))
@@ -70,7 +70,7 @@ internal sealed class ProductService(IProductRepository repository) : IProductSe
         }
 
         var createdAt = DateTime.UtcNow;
-        var dto = new ProductDto
+        var dto = new ProductInternalDto
         {
             Id = Guid.NewGuid(),
             CreatedAtUtc = createdAt,
@@ -83,7 +83,7 @@ internal sealed class ProductService(IProductRepository repository) : IProductSe
         return await repository.UpsertAsync(dto, cancellationToken);
     }
 
-    public async Task<ProductDto> PutAsync(ProductServicePutRequest request,
+    public async Task<ProductInternalDto> PutAsync(ProductServicePutRequest request,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.Sku))
@@ -98,7 +98,7 @@ internal sealed class ProductService(IProductRepository repository) : IProductSe
 
         var existing = await repository.GetByIdAsync(request.Id, cancellationToken);
         var createdAt = DateTime.UtcNow;
-        var dto = new ProductDto
+        var dto = new ProductInternalDto
         {
             Id = request.Id,
             CreatedAtUtc = existing?.CreatedAtUtc ?? createdAt,
@@ -116,9 +116,11 @@ internal sealed class ProductService(IProductRepository repository) : IProductSe
         return await repository.UpsertAsync(dto, cancellationToken);
     }
 
-    public Task<ProductSearchResponse> SearchAsync(ProductServiceSearchRequest parameters, Guid? continuationToken,
+    public Task<ProductServiceSearchResponse> SearchAsync(ProductServiceSearchRequest parameters,
+        Guid? continuationToken,
         CancellationToken cancellationToken = default)
     {
-        return repository.SearchAsync(parameters, continuationToken, cancellationToken);
+        return repository.SearchAsync(parameters, continuationToken,
+            cancellationToken);
     }
 }

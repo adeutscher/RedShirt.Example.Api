@@ -2,6 +2,7 @@ using RedShirt.Example.Api.Core.Cqrs;
 using RedShirt.Example.Api.Core.Services;
 using RedShirt.Example.Api.DataStores.Product.Core.Models;
 using RedShirt.Example.Api.DataStores.Product.Core.Services;
+using System.Globalization;
 
 namespace RedShirt.Example.Api.Core.UseCases.Product.Commands.Create;
 
@@ -19,11 +20,11 @@ internal class CreateProductCommandHandler(
         await coreRequestValidator.ValidateAsync(command, cancellationToken);
 
         return await idempotencyWrapperService.RunIdempotentlyAsync(command.IdempotencyKey, async () =>
-            await productService.PostAsync(new ProductServicePostRequest
+            (await productService.PostAsync(new ProductServicePostRequest
             {
                 Sku = command.Sku,
                 Name = command.Name,
-                Price = command.Price
-            }, cancellationToken), cancellationToken);
+                Price = decimal.Parse(command.Price, CultureInfo.InvariantCulture)
+            }, cancellationToken)).ToDto(), cancellationToken);
     }
 }

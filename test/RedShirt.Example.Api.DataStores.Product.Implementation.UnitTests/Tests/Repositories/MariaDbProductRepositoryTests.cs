@@ -2,15 +2,12 @@ using Moq;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Factories;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Services;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Services.Resilience;
-using RedShirt.Example.Api.Common.Database.DapperMySql.Utility;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
-using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.DataStores.Constants;
 using RedShirt.Example.Api.DataStores.Product.Core.Models;
 using RedShirt.Example.Api.DataStores.Product.Implementation.Entities;
 using RedShirt.Example.Api.DataStores.Product.Implementation.Repositories;
 using System.Data;
-using System.Globalization;
 using System.Text.Json;
 
 namespace RedShirt.Example.Api.DataStores.Product.Implementation.UnitTests.Tests.Repositories;
@@ -20,19 +17,19 @@ namespace RedShirt.Example.Api.DataStores.Product.Implementation.UnitTests.Tests
 /// </summary>
 public class MariaDbProductRepositoryTests
 {
-    private static ProductDto CreateDto(
+    private static ProductInternalDto CreateDto(
         Guid? id = null,
         DateTime? updatedAtUtc = null)
     {
         var updated = updatedAtUtc ?? DateTime.UtcNow;
-        return new ProductDto
+        return new ProductInternalDto
         {
             Id = id ?? Guid.NewGuid(),
             CreatedAtUtc = updated.AddDays(-1),
             UpdatedAtUtc = updated,
             Sku = "SKU-1",
             Name = "Widget",
-            Price = "9.99"
+            Price = 9.99m
         };
     }
 
@@ -48,7 +45,7 @@ public class MariaDbProductRepositoryTests
             UpdatedAtUtc = dto.UpdatedAtUtc,
             Sku = dto.Sku,
             Name = dto.Name,
-            Price = StoredAsDecimalHelper.ParseRequiredDecimal(dto.Price, nameof(ProductDto.Price))
+            Price = dto.Price
         };
     }
 
@@ -56,7 +53,7 @@ public class MariaDbProductRepositoryTests
         int pageSize = 10,
         string? sku = null,
         string? name = null,
-        string? price = null)
+        decimal? price = null)
     {
         return new ProductServiceSearchRequest
         {
@@ -144,13 +141,14 @@ public class MariaDbProductRepositoryTests
             .ReturnsAsync(entity);
         var repository = CreateRepository(storage: storage.Object);
 
-        var result = await repository.GetByIdAsync(entity.Id, TestContext.Current.CancellationToken);
+        var result =
+            await repository.GetByIdAsync(entity.Id, TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal(entity.Id, result.Id);
         Assert.Equal(entity.Sku, result.Sku);
         Assert.Equal(entity.Name, result.Name);
-        Assert.Equal(entity.Price.ToString(CultureInfo.InvariantCulture), result.Price);
+        Assert.Equal(entity.Price, result.Price);
         storage.Verify(s => s.GetByKeyAsync(
             DatabaseConstants.PrimaryDatabaseConnectionStringName,
             entity.Id,
@@ -207,20 +205,6 @@ public class MariaDbProductRepositoryTests
         using var document = JsonDocument.Parse(storedValue!);
         Assert.Equal("SKU-1", document.RootElement.GetProperty("SearchParameters").GetProperty("Sku").GetString());
         Assert.Equal(records[^1].Id, document.RootElement.GetProperty("LastId").GetGuid());
-    }
-
-    [Fact]
-    public async Task SearchAsync_ThrowsBadRequest_WhenPriceIsInvalid()
-    {
-        var repository = CreateRepository();
-
-        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
-            repository.SearchAsync(
-                CreateSearchRequest(price: "not-a-decimal"),
-                null,
-                TestContext.Current.CancellationToken));
-
-        Assert.Equal("Invalid decimal value for 'Price'.", exception.Message);
     }
 
     [Fact]
@@ -282,7 +266,7 @@ public class MariaDbProductRepositoryTests
                 e.Id == dto.Id
                 && e.Sku == dto.Sku
                 && e.Name == dto.Name
-                && e.Price == StoredAsDecimalHelper.ParseRequiredDecimal(dto.Price, nameof(ProductDto.Price))),
+                && e.Price == dto.Price),
             TestContext.Current.CancellationToken), Times.Once);
     }
 }

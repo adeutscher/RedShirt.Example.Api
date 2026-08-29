@@ -31,14 +31,14 @@ public class IProductServiceContractTests
         {
             Sku = "SKU-1",
             Name = "Widget",
-            Price = "1.00"
+            Price = 1.00m
         };
         var put = new ProductServicePutRequest
         {
             Id = id,
             Sku = "SKU-1",
             Name = "Widget",
-            Price = "1.00"
+            Price = 1.00m
         };
         var patch = new ProductServicePatchRequest
         {
