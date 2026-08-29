@@ -7,22 +7,22 @@ public class SearchOrderRecordsQueryValidator : AbstractValidator<SearchOrderRec
 {
     public SearchOrderRecordsQueryValidator()
     {
-        RuleFor(query => query.Parameters.TotalAmount)
+        RuleFor(query => query.TotalAmount)
             .MustBeValidStoredDecimalWhenPresent();
 
-        RuleFor(query => query.Parameters.TotalAmountGreaterThan)
+        RuleFor(query => query.TotalAmountGreaterThan)
             .MustBeValidStoredDecimalWhenPresent();
 
-        RuleFor(query => query.Parameters.TotalAmountLessThan)
+        RuleFor(query => query.TotalAmountLessThan)
             .MustBeValidStoredDecimalWhenPresent();
 
-        RuleFor(query => query.Parameters.TotalPrice)
+        RuleFor(query => query.TotalPrice)
             .MustBeValidStoredDecimalWhenPresent();
 
-        RuleFor(query => query.Parameters.TotalPriceGreaterThan)
+        RuleFor(query => query.TotalPriceGreaterThan)
             .MustBeValidStoredDecimalWhenPresent();
 
-        RuleFor(query => query.Parameters.TotalPriceLessThan)
+        RuleFor(query => query.TotalPriceLessThan)
             .MustBeValidStoredDecimalWhenPresent();
     }
 }

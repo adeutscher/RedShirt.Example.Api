@@ -17,16 +17,16 @@ using RedShirt.Example.Api.Models.Order;
 namespace RedShirt.Example.Api.Controllers;
 
 [ApiController]
-[EnableRateLimiting(RateLimitingConstants.PolicyHeaderDefault)]
+[EnableRateLimiting(policyName: RateLimitingConstants.PolicyHeaderDefault)]
 [Route("orders")]
 [ProducesJson]
 public class OrderController : ControllerBase
 {
     [HttpDelete("{id:guid}")]
     [AuthorizeOrderWrite]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(statusCode: StatusCodes.Status200OK)]
+    [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(statusCode: StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(
         [FromRoute]
         Guid id,
@@ -38,17 +38,19 @@ public class OrderController : ControllerBase
         IDeleteOrderCommandHandler deleteOrderCommandHandler,
         CancellationToken cancellationToken)
     {
-        var existing = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
-        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
-        await deleteOrderCommandHandler.Handle(new DeleteOrderCommand(id), cancellationToken);
+        var existing =
+            await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(Id: id),
+                cancellationToken: cancellationToken);
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(user: User, customerId: existing.CustomerId);
+        await deleteOrderCommandHandler.Handle(new DeleteOrderCommand(Id: id), cancellationToken: cancellationToken);
         return Ok();
     }
 
     [HttpGet("{id:guid}")]
     [ApproveOrderReadOnly]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderDto))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(statusCode: StatusCodes.Status200OK, Type = typeof(OrderDto))]
+    [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(statusCode: StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(
         [FromRoute]
         Guid id,
@@ -58,16 +60,17 @@ public class OrderController : ControllerBase
         ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
         CancellationToken cancellationToken)
     {
-        var model = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
-        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, model.CustomerId);
-        return Ok(model);
+        var model = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(Id: id),
+            cancellationToken: cancellationToken);
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(user: User, customerId: model.CustomerId);
+        return Ok(value: model);
     }
 
     [HttpPatch("{id:guid}")]
     [AuthorizeOrderWrite]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderDto))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(statusCode: StatusCodes.Status200OK, Type = typeof(OrderDto))]
+    [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(statusCode: StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Patch(
         [FromRoute]
         Guid id,
@@ -81,25 +84,27 @@ public class OrderController : ControllerBase
         IPatchOrderCommandHandler patchOrderCommandHandler,
         CancellationToken cancellationToken)
     {
-        var existing = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
-        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
+        var existing =
+            await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(Id: id),
+                cancellationToken: cancellationToken);
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(user: User, customerId: existing.CustomerId);
         var model = await patchOrderCommandHandler.Handle(
             new PatchOrderCommand(
-                id,
-                request.CustomerId,
-                request.Status,
-                request.TotalAmount,
-                request.TotalPrice,
-                request.ClearTotalPrice),
-            cancellationToken);
-        return Ok(model);
+                Id: id,
+                CustomerId: request.CustomerId,
+                Status: request.Status,
+                TotalAmount: request.TotalAmount,
+                TotalPrice: request.TotalPrice,
+                ClearTotalPrice: request.ClearTotalPrice),
+            cancellationToken: cancellationToken);
+        return Ok(value: model);
     }
 
     [HttpPost]
     [AuthorizeOrderWrite]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderDto))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(statusCode: StatusCodes.Status200OK, Type = typeof(OrderDto))]
+    [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(statusCode: StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Post(
         [FromBody]
         OrderPostRequest request,
@@ -111,21 +116,21 @@ public class OrderController : ControllerBase
     {
         var model = await createOrderCommandHandler.Handle(
             new CreateOrderCommand(
-                request.CustomerId,
-                request.Status,
-                request.TotalAmount,
-                request.TotalPrice,
-                string.IsNullOrWhiteSpace(idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey),
-            cancellationToken);
+                CustomerId: request.CustomerId,
+                Status: request.Status,
+                TotalAmount: request.TotalAmount,
+                TotalPrice: request.TotalPrice,
+                string.IsNullOrWhiteSpace(value: idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey),
+            cancellationToken: cancellationToken);
 
-        return Ok(model);
+        return Ok(value: model);
     }
 
     [HttpPut("{id:guid}")]
     [AuthorizeOrderWrite]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderDto))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(statusCode: StatusCodes.Status200OK, Type = typeof(OrderDto))]
+    [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(statusCode: StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Put(
         [FromRoute]
         Guid id,
@@ -139,22 +144,24 @@ public class OrderController : ControllerBase
         IUpdateOrderCommandHandler updateOrderCommandHandler,
         CancellationToken cancellationToken)
     {
-        var existing = await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id), cancellationToken);
-        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
+        var existing =
+            await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(Id: id),
+                cancellationToken: cancellationToken);
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(user: User, customerId: existing.CustomerId);
         var model = await updateOrderCommandHandler.Handle(
             new UpdateOrderCommand(
-                id,
-                request.CustomerId,
-                request.Status,
-                request.TotalAmount,
-                request.TotalPrice),
-            cancellationToken);
-        return Ok(model);
+                Id: id,
+                CustomerId: request.CustomerId,
+                Status: request.Status,
+                TotalAmount: request.TotalAmount,
+                TotalPrice: request.TotalPrice),
+            cancellationToken: cancellationToken);
+        return Ok(value: model);
     }
 
     [HttpGet]
     [ApproveOrderReadOnly]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OrderSearchResponse))]
+    [ProducesResponseType(statusCode: StatusCodes.Status200OK, Type = typeof(OrderSearchResponse))]
     public async Task<IActionResult> Search(
         [FromQuery]
         OrderSearchRequest request,
@@ -164,27 +171,28 @@ public class OrderController : ControllerBase
         ISearchOrderRecordsQueryHandler searchOrderRecordsQueryHandler,
         CancellationToken cancellationToken)
     {
-        var customerId = customerScopedResourceEnforcer.ConstrainSearchCustomerId(User, request.CustomerId);
+        var customerId =
+            customerScopedResourceEnforcer.ConstrainSearchCustomerId(user: User,
+                requestedCustomerId: request.CustomerId);
         var model = await searchOrderRecordsQueryHandler.Handle(
             new SearchOrderRecordsQuery(
-                new OrderQuerySearchParameters(
-                    request.PageSize,
-                    request.CreatedBeforeUtc,
-                    request.CreatedAfterUtc,
-                    request.UpdatedBeforeUtc,
-                    request.UpdatedAfterUtc,
-                    customerId,
-                    request.Status,
-                    request.StatusContains,
-                    request.TotalAmount,
-                    request.TotalAmountGreaterThan,
-                    request.TotalAmountLessThan,
-                    request.TotalPrice,
-                    request.TotalPriceGreaterThan,
-                    request.TotalPriceLessThan,
-                    request.TotalPriceIsNull),
-                request.ContinuationToken),
-            cancellationToken);
-        return Ok(model);
+                PageSize: request.PageSize,
+                CreatedBeforeUtc: request.CreatedBeforeUtc,
+                CreatedAfterUtc: request.CreatedAfterUtc,
+                UpdatedBeforeUtc: request.UpdatedBeforeUtc,
+                UpdatedAfterUtc: request.UpdatedAfterUtc,
+                CustomerId: customerId,
+                Status: request.Status,
+                StatusContains: request.StatusContains,
+                TotalAmount: request.TotalAmount,
+                TotalAmountGreaterThan: request.TotalAmountGreaterThan,
+                TotalAmountLessThan: request.TotalAmountLessThan,
+                TotalPrice: request.TotalPrice,
+                TotalPriceGreaterThan: request.TotalPriceGreaterThan,
+                TotalPriceLessThan: request.TotalPriceLessThan,
+                TotalPriceIsNull: request.TotalPriceIsNull,
+                ContinuationToken: request.ContinuationToken),
+            cancellationToken: cancellationToken);
+        return Ok(value: model);
     }
 }

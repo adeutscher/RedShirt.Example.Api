@@ -1,0 +1,5 @@
+root = true
+
+[*.cs]
+csharp_arguments_named = named
+resharper_csharp_arguments_named = named
