@@ -39,6 +39,8 @@ public static class InternalDtoLevelGenerator
     {
         if (!classSummaryModel.HasStoredAsDecimalProperties)
         {
+            // Without the use of StoredAsDecimal, the internal DTO would be a 1-to-1 match of the external DTO.
+            // Return without declaring.
             return sb;
         }
 
