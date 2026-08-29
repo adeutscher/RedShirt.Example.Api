@@ -5,7 +5,7 @@ using System.Text;
 
 namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.GenerationLogic;
 
-public static class InternalDtoLevelGenerator
+public static class InternalDtoDefinitionGenerator
 {
     private static IEnumerable<PropertyModel> GetAllMappedProperties(ClassSummaryModel classSummaryModel)
     {
