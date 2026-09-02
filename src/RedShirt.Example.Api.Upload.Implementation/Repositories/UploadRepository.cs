@@ -275,6 +275,7 @@ internal sealed class UploadRepository(
         var records = entities.Select(ToSummary).ToList();
         continuationToken = records.Count >= pageSize ? Guid.NewGuid() : null;
 
+        // ReSharper disable once InvertIf
         if (continuationToken.HasValue)
         {
             var lastRecord = records[^1];
