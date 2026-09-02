@@ -1,35 +1,13 @@
 #!/usr/bin/env python3
-"""Mock validator worker: poll NotValidated uploads, validate, submit verdicts."""
+"""Mock validator worker: validate a specific NotValidated upload and submit a verdict."""
 
 from __future__ import annotations
 
-import json
-import urllib.error
-import urllib.parse
 import urllib.request
 
-from upload_script_common import create_parser, get_api_base_url, require_api_jwt_token
+from upload_script_common import api_request, create_parser, get_api_base_url, require_api_jwt_token
 
-POLL_STATE = "NotValidated"
-
-
-def api_request(base_url: str, token: str, method: str, path: str, body: dict | None = None) -> dict:
-    url = f"{base_url.rstrip('/')}{path}"
-    data = None if body is None else json.dumps(body).encode("utf-8")
-    request = urllib.request.Request(
-        url,
-        data=data,
-        method=method,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/json",
-            **({} if body is None else {"Content-Type": "application/json"}),
-        },
-    )
-    with urllib.request.urlopen(request, timeout=60) as response:
-        if response.status == 204 or not response.length:
-            return {}
-        return json.loads(response.read().decode("utf-8"))
+EXPECTED_STATE = "NotValidated"
 
 
 def download_text(download_url: str) -> str:
@@ -42,37 +20,32 @@ def is_valid_potato_document(content: str) -> bool:
 
 
 def main() -> int:
-    create_parser(
-        "Mock validator worker: poll NotValidated uploads, validate, submit verdicts."
-    ).parse_args()
+    parser = create_parser(
+        "Mock validator worker: validate a specific NotValidated upload and submit a verdict."
+    )
+    parser.add_argument("upload_id", help="Upload id (GUID) to validate")
+    args = parser.parse_args()
 
     token = require_api_jwt_token()
     base_url = get_api_base_url()
-    search = api_request(
+    summary = api_request(base_url, token, "GET", f"/uploads/{args.upload_id}")
+    state = summary.get("state")
+    if state != EXPECTED_STATE:
+        raise SystemExit(
+            f"Upload {args.upload_id} is {state!r}; expected {EXPECTED_STATE!r}."
+        )
+
+    link = api_request(base_url, token, "GET", f"/uploads/{args.upload_id}/download-link")
+    content = download_text(link["downloadUrl"])
+    approved = is_valid_potato_document(content)
+    api_request(
         base_url,
         token,
-        "GET",
-        f"/uploads?state={POLL_STATE}&pageSize=20",
+        "POST",
+        f"/uploads/{args.upload_id}/verdicts",
+        {"approved": approved},
     )
-    records = search.get("records", [])
-    if not records:
-        print("No NotValidated uploads found.")
-        return 0
-
-    for record in records:
-        upload_id = record["id"]
-        link = api_request(base_url, token, "GET", f"/uploads/{upload_id}/download-link")
-        content = download_text(link["downloadUrl"])
-        approved = is_valid_potato_document(content)
-        api_request(
-            base_url,
-            token,
-            "POST",
-            f"/uploads/{upload_id}/verdicts",
-            {"approved": approved},
-        )
-        print(f"{upload_id}: approved={approved}")
-
+    print(f"{args.upload_id}: approved={approved}")
     return 0
 
 

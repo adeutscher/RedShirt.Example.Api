@@ -1,13 +1,16 @@
+using System.Text.Json.Serialization;
+
 namespace RedShirt.Example.Api.Upload.Core.Events;
 
-public static class UploadEventTypes
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum UploadEventType
 {
-    public const string Created = "UploadCreated";
-    public const string Completed = "UploadCompleted";
-    public const string Validated = "UploadValidated";
-    public const string Rejected = "UploadRejected";
-    public const string Stored = "UploadStored";
-    public const string Deleted = "UploadDeleted";
+    Created,
+    Completed,
+    Validated,
+    Rejected,
+    Stored,
+    Deleted
 }
 
 public sealed class UploadCreatedEvent

@@ -3,7 +3,7 @@ using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.DataStores.Constants;
-using RedShirt.Example.Api.Upload.Core.Models;
+using RedShirt.Example.Api.Upload.Core.Events;
 using RedShirt.Example.Api.Upload.Core.Models.Requests;
 using RedShirt.Example.Api.Upload.Core.Models.Responses;
 using RedShirt.Example.Api.Upload.Implementation.Aggregates;
@@ -16,7 +16,7 @@ namespace RedShirt.Example.Api.Upload.Implementation.Repositories;
 
 internal interface IUploadRepository
 {
-    Task<UploadSummaryModel> AppendEventAsync(Guid uploadId, string eventType, object eventPayload,
+    Task<UploadSummaryModel> AppendEventAsync(Guid uploadId, UploadEventType eventType, object eventPayload,
         CancellationToken cancellationToken = default);
 
     Task<bool> ExistsByIdempotencyKeyAsync(string idempotencyKey,
@@ -50,7 +50,7 @@ internal sealed class UploadRepository(
             DateCreatedUtc = entity.DateCreatedUtc,
             DateUpdatedUtc = entity.DateUpdatedUtc,
             UploadedByUserId = entity.UploadedByUserId,
-            State = Enum.Parse<UploadState>(entity.State),
+            State = entity.State,
             FileName = entity.FileName,
             IsValidated = entity.IsValidated,
             IsRejected = entity.IsRejected
@@ -93,7 +93,7 @@ internal sealed class UploadRepository(
 
         if (parameters.State.HasValue)
         {
-            var state = parameters.State.Value.ToString();
+            var state = parameters.State.Value;
             builder.And(e => e.State == state);
         }
 
@@ -146,8 +146,8 @@ internal sealed class UploadRepository(
             .AnyAsync(e => e.IdempotencyKey == idempotencyKey, cancellationToken);
     }
 
-    public async Task<UploadSummaryModel> AppendEventAsync(Guid uploadId, string eventType, object eventPayload,
-        CancellationToken cancellationToken = default)
+    public async Task<UploadSummaryModel> AppendEventAsync(Guid uploadId, UploadEventType eventType,
+        object eventPayload, CancellationToken cancellationToken = default)
     {
         var eventDateUtc = DateTime.UtcNow;
         var json = JsonSerializer.Serialize(eventPayload, JsonOptions);

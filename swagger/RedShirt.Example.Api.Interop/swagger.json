@@ -2719,7 +2719,7 @@
         }
       },
       "UploadState": {
-        "type": "integer",
+        "type": "string",
         "description": "",
         "x-enumNames": [
           "Uploading",
@@ -2730,12 +2730,12 @@
           "Stored"
         ],
         "enum": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
+          "Uploading",
+          "NotValidated",
+          "Verified",
+          "Rejected",
+          "Deleted",
+          "Stored"
         ]
       },
       "UploadDetailsModel": {

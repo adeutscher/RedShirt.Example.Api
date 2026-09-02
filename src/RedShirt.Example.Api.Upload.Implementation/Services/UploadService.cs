@@ -61,7 +61,7 @@ internal sealed class UploadService(
             IdempotencyKey = request.IdempotencyKey
         };
 
-        var uploadingSummary = await repository.AppendEventAsync(uploadId, UploadEventTypes.Created, createdEvent,
+        var uploadingSummary = await repository.AppendEventAsync(uploadId, UploadEventType.Created, createdEvent,
             cancellationToken);
         await eventBroadcaster.BroadcastUploadCreatedAsync(createdEvent, uploadingSummary, cancellationToken);
 
@@ -77,7 +77,7 @@ internal sealed class UploadService(
             Sha256Checksum = uploadResult.Sha256Checksum
         };
 
-        var summary = await repository.AppendEventAsync(uploadId, UploadEventTypes.Completed, completedEvent,
+        var summary = await repository.AppendEventAsync(uploadId, UploadEventType.Completed, completedEvent,
             cancellationToken);
         await eventBroadcaster.BroadcastUploadCompletedAsync(completedEvent, summary, cancellationToken);
         return summary;
@@ -129,7 +129,7 @@ internal sealed class UploadService(
         if (request.Approved)
         {
             var validatedEvent = new UploadValidatedEvent {UploadId = request.UploadId};
-            var summary = await repository.AppendEventAsync(request.UploadId, UploadEventTypes.Validated,
+            var summary = await repository.AppendEventAsync(request.UploadId, UploadEventType.Validated,
                 validatedEvent,
                 cancellationToken);
             await eventBroadcaster.BroadcastUploadValidatedAsync(validatedEvent, summary, cancellationToken);
@@ -137,7 +137,7 @@ internal sealed class UploadService(
         }
 
         var rejectedEvent = new UploadRejectedEvent {UploadId = request.UploadId};
-        var rejectedSummary = await repository.AppendEventAsync(request.UploadId, UploadEventTypes.Rejected,
+        var rejectedSummary = await repository.AppendEventAsync(request.UploadId, UploadEventType.Rejected,
             rejectedEvent, cancellationToken);
         await eventBroadcaster.BroadcastUploadRejectedAsync(rejectedEvent, rejectedSummary, cancellationToken);
         return rejectedSummary;
@@ -168,7 +168,7 @@ internal sealed class UploadService(
             VerifiedStorageObjectKey = request.VerifiedStorageObjectKey
         };
 
-        var summary = await repository.AppendEventAsync(request.UploadId, UploadEventTypes.Stored, storedEvent,
+        var summary = await repository.AppendEventAsync(request.UploadId, UploadEventType.Stored, storedEvent,
             cancellationToken);
         await eventBroadcaster.BroadcastUploadStoredAsync(storedEvent, summary, cancellationToken);
         return summary;
@@ -199,7 +199,7 @@ internal sealed class UploadService(
         }
 
         var deletedEvent = new UploadDeletedEvent {UploadId = id};
-        var summary = await repository.AppendEventAsync(id, UploadEventTypes.Deleted, deletedEvent,
+        var summary = await repository.AppendEventAsync(id, UploadEventType.Deleted, deletedEvent,
             cancellationToken);
         await eventBroadcaster.BroadcastUploadDeletedAsync(deletedEvent, summary, cancellationToken);
         return summary;
@@ -226,7 +226,7 @@ internal sealed class UploadService(
         var objectKey = aggregate.ResolveDownloadObjectKey();
         var validity = TimeSpan.FromMinutes(options.PresignedUrlLifetimeMinutes);
         var url = await fileStorageService.GetPresignedDownloadUrlAsync(bucket, objectKey, validity,
-            cancellationToken);
+            aggregate.FileName, cancellationToken);
 
         return new UploadDownloadLinkModel
         {

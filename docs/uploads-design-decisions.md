@@ -19,6 +19,9 @@ Presigned URLs are a common capability among object stores:
 | Google Cloud Storage | Signed URLs |
 | MinIO / LocalStack | S3-compatible presigned URLs |
 
+Download links include a `Content-Disposition` header suggesting the original
+`fileName` supplied at upload time.
+
 Locally, the Compose stack uses LocalStack (ministack) with path-style S3
 access. Workers and tests should download via the presigned URL returned by
 the API rather than adding a dedicated “download bytes” API route.
@@ -30,15 +33,15 @@ to keep upload-related endpoints short-lived and to follow least privilege.
 
 In this template:
 
-1. **Validator worker** — polls the API for `NotValidated` uploads, downloads
-   via presigned URL, validates content, and POSTs to
-   `/uploads/{id}/verdicts`. It does not need bucket credentials.
-2. **Mover worker** — polls for `Verified` uploads, copies the object from
+1. **Validator worker** — processes a `NotValidated` upload by id, downloads
+   via presigned URL, validates content, and POSTs to `/uploads/{id}/verdicts`.
+   It does not need bucket credentials.
+2. **Mover worker** — processes a `Verified` upload by id, copies the object from
    the unverified bucket to the verified bucket **using S3 APIs directly**
    (see `upload-move-worker.py`), then POSTs to `/uploads/{id}/move-reports`.
    This worker assumes knowledge of the backing storage layout (bucket names
    and object keys from event details).
-3. **Rejected cleanup worker** — polls for `Rejected` uploads and DELETEs via
+3. **Rejected cleanup worker** — processes a `Rejected` upload by id and DELETEs via
    the API, which removes the blob and records an `UploadDeleted` event.
 
 In a production deployment, mover duties could be combined with validation in
@@ -51,6 +54,20 @@ Use `upload-file.py` to POST a local file to `/uploads` (requires `upload:write`
 ```bash
 export API_JWT_TOKEN="$(./test/local/get-bearer-token.py)"
 python3 test/local/upload-scripts/upload-file.py path/to/document.txt
+```
+
+Use `list-upload-jobs.py` to list in-flight uploads (`Uploading`, `NotValidated`, `Verified`):
+
+```bash
+python3 test/local/upload-scripts/list-upload-jobs.py
+```
+
+Run a worker against a specific upload id from that list:
+
+```bash
+python3 test/local/upload-scripts/upload-validate-worker.py <upload-id>
+python3 test/local/upload-scripts/upload-move-worker.py <upload-id>
+python3 test/local/upload-scripts/upload-reject-cleanup-worker.py <upload-id>
 ```
 
 The Keycloak **`upload-validator`** realm role is scoped to worker-facing write endpoints:
@@ -79,10 +96,11 @@ Mirroring order customer scope:
 
 Upload metadata uses a lightweight event-sourcing style:
 
-- **`UploadEvent`** — append-only JSON events (`UploadCreated`,
-  `UploadCompleted`, `UploadValidated`, …).
+- **`UploadEvent`** — append-only JSON events (`Created`, `Completed`, `Validated`, …).
+  `EventType` is stored as an integer; API consumers see string enum names when exposed.
 - **`UploadAggregate`** — cached projection updated on each append using a
-  Marten-style `Apply` pattern in `UploadAggregate`.
+  Marten-style `Apply` pattern in `UploadAggregate`. `State` is stored as an integer;
+  API responses serialize `UploadState` as strings (for example `"NotValidated"`).
 - **`UploadDetailsModel`** — flattened response with nullable fields per event
   type (not raw event JSON).
 

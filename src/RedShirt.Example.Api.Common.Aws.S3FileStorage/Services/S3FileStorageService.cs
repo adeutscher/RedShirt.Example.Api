@@ -103,7 +103,7 @@ internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService, 
     }
 
     public async Task<string> GetPresignedDownloadUrlAsync(string bucketName, string objectKey, TimeSpan validity,
-        CancellationToken cancellationToken = default)
+        string? downloadFileName = null, CancellationToken cancellationToken = default)
     {
         var request = new GetPreSignedUrlRequest
         {
@@ -112,6 +112,15 @@ internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService, 
             Verb = HttpVerb.GET,
             Expires = DateTime.UtcNow.Add(validity)
         };
+
+        if (!string.IsNullOrWhiteSpace(downloadFileName))
+        {
+            var escapedFileName = downloadFileName.Replace("\"", "\\\"", StringComparison.Ordinal);
+            request.ResponseHeaderOverrides = new ResponseHeaderOverrides
+            {
+                ContentDisposition = $"attachment; filename=\"{escapedFileName}\""
+            };
+        }
 
         cancellationToken.ThrowIfCancellationRequested();
         return await s3.GetPreSignedURLAsync(request);

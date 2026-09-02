@@ -86,26 +86,26 @@ internal sealed class UploadAggregate
         State = UploadState.Deleted;
     }
 
-    public void ApplyEvent(string eventType, string json, DateTime eventDateUtc)
+    public void ApplyEvent(UploadEventType eventType, string json, DateTime eventDateUtc)
     {
         switch (eventType)
         {
-            case UploadEventTypes.Created:
+            case UploadEventType.Created:
                 Apply(JsonSerializer.Deserialize<UploadCreatedEvent>(json, JsonOptions)!, eventDateUtc);
                 break;
-            case UploadEventTypes.Completed:
+            case UploadEventType.Completed:
                 Apply(JsonSerializer.Deserialize<UploadCompletedEvent>(json, JsonOptions)!, eventDateUtc);
                 break;
-            case UploadEventTypes.Validated:
+            case UploadEventType.Validated:
                 Apply(JsonSerializer.Deserialize<UploadValidatedEvent>(json, JsonOptions)!, eventDateUtc);
                 break;
-            case UploadEventTypes.Rejected:
+            case UploadEventType.Rejected:
                 Apply(JsonSerializer.Deserialize<UploadRejectedEvent>(json, JsonOptions)!, eventDateUtc);
                 break;
-            case UploadEventTypes.Stored:
+            case UploadEventType.Stored:
                 Apply(JsonSerializer.Deserialize<UploadStoredEvent>(json, JsonOptions)!, eventDateUtc);
                 break;
-            case UploadEventTypes.Deleted:
+            case UploadEventType.Deleted:
                 Apply(JsonSerializer.Deserialize<UploadDeletedEvent>(json, JsonOptions)!, eventDateUtc);
                 break;
             default:
@@ -163,7 +163,7 @@ internal sealed class UploadAggregate
             DateCreatedUtc = DateCreatedUtc,
             DateUpdatedUtc = DateUpdatedUtc,
             UploadedByUserId = UploadedByUserId,
-            State = State.ToString(),
+            State = State,
             FileName = FileName,
             IsValidated = IsValidated,
             IsRejected = IsRejected,

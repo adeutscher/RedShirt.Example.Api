@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import urllib.error
+import urllib.request
 
 DEFAULT_API_BASE = "http://localhost:9000"
 API_JWT_TOKEN_ENV = "API_JWT_TOKEN"
@@ -37,3 +40,28 @@ def require_api_jwt_token() -> str:
 
 def get_api_base_url() -> str:
     return os.environ.get(API_BASE_URL_ENV, DEFAULT_API_BASE)
+
+
+def api_request(
+    base_url: str,
+    token: str,
+    method: str,
+    path: str,
+    body: dict | None = None,
+) -> dict:
+    url = f"{base_url.rstrip('/')}{path}"
+    data = None if body is None else json.dumps(body).encode("utf-8")
+    request = urllib.request.Request(
+        url,
+        data=data,
+        method=method,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/json",
+            **({} if body is None else {"Content-Type": "application/json"}),
+        },
+    )
+    with urllib.request.urlopen(request, timeout=120) as response:
+        if response.status == 204 or not response.length:
+            return {}
+        return json.loads(response.read().decode("utf-8"))

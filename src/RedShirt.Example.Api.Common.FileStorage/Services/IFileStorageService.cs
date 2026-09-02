@@ -15,8 +15,11 @@ public interface IFileStorageService
     ///     Returns a time-limited URL that allows direct download of the object without streaming through the API.
     ///     Presigned URLs are supported by AWS S3, Azure Blob Storage, Google Cloud Storage, MinIO, and others.
     /// </summary>
+    /// <param name="downloadFileName">
+    ///     Optional file name suggested to the client via <c>Content-Disposition</c> on the presigned response.
+    /// </param>
     Task<string> GetPresignedDownloadUrlAsync(string bucketName, string objectKey, TimeSpan validity,
-        CancellationToken cancellationToken = default);
+        string? downloadFileName = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///     Streams <paramref name="content" /> into <paramref name="bucketName" /> at

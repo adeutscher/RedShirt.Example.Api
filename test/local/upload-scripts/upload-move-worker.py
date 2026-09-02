@@ -1,35 +1,16 @@
 #!/usr/bin/env python3
-"""Mock mover worker: poll Verified uploads, copy S3 object, submit move report."""
+"""Mock mover worker: copy a specific Verified upload in S3 and submit a move report."""
 
 from __future__ import annotations
 
-import json
 import os
 import subprocess
-import urllib.request
 
-from upload_script_common import create_parser, get_api_base_url, require_api_jwt_token
+from upload_script_common import api_request, create_parser, get_api_base_url, require_api_jwt_token
 
-POLL_STATE = "Verified"
+EXPECTED_STATE = "Verified"
 DEFAULT_UNVERIFIED_BUCKET = "unverified-uploads"
 DEFAULT_VERIFIED_BUCKET = "verified-uploads"
-
-
-def api_request(base_url: str, token: str, method: str, path: str, body: dict | None = None) -> dict:
-    url = f"{base_url.rstrip('/')}{path}"
-    data = None if body is None else json.dumps(body).encode("utf-8")
-    request = urllib.request.Request(
-        url,
-        data=data,
-        method=method,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/json",
-            **({} if body is None else {"Content-Type": "application/json"}),
-        },
-    )
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return json.loads(response.read().decode("utf-8"))
 
 
 def storage_object_key(details: dict) -> str:
@@ -55,35 +36,35 @@ def s3_copy(source_bucket: str, dest_bucket: str, object_key: str) -> None:
 
 
 def main() -> int:
-    create_parser(
-        "Mock mover worker: poll Verified uploads, copy S3 object, submit move report."
-    ).parse_args()
+    parser = create_parser(
+        "Mock mover worker: copy a specific Verified upload in S3 and submit a move report."
+    )
+    parser.add_argument("upload_id", help="Upload id (GUID) to move")
+    args = parser.parse_args()
 
     token = require_api_jwt_token()
     base_url = get_api_base_url()
     unverified = os.environ.get("UPLOADS__BUCKET_UNVERIFIED_ITEMS", DEFAULT_UNVERIFIED_BUCKET)
     verified = os.environ.get("UPLOADS__BUCKET_VERIFIED_ITEMS", DEFAULT_VERIFIED_BUCKET)
 
-    search = api_request(base_url, token, "GET", f"/uploads?state={POLL_STATE}&pageSize=20")
-    records = search.get("records", [])
-    if not records:
-        print("No Verified uploads found.")
-        return 0
-
-    for record in records:
-        upload_id = record["id"]
-        details = api_request(base_url, token, "GET", f"/uploads/{upload_id}/details")
-        object_key = storage_object_key(details)
-        s3_copy(unverified, verified, object_key)
-        api_request(
-            base_url,
-            token,
-            "POST",
-            f"/uploads/{upload_id}/move-reports",
-            {"verifiedStorageObjectKey": object_key},
+    summary = api_request(base_url, token, "GET", f"/uploads/{args.upload_id}")
+    state = summary.get("state")
+    if state != EXPECTED_STATE:
+        raise SystemExit(
+            f"Upload {args.upload_id} is {state!r}; expected {EXPECTED_STATE!r}."
         )
-        print(f"{upload_id}: moved to {verified}/{object_key}")
 
+    details = api_request(base_url, token, "GET", f"/uploads/{args.upload_id}/details")
+    object_key = storage_object_key(details)
+    s3_copy(unverified, verified, object_key)
+    api_request(
+        base_url,
+        token,
+        "POST",
+        f"/uploads/{args.upload_id}/move-reports",
+        {"verifiedStorageObjectKey": object_key},
+    )
+    print(f"{args.upload_id}: moved to {verified}/{object_key}")
     return 0
 
 
