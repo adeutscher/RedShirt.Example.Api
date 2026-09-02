@@ -1,3 +1,4 @@
+using Amazon.Runtime;
 using Amazon.S3;
 using Microsoft.Extensions.DependencyInjection;
 using RedShirt.Example.Api.Common.Aws.S3FileStorage.Services;
@@ -22,10 +23,15 @@ public static class ServiceCollectionExtensions
         {
             ServiceURL = url,
             // Force path style, as opposed to a DNS-based name
-            ForcePathStyle = true
+            ForcePathStyle = true,
+            AuthenticationRegion = Environment.GetEnvironmentVariable("AWS_REGION") ?? "us-east-1"
         };
 
-        return services.AddSingleton<IAmazonS3>(_ => new AmazonS3Client(s3Config));
+        var credentials = new BasicAWSCredentials(
+            Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID") ?? "foo",
+            Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY") ?? "bar");
+
+        return services.AddSingleton<IAmazonS3>(_ => new AmazonS3Client(credentials, s3Config));
     }
 
     public static IServiceCollection AddS3FileStorage(this IServiceCollection services)

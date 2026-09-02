@@ -1,13 +1,14 @@
 using Amazon.S3;
 using Amazon.S3.Model;
+using Amazon.S3.Transfer;
 using RedShirt.Example.Api.Common.Aws.S3FileStorage.Helpers;
 using RedShirt.Example.Api.Common.FileStorage.Services;
-using System.IO.Pipelines;
 
 namespace RedShirt.Example.Api.Common.Aws.S3FileStorage.Services;
 
-internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService
+internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService, IDisposable
 {
+    private readonly TransferUtility _transferUtility = new(s3);
 
     private static long ResolveContentLength(Stream content, long? contentLength)
     {
@@ -26,73 +27,54 @@ internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService
             nameof(contentLength));
     }
 
+    public void Dispose()
+    {
+        _transferUtility.Dispose();
+    }
+
     public async Task<FileStorageUploadResult> UploadAsync(string bucketName, string objectKey, Stream content,
         long? contentLength = null, CancellationToken cancellationToken = default)
     {
         /*
          * Upload flow:
-         *   Content ──ReadAsync──▶ HashingStream ──ReadAsync──▶ AsyncStreamPump ──▶ Pipe
-         *                                                                                 │
-         *                                                            sync Read ◀── TransferUtility.UploadAsync
+         *   Content ──ReadAsync──▶ HashingStream ──ReadAsync──▶ TransferUtility.UploadAsync
          *
-         * TransferUtility.UploadAsync is async at the HTTP layer, but the AWS SDK for .NET still reads
-         * InputStream synchronously (Stream.Read) when marshalling the body. The same is true of
-         * PutObjectAsync. See https://github.com/aws/aws-sdk-net/issues/1452 and
-         * https://github.com/aws/aws-sdk-net/issues/1534.
-         *
-         * Though this method is written to be agnostic, it was originally written for streaming upload requests for an ASP.NET Kestrel API.
          * Kestrel's Request.Body forbids synchronous reads by default (AllowSynchronousIO = false).
-         * Passing Request.Body directly to the SDK therefore fails with a message like:
-         *   "Synchronous operations are disallowed. Call ReadAsync or set AllowSynchronousIO to true."
+         * PutObjectAsync sync-reads InputStream when marshalling the body; see
+         * https://github.com/aws/aws-sdk-net/issues/1452 and https://github.com/aws/aws-sdk-net/issues/1534.
          *
-         * We pump the source into a Pipe using only ReadAsync. PutObjectAsync still sync-reads
-         * InputStream when marshalling the body, but we avoid TransferUtility multipart mode,
-         * which pads non-seekable pipe streams to the minimum part size and produces oversized
-         * (often zero-filled) S3 objects. The SDK sync-reads from pipe.Reader.AsStream(), which
-         * is an in-memory buffer — not the HTTP request stream.
-         * HashingStream rejects sync Read on the upstream stream so nothing can bypass this path.
+         * TransferUtility.UploadAsync reads non-seekable streams via ReadAsync and buffers at most one
+         * multipart part (default 5 MB) at a time instead of loading the entire object into memory.
+         * HashingStream forwards any synchronous SDK reads to ReadAsync on the upstream stream.
          */
-        var pipe = new Pipe();
         await using var hashingStream = new HashingStream(content);
         var resolvedContentLength = ResolveContentLength(hashingStream, contentLength);
-        var pumpTask = AsyncStreamPump.PumpAsync(hashingStream, pipe.Writer, cancellationToken);
 
-        // Finish pumping before the SDK sync-reads the pipe. Concurrent upload + sync Read from
-        // PipeReader.AsStream() can observe trailing buffer bytes as zeros, producing oversized
-        // S3 objects even when the SHA-256 over the async source path is correct.
-        await pumpTask.ConfigureAwait(false);
-        await UploadPipeToS3Async(
-            pipe.Reader, bucketName, objectKey, resolvedContentLength, cancellationToken).ConfigureAwait(false);
+        var request = new TransferUtilityUploadRequest
+        {
+            BucketName = bucketName,
+            Key = objectKey,
+            InputStream = hashingStream,
+            AutoCloseStream = false,
+            AutoResetStreamPosition = false,
+            Headers =
+            {
+                ContentLength = resolvedContentLength
+            }
+        };
+
+        await _transferUtility.UploadAsync(request, cancellationToken).ConfigureAwait(false);
+
+        if (hashingStream.BytesRead != resolvedContentLength)
+        {
+            throw new InvalidOperationException(
+                $"Upload stream ended after {hashingStream.BytesRead} bytes; Content-Length declared {resolvedContentLength}.");
+        }
 
         return new FileStorageUploadResult
         {
             Sha256Checksum = hashingStream.GetSha256Hex()
         };
-    }
-
-    private async Task UploadPipeToS3Async(
-        PipeReader reader,
-        string bucketName,
-        string objectKey,
-        long contentLength,
-        CancellationToken cancellationToken)
-    {
-        await using var uploadStream = reader.AsStream();
-
-        var request = new PutObjectRequest
-        {
-            BucketName = bucketName,
-            Key = objectKey,
-            InputStream = uploadStream,
-            AutoCloseStream = false,
-            AutoResetStreamPosition = false,
-            Headers =
-            {
-                ContentLength = contentLength
-            }
-        };
-
-        await s3.PutObjectAsync(request, cancellationToken).ConfigureAwait(false);
     }
 
     public Task DeleteAsync(string bucketName, string objectKey, CancellationToken cancellationToken = default)

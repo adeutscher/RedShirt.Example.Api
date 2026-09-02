@@ -78,6 +78,8 @@
         <Project
                 Path="test/RedShirt.Example.Api.Common.Aws.S3FileStorage.UnitTests/RedShirt.Example.Api.Common.Aws.S3FileStorage.UnitTests.csproj"/>
         <Project
+                Path="test/RedShirt.Example.Api.Common.Aws.S3FileStorage.IntegrationTests/RedShirt.Example.Api.Common.Aws.S3FileStorage.IntegrationTests.csproj"/>
+        <Project
                 Path="test/RedShirt.Example.Api.Common.Aws.UnitTests/RedShirt.Example.Api.Common.Aws.UnitTests.csproj"/>
         <Project
                 Path="test/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.UnitTests/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.UnitTests.csproj"/>

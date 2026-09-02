@@ -3,14 +3,15 @@ using System.Security.Cryptography;
 namespace RedShirt.Example.Api.Common.Aws.S3FileStorage.Helpers;
 
 /// <summary>
-///     Wraps a stream and computes a SHA-256 digest as bytes are read asynchronously.
+///     Wraps a stream, computes a SHA-256 digest as bytes are read, and ensures the upstream
+///     stream is only ever read asynchronously even when consumers (e.g. TransferUtility) call
+///     synchronous <see cref="Read" />.
 /// </summary>
 internal sealed class HashingStream(Stream inner) : Stream
 {
-    private const string SyncReadNotSupportedMessage =
-        "Synchronous reads are not supported. Use ReadAsync.";
-
     private readonly IncrementalHash _hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+
+    public long BytesRead { get; private set; }
 
     public override bool CanRead => inner.CanRead;
 
@@ -31,7 +32,6 @@ internal sealed class HashingStream(Stream inner) : Stream
         if (disposing)
         {
             inner.Dispose();
-            _hash.Dispose();
         }
 
         base.Dispose(disposing);
@@ -44,17 +44,19 @@ internal sealed class HashingStream(Stream inner) : Stream
 
     public string GetSha256Hex()
     {
-        return Convert.ToHexString(_hash.GetHashAndReset()).ToLowerInvariant();
+        var hex = Convert.ToHexString(_hash.GetHashAndReset()).ToLowerInvariant();
+        _hash.Dispose();
+        return hex;
     }
 
     public override int Read(byte[] buffer, int offset, int count)
     {
-        throw new InvalidOperationException(SyncReadNotSupportedMessage);
+        return ReadAsync(buffer.AsMemory(offset, count), CancellationToken.None).AsTask().GetAwaiter().GetResult();
     }
 
     public override int Read(Span<byte> buffer)
     {
-        throw new InvalidOperationException(SyncReadNotSupportedMessage);
+        return Read(buffer.ToArray(), 0, buffer.Length);
     }
 
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -62,6 +64,7 @@ internal sealed class HashingStream(Stream inner) : Stream
         var read = await inner.ReadAsync(buffer, cancellationToken);
         if (read > 0)
         {
+            BytesRead += read;
             _hash.AppendData(buffer.Span[..read]);
         }
 

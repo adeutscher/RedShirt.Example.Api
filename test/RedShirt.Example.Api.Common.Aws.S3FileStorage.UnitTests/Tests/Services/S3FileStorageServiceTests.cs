@@ -1,9 +1,7 @@
 using Amazon.S3;
 using Amazon.S3.Model;
-using RedShirt.Example.Api.Common.Aws.S3FileStorage.Helpers;
 using RedShirt.Example.Api.Common.Aws.S3FileStorage.Services;
 using RedShirt.Example.Api.Common.Aws.S3FileStorage.UnitTests.Support;
-using System.IO.Pipelines;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -16,9 +14,10 @@ public class S3FileStorageServiceTests
         return Convert.ToHexString(SHA256.HashData(payload)).ToLowerInvariant();
     }
 
-    private static (Mock<IAmazonS3> S3, List<byte> CapturedBody) CreateCapturingS3Mock()
+    private static (Mock<IAmazonS3> S3, List<byte> CapturedBody) CreateCapturingS3Mock(long expectedObjectLength)
     {
         var capturedBody = new List<byte>();
+        const string uploadId = "test-multipart-upload-id";
         var s3 = new Mock<IAmazonS3>(MockBehavior.Strict);
 
         s3.SetupGet(x => x.Config).Returns(new AmazonS3Config
@@ -27,21 +26,31 @@ public class S3FileStorageServiceTests
             ForcePathStyle = true
         });
 
-        // PutObjectAsync sync-reads exactly ContentLength bytes from the pipe stream.
-        s3.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .Callback<PutObjectRequest, CancellationToken>((request, _) =>
+        // TransferUtility treats non-seekable streams as multipart uploads.
+        s3.Setup(x => x.InitiateMultipartUploadAsync(
+                It.IsAny<InitiateMultipartUploadRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new InitiateMultipartUploadResponse {UploadId = uploadId});
+
+        s3.Setup(x => x.UploadPartAsync(It.IsAny<UploadPartRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<UploadPartRequest, CancellationToken>((request, _) =>
             {
                 if (request.InputStream is null)
                 {
                     return;
                 }
 
-                var length = request.Headers.ContentLength;
-                var buffer = new byte[length];
-                var read = 0;
-                while (read < length)
+                var remaining = expectedObjectLength - capturedBody.Count;
+                if (remaining <= 0)
                 {
-                    var bytesRead = request.InputStream.Read(buffer, read, (int)(length - read));
+                    return;
+                }
+
+                var buffer = new byte[(int) Math.Min(remaining, int.MaxValue)];
+                var read = 0;
+                while (read < buffer.Length)
+                {
+                    var bytesRead = request.InputStream.Read(buffer, read, buffer.Length - read);
                     if (bytesRead == 0)
                     {
                         break;
@@ -50,22 +59,35 @@ public class S3FileStorageServiceTests
                     read += bytesRead;
                 }
 
-                capturedBody.Clear();
                 capturedBody.AddRange(buffer.AsSpan(0, read).ToArray());
             })
-            .ReturnsAsync(new PutObjectResponse());
+            .ReturnsAsync((UploadPartRequest request, CancellationToken _) => new UploadPartResponse
+            {
+                ETag = "\"test-etag\"",
+                PartNumber = request.PartNumber
+            });
+
+        s3.Setup(x => x.CompleteMultipartUploadAsync(
+                It.IsAny<CompleteMultipartUploadRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CompleteMultipartUploadResponse());
+
+        s3.Setup(x => x.AbortMultipartUploadAsync(
+                It.IsAny<AbortMultipartUploadRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AbortMultipartUploadResponse());
 
         return (s3, capturedBody);
     }
 
     [Fact]
-    public async Task UploadAsync_AsyncOnlySourceStream_DeliversFullPayloadThroughPumpToS3()
+    public async Task UploadAsync_AsyncOnlySourceStream_DeliversFullPayloadToS3()
     {
         var payload = Encoding.UTF8.GetBytes("This upload contains a potato.");
-        await using var source = new AsyncOnlyReadStream(payload, chunkSize: 5);
-        var (s3, capturedBody) = CreateCapturingS3Mock();
+        await using var source = new AsyncOnlyReadStream(payload, 5);
+        var (s3, capturedBody) = CreateCapturingS3Mock(payload.LongLength);
 
-        var service = new S3FileStorageService(s3.Object);
+        using var service = new S3FileStorageService(s3.Object);
         var result = await service.UploadAsync(
             "unverified-uploads",
             "upload-id/user-id",
@@ -77,11 +99,17 @@ public class S3FileStorageServiceTests
         Assert.Equal(payload, capturedBody.ToArray());
         Assert.Equal(Sha256Hex(payload), result.Sha256Checksum);
         s3.Verify(
-            x => x.PutObjectAsync(
-                It.Is<PutObjectRequest>(r =>
-                    r.BucketName == "unverified-uploads" &&
-                    r.Key == "upload-id/user-id" &&
-                    r.Headers.ContentLength == payload.LongLength),
+            x => x.InitiateMultipartUploadAsync(
+                It.Is<InitiateMultipartUploadRequest>(r =>
+                    r.BucketName == "unverified-uploads" && r.Key == "upload-id/user-id"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        s3.Verify(
+            x => x.UploadPartAsync(It.IsAny<UploadPartRequest>(), It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
+        s3.Verify(
+            x => x.CompleteMultipartUploadAsync(
+                It.IsAny<CompleteMultipartUploadRequest>(),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -90,10 +118,10 @@ public class S3FileStorageServiceTests
     public async Task UploadAsync_LargeAsyncOnlyPayload_StillDeliversAllBytes()
     {
         var payload = Encoding.UTF8.GetBytes(new string('p', 12_000) + "otato");
-        await using var source = new AsyncOnlyReadStream(payload, chunkSize: 256);
-        var (s3, capturedBody) = CreateCapturingS3Mock();
+        await using var source = new AsyncOnlyReadStream(payload, 256);
+        var (s3, capturedBody) = CreateCapturingS3Mock(payload.LongLength);
 
-        var service = new S3FileStorageService(s3.Object);
+        using var service = new S3FileStorageService(s3.Object);
         var result = await service.UploadAsync(
             "unverified-uploads",
             "large-object",
@@ -110,38 +138,35 @@ public class S3FileStorageServiceTests
     {
         var payload = Encoding.UTF8.GetBytes("potato");
         await using var source = new AsyncOnlyReadStream(payload);
-        var (s3, _) = CreateCapturingS3Mock();
+        var (s3, _) = CreateCapturingS3Mock(payload.LongLength);
 
-        var service = new S3FileStorageService(s3.Object);
+        using var service = new S3FileStorageService(s3.Object);
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            service.UploadAsync("bucket", "key", source, contentLength: null,
+            service.UploadAsync("bucket", "key", source, null,
                 TestContext.Current.CancellationToken));
 
         Assert.Contains("Content length must be provided", exception.Message, StringComparison.Ordinal);
         s3.Verify(
-            x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()),
+            x => x.InitiateMultipartUploadAsync(
+                It.IsAny<InitiateMultipartUploadRequest>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
     }
-}
 
-public class AsyncStreamPumpTests
-{
     [Fact]
-    public async Task PumpAsync_CopiesAllBytesFromAsyncOnlyStream()
+    public async Task UploadAsync_ThrowsWhenStreamEndsBeforeDeclaredContentLength()
     {
-        var payload = Encoding.UTF8.GetBytes("chunked potato payload");
-        await using var source = new AsyncOnlyReadStream(payload, chunkSize: 3);
-        var pipe = new Pipe();
+        var payload = Encoding.UTF8.GetBytes("partial");
+        await using var source = new AsyncOnlyReadStream(payload);
+        var (s3, _) = CreateCapturingS3Mock(payload.LongLength + 10);
 
-        var pumpTask = AsyncStreamPump.PumpAsync(source, pipe.Writer, TestContext.Current.CancellationToken);
-        await using var output = pipe.Reader.AsStream();
-        using var actual = new MemoryStream();
+        using var service = new S3FileStorageService(s3.Object);
 
-        await pumpTask;
-        await output.CopyToAsync(actual, TestContext.Current.CancellationToken);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.UploadAsync("bucket", "key", source, payload.LongLength + 10,
+                TestContext.Current.CancellationToken));
 
-        Assert.Equal(0, source.SyncReadAttempts);
-        Assert.Equal(payload, actual.ToArray());
+        Assert.Contains("Content-Length declared", exception.Message, StringComparison.Ordinal);
     }
 }

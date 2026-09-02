@@ -46,6 +46,7 @@ def main() -> int:
         headers={
             "Authorization": f"Bearer {token}",
             "Accept": "application/json",
+            "Content-Type": "application/octet-stream",
             "X-File-Name": file_name,
             "Idempotency-Key": idempotency_key,
         },
