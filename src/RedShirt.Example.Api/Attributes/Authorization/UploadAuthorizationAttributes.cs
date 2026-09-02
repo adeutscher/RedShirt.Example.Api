@@ -31,10 +31,10 @@ public sealed class AuthorizeUploadValidatorAttribute : AuthorizeAttribute
 }
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public sealed class AuthorizeUploadReadOrValidatorAttribute : AuthorizeAttribute
+public sealed class ApproveUploadDownloadLinkAttribute : AuthorizeAttribute
 {
-    public AuthorizeUploadReadOrValidatorAttribute()
+    public ApproveUploadDownloadLinkAttribute()
     {
-        Policy = BespokeAuthorizationPolicies.UploadReadOrValidator;
+        Policy = BespokeAuthorizationPolicies.UploadDownloadApproved;
     }
 }

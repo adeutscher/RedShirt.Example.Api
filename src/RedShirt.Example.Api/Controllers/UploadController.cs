@@ -1,8 +1,8 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
 using RedShirt.Example.Api.Attributes.Authorization;
+using RedShirt.Example.Api.Authorization.ResourceScoping.Upload;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Upload.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.Upload.Commands.Delete;
@@ -13,8 +13,9 @@ using RedShirt.Example.Api.Core.UseCases.Upload.Queries.GetDownloadLink;
 using RedShirt.Example.Api.Core.UseCases.Upload.Queries.GetSummary;
 using RedShirt.Example.Api.Core.UseCases.Upload.Queries.SearchRecords;
 using RedShirt.Example.Api.Models.Upload;
-using RedShirt.Example.Api.Upload.Core.Models;
-using RedShirt.Example.Api.Upload.Core.Services;
+using RedShirt.Example.Api.Upload.Core.Models.Requests;
+using RedShirt.Example.Api.Upload.Core.Models.Responses;
+using System.Security.Claims;
 
 namespace RedShirt.Example.Api.Controllers;
 
@@ -24,6 +25,88 @@ namespace RedShirt.Example.Api.Controllers;
 [ProducesJson]
 public class UploadController : ControllerBase
 {
+    [HttpDelete("{id:guid}")]
+    [AuthorizeUploadWrite]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadSummaryModel))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(
+        [FromRoute]
+        Guid id,
+        [FromServices]
+        IGetUploadSummaryQueryHandler getUploadSummaryQueryHandler,
+        [FromServices]
+        IUploadScopedResourceEnforcer uploadScopedResourceEnforcer,
+        [FromServices]
+        IDeleteUploadCommandHandler deleteUploadCommandHandler,
+        CancellationToken cancellationToken)
+    {
+        var existing = await getUploadSummaryQueryHandler.Handle(new GetUploadSummaryQuery(id), cancellationToken);
+        await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.UploadedByUserId);
+        var model = await deleteUploadCommandHandler.Handle(new DeleteUploadCommand(id), cancellationToken);
+        return Ok(model);
+    }
+
+    [HttpGet("{id:guid}")]
+    [ApproveUploadReadOnly]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadSummaryModel))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Get(
+        [FromRoute]
+        Guid id,
+        [FromServices]
+        IGetUploadSummaryQueryHandler getUploadSummaryQueryHandler,
+        [FromServices]
+        IUploadScopedResourceEnforcer uploadScopedResourceEnforcer,
+        CancellationToken cancellationToken)
+    {
+        var model = await getUploadSummaryQueryHandler.Handle(new GetUploadSummaryQuery(id), cancellationToken);
+        await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, model.UploadedByUserId);
+        return Ok(model);
+    }
+
+    [HttpGet("{id:guid}/details")]
+    [ApproveUploadReadOnly]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadDetailsModel))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDetails(
+        [FromRoute]
+        Guid id,
+        [FromServices]
+        IGetUploadSummaryQueryHandler getUploadSummaryQueryHandler,
+        [FromServices]
+        IUploadScopedResourceEnforcer uploadScopedResourceEnforcer,
+        [FromServices]
+        IGetUploadDetailsQueryHandler getUploadDetailsQueryHandler,
+        CancellationToken cancellationToken)
+    {
+        var summary = await getUploadSummaryQueryHandler.Handle(new GetUploadSummaryQuery(id), cancellationToken);
+        await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, summary.UploadedByUserId);
+        var model = await getUploadDetailsQueryHandler.Handle(new GetUploadDetailsQuery(id), cancellationToken);
+        return Ok(model);
+    }
+
+    [HttpGet("{id:guid}/download-link")]
+    [ApproveUploadDownloadLink]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadDownloadLinkModel))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDownloadLink(
+        [FromRoute]
+        Guid id,
+        [FromServices]
+        IGetUploadSummaryQueryHandler getUploadSummaryQueryHandler,
+        [FromServices]
+        IUploadScopedResourceEnforcer uploadScopedResourceEnforcer,
+        [FromServices]
+        IGetUploadDownloadLinkQueryHandler getUploadDownloadLinkQueryHandler,
+        CancellationToken cancellationToken)
+    {
+        var summary = await getUploadSummaryQueryHandler.Handle(new GetUploadSummaryQuery(id), cancellationToken);
+        await uploadScopedResourceEnforcer.EnsureCanDownloadAsync(User, summary.UploadedByUserId, summary.State);
+        var model = await getUploadDownloadLinkQueryHandler.Handle(new GetUploadDownloadLinkQuery(id),
+            cancellationToken);
+        return Ok(model);
+    }
+
     [HttpPost]
     [AuthorizeUploadWrite]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadSummaryModel))]
@@ -46,21 +129,6 @@ public class UploadController : ControllerBase
         return Ok(model);
     }
 
-    [HttpGet("{id:guid}")]
-    [AuthorizeUploadReadOrValidator]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadSummaryModel))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Get(
-        [FromRoute]
-        Guid id,
-        [FromServices]
-        IGetUploadSummaryQueryHandler getUploadSummaryQueryHandler,
-        CancellationToken cancellationToken)
-    {
-        var model = await getUploadSummaryQueryHandler.Handle(new GetUploadSummaryQuery(id), cancellationToken);
-        return Ok(model);
-    }
-
     [HttpGet]
     [ApproveUploadReadOnly]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadSearchResponse))]
@@ -68,9 +136,13 @@ public class UploadController : ControllerBase
         [FromQuery]
         UploadSearchRequest request,
         [FromServices]
+        IUploadScopedResourceEnforcer uploadScopedResourceEnforcer,
+        [FromServices]
         ISearchUploadRecordsQueryHandler searchUploadRecordsQueryHandler,
         CancellationToken cancellationToken)
     {
+        var uploadedByUserId =
+            uploadScopedResourceEnforcer.ConstrainSearchUploadedByUserId(User, request.UploadedByUserId);
         var model = await searchUploadRecordsQueryHandler.Handle(
             new SearchUploadRecordsQuery(
                 new UploadServiceSearchRequest
@@ -82,47 +154,12 @@ public class UploadController : ControllerBase
                     UpdatedAfterUtc = request.UpdatedAfterUtc,
                     Id = request.Id,
                     State = request.State,
-                    UploadedByUserId = request.UploadedByUserId,
+                    UploadedByUserId = uploadedByUserId,
                     FileName = request.FileName,
                     IsValidated = request.IsValidated,
                     IsRejected = request.IsRejected
                 },
                 request.ContinuationToken),
-            cancellationToken);
-        return Ok(model);
-    }
-
-    [HttpGet("{id:guid}/details")]
-    [ApproveUploadReadOnly]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadDetailsModel))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetDetails(
-        [FromRoute]
-        Guid id,
-        [FromServices]
-        IGetUploadDetailsQueryHandler getUploadDetailsQueryHandler,
-        CancellationToken cancellationToken)
-    {
-        var model = await getUploadDetailsQueryHandler.Handle(new GetUploadDetailsQuery(id), cancellationToken);
-        return Ok(model);
-    }
-
-    [HttpPost("{id:guid}/verdicts")]
-    [AuthorizeUploadValidator]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadSummaryModel))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> SubmitVerdict(
-        [FromRoute]
-        Guid id,
-        [FromBody]
-        UploadVerdictRequest request,
-        [FromServices]
-        ISubmitUploadVerdictCommandHandler submitUploadVerdictCommandHandler,
-        CancellationToken cancellationToken)
-    {
-        var model = await submitUploadVerdictCommandHandler.Handle(
-            new SubmitUploadVerdictCommand(id, request.Approved),
             cancellationToken);
         return Ok(model);
     }
@@ -147,33 +184,22 @@ public class UploadController : ControllerBase
         return Ok(model);
     }
 
-    [HttpDelete("{id:guid}")]
-    [AuthorizeUploadWrite]
+    [HttpPost("{id:guid}/verdicts")]
+    [AuthorizeUploadValidator]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadSummaryModel))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(
+    public async Task<IActionResult> SubmitVerdict(
         [FromRoute]
         Guid id,
+        [FromBody]
+        UploadVerdictRequest request,
         [FromServices]
-        IDeleteUploadCommandHandler deleteUploadCommandHandler,
+        ISubmitUploadVerdictCommandHandler submitUploadVerdictCommandHandler,
         CancellationToken cancellationToken)
     {
-        var model = await deleteUploadCommandHandler.Handle(new DeleteUploadCommand(id), cancellationToken);
-        return Ok(model);
-    }
-
-    [HttpGet("{id:guid}/download-link")]
-    [ApproveUploadReadOnly]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadDownloadLinkModel))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetDownloadLink(
-        [FromRoute]
-        Guid id,
-        [FromServices]
-        IGetUploadDownloadLinkQueryHandler getUploadDownloadLinkQueryHandler,
-        CancellationToken cancellationToken)
-    {
-        var model = await getUploadDownloadLinkQueryHandler.Handle(new GetUploadDownloadLinkQuery(id),
+        var model = await submitUploadVerdictCommandHandler.Handle(
+            new SubmitUploadVerdictCommand(id, request.Approved),
             cancellationToken);
         return Ok(model);
     }

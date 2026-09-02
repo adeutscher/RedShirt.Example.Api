@@ -1,4 +1,6 @@
-namespace RedShirt.Example.Api.Upload.Core.Models;
+using RedShirt.Example.Api.Upload.Core.Models;
+
+namespace RedShirt.Example.Api.Upload.Core.Models.Responses;
 
 /// <summary>
 ///     Summary projection of an upload aggregate, returned by GET <c>/uploads/{id}</c> and search.

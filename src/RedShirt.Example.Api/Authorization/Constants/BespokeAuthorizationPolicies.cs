@@ -66,9 +66,21 @@ public static class BespokeAuthorizationPolicies
     public const string UploadValidator = "UploadValidator";
 
     /// <summary>
-    ///     Upload summary read for callers with read or validator permissions.
+    ///     Download-link access: <see cref="BespokeAuthorizationPermissions.UploadRead" /> or
+    ///     <see cref="BespokeAuthorizationPermissions.UploadValidator" />; resource rules apply via
+    ///     <see cref="BespokeAuthorizationPolicies.UploadDownload" />.
     /// </summary>
-    public const string UploadReadOrValidator = "UploadReadOrValidator";
+    public const string UploadDownloadApproved = "UploadDownloadApproved";
+
+    /// <summary>
+    ///     Resource-based access to an upload owned by a specific user.
+    /// </summary>
+    public const string UploadScoped = "UploadScoped";
+
+    /// <summary>
+    ///     Resource-based download access (state-dependent rules).
+    /// </summary>
+    public const string UploadDownload = "UploadDownload";
 
     /// <summary>
     ///     Resource-based access to a customer-scoped record (for example an order).

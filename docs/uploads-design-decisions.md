@@ -46,17 +46,27 @@ one worker service, or split across services with queue messages carrying
 upload ids and storage coordinates. The mock Python scripts in
 `test/local/upload-workers/` stand in for those workers during local testing.
 
-The Keycloak **`upload-validator`** realm role is scoped to the worker-facing
-API surface only:
+The Keycloak **`upload-validator`** realm role is scoped to worker-facing write endpoints:
 
-- GET `/uploads/{id}`
 - POST `/uploads/{id}/verdicts`
 - POST `/uploads/{id}/move-reports`
 
 Poll/search, download-link, delete, and end-user upload POST require broader
-permissions (`upload:read`, `upload:write`). Local mock scripts default to an
-admin token via `API_JWT_TOKEN`; use the validator token when exercising
-least-privilege paths.
+permissions (`upload:read`, `upload:write`) and owner scoping (see below).
+Local mock scripts default to an admin token via `API_JWT_TOKEN`; use the
+validator token when exercising least-privilege worker paths.
+
+## Upload owner scoping
+
+Mirroring order customer scope:
+
+- **Search** — non-admin callers only see uploads where `UploadedByUserId`
+  matches their JWT `sub`.
+- **GET / DELETE / details** — uploader or admin only.
+- **Download link** — state-dependent:
+  - Non-`Stored`: admin or `upload:validator` (validators fetch content for
+    validation; uploaders cannot download until stored).
+  - `Stored`: uploader or admin.
 
 ## Event sourcing and aggregate projection
 
@@ -66,6 +76,8 @@ Upload metadata uses a lightweight event-sourcing style:
   `UploadCompleted`, `UploadValidated`, …).
 - **`UploadAggregate`** — cached projection updated on each append using a
   Marten-style `Apply` pattern in `UploadAggregate`.
+- **`UploadDetailsModel`** — flattened response with nullable fields per event
+  type (not raw event JSON).
 
 Streams are short for this example; the aggregate table mirrors the pattern
 planned for Accounts ([#42](https://github.com/adeutscher/RedShirt.Example.Api/issues/42))

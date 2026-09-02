@@ -1,13 +1,14 @@
 using RedShirt.Example.Api.Core.Cqrs;
-using RedShirt.Example.Api.Core.Services;
-using RedShirt.Example.Api.Upload.Core.Models;
+using RedShirt.Example.Api.Upload.Core.Models.Requests;
+using RedShirt.Example.Api.Upload.Core.Models.Responses;
 using RedShirt.Example.Api.Upload.Core.Services;
 
 namespace RedShirt.Example.Api.Core.UseCases.Upload.Commands.SubmitMoveReport;
 
 public sealed record SubmitUploadMoveReportCommand(Guid UploadId, string VerifiedStorageObjectKey);
 
-public interface ISubmitUploadMoveReportCommandHandler : ICqrsHandler<SubmitUploadMoveReportCommand, UploadSummaryModel>;
+public interface
+    ISubmitUploadMoveReportCommandHandler : ICqrsHandler<SubmitUploadMoveReportCommand, UploadSummaryModel>;
 
 internal sealed class SubmitUploadMoveReportCommandHandler(
     IUploadService uploadService,

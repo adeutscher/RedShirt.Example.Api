@@ -33,11 +33,10 @@ def api_request(base_url: str, token: str, method: str, path: str, body: dict | 
 
 
 def storage_object_key(details: dict) -> str:
-    for event in details.get("events", []):
-        if event.get("eventType") == "UploadCompleted":
-            payload = json.loads(event["json"])
-            return payload["storageObjectKey"]
-    raise RuntimeError("UploadCompleted event not found")
+    key = details.get("storageObjectKey")
+    if not key:
+        raise RuntimeError("storageObjectKey not found on upload details")
+    return key
 
 
 def s3_copy(source_bucket: str, dest_bucket: str, object_key: str) -> None:

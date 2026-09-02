@@ -1,8 +1,8 @@
-using System.Linq.Expressions;
-using System.Text.Json;
 using RedShirt.Example.Api.Upload.Core.Events;
 using RedShirt.Example.Api.Upload.Core.Models;
+using RedShirt.Example.Api.Upload.Core.Models.Responses;
 using RedShirt.Example.Api.Upload.Implementation.Entities;
+using System.Text.Json;
 
 namespace RedShirt.Example.Api.Upload.Implementation.Aggregates;
 
@@ -17,22 +17,71 @@ internal sealed class UploadAggregate
     public DateTime DateCreatedUtc { get; private set; }
     public DateTime DateUpdatedUtc { get; private set; }
     public string UploadedByUserId { get; private set; } = string.Empty;
+    public string UploadedByUsername { get; private set; } = string.Empty;
+    public string UploaderIpAddress { get; private set; } = string.Empty;
     public UploadState State { get; private set; }
     public string FileName { get; private set; } = string.Empty;
     public bool IsValidated { get; private set; }
     public bool IsRejected { get; private set; }
     public string StorageObjectKey { get; private set; } = string.Empty;
     public string? VerifiedStorageObjectKey { get; private set; }
+    public string? Sha256Checksum { get; private set; }
+    public DateTime? DateCompletedUtc { get; private set; }
+    public DateTime? DateValidatedUtc { get; private set; }
+    public DateTime? DateRejectedUtc { get; private set; }
+    public DateTime? DateStoredUtc { get; private set; }
+    public DateTime? DateDeletedUtc { get; private set; }
 
-    public static UploadAggregate FromEvents(IEnumerable<UploadEventEntity> events)
+    public void Apply(UploadCreatedEvent uploadEvent, DateTime eventDateUtc)
     {
-        var aggregate = new UploadAggregate();
-        foreach (var uploadEvent in events.OrderBy(e => e.EventDateUtc).ThenBy(e => e.Id))
-        {
-            aggregate.ApplyEvent(uploadEvent.EventType, uploadEvent.Json, uploadEvent.EventDateUtc);
-        }
+        Id = uploadEvent.UploadId;
+        UploadedByUserId = uploadEvent.UploadedByUserId;
+        UploadedByUsername = uploadEvent.UploadedByUsername;
+        UploaderIpAddress = uploadEvent.UploaderIpAddress;
+        FileName = uploadEvent.FileName;
+        DateCreatedUtc = eventDateUtc;
+        DateUpdatedUtc = eventDateUtc;
+        State = UploadState.Uploading;
+    }
 
-        return aggregate;
+    public void Apply(UploadCompletedEvent uploadEvent, DateTime eventDateUtc)
+    {
+        StorageObjectKey = uploadEvent.StorageObjectKey;
+        Sha256Checksum = uploadEvent.Sha256Checksum;
+        DateCompletedUtc = eventDateUtc;
+        DateUpdatedUtc = eventDateUtc;
+        State = UploadState.NotValidated;
+    }
+
+    public void Apply(UploadValidatedEvent uploadEvent, DateTime eventDateUtc)
+    {
+        IsValidated = true;
+        DateValidatedUtc = eventDateUtc;
+        DateUpdatedUtc = eventDateUtc;
+        State = UploadState.Verified;
+    }
+
+    public void Apply(UploadRejectedEvent uploadEvent, DateTime eventDateUtc)
+    {
+        IsRejected = true;
+        DateRejectedUtc = eventDateUtc;
+        DateUpdatedUtc = eventDateUtc;
+        State = UploadState.Rejected;
+    }
+
+    public void Apply(UploadStoredEvent uploadEvent, DateTime eventDateUtc)
+    {
+        VerifiedStorageObjectKey = uploadEvent.VerifiedStorageObjectKey;
+        DateStoredUtc = eventDateUtc;
+        DateUpdatedUtc = eventDateUtc;
+        State = UploadState.Stored;
+    }
+
+    public void Apply(UploadDeletedEvent uploadEvent, DateTime eventDateUtc)
+    {
+        DateDeletedUtc = eventDateUtc;
+        DateUpdatedUtc = eventDateUtc;
+        State = UploadState.Deleted;
     }
 
     public void ApplyEvent(string eventType, string json, DateTime eventDateUtc)
@@ -62,48 +111,46 @@ internal sealed class UploadAggregate
         }
     }
 
-    public void Apply(UploadCreatedEvent uploadEvent, DateTime eventDateUtc)
+    public static UploadAggregate FromEvents(IEnumerable<UploadEventEntity> events)
     {
-        Id = uploadEvent.UploadId;
-        UploadedByUserId = uploadEvent.UploadedByUserId;
-        FileName = uploadEvent.FileName;
-        DateCreatedUtc = eventDateUtc;
-        DateUpdatedUtc = eventDateUtc;
-        State = UploadState.Uploading;
+        var aggregate = new UploadAggregate();
+        foreach (var uploadEvent in events.OrderBy(e => e.EventDateUtc).ThenBy(e => e.Id))
+        {
+            aggregate.ApplyEvent(uploadEvent.EventType, uploadEvent.Json, uploadEvent.EventDateUtc);
+        }
+
+        return aggregate;
     }
 
-    public void Apply(UploadCompletedEvent uploadEvent, DateTime eventDateUtc)
+    public string ResolveDownloadObjectKey()
     {
-        StorageObjectKey = uploadEvent.StorageObjectKey;
-        DateUpdatedUtc = eventDateUtc;
-        State = UploadState.NotValidated;
+        if (State == UploadState.Stored && !string.IsNullOrWhiteSpace(VerifiedStorageObjectKey))
+        {
+            return VerifiedStorageObjectKey;
+        }
+
+        return StorageObjectKey;
     }
 
-    public void Apply(UploadValidatedEvent uploadEvent, DateTime eventDateUtc)
+    public UploadDetailsModel ToDetailsModel()
     {
-        IsValidated = true;
-        DateUpdatedUtc = eventDateUtc;
-        State = UploadState.Verified;
-    }
-
-    public void Apply(UploadRejectedEvent uploadEvent, DateTime eventDateUtc)
-    {
-        IsRejected = true;
-        DateUpdatedUtc = eventDateUtc;
-        State = UploadState.Rejected;
-    }
-
-    public void Apply(UploadStoredEvent uploadEvent, DateTime eventDateUtc)
-    {
-        VerifiedStorageObjectKey = uploadEvent.VerifiedStorageObjectKey;
-        DateUpdatedUtc = eventDateUtc;
-        State = UploadState.Stored;
-    }
-
-    public void Apply(UploadDeletedEvent uploadEvent, DateTime eventDateUtc)
-    {
-        DateUpdatedUtc = eventDateUtc;
-        State = UploadState.Deleted;
+        return new UploadDetailsModel
+        {
+            Id = Id,
+            DateCreatedUtc = DateCreatedUtc,
+            UploadedByUserId = UploadedByUserId,
+            UploadedByUsername = UploadedByUsername,
+            UploaderIpAddress = UploaderIpAddress,
+            FileName = FileName,
+            DateCompletedUtc = DateCompletedUtc,
+            StorageObjectKey = string.IsNullOrWhiteSpace(StorageObjectKey) ? null : StorageObjectKey,
+            Sha256Checksum = Sha256Checksum,
+            DateValidatedUtc = DateValidatedUtc,
+            DateRejectedUtc = DateRejectedUtc,
+            DateStoredUtc = DateStoredUtc,
+            VerifiedStorageObjectKey = VerifiedStorageObjectKey,
+            DateDeletedUtc = DateDeletedUtc
+        };
     }
 
     public UploadAggregateEntity ToEntity()
@@ -136,15 +183,8 @@ internal sealed class UploadAggregate
         };
     }
 
-    public string ResolveDownloadObjectKey()
+    public bool UsesVerifiedBucket()
     {
-        if (State == UploadState.Stored && !string.IsNullOrWhiteSpace(VerifiedStorageObjectKey))
-        {
-            return VerifiedStorageObjectKey;
-        }
-
-        return StorageObjectKey;
+        return State == UploadState.Stored;
     }
-
-    public bool UsesVerifiedBucket() => State == UploadState.Stored;
 }

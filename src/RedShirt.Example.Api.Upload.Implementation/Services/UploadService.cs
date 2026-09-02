@@ -4,6 +4,8 @@ using RedShirt.Example.Api.Common.FileStorage.Services;
 using RedShirt.Example.Api.Upload.Core.Configuration;
 using RedShirt.Example.Api.Upload.Core.Events;
 using RedShirt.Example.Api.Upload.Core.Models;
+using RedShirt.Example.Api.Upload.Core.Models.Requests;
+using RedShirt.Example.Api.Upload.Core.Models.Responses;
 using RedShirt.Example.Api.Upload.Core.Services;
 using RedShirt.Example.Api.Upload.Implementation.Repositories;
 
@@ -15,6 +17,11 @@ internal sealed class UploadService(
     IUploadEventBroadcaster eventBroadcaster,
     IOptions<UploadOptions> uploadOptions) : IUploadService
 {
+    private static string BuildObjectKey(Guid uploadId, string uploadedByUserId)
+    {
+        return $"{uploadId:N}/{uploadedByUserId}";
+    }
+
     public async Task<UploadSummaryModel> CreateAsync(UploadServiceCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -43,7 +50,7 @@ internal sealed class UploadService(
         await eventBroadcaster.BroadcastUploadCreatedAsync(createdEvent, uploadingSummary, cancellationToken);
 
         var options = uploadOptions.Value;
-        var objectKey = BuildObjectKey(uploadId, request.FileName);
+        var objectKey = BuildObjectKey(uploadId, request.UploadedByUserId);
         var uploadResult = await fileStorageService.UploadAsync(options.BucketUnverifiedItems, objectKey,
             request.Content, cancellationToken);
 
@@ -73,23 +80,13 @@ internal sealed class UploadService(
 
     public async Task<UploadDetailsModel> GetDetailsAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        if (await repository.GetSummaryAsync(id, cancellationToken) is null)
+        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
+        if (aggregate.Id == Guid.Empty)
         {
             throw new ResourceNotFoundException();
         }
 
-        var events = await repository.GetEventsAsync(id, cancellationToken);
-        return new UploadDetailsModel
-        {
-            Id = id,
-            Events = events.Select(e => new UploadEventRecordModel
-            {
-                Id = e.Id,
-                EventDateUtc = e.EventDateUtc,
-                EventType = e.EventType,
-                Json = e.Json
-            }).ToList()
-        };
+        return aggregate.ToDetailsModel();
     }
 
     public Task<UploadSearchResponse> SearchAsync(UploadServiceSearchRequest parameters, Guid? continuationToken,
@@ -115,7 +112,8 @@ internal sealed class UploadService(
         if (request.Approved)
         {
             var validatedEvent = new UploadValidatedEvent {UploadId = request.UploadId};
-            var summary = await repository.AppendEventAsync(request.UploadId, UploadEventTypes.Validated, validatedEvent,
+            var summary = await repository.AppendEventAsync(request.UploadId, UploadEventTypes.Validated,
+                validatedEvent,
                 cancellationToken);
             await eventBroadcaster.BroadcastUploadValidatedAsync(validatedEvent, summary, cancellationToken);
             return summary;
@@ -218,10 +216,5 @@ internal sealed class UploadService(
             DownloadUrl = url,
             ExpiresAtUtc = DateTime.UtcNow.Add(validity)
         };
-    }
-
-    private static string BuildObjectKey(Guid uploadId, string fileName)
-    {
-        return $"{uploadId:N}/{fileName}";
     }
 }

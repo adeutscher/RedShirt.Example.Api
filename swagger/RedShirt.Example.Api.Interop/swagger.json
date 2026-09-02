@@ -2744,44 +2744,69 @@
         "additionalProperties": false,
         "required": [
           "id",
-          "events"
+          "dateCreatedUtc",
+          "uploadedByUserId",
+          "uploadedByUsername",
+          "uploaderIpAddress",
+          "fileName"
         ],
         "properties": {
           "id": {
             "type": "string",
             "format": "guid"
           },
-          "events": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UploadEventRecordModel"
-            }
-          }
-        }
-      },
-      "UploadEventRecordModel": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "eventDateUtc",
-          "eventType",
-          "json"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "eventDateUtc": {
+          "dateCreatedUtc": {
             "type": "string",
             "format": "date-time"
           },
-          "eventType": {
+          "uploadedByUserId": {
             "type": "string"
           },
-          "json": {
+          "uploadedByUsername": {
             "type": "string"
+          },
+          "uploaderIpAddress": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "dateCompletedUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "storageObjectKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "sha256Checksum": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateValidatedUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "dateRejectedUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "dateStoredUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "verifiedStorageObjectKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateDeletedUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         }
       },

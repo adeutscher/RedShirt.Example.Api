@@ -1,14 +1,15 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
 using RedShirt.Example.Api.DataStores.Constants;
 using RedShirt.Example.Api.Upload.Core.Models;
-using RedShirt.Example.Api.Upload.Core.Services;
+using RedShirt.Example.Api.Upload.Core.Models.Requests;
+using RedShirt.Example.Api.Upload.Core.Models.Responses;
 using RedShirt.Example.Api.Upload.Implementation.Aggregates;
 using RedShirt.Example.Api.Upload.Implementation.Entities;
 using RedShirt.Example.Api.Upload.Implementation.Factories;
 using RedShirt.Example.Api.Upload.Implementation.Predicates;
+using System.Text.Json;
 
 namespace RedShirt.Example.Api.Upload.Implementation.Repositories;
 
@@ -17,15 +18,15 @@ internal interface IUploadRepository
     Task<UploadSummaryModel> AppendEventAsync(Guid uploadId, string eventType, object eventPayload,
         CancellationToken cancellationToken = default);
 
-    Task<UploadSummaryModel?> GetSummaryAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<UploadAggregate> GetAggregateFromEventsAsync(Guid uploadId,
+        CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<UploadEventEntity>> GetEventsAsync(Guid uploadId,
         CancellationToken cancellationToken = default);
 
-    Task<UploadSearchResponse> SearchAsync(UploadServiceSearchRequest parameters, Guid? continuationToken,
-        CancellationToken cancellationToken = default);
+    Task<UploadSummaryModel?> GetSummaryAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<UploadAggregate> GetAggregateFromEventsAsync(Guid uploadId,
+    Task<UploadSearchResponse> SearchAsync(UploadServiceSearchRequest parameters, Guid? continuationToken,
         CancellationToken cancellationToken = default);
 }
 
@@ -127,6 +128,8 @@ internal sealed class UploadRepository(
         var json = JsonSerializer.Serialize(eventPayload, JsonOptions);
 
         await using var context = await dbContextFactory.CreateDbContextAsync(ConnectionStringName, cancellationToken);
+        await using var transaction =
+            await context.Database.BeginTransactionAsync(cancellationToken);
 
         context.UploadEvents.Add(new UploadEventEntity
         {
@@ -143,7 +146,6 @@ internal sealed class UploadRepository(
             .ThenBy(e => e.Id)
             .ToListAsync(cancellationToken);
 
-        // Include the event we just staged (not yet committed) for aggregate projection.
         events.Add(new UploadEventEntity
         {
             Id = Guid.Empty,
@@ -173,6 +175,7 @@ internal sealed class UploadRepository(
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         return aggregate.ToSummaryModel();
     }
 

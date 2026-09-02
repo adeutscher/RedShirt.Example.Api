@@ -1,5 +1,5 @@
 using RedShirt.Example.Api.Upload.Core.Events;
-using RedShirt.Example.Api.Upload.Core.Models;
+using RedShirt.Example.Api.Upload.Core.Models.Responses;
 using RedShirt.Example.Api.Upload.Core.Services;
 
 namespace RedShirt.Example.Api.Upload.Implementation.Services;
@@ -12,20 +12,38 @@ namespace RedShirt.Example.Api.Upload.Implementation.Services;
 internal sealed class StubUploadEventBroadcaster : IUploadEventBroadcaster
 {
     public Task BroadcastUploadCreatedAsync(UploadCreatedEvent uploadEvent, UploadSummaryModel summary,
-        CancellationToken cancellationToken = default) => Task.CompletedTask;
+        CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
 
     public Task BroadcastUploadCompletedAsync(UploadCompletedEvent uploadEvent, UploadSummaryModel summary,
-        CancellationToken cancellationToken = default) => Task.CompletedTask;
+        CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
 
     public Task BroadcastUploadValidatedAsync(UploadValidatedEvent uploadEvent, UploadSummaryModel summary,
-        CancellationToken cancellationToken = default) => Task.CompletedTask;
+        CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
 
     public Task BroadcastUploadRejectedAsync(UploadRejectedEvent uploadEvent, UploadSummaryModel summary,
-        CancellationToken cancellationToken = default) => Task.CompletedTask;
+        CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
 
     public Task BroadcastUploadStoredAsync(UploadStoredEvent uploadEvent, UploadSummaryModel summary,
-        CancellationToken cancellationToken = default) => Task.CompletedTask;
+        CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
 
     public Task BroadcastUploadDeletedAsync(UploadDeletedEvent uploadEvent, UploadSummaryModel summary,
-        CancellationToken cancellationToken = default) => Task.CompletedTask;
+        CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
 }

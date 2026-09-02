@@ -1,5 +1,5 @@
 using RedShirt.Example.Api.Upload.Core.Events;
-using RedShirt.Example.Api.Upload.Core.Models;
+using RedShirt.Example.Api.Upload.Core.Models.Responses;
 
 namespace RedShirt.Example.Api.Upload.Core.Services;
 
@@ -9,13 +9,13 @@ namespace RedShirt.Example.Api.Upload.Core.Services;
 /// </summary>
 public interface IUploadEventBroadcaster
 {
-    Task BroadcastUploadCreatedAsync(UploadCreatedEvent uploadEvent, UploadSummaryModel summary,
-        CancellationToken cancellationToken = default);
-
     Task BroadcastUploadCompletedAsync(UploadCompletedEvent uploadEvent, UploadSummaryModel summary,
         CancellationToken cancellationToken = default);
 
-    Task BroadcastUploadValidatedAsync(UploadValidatedEvent uploadEvent, UploadSummaryModel summary,
+    Task BroadcastUploadCreatedAsync(UploadCreatedEvent uploadEvent, UploadSummaryModel summary,
+        CancellationToken cancellationToken = default);
+
+    Task BroadcastUploadDeletedAsync(UploadDeletedEvent uploadEvent, UploadSummaryModel summary,
         CancellationToken cancellationToken = default);
 
     Task BroadcastUploadRejectedAsync(UploadRejectedEvent uploadEvent, UploadSummaryModel summary,
@@ -24,6 +24,6 @@ public interface IUploadEventBroadcaster
     Task BroadcastUploadStoredAsync(UploadStoredEvent uploadEvent, UploadSummaryModel summary,
         CancellationToken cancellationToken = default);
 
-    Task BroadcastUploadDeletedAsync(UploadDeletedEvent uploadEvent, UploadSummaryModel summary,
+    Task BroadcastUploadValidatedAsync(UploadValidatedEvent uploadEvent, UploadSummaryModel summary,
         CancellationToken cancellationToken = default);
 }
