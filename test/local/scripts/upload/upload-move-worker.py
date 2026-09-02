@@ -25,16 +25,31 @@ def storage_object_key(details: dict) -> str:
     return key
 
 
-def s3_copy(source_bucket: str, dest_bucket: str, object_key: str) -> None:
+def _s3_env() -> tuple[dict[str, str], str]:
     env = os.environ.copy()
     env.setdefault("AWS_DEFAULT_REGION", "us-east-1")
     env.setdefault("AWS_ACCESS_KEY_ID", "foo")
     env.setdefault("AWS_SECRET_ACCESS_KEY", "bar")
     endpoint = os.environ.get("AWS_SERVICE_URL", "http://localhost:4566")
+    return env, endpoint
+
+
+def s3_copy(source_bucket: str, dest_bucket: str, object_key: str) -> None:
+    env, endpoint = _s3_env()
     source = f"s3://{source_bucket}/{object_key}"
     dest = f"s3://{dest_bucket}/{object_key}"
     subprocess.run(
         ["awslocal", "s3", "cp", source, dest, "--endpoint-url", endpoint],
+        check=True,
+        env=env,
+    )
+
+
+def s3_delete(bucket: str, object_key: str) -> None:
+    env, endpoint = _s3_env()
+    uri = f"s3://{bucket}/{object_key}"
+    subprocess.run(
+        ["awslocal", "s3", "rm", uri, "--endpoint-url", endpoint],
         check=True,
         env=env,
     )
@@ -64,6 +79,11 @@ def main() -> int:
     details = api_request(base_url, token, "GET", f"/uploads/{args.upload_id}/details")
     object_key = storage_object_key(details)
     s3_copy(unverified, verified, object_key)
+    s3_delete(unverified, object_key)
+    print(
+        f"{args.upload_id}: moved to {verified}/{object_key}, "
+        f"removed from {unverified}/{object_key}"
+    )
     api_request(
         base_url,
         token,
@@ -71,7 +91,7 @@ def main() -> int:
         f"/uploads/{args.upload_id}/move-reports",
         {"verifiedStorageObjectKey": object_key},
     )
-    print(f"{args.upload_id}: moved to {verified}/{object_key}")
+    print("API has been notified of move.")
     return 0
 
 
