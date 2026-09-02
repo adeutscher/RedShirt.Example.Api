@@ -59,6 +59,7 @@ def main() -> int:
     base_url = get_api_base_url()
     records = fetch_upload_records(base_url, token, args.page_size)
     if not args.all:
+        # Filter down to active records
         records = [
             record for record in records if record.get("state") in PROCESSING_STATES
         ]

@@ -62,6 +62,9 @@ def api_request(
         },
     )
     with urllib.request.urlopen(request, timeout=120) as response:
-        if response.status == 204 or not response.length:
+        if response.status == 204:
             return {}
-        return json.loads(response.read().decode("utf-8"))
+        raw = response.read()
+        if not raw:
+            return {}
+        return json.loads(raw.decode("utf-8"))
