@@ -26,7 +26,7 @@ def is_valid_potato_document(content: str) -> bool:
 
 def main() -> int:
     parser = create_parser(
-        "Mock validator worker: validate a specific NotValidated upload and submit a verdict."
+        "Mock validator worker: validate a specific NotValidated upload and submit a verdict. A valid document is a text document containing the word 'potato'."
     )
     parser.add_argument("upload_id", help="Upload id (GUID) to validate")
     args = parser.parse_args()
