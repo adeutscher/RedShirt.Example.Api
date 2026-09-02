@@ -79,6 +79,7 @@ public class BespokeRolePermissionClaimsTransformationTests
                 BespokeAuthorizationPermissions.OrderWrite,
                 BespokeAuthorizationPermissions.ProductRead,
                 BespokeAuthorizationPermissions.ProductWrite,
+                BespokeAuthorizationPermissions.UploadPurge,
                 BespokeAuthorizationPermissions.UploadRead,
                 BespokeAuthorizationPermissions.UploadWrite
             ],

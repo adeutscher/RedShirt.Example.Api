@@ -50,3 +50,8 @@ public sealed class UploadDeletedEvent
 {
     public required Guid UploadId { get; init; }
 }
+
+public sealed class UploadPurgedEvent
+{
+    public required Guid UploadId { get; init; }
+}

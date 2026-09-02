@@ -46,4 +46,10 @@ internal sealed class StubUploadEventBroadcaster : IUploadEventBroadcaster
     {
         return Task.CompletedTask;
     }
+
+    public Task BroadcastUploadPurgedAsync(UploadPurgedEvent uploadEvent,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
 }

@@ -205,6 +205,33 @@ internal sealed class UploadService(
         return summary;
     }
 
+    public async Task PurgeAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
+        if (aggregate.Id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        var options = uploadOptions.Value;
+        if (!string.IsNullOrWhiteSpace(aggregate.StorageObjectKey))
+        {
+            await fileStorageService.DeleteAsync(options.BucketUnverifiedItems, aggregate.StorageObjectKey,
+                cancellationToken);
+        }
+
+        if (!string.IsNullOrWhiteSpace(aggregate.VerifiedStorageObjectKey))
+        {
+            await fileStorageService.DeleteAsync(options.BucketVerifiedItems, aggregate.VerifiedStorageObjectKey,
+                cancellationToken);
+        }
+
+        await repository.PurgeAsync(id, cancellationToken);
+
+        var purgedEvent = new UploadPurgedEvent {UploadId = id};
+        await eventBroadcaster.BroadcastUploadPurgedAsync(purgedEvent, cancellationToken);
+    }
+
     public async Task<UploadDownloadLinkModel> GetDownloadLinkAsync(Guid id,
         CancellationToken cancellationToken = default)
     {

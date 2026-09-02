@@ -18,6 +18,9 @@ public interface IUploadEventBroadcaster
     Task BroadcastUploadDeletedAsync(UploadDeletedEvent uploadEvent, UploadSummaryModel summary,
         CancellationToken cancellationToken = default);
 
+    Task BroadcastUploadPurgedAsync(UploadPurgedEvent uploadEvent,
+        CancellationToken cancellationToken = default);
+
     Task BroadcastUploadRejectedAsync(UploadRejectedEvent uploadEvent, UploadSummaryModel summary,
         CancellationToken cancellationToken = default);
 

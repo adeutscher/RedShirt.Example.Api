@@ -18,6 +18,7 @@ public class BespokeRolePermissionMapTests
         BespokeAuthorizationPermissions.OrderWrite,
         BespokeAuthorizationPermissions.ProductRead,
         BespokeAuthorizationPermissions.ProductWrite,
+        BespokeAuthorizationPermissions.UploadPurge,
         BespokeAuthorizationPermissions.UploadRead,
         BespokeAuthorizationPermissions.UploadWrite
     ];
@@ -33,6 +34,7 @@ public class BespokeRolePermissionMapTests
         BespokeAuthorizationPermissions.OrderWrite,
         BespokeAuthorizationPermissions.ProductRead,
         BespokeAuthorizationPermissions.ProductWrite,
+        BespokeAuthorizationPermissions.UploadPurge,
         BespokeAuthorizationPermissions.UploadRead,
         BespokeAuthorizationPermissions.UploadWrite
     ];

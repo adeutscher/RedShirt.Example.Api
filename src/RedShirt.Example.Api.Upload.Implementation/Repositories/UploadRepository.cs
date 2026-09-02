@@ -30,6 +30,8 @@ internal interface IUploadRepository
 
     Task<UploadSummaryModel?> GetSummaryAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task PurgeAsync(Guid uploadId, CancellationToken cancellationToken = default);
+
     Task<UploadSearchResponse> SearchAsync(UploadServiceSearchRequest parameters, Guid? continuationToken,
         CancellationToken cancellationToken = default);
 }
@@ -303,6 +305,27 @@ internal sealed class UploadRepository(
     {
         var events = await GetEventsAsync(uploadId, cancellationToken);
         return UploadAggregate.FromEvents(events);
+    }
+
+    public async Task PurgeAsync(Guid uploadId, CancellationToken cancellationToken = default)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync(ConnectionStringName, cancellationToken);
+
+        var hasAggregate = await context.UploadAggregates.AnyAsync(e => e.Id == uploadId, cancellationToken);
+        var hasEvents = await context.UploadEvents.AnyAsync(e => e.UploadId == uploadId, cancellationToken);
+        if (!hasAggregate && !hasEvents)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
+        await context.UploadEvents.Where(e => e.UploadId == uploadId)
+            .ExecuteDeleteAsync(cancellationToken);
+        await context.UploadAggregates.Where(e => e.Id == uploadId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
     }
 
     private sealed class ContinuationParameters

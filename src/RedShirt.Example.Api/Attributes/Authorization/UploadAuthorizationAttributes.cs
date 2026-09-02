@@ -38,3 +38,12 @@ public sealed class ApproveUploadDownloadLinkAttribute : AuthorizeAttribute
         Policy = BespokeAuthorizationPolicies.UploadDownloadApproved;
     }
 }
+
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public sealed class AuthorizeUploadPurgeAttribute : AuthorizeAttribute
+{
+    public AuthorizeUploadPurgeAttribute()
+    {
+        Policy = BespokeAuthorizationPolicies.UploadPurge;
+    }
+}

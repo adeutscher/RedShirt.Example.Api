@@ -16,6 +16,8 @@ public interface IUploadService
 
     Task<UploadSummaryModel> GetSummaryAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task PurgeAsync(Guid id, CancellationToken cancellationToken = default);
+
     Task<UploadSearchResponse> SearchAsync(UploadServiceSearchRequest parameters, Guid? continuationToken,
         CancellationToken cancellationToken = default);
 

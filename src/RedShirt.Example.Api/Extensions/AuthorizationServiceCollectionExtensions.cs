@@ -97,6 +97,9 @@ internal static class AuthorizationServiceCollectionExtensions
             authorization.AddPolicy(BespokeAuthorizationPolicies.UploadDownload, policy => ConfigureApiPolicy(policy)
                 .AddRequirements(new UploadDownloadResourceRequirement()));
 
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadPurge, policy => ConfigureApiPolicy(policy)
+                .RequireClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.UploadPurge));
+
             authorization.AddPolicy(BespokeAuthorizationPolicies.CustomerScoped, policy => ConfigureApiPolicy(policy)
                 .AddRequirements(new CustomerScopedResourceRequirement()));
 
