@@ -3,7 +3,12 @@
 
 from __future__ import annotations
 
-from upload_script_common import api_request, create_parser, get_api_base_url, require_api_jwt_token
+from upload_script_common import (
+    api_request,
+    create_parser,
+    get_api_base_url,
+    require_api_jwt_token,
+)
 
 EXPECTED_STATE = "Rejected"
 

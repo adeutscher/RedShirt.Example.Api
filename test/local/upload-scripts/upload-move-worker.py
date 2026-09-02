@@ -6,7 +6,12 @@ from __future__ import annotations
 import os
 import subprocess
 
-from upload_script_common import api_request, create_parser, get_api_base_url, require_api_jwt_token
+from upload_script_common import (
+    api_request,
+    create_parser,
+    get_api_base_url,
+    require_api_jwt_token,
+)
 
 EXPECTED_STATE = "Verified"
 DEFAULT_UNVERIFIED_BUCKET = "unverified-uploads"
@@ -44,7 +49,9 @@ def main() -> int:
 
     token = require_api_jwt_token()
     base_url = get_api_base_url()
-    unverified = os.environ.get("UPLOADS__BUCKET_UNVERIFIED_ITEMS", DEFAULT_UNVERIFIED_BUCKET)
+    unverified = os.environ.get(
+        "UPLOADS__BUCKET_UNVERIFIED_ITEMS", DEFAULT_UNVERIFIED_BUCKET
+    )
     verified = os.environ.get("UPLOADS__BUCKET_VERIFIED_ITEMS", DEFAULT_VERIFIED_BUCKET)
 
     summary = api_request(base_url, token, "GET", f"/uploads/{args.upload_id}")

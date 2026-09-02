@@ -5,7 +5,12 @@ from __future__ import annotations
 
 import urllib.request
 
-from upload_script_common import api_request, create_parser, get_api_base_url, require_api_jwt_token
+from upload_script_common import (
+    api_request,
+    create_parser,
+    get_api_base_url,
+    require_api_jwt_token,
+)
 
 EXPECTED_STATE = "NotValidated"
 
@@ -35,7 +40,9 @@ def main() -> int:
             f"Upload {args.upload_id} is {state!r}; expected {EXPECTED_STATE!r}."
         )
 
-    link = api_request(base_url, token, "GET", f"/uploads/{args.upload_id}/download-link")
+    link = api_request(
+        base_url, token, "GET", f"/uploads/{args.upload_id}/download-link"
+    )
     content = download_text(link["downloadUrl"])
     approved = is_valid_potato_document(content)
     api_request(

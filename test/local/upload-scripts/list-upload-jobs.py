@@ -3,7 +3,12 @@
 
 from __future__ import annotations
 
-from upload_script_common import api_request, create_parser, get_api_base_url, require_api_jwt_token
+from upload_script_common import (
+    api_request,
+    create_parser,
+    get_api_base_url,
+    require_api_jwt_token,
+)
 
 PROCESSING_STATES = frozenset({"Uploading", "NotValidated", "Verified"})
 
@@ -24,7 +29,9 @@ def main() -> int:
     base_url = get_api_base_url()
     search = api_request(base_url, token, "GET", f"/uploads?pageSize={args.page_size}")
     records = search.get("records", [])
-    processing = [record for record in records if record.get("state") in PROCESSING_STATES]
+    processing = [
+        record for record in records if record.get("state") in PROCESSING_STATES
+    ]
 
     if not processing:
         print("No uploads are currently being processed.")

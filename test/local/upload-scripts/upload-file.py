@@ -60,7 +60,9 @@ def main() -> int:
         return 1
 
     print(json.dumps(summary, indent=2))
-    print(f"id={summary.get('id')} state={summary.get('state')} idempotency_key={idempotency_key}")
+    print(
+        f"id={summary.get('id')} state={summary.get('state')} idempotency_key={idempotency_key}"
+    )
     return 0
 
 
