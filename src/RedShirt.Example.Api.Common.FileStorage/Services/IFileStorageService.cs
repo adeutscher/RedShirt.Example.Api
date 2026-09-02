@@ -22,8 +22,12 @@ public interface IFileStorageService
     ///     Streams <paramref name="content" /> into <paramref name="bucketName" /> at
     ///     <paramref name="objectKey" /> without buffering the entire payload in memory.
     /// </summary>
+    /// <param name="contentLength">
+    ///     Known byte length of <paramref name="content" />. Required when the stream is not seekable
+    ///     (for example HTTP request bodies).
+    /// </param>
     Task<FileStorageUploadResult> UploadAsync(string bucketName, string objectKey, Stream content,
-        CancellationToken cancellationToken = default);
+        long? contentLength = null, CancellationToken cancellationToken = default);
 }
 
 public sealed class FileStorageUploadResult

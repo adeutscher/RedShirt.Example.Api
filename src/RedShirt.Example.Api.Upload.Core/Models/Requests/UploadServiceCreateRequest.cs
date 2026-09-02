@@ -7,5 +7,6 @@ public sealed class UploadServiceCreateRequest
     public required string UploadedByUsername { get; init; }
     public required string UploaderIpAddress { get; init; }
     public required Stream Content { get; init; }
+    public long? ContentLength { get; init; }
     public required string IdempotencyKey { get; init; }
 }

@@ -9,6 +9,7 @@ public class CreateUploadCommandValidator : AbstractValidator<CreateUploadComman
         RuleFor(x => x.FileName).NotEmpty();
         RuleFor(x => x.UploadedByUserId).NotEmpty();
         RuleFor(x => x.Content).NotNull();
+        RuleFor(x => x.ContentLength).GreaterThan(0);
         RuleFor(x => x.IdempotencyKey).NotEmpty();
     }
 }

@@ -7,10 +7,28 @@ namespace RedShirt.Example.Api.Common.Aws.S3FileStorage.Services;
 
 internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService
 {
+    private static long ResolveContentLength(Stream content, long? contentLength)
+    {
+        if (contentLength is >= 0)
+        {
+            return contentLength.Value;
+        }
+
+        if (content.CanSeek)
+        {
+            return content.Length;
+        }
+
+        throw new ArgumentException(
+            "Content length must be provided when the stream is not seekable.",
+            nameof(contentLength));
+    }
+
     public async Task<FileStorageUploadResult> UploadAsync(string bucketName, string objectKey, Stream content,
-        CancellationToken cancellationToken = default)
+        long? contentLength = null, CancellationToken cancellationToken = default)
     {
         await using var hashingStream = new HashingStream(content);
+        var resolvedContentLength = ResolveContentLength(hashingStream, contentLength);
         var request = new PutObjectRequest
         {
             BucketName = bucketName,
@@ -18,6 +36,7 @@ internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService
             InputStream = hashingStream,
             AutoCloseStream = false
         };
+        request.Headers.ContentLength = resolvedContentLength;
 
         await s3.PutObjectAsync(request, cancellationToken);
 

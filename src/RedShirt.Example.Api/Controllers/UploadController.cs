@@ -128,6 +128,7 @@ public class UploadController : ControllerBase
                 User.Identity?.Name ?? "anonymous",
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 Request.Body,
+                Request.ContentLength,
                 string.IsNullOrWhiteSpace(idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey),
             cancellationToken);
         return Ok(model);

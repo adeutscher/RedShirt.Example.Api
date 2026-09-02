@@ -40,6 +40,11 @@ internal sealed class UploadService(
             throw new BadRequestException("Idempotency key cannot be empty.");
         }
 
+        if (request.ContentLength is null or <= 0)
+        {
+            throw new BadRequestException("Content-Length header is required.");
+        }
+
         if (await repository.ExistsByIdempotencyKeyAsync(request.IdempotencyKey, cancellationToken))
         {
             throw new ConflictException("An upload with this idempotency key already exists.");
@@ -63,7 +68,7 @@ internal sealed class UploadService(
         var options = uploadOptions.Value;
         var objectKey = BuildObjectKey(uploadId, request.UploadedByUserId);
         var uploadResult = await fileStorageService.UploadAsync(options.BucketUnverifiedItems, objectKey,
-            request.Content, cancellationToken);
+            request.Content, request.ContentLength, cancellationToken);
 
         var completedEvent = new UploadCompletedEvent
         {

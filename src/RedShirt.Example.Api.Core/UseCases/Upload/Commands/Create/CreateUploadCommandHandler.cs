@@ -11,6 +11,7 @@ public sealed record CreateUploadCommand(
     string UploadedByUsername,
     string UploaderIpAddress,
     Stream Content,
+    long? ContentLength,
     string IdempotencyKey);
 
 public interface ICreateUploadCommandHandler : ICqrsHandler<CreateUploadCommand, UploadSummaryModel>;
@@ -30,6 +31,7 @@ internal sealed class CreateUploadCommandHandler(
             UploadedByUsername = command.UploadedByUsername,
             UploaderIpAddress = command.UploaderIpAddress,
             Content = command.Content,
+            ContentLength = command.ContentLength,
             IdempotencyKey = command.IdempotencyKey
         }, cancellationToken);
     }
