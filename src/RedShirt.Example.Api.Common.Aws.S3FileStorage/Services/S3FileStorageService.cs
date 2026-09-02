@@ -2,6 +2,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using RedShirt.Example.Api.Common.Aws.S3FileStorage.Helpers;
 using RedShirt.Example.Api.Common.FileStorage.Services;
+using System.IO.Pipelines;
 
 namespace RedShirt.Example.Api.Common.Aws.S3FileStorage.Services;
 
@@ -27,18 +28,50 @@ internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService
     public async Task<FileStorageUploadResult> UploadAsync(string bucketName, string objectKey, Stream content,
         long? contentLength = null, CancellationToken cancellationToken = default)
     {
+        // Upload flow:
+        //   Content ──ReadAsync──▶ HashingStream ──ReadAsync──▶ AsyncStreamPump ──▶ Pipe
+        //                                                                                 │
+        //                                                            sync Read ◀── PutObjectAsync
+        //
+        // PutObjectAsync is async at the HTTP layer, but the AWS SDK for .NET still reads
+        // PutObjectRequest.InputStream synchronously (Stream.Read) when marshalling the body.
+        // The same is true of TransferUtility. See aws/aws-sdk-net#1452 and #1534.
+        //
+        // Though this method is written to be agnostic, it was originally written for streaming upload requests for an ASP.NET Kestrel API.
+        // Kestrel's Request.Body forbids synchronous reads by default (AllowSynchronousIO = false).
+        // Passing Request.Body directly to the SDK therefore fails with a message like:
+        //   "Synchronous operations are disallowed. Call ReadAsync or set AllowSynchronousIO to true."
+        //
+        // We pump the source into a Pipe using only ReadAsync. The SDK sync-reads from
+        // pipe.Reader.AsStream(), which is an in-memory buffer — not the HTTP request stream.
+        // HashingStream rejects sync Read on the upstream stream so nothing can bypass this path.
+        var pipe = new Pipe();
         await using var hashingStream = new HashingStream(content);
         var resolvedContentLength = ResolveContentLength(hashingStream, contentLength);
-        var request = new PutObjectRequest
-        {
-            BucketName = bucketName,
-            Key = objectKey,
-            InputStream = hashingStream,
-            AutoCloseStream = false
-        };
-        request.Headers.ContentLength = resolvedContentLength;
+        var pumpTask = AsyncStreamPump.PumpAsync(hashingStream, pipe.Writer, cancellationToken);
 
-        await s3.PutObjectAsync(request, cancellationToken);
+        try
+        {
+            await using var uploadStream = pipe.Reader.AsStream();
+            var request = new PutObjectRequest
+            {
+                BucketName = bucketName,
+                Key = objectKey,
+                InputStream = uploadStream,
+                AutoCloseStream = false,
+                Headers =
+                {
+                    ContentLength = resolvedContentLength
+                }
+            };
+
+            await s3.PutObjectAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            // Ensure every byte was pumped (and hashed) even if PutObjectAsync fails mid-upload.
+            await pumpTask.ConfigureAwait(false);
+        }
 
         return new FileStorageUploadResult
         {

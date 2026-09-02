@@ -3,10 +3,13 @@ using System.Security.Cryptography;
 namespace RedShirt.Example.Api.Common.Aws.S3FileStorage.Helpers;
 
 /// <summary>
-///     Wraps a stream and computes a SHA-256 digest as bytes are read.
+///     Wraps a stream and computes a SHA-256 digest as bytes are read asynchronously.
 /// </summary>
 internal sealed class HashingStream(Stream inner) : Stream
 {
+    private const string SyncReadNotSupportedMessage =
+        "Synchronous reads are not supported. Use ReadAsync.";
+
     private readonly IncrementalHash _hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
     public override bool CanRead => inner.CanRead;
@@ -46,13 +49,12 @@ internal sealed class HashingStream(Stream inner) : Stream
 
     public override int Read(byte[] buffer, int offset, int count)
     {
-        var read = inner.Read(buffer, offset, count);
-        if (read > 0)
-        {
-            _hash.AppendData(buffer, offset, read);
-        }
+        throw new InvalidOperationException(SyncReadNotSupportedMessage);
+    }
 
-        return read;
+    public override int Read(Span<byte> buffer)
+    {
+        throw new InvalidOperationException(SyncReadNotSupportedMessage);
     }
 
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
