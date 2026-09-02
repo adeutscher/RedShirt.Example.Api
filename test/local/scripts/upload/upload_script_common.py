@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import urllib.error
 import urllib.request
 
@@ -61,10 +62,14 @@ def api_request(
             **({} if body is None else {"Content-Type": "application/json"}),
         },
     )
-    with urllib.request.urlopen(request, timeout=120) as response:
-        if response.status == 204:
-            return {}
-        raw = response.read()
-        if not raw:
-            return {}
-        return json.loads(raw.decode("utf-8"))
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            if response.status == 204:
+                return {}
+            raw = response.read()
+            if not raw:
+                return {}
+            return json.loads(raw.decode("utf-8"))
+    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError):
+        print(f"Request failed: {method} {url}", file=sys.stderr)
+        raise
