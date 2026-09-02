@@ -1,13 +1,16 @@
 using Amazon.S3;
 using Amazon.S3.Model;
+using Amazon.S3.Transfer;
 using RedShirt.Example.Api.Common.Aws.S3FileStorage.Helpers;
 using RedShirt.Example.Api.Common.FileStorage.Services;
 using System.IO.Pipelines;
 
 namespace RedShirt.Example.Api.Common.Aws.S3FileStorage.Services;
 
-internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService
+internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService, IDisposable
 {
+    private readonly TransferUtility _transferUtility = new(s3);
+
     private static long ResolveContentLength(Stream content, long? contentLength)
     {
         if (contentLength is >= 0)
@@ -25,17 +28,23 @@ internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService
             nameof(contentLength));
     }
 
+    public void Dispose()
+    {
+        _transferUtility.Dispose();
+    }
+
     public async Task<FileStorageUploadResult> UploadAsync(string bucketName, string objectKey, Stream content,
         long? contentLength = null, CancellationToken cancellationToken = default)
     {
         // Upload flow:
         //   Content ──ReadAsync──▶ HashingStream ──ReadAsync──▶ AsyncStreamPump ──▶ Pipe
         //                                                                                 │
-        //                                                            sync Read ◀── PutObjectAsync
+        //                                                            sync Read ◀── TransferUtility.UploadAsync
         //
-        // PutObjectAsync is async at the HTTP layer, but the AWS SDK for .NET still reads
-        // PutObjectRequest.InputStream synchronously (Stream.Read) when marshalling the body.
-        // The same is true of TransferUtility. See aws/aws-sdk-net#1452 and #1534.
+        // TransferUtility.UploadAsync is async at the HTTP layer, but the AWS SDK for .NET still reads
+        // InputStream synchronously (Stream.Read) when marshalling the body. The same is true of
+        // PutObjectAsync. See https://github.com/aws/aws-sdk-net/issues/1452 and
+        // https://github.com/aws/aws-sdk-net/issues/1534.
         //
         // Though this method is written to be agnostic, it was originally written for streaming upload requests for an ASP.NET Kestrel API.
         // Kestrel's Request.Body forbids synchronous reads by default (AllowSynchronousIO = false).
@@ -53,23 +62,24 @@ internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService
         try
         {
             await using var uploadStream = pipe.Reader.AsStream();
-            var request = new PutObjectRequest
+            var request = new TransferUtilityUploadRequest
             {
                 BucketName = bucketName,
                 Key = objectKey,
                 InputStream = uploadStream,
                 AutoCloseStream = false,
+                AutoResetStreamPosition = false,
                 Headers =
                 {
                     ContentLength = resolvedContentLength
                 }
             };
 
-            await s3.PutObjectAsync(request, cancellationToken).ConfigureAwait(false);
+            await _transferUtility.UploadAsync(request, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            // Ensure every byte was pumped (and hashed) even if PutObjectAsync fails mid-upload.
+            // Ensure every byte was pumped (and hashed) even if UploadAsync fails mid-upload.
             await pumpTask.ConfigureAwait(false);
         }
 
