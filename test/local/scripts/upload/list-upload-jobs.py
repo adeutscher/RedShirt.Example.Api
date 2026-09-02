@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlencode
+
 from upload_script_common import (
     api_request,
     create_parser,
@@ -13,33 +15,65 @@ from upload_script_common import (
 PROCESSING_STATES = frozenset({"Uploading", "NotValidated", "Verified"})
 
 
+def build_search_path(page_size: int, continuation_token: str | None = None) -> str:
+    params: dict[str, str | int] = {"pageSize": page_size}
+    if continuation_token:
+        params["continuationToken"] = continuation_token
+    return f"/uploads?{urlencode(params)}"
+
+
+def fetch_upload_records(base_url: str, token: str, page_size: int) -> list[dict]:
+    records: list[dict] = []
+    path = build_search_path(page_size)
+    while path:
+        search = api_request(base_url, token, "GET", path)
+        records.extend(search.get("records", []))
+        continuation_token = search.get("continuationToken")
+        path = (
+            build_search_path(page_size, continuation_token)
+            if continuation_token
+            else None
+        )
+    return records
+
+
 def main() -> int:
     parser = create_parser(
         "List uploads being processed (Uploading, NotValidated, Verified)."
     )
     parser.add_argument(
+        "-a",
+        "--all",
+        action="store_true",
+        help="List uploads in any state (default: only in-flight processing states)",
+    )
+    parser.add_argument(
         "--page-size",
         type=int,
         default=100,
-        help="Maximum records to fetch from GET /uploads (default: 100)",
+        help="Page size for GET /uploads while walking continuation tokens (default: 100)",
     )
     args = parser.parse_args()
 
     token = require_api_jwt_token()
     base_url = get_api_base_url()
-    search = api_request(base_url, token, "GET", f"/uploads?pageSize={args.page_size}")
-    records = search.get("records", [])
-    processing = [
-        record for record in records if record.get("state") in PROCESSING_STATES
-    ]
+    records = fetch_upload_records(base_url, token, args.page_size)
+    if not args.all:
+        records = [
+            record for record in records if record.get("state") in PROCESSING_STATES
+        ]
 
-    if not processing:
-        print("No uploads are currently being processed.")
+    if not records:
+        print(
+            "No uploads found."
+            if args.all
+            else "No uploads are currently being processed."
+        )
         return 0
 
     print(f"{'upload id':36}  {'state':14}  file name")
     print(f"{'-' * 36}  {'-' * 14}  {'-' * 9}")
-    for record in processing:
+    for record in records:
         upload_id = record.get("id", "")
         state = record.get("state", "")
         file_name = record.get("fileName", "")
