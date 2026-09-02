@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import sys
@@ -11,11 +10,11 @@ import uuid
 import urllib.error
 import urllib.request
 
-DEFAULT_API_BASE = "http://localhost:9000"
+from upload_script_common import create_parser, get_api_base_url, require_api_jwt_token
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Upload a local file via POST /uploads")
+    parser = create_parser("Upload a local file via POST /uploads")
     parser.add_argument("file", help="Path to the file to upload")
     parser.add_argument(
         "--file-name",
@@ -27,11 +26,8 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    token = os.environ.get("API_JWT_TOKEN")
-    if not token:
-        raise SystemExit("Set API_JWT_TOKEN to a bearer access token.")
-
-    base_url = os.environ.get("API_BASE_URL", DEFAULT_API_BASE)
+    token = require_api_jwt_token()
+    base_url = get_api_base_url()
     file_path = args.file
     if not os.path.isfile(file_path):
         raise SystemExit(f"File not found: {file_path}")

@@ -4,13 +4,12 @@
 from __future__ import annotations
 
 import json
-import os
-import sys
 import urllib.error
 import urllib.parse
 import urllib.request
 
-DEFAULT_API_BASE = "http://localhost:9000"
+from upload_script_common import create_parser, get_api_base_url, require_api_jwt_token
+
 POLL_STATE = "NotValidated"
 
 
@@ -43,11 +42,12 @@ def is_valid_potato_document(content: str) -> bool:
 
 
 def main() -> int:
-    token = os.environ.get("API_JWT_TOKEN")
-    if not token:
-        raise SystemExit("Set API_JWT_TOKEN to a bearer access token.")
+    create_parser(
+        "Mock validator worker: poll NotValidated uploads, validate, submit verdicts."
+    ).parse_args()
 
-    base_url = os.environ.get("API_BASE_URL", DEFAULT_API_BASE)
+    token = require_api_jwt_token()
+    base_url = get_api_base_url()
     search = api_request(
         base_url,
         token,

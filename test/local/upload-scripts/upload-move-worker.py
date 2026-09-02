@@ -6,10 +6,10 @@ from __future__ import annotations
 import json
 import os
 import subprocess
-import sys
 import urllib.request
 
-DEFAULT_API_BASE = "http://localhost:9000"
+from upload_script_common import create_parser, get_api_base_url, require_api_jwt_token
+
 POLL_STATE = "Verified"
 DEFAULT_UNVERIFIED_BUCKET = "unverified-uploads"
 DEFAULT_VERIFIED_BUCKET = "verified-uploads"
@@ -55,11 +55,12 @@ def s3_copy(source_bucket: str, dest_bucket: str, object_key: str) -> None:
 
 
 def main() -> int:
-    token = os.environ.get("API_JWT_TOKEN")
-    if not token:
-        raise SystemExit("Set API_JWT_TOKEN to a bearer access token.")
+    create_parser(
+        "Mock mover worker: poll Verified uploads, copy S3 object, submit move report."
+    ).parse_args()
 
-    base_url = os.environ.get("API_BASE_URL", DEFAULT_API_BASE)
+    token = require_api_jwt_token()
+    base_url = get_api_base_url()
     unverified = os.environ.get("UPLOADS__BUCKET_UNVERIFIED_ITEMS", DEFAULT_UNVERIFIED_BUCKET)
     verified = os.environ.get("UPLOADS__BUCKET_VERIFIED_ITEMS", DEFAULT_VERIFIED_BUCKET)
 

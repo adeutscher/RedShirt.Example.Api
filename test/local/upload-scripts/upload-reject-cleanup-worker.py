@@ -4,11 +4,10 @@
 from __future__ import annotations
 
 import json
-import os
-import sys
 import urllib.request
 
-DEFAULT_API_BASE = "http://localhost:9000"
+from upload_script_common import create_parser, get_api_base_url, require_api_jwt_token
+
 POLL_STATE = "Rejected"
 
 
@@ -27,11 +26,12 @@ def api_request(base_url: str, token: str, method: str, path: str) -> dict:
 
 
 def main() -> int:
-    token = os.environ.get("API_JWT_TOKEN")
-    if not token:
-        raise SystemExit("Set API_JWT_TOKEN to a bearer access token.")
+    create_parser(
+        "Mock cleanup worker: poll Rejected uploads and DELETE them via the API."
+    ).parse_args()
 
-    base_url = os.environ.get("API_BASE_URL", DEFAULT_API_BASE)
+    token = require_api_jwt_token()
+    base_url = get_api_base_url()
     search = api_request(base_url, token, "GET", f"/uploads?state={POLL_STATE}&pageSize=20")
     records = search.get("records", [])
     if not records:
