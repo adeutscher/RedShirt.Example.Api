@@ -1,5 +1,3 @@
-using RedShirt.Example.Api.Upload.Core.Models;
-
 namespace RedShirt.Example.Api.Upload.Core.Models.Requests;
 
 public sealed class UploadServiceSearchRequest

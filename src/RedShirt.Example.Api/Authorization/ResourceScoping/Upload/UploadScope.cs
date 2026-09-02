@@ -19,7 +19,8 @@ internal static class UploadScope
 
     public static bool IsValidator(ClaimsPrincipal user)
     {
-        return user.HasClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.UploadValidator);
+        return user.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+            BespokeAuthorizationPermissions.UploadValidator);
     }
 
     public static bool TryGetUserId(ClaimsPrincipal user, out string userId)

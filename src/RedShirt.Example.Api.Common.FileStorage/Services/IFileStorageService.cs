@@ -7,13 +7,6 @@ namespace RedShirt.Example.Api.Common.FileStorage.Services;
 public interface IFileStorageService
 {
     /// <summary>
-    ///     Streams <paramref name="content" /> into <paramref name="bucketName" /> at
-    ///     <paramref name="objectKey" /> without buffering the entire payload in memory.
-    /// </summary>
-    Task<FileStorageUploadResult> UploadAsync(string bucketName, string objectKey, Stream content,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
     ///     Deletes the object at <paramref name="objectKey" /> from <paramref name="bucketName" />.
     /// </summary>
     Task DeleteAsync(string bucketName, string objectKey, CancellationToken cancellationToken = default);
@@ -23,6 +16,13 @@ public interface IFileStorageService
     ///     Presigned URLs are supported by AWS S3, Azure Blob Storage, Google Cloud Storage, MinIO, and others.
     /// </summary>
     Task<string> GetPresignedDownloadUrlAsync(string bucketName, string objectKey, TimeSpan validity,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Streams <paramref name="content" /> into <paramref name="bucketName" /> at
+    ///     <paramref name="objectKey" /> without buffering the entire payload in memory.
+    /// </summary>
+    Task<FileStorageUploadResult> UploadAsync(string bucketName, string objectKey, Stream content,
         CancellationToken cancellationToken = default);
 }
 

@@ -9,8 +9,6 @@ internal sealed class HashingStream(Stream inner) : Stream
 {
     private readonly IncrementalHash _hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
-    public string GetSha256Hex() => Convert.ToHexString(_hash.GetHashAndReset()).ToLowerInvariant();
-
     public override bool CanRead => inner.CanRead;
 
     public override bool CanSeek => inner.CanSeek;
@@ -25,7 +23,26 @@ internal sealed class HashingStream(Stream inner) : Stream
         set => inner.Position = value;
     }
 
-    public override void Flush() => inner.Flush();
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            inner.Dispose();
+            _hash.Dispose();
+        }
+
+        base.Dispose(disposing);
+    }
+
+    public override void Flush()
+    {
+        inner.Flush();
+    }
+
+    public string GetSha256Hex()
+    {
+        return Convert.ToHexString(_hash.GetHashAndReset()).ToLowerInvariant();
+    }
 
     public override int Read(byte[] buffer, int offset, int count)
     {
@@ -38,23 +55,6 @@ internal sealed class HashingStream(Stream inner) : Stream
         return read;
     }
 
-    public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
-
-    public override void SetLength(long value) => inner.SetLength(value);
-
-    public override void Write(byte[] buffer, int offset, int count) => inner.Write(buffer, offset, count);
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            inner.Dispose();
-            _hash.Dispose();
-        }
-
-        base.Dispose(disposing);
-    }
-
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         var read = await inner.ReadAsync(buffer, cancellationToken);
@@ -64,5 +64,20 @@ internal sealed class HashingStream(Stream inner) : Stream
         }
 
         return read;
+    }
+
+    public override long Seek(long offset, SeekOrigin origin)
+    {
+        return inner.Seek(offset, origin);
+    }
+
+    public override void SetLength(long value)
+    {
+        inner.SetLength(value);
+    }
+
+    public override void Write(byte[] buffer, int offset, int count)
+    {
+        inner.Write(buffer, offset, count);
     }
 }

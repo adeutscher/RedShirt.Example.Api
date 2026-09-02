@@ -1,5 +1,3 @@
-using Amazon.Extensions.NETCore.Setup;
-using Amazon.Runtime;
 using Amazon.S3;
 using Microsoft.Extensions.DependencyInjection;
 using RedShirt.Example.Api.Common.Aws.S3FileStorage.Services;
@@ -9,13 +7,6 @@ namespace RedShirt.Example.Api.Common.Aws.S3FileStorage.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddS3FileStorage(this IServiceCollection services)
-    {
-        return services
-            .AddAwsS3WithLocalSupport()
-            .AddSingleton<IFileStorageService, S3FileStorageService>();
-    }
-
     private static IServiceCollection AddAwsS3WithLocalSupport(this IServiceCollection services)
     {
         var url = Environment.GetEnvironmentVariable("AWS_SERVICE_URL");
@@ -25,7 +16,7 @@ public static class ServiceCollectionExtensions
         }
 
         Console.WriteLine($"Using AWS service URL: {url}");
-        
+
         // S3 needs a special config carve-out
         var s3Config = new AmazonS3Config
         {
@@ -35,5 +26,12 @@ public static class ServiceCollectionExtensions
         };
 
         return services.AddSingleton<IAmazonS3>(_ => new AmazonS3Client(s3Config));
+    }
+
+    public static IServiceCollection AddS3FileStorage(this IServiceCollection services)
+    {
+        return services
+            .AddAwsS3WithLocalSupport()
+            .AddSingleton<IFileStorageService, S3FileStorageService>();
     }
 }
