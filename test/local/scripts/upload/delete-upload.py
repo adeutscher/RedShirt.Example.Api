@@ -21,18 +21,16 @@ def main() -> int:
         action="store_true",
         help=(
             "Hard-delete the upload from storage and remove all database records "
-            "(DELETE /uploads/{id}/purge; requires upload:purge — use an admin or developer token)"
+            "(DELETE /uploads/{id}?purge=true; requires upload:purge — use an admin or developer token)"
         ),
     )
     args = parser.parse_args()
 
     token = require_api_jwt_token()
     base_url = get_api_base_url()
-    path = (
-        f"/uploads/{args.upload_id}/purge"
-        if args.purge
-        else f"/uploads/{args.upload_id}"
-    )
+    path = f"/uploads/{args.upload_id}"
+    if args.purge:
+        path += "?purge=true"
     result = api_request(base_url, token, "DELETE", path)
 
     if args.purge:

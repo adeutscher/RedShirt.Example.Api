@@ -1711,6 +1711,14 @@
               "format": "guid"
             },
             "x-position": 1
+          },
+          {
+            "name": "purge",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "x-position": 2
           }
         ],
         "responses": {
@@ -1720,6 +1728,19 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UploadSummaryModel"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2052,41 +2073,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UploadSearchResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/uploads/{id}/purge": {
-      "delete": {
-        "tags": [
-          "Upload"
-        ],
-        "operationId": "Upload_Purge",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }

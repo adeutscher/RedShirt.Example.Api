@@ -2,12 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
 using RedShirt.Example.Api.Attributes.Authorization;
+using RedShirt.Example.Api.Authorization.Constants;
 using RedShirt.Example.Api.Authorization.Extensions;
 using RedShirt.Example.Api.Authorization.ResourceScoping.Upload;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Upload.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.Upload.Commands.Delete;
-using RedShirt.Example.Api.Core.UseCases.Upload.Commands.Purge;
 using RedShirt.Example.Api.Core.UseCases.Upload.Commands.SubmitMoveReport;
 using RedShirt.Example.Api.Core.UseCases.Upload.Commands.SubmitVerdict;
 using RedShirt.Example.Api.Core.UseCases.Upload.Queries.GetDetails;
@@ -28,10 +28,14 @@ public class UploadController : ControllerBase
     [HttpDelete("{id:guid}")]
     [AuthorizeUploadWrite]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadSummaryModel))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(
         [FromRoute]
         Guid id,
+        [FromQuery]
+        bool purge,
         [FromServices]
         IGetUploadSummaryQueryHandler getUploadSummaryQueryHandler,
         [FromServices]
@@ -41,9 +45,21 @@ public class UploadController : ControllerBase
         CancellationToken cancellationToken)
     {
         var existing = await getUploadSummaryQueryHandler.Handle(new GetUploadSummaryQuery(id), cancellationToken);
-        await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.UploadedByUserId);
-        var model = await deleteUploadCommandHandler.Handle(new DeleteUploadCommand(id), cancellationToken);
-        return Ok(model);
+
+        if (purge)
+        {
+            if (!User.HasClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.UploadPurge))
+            {
+                return Forbid();
+            }
+        }
+        else
+        {
+            await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.UploadedByUserId);
+        }
+
+        var model = await deleteUploadCommandHandler.Handle(new DeleteUploadCommand(id, purge), cancellationToken);
+        return model is null ? NoContent() : Ok(model);
     }
 
     [HttpGet("{id:guid}")]
@@ -132,21 +148,6 @@ public class UploadController : ControllerBase
                 string.IsNullOrWhiteSpace(idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey),
             cancellationToken);
         return Ok(model);
-    }
-
-    [HttpDelete("{id:guid}/purge")]
-    [AuthorizeUploadPurge]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Purge(
-        [FromRoute]
-        Guid id,
-        [FromServices]
-        IPurgeUploadCommandHandler purgeUploadCommandHandler,
-        CancellationToken cancellationToken)
-    {
-        await purgeUploadCommandHandler.Handle(new PurgeUploadCommand(id), cancellationToken);
-        return NoContent();
     }
 
     [HttpGet]
