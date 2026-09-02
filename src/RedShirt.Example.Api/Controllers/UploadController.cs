@@ -124,8 +124,8 @@ public class UploadController : ControllerBase
         var model = await createUploadCommandHandler.Handle(
             new CreateUploadCommand(
                 fileName,
-                User.TryGetUserId(out var uploadedByUserId) ? uploadedByUserId : "anonymous",
-                User.Identity?.Name ?? "anonymous",
+                User.TryGetUserId(out var uploadedByUserId) ? uploadedByUserId : CallerConstants.Anonymous,
+                User.Identity?.Name ?? CallerConstants.Anonymous,
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 Request.Body,
                 Request.ContentLength,
