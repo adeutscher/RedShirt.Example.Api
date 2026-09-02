@@ -38,6 +38,12 @@
         "description": "Read-write access to Order",
         "composite": false,
         "clientRole": false
+      },
+      {
+        "name": "upload-validator",
+        "description": "Upload validation worker: GET upload by id, verdicts, move reports",
+        "composite": false,
+        "clientRole": false
       }
     ]
   },
@@ -122,6 +128,24 @@
       },
       "realmRoles": [
         "billing"
+      ]
+    },
+    {
+      "username": "uploadvalidator",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Upload",
+      "lastName": "Validator",
+      "email": "uploadvalidator@example.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "uploadvalidatorpass",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "upload-validator"
       ]
     },
     {

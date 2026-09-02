@@ -23,3 +23,6 @@ AWS_DEFAULT_REGION=us-east-1 awslocal ssm put-parameter --overwrite --type Strin
 AWS_DEFAULT_REGION=us-east-1 awslocal ssm put-parameter --overwrite --type String \
     --name /bar/oauth/client-secret \
     --value "local-bar-client-secret"
+
+AWS_DEFAULT_REGION=us-east-1 awslocal s3 mb s3://unverified-uploads
+AWS_DEFAULT_REGION=us-east-1 awslocal s3 mb s3://verified-uploads

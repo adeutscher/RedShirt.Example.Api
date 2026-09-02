@@ -23,6 +23,7 @@
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Customer.Core\RedShirt.Example.Api.DataStores.Customer.Core.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Order\RedShirt.Example.Api.DataStores.Order.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Product.Core\RedShirt.Example.Api.DataStores.Product.Core.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Upload.Core\RedShirt.Example.Api.Upload.Core.csproj"/>
     </ItemGroup>
 
 </Project>

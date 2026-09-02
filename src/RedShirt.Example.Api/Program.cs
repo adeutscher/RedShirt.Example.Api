@@ -1,5 +1,6 @@
 using RedShirt.Example.Api.Common.RateLimiting.Extensions;
 using RedShirt.Example.Api.Extensions;
+using RedShirt.Example.Api.Upload.Core.Configuration;
 
 /*
  * citing sources:
@@ -15,6 +16,17 @@ builder.Configuration
         .AddEnvironmentVariablesWithSegmentSupport()
         .Build()
     );
+
+if (builder.Configuration.GetSection(UploadOptions.ConfigurationSectionName).Get<UploadOptions>() is
+    {
+        MaxUploadSizeBytes: > 0
+    } uploadOptions)
+{
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.Limits.MaxRequestBodySize = uploadOptions.MaxUploadSizeBytes.Value;
+    });
+}
 
 // Add services to the container.
 builder.Services

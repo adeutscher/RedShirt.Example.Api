@@ -78,7 +78,9 @@ public class BespokeRolePermissionClaimsTransformationTests
                 BespokeAuthorizationPermissions.OrderRead,
                 BespokeAuthorizationPermissions.OrderWrite,
                 BespokeAuthorizationPermissions.ProductRead,
-                BespokeAuthorizationPermissions.ProductWrite
+                BespokeAuthorizationPermissions.ProductWrite,
+                BespokeAuthorizationPermissions.UploadRead,
+                BespokeAuthorizationPermissions.UploadWrite
             ],
             permissions.Order(StringComparer.Ordinal));
         Assert.DoesNotContain(BespokeAuthorizationPermissions.Unrestricted, permissions);

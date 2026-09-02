@@ -25,6 +25,9 @@
                 Path="src\RedShirt.Example.Api.Common.Database.DapperMySql\RedShirt.Example.Api.Common.Database.DapperMySql.csproj"/>
         <Project Path="src\RedShirt.Example.Api.Common.RateLimiting\RedShirt.Example.Api.Common.RateLimiting.csproj"/>
         <Project Path="src\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>
+        <Project Path="src\RedShirt.Example.Api.Common.FileStorage\RedShirt.Example.Api.Common.FileStorage.csproj"/>
+        <Project
+                Path="src\RedShirt.Example.Api.Common.Aws.S3FileStorage\RedShirt.Example.Api.Common.Aws.S3FileStorage.csproj"/>
     </Folder>
     <Folder Name="/src/common/analyzers/">
         <Project
@@ -57,6 +60,9 @@
                 Path="src\RedShirt.Example.Api.DataStores.Product.Core\RedShirt.Example.Api.DataStores.Product.Core.csproj"/>
         <Project
                 Path="src\RedShirt.Example.Api.DataStores.Product.Implementation\RedShirt.Example.Api.DataStores.Product.Implementation.csproj"/>
+        <Project Path="src\RedShirt.Example.Api.Upload.Core\RedShirt.Example.Api.Upload.Core.csproj"/>
+        <Project
+                Path="src\RedShirt.Example.Api.Upload.Implementation\RedShirt.Example.Api.Upload.Implementation.csproj"/>
     </Folder>
     <Folder Name="/swagger/">
         <Project Path="swagger/RedShirt.Example.Api.Interop/RedShirt.Example.Api.Interop.csproj"/>

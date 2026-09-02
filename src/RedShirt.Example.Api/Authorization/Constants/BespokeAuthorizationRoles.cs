@@ -30,4 +30,9 @@ public static class BespokeAuthorizationRoles
     ///     <see cref="BespokeAuthorizationPermissions.OrderWrite" />).
     /// </summary>
     public const string Billing = "billing";
+
+    /// <summary>
+    ///     Upload validation worker: GET upload by id, submit verdicts, and submit move reports.
+    /// </summary>
+    public const string UploadValidator = "upload-validator";
 }

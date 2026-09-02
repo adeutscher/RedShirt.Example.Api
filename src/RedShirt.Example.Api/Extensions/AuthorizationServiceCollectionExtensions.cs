@@ -65,6 +65,27 @@ internal static class AuthorizationServiceCollectionExtensions
                         BespokeAuthorizationPermissions.CustomerRead)
                     .AddRequirements(new HttpGetRequirement()));
 
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadWrite, policy => ConfigureApiPolicy(policy)
+                .RequireClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.UploadWrite));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadReadApproved, policy =>
+                ConfigureApiPolicy(policy)
+                    .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
+                        BespokeAuthorizationPermissions.UploadRead)
+                    .AddRequirements(new HttpGetRequirement()));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadValidator, policy => ConfigureApiPolicy(policy)
+                .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
+                    BespokeAuthorizationPermissions.UploadValidator));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadReadOrValidator, policy =>
+                ConfigureApiPolicy(policy)
+                    .RequireAssertion(context =>
+                        context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.UploadRead)
+                        || context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.UploadValidator)));
+
             authorization.AddPolicy(BespokeAuthorizationPolicies.CustomerScoped, policy => ConfigureApiPolicy(policy)
                 .AddRequirements(new CustomerScopedResourceRequirement()));
 
