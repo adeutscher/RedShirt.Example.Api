@@ -56,6 +56,12 @@ public static class BespokeAuthorizationPolicies
     public const string UploadWrite = "UploadWrite";
 
     /// <summary>
+    ///     Upload write access: requires <see cref="BespokeAuthorizationPermissions.UploadWrite" />or
+    ///     <see cref="BespokeAuthorizationPermissions.UploadValidator" />.
+    /// </summary>
+    public const string UploadWriteOrValidator = "UploadWriteOrValidator";
+
+    /// <summary>
     ///     Approved Upload read: <see cref="BespokeAuthorizationPermissions.UploadRead" /> on an HTTP GET.
     /// </summary>
     public const string UploadReadApproved = "UploadReadApproved";

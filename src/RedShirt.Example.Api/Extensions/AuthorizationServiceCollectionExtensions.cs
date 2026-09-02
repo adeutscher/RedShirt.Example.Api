@@ -87,6 +87,14 @@ internal static class AuthorizationServiceCollectionExtensions
                             BespokeAuthorizationPermissions.UploadValidator))
                     .AddRequirements(new HttpGetRequirement()));
 
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadWriteOrValidator, policy =>
+                ConfigureApiPolicy(policy)
+                    .RequireAssertion(context =>
+                        context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.UploadWrite)
+                        || context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.UploadValidator)));
+
             authorization.AddPolicy(BespokeAuthorizationPolicies.UploadValidator, policy => ConfigureApiPolicy(policy)
                 .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
                     BespokeAuthorizationPermissions.UploadValidator));

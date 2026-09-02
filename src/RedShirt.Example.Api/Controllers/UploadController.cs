@@ -16,6 +16,7 @@ using RedShirt.Example.Api.Core.UseCases.Upload.Queries.GetInternalDetails;
 using RedShirt.Example.Api.Core.UseCases.Upload.Queries.GetSummary;
 using RedShirt.Example.Api.Core.UseCases.Upload.Queries.SearchRecords;
 using RedShirt.Example.Api.Models.Upload;
+using RedShirt.Example.Api.Upload.Core.Models;
 using RedShirt.Example.Api.Upload.Core.Models.Responses;
 
 namespace RedShirt.Example.Api.Controllers;
@@ -27,7 +28,7 @@ namespace RedShirt.Example.Api.Controllers;
 public class UploadController : ControllerBase
 {
     [HttpDelete("{id:guid}")]
-    [AuthorizeUploadWrite]
+    [AuthorizeUploadWriteOrValidator]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadSummaryModel))]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -56,7 +57,11 @@ public class UploadController : ControllerBase
         }
         else
         {
-            await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.UploadedByUserId);
+            await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.UploadedByUserId, true);
+            if (UploadScope.IsValidator(User) && existing.State != UploadState.Rejected)
+            {
+                return Forbid($"Validators can only delete resources in {UploadState.Rejected} state.");
+            }
         }
 
         var model = await deleteUploadCommandHandler.Handle(new DeleteUploadCommand(id, purge), cancellationToken);
@@ -97,7 +102,7 @@ public class UploadController : ControllerBase
         CancellationToken cancellationToken)
     {
         var summary = await getUploadSummaryQueryHandler.Handle(new GetUploadSummaryQuery(id), cancellationToken);
-        await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, summary.UploadedByUserId, false);
+        await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, summary.UploadedByUserId);
         var model = await getUploadDetailsQueryHandler.Handle(new GetUploadDetailsQuery(id), cancellationToken);
         return Ok(model);
     }

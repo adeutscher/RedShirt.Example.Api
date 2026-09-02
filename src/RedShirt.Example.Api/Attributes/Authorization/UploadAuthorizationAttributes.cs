@@ -13,6 +13,15 @@ public sealed class AuthorizeUploadWriteAttribute : AuthorizeAttribute
 }
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public sealed class AuthorizeUploadWriteOrValidatorAttribute : AuthorizeAttribute
+{
+    public AuthorizeUploadWriteOrValidatorAttribute()
+    {
+        Policy = BespokeAuthorizationPolicies.UploadWriteOrValidator;
+    }
+}
+
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class ApproveUploadReadOnlyAttribute : AuthorizeAttribute
 {
     public ApproveUploadReadOnlyAttribute()
