@@ -49,7 +49,6 @@ def download_text(download_url: str) -> str:
 
 
 def is_valid_potato_document(content: str) -> bool:
-    print(content)
     return "potato" in content.casefold()
 
 
