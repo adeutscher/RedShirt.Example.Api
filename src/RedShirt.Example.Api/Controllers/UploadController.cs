@@ -81,7 +81,7 @@ public class UploadController : ControllerBase
     }
 
     [HttpGet("{id:guid}/details")]
-    [ApproveUploadReadOnly]
+    [AuthorizeUploadReadOrValidator]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadDetailsModel))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetDetails(
