@@ -44,7 +44,14 @@ In this template:
 In a production deployment, mover duties could be combined with validation in
 one worker service, or split across services with queue messages carrying
 upload ids and storage coordinates. The mock Python scripts in
-`test/local/upload-workers/` stand in for those workers during local testing.
+`test/local/upload-scripts/` stand in for those workers during local testing.
+
+Use `upload-file.py` to POST a local file to `/uploads` (requires `upload:write`):
+
+```bash
+export API_JWT_TOKEN="$(./test/local/get-bearer-token.py)"
+python3 test/local/upload-scripts/upload-file.py path/to/document.txt
+```
 
 The Keycloak **`upload-validator`** realm role is scoped to worker-facing write endpoints:
 
