@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
 using RedShirt.Example.Api.Attributes.Authorization;
+using RedShirt.Example.Api.Authorization.Extensions;
 using RedShirt.Example.Api.Authorization.ResourceScoping.Upload;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Upload.Commands.Create;
@@ -15,7 +16,6 @@ using RedShirt.Example.Api.Core.UseCases.Upload.Queries.GetSummary;
 using RedShirt.Example.Api.Core.UseCases.Upload.Queries.SearchRecords;
 using RedShirt.Example.Api.Models.Upload;
 using RedShirt.Example.Api.Upload.Core.Models.Responses;
-using System.Security.Claims;
 
 namespace RedShirt.Example.Api.Controllers;
 
@@ -124,7 +124,7 @@ public class UploadController : ControllerBase
         var model = await createUploadCommandHandler.Handle(
             new CreateUploadCommand(
                 fileName,
-                User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub") ?? "anonymous",
+                User.TryGetUserId(out var uploadedByUserId) ? uploadedByUserId : "anonymous",
                 User.Identity?.Name ?? "anonymous",
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 Request.Body,

@@ -25,12 +25,4 @@ internal static class UploadScope
         return user.HasClaim(BespokeAuthorizationPermissions.ClaimType,
             BespokeAuthorizationPermissions.UploadValidator);
     }
-
-    public static bool TryGetUserId(ClaimsPrincipal user, out string userId)
-    {
-        userId = user.FindFirstValue(ClaimTypes.NameIdentifier)
-                 ?? user.FindFirstValue("sub")
-                 ?? string.Empty;
-        return !string.IsNullOrWhiteSpace(userId);
-    }
 }

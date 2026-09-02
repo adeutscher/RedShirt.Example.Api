@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using RedShirt.Example.Api.Authorization.Extensions;
 using RedShirt.Example.Api.Upload.Core.Models;
 
 namespace RedShirt.Example.Api.Authorization.ResourceScoping.Upload;
@@ -24,7 +25,7 @@ internal sealed class UploadScopedResourceEnforcerHandler
             return Task.CompletedTask;
         }
 
-        if (UploadScope.TryGetUserId(context.User, out var userId)
+        if (context.User.TryGetUserId(out var userId)
             && userId == resource.UploadedByUserId)
         {
             context.Succeed(requirement);
@@ -58,7 +59,7 @@ internal sealed class UploadDownloadResourceEnforcerHandler
 
         if (resource.State == UploadState.Stored)
         {
-            if (UploadScope.TryGetUserId(context.User, out var userId)
+            if (context.User.TryGetUserId(out var userId)
                 && userId == resource.UploadedByUserId)
             {
                 context.Succeed(requirement);

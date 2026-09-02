@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using RedShirt.Example.Api.Authorization.Constants;
+using RedShirt.Example.Api.Authorization.Extensions;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.Upload.Core.Models;
 using System.Security.Claims;
@@ -63,7 +64,7 @@ internal sealed class UploadScopedResourceEnforcer(IAuthorizationService authori
         }
 
         // ReSharper disable once DuplicatedSequentialIfBodies
-        if (!UploadScope.TryGetUserId(user, out var scopedUserId))
+        if (!user.TryGetUserId(out var scopedUserId))
         {
             return UploadScope.NoAccessSentinel;
         }

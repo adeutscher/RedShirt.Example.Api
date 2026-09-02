@@ -11,4 +11,9 @@ public static class BespokeAuthorizationClaims
     ///     may only access orders whose <c>CustomerId</c> matches this claim.
     /// </summary>
     public const string CustomerId = "customer_id";
+
+    /// <summary>
+    ///     Standard OIDC subject claim; also surfaced as <see cref="System.Security.Claims.ClaimTypes.NameIdentifier" />.
+    /// </summary>
+    public const string Sub = "sub";
 }
