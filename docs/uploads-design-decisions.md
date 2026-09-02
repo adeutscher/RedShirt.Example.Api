@@ -67,7 +67,7 @@ Run a worker against a specific upload id from that list:
 ```bash
 python3 test/local/scripts/upload/upload-validate-worker.py <upload-id>
 python3 test/local/scripts/upload/upload-move-worker.py <upload-id>
-python3 test/local/scripts/upload/upload-reject-cleanup-worker.py <upload-id>
+python3 test/local/scripts/upload/upload-cleanup-rejected-files-worker.py <upload-id>
 ```
 
 The Keycloak **`upload-validator`** realm role is scoped to worker-facing write endpoints:
