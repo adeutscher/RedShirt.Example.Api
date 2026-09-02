@@ -134,9 +134,9 @@ internal sealed class UploadAggregate
         return StorageObjectKey;
     }
 
-    public UploadDetailsModel ToDetailsModel()
+    public UploadDetailsInternalModel ToInternalDetailsModel()
     {
-        return new UploadDetailsModel
+        return new UploadDetailsInternalModel
         {
             Id = Id,
             DateCreatedUtc = DateCreatedUtc,

@@ -16,6 +16,7 @@ internal sealed class GetUploadDetailsQueryHandler(
         CancellationToken cancellationToken = default)
     {
         await coreRequestValidator.ValidateAsync(query, cancellationToken);
-        return await uploadService.GetDetailsAsync(query.Id, cancellationToken);
+        var details = await uploadService.GetDetailsAsync(query.Id, cancellationToken);
+        return details.ToPublicDetailsModel();
     }
 }

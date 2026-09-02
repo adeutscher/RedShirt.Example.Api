@@ -10,7 +10,7 @@ public interface IUploadService
 
     Task<UploadSummaryModel> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<UploadDetailsModel> GetDetailsAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<UploadDetailsInternalModel> GetDetailsAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<UploadDownloadLinkModel> GetDownloadLinkAsync(Guid id, CancellationToken cancellationToken = default);
 

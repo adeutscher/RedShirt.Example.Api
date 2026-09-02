@@ -1882,6 +1882,48 @@
         }
       }
     },
+    "/uploads/{id}/details/internal": {
+      "get": {
+        "tags": [
+          "Upload"
+        ],
+        "operationId": "Upload_GetInternalDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadInternalDetailsModel"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/uploads": {
       "post": {
         "tags": [
@@ -2767,7 +2809,6 @@
           "dateCreatedUtc",
           "uploadedByUserId",
           "uploadedByUsername",
-          "uploaderIpAddress",
           "fileName"
         ],
         "properties": {
@@ -2785,19 +2826,12 @@
           "uploadedByUsername": {
             "type": "string"
           },
-          "uploaderIpAddress": {
-            "type": "string"
-          },
           "fileName": {
             "type": "string"
           },
           "dateCompletedUtc": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
-          },
-          "storageObjectKey": {
-            "type": "string",
             "nullable": true
           },
           "sha256Checksum": {
@@ -2817,10 +2851,6 @@
           "dateStoredUtc": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
-          },
-          "verifiedStorageObjectKey": {
-            "type": "string",
             "nullable": true
           },
           "dateDeletedUtc": {
@@ -2844,6 +2874,22 @@
           "expiresAtUtc": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "UploadInternalDetailsModel": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "uploaderIpAddress"
+        ],
+        "properties": {
+          "uploaderIpAddress": {
+            "type": "string"
+          },
+          "storageObjectKey": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

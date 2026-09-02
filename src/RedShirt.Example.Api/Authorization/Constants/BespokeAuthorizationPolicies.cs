@@ -94,6 +94,12 @@ public static class BespokeAuthorizationPolicies
     public const string UploadPurge = "UploadPurge";
 
     /// <summary>
+    ///     Internal upload metadata: <see cref="BespokeAuthorizationPermissions.UploadValidator" /> or
+    ///     <see cref="BespokeAuthorizationPermissions.Unrestricted" /> on an HTTP GET.
+    /// </summary>
+    public const string UploadInternalDetailsApproved = "UploadInternalDetailsApproved";
+
+    /// <summary>
     ///     Resource-based access to a customer-scoped record (for example an order).
     ///     Invoked with an explicit resource via <c>IAuthorizationService</c>, not as an
     ///     endpoint attribute (the resource is not available until the row is loaded).

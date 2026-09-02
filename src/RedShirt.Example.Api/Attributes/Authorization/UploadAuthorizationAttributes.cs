@@ -49,10 +49,10 @@ public sealed class ApproveUploadDownloadLinkAttribute : AuthorizeAttribute
 }
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public sealed class AuthorizeUploadPurgeAttribute : AuthorizeAttribute
+public sealed class ApproveUploadInternalDetailsAttribute : AuthorizeAttribute
 {
-    public AuthorizeUploadPurgeAttribute()
+    public ApproveUploadInternalDetailsAttribute()
     {
-        Policy = BespokeAuthorizationPolicies.UploadPurge;
+        Policy = BespokeAuthorizationPolicies.UploadInternalDetailsApproved;
     }
 }

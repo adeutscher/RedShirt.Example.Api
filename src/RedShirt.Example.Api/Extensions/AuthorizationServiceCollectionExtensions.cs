@@ -109,6 +109,15 @@ internal static class AuthorizationServiceCollectionExtensions
             authorization.AddPolicy(BespokeAuthorizationPolicies.UploadPurge, policy => ConfigureApiPolicy(policy)
                 .RequireClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.UploadPurge));
 
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadInternalDetailsApproved, policy =>
+                ConfigureApiPolicy(policy)
+                    .RequireAssertion(context =>
+                        context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.UploadValidator)
+                        || context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.Unrestricted))
+                    .AddRequirements(new HttpGetRequirement()));
+
             authorization.AddPolicy(BespokeAuthorizationPolicies.CustomerScoped, policy => ConfigureApiPolicy(policy)
                 .AddRequirements(new CustomerScopedResourceRequirement()));
 

@@ -76,7 +76,7 @@ def main() -> int:
             f"Upload {args.upload_id} is {state!r}; expected {EXPECTED_STATE!r}."
         )
 
-    details = api_request(base_url, token, "GET", f"/uploads/{args.upload_id}/details")
+    details = api_request(base_url, token, "GET", f"/uploads/{args.upload_id}/details/internal")
     object_key = storage_object_key(details)
     s3_copy(unverified, verified, object_key)
     s3_delete(unverified, object_key)

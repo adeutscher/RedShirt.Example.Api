@@ -12,6 +12,7 @@ using RedShirt.Example.Api.Core.UseCases.Upload.Commands.SubmitMoveReport;
 using RedShirt.Example.Api.Core.UseCases.Upload.Commands.SubmitVerdict;
 using RedShirt.Example.Api.Core.UseCases.Upload.Queries.GetDetails;
 using RedShirt.Example.Api.Core.UseCases.Upload.Queries.GetDownloadLink;
+using RedShirt.Example.Api.Core.UseCases.Upload.Queries.GetInternalDetails;
 using RedShirt.Example.Api.Core.UseCases.Upload.Queries.GetSummary;
 using RedShirt.Example.Api.Core.UseCases.Upload.Queries.SearchRecords;
 using RedShirt.Example.Api.Models.Upload;
@@ -96,7 +97,7 @@ public class UploadController : ControllerBase
         CancellationToken cancellationToken)
     {
         var summary = await getUploadSummaryQueryHandler.Handle(new GetUploadSummaryQuery(id), cancellationToken);
-        await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, summary.UploadedByUserId);
+        await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, summary.UploadedByUserId, false);
         var model = await getUploadDetailsQueryHandler.Handle(new GetUploadDetailsQuery(id), cancellationToken);
         return Ok(model);
     }
@@ -120,6 +121,24 @@ public class UploadController : ControllerBase
         await uploadScopedResourceEnforcer.EnsureCanDownloadAsync(User, summary.UploadedByUserId, summary.State);
         var model = await getUploadDownloadLinkQueryHandler.Handle(new GetUploadDownloadLinkQuery(id),
             cancellationToken);
+        return Ok(model);
+    }
+
+    [HttpGet("{id:guid}/details/internal")]
+    [ApproveUploadInternalDetails]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadInternalDetailsModel))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetInternalDetails(
+        [FromRoute]
+        Guid id,
+        [FromServices]
+        IGetUploadInternalDetailsQueryHandler getUploadInternalDetailsQueryHandler,
+        CancellationToken cancellationToken)
+    {
+        var model = await getUploadInternalDetailsQueryHandler.Handle(
+            new GetUploadInternalDetailsQuery(id),
+            cancellationToken);
+        // Reminder: Enforcing scope within the endpoint isn't necessary because only internal processes can get at this.
         return Ok(model);
     }
 
