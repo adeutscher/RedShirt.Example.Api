@@ -10,6 +10,9 @@ namespace RedShirt.Example.Api.Authorization.ResourceScoping.Upload;
 /// </summary>
 internal static class UploadScope
 {
+    /// <summary>
+    ///     String that is expected to yield no search results.
+    /// </summary>
     internal const string NoAccessSentinel = "__upload_scope_no_access__";
 
     public static bool IsUnrestricted(ClaimsPrincipal user)

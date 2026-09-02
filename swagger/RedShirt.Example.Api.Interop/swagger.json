@@ -1777,41 +1777,6 @@
         }
       }
     },
-    "/uploads/{id}/purge": {
-      "delete": {
-        "tags": [
-          "Upload"
-        ],
-        "operationId": "Upload_Purge",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/uploads/{id}/details": {
       "get": {
         "tags": [
@@ -2087,6 +2052,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UploadSearchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uploads/{id}/purge": {
+      "delete": {
+        "tags": [
+          "Upload"
+        ],
+        "operationId": "Upload_Purge",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }

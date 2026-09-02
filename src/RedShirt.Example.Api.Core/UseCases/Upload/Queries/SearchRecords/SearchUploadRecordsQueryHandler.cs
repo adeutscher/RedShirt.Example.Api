@@ -5,8 +5,6 @@ using RedShirt.Example.Api.Upload.Core.Services;
 
 namespace RedShirt.Example.Api.Core.UseCases.Upload.Queries.SearchRecords;
 
-public sealed record SearchUploadRecordsQuery(UploadServiceSearchRequest Parameters, Guid? ContinuationToken);
-
 public interface ISearchUploadRecordsQueryHandler : ICqrsHandler<SearchUploadRecordsQuery, UploadSearchResponse>;
 
 internal sealed class SearchUploadRecordsQueryHandler(
@@ -17,6 +15,19 @@ internal sealed class SearchUploadRecordsQueryHandler(
         CancellationToken cancellationToken = default)
     {
         await coreRequestValidator.ValidateAsync(query, cancellationToken);
-        return await uploadService.SearchAsync(query.Parameters, query.ContinuationToken, cancellationToken);
+        return await uploadService.SearchAsync(new UploadServiceSearchRequest
+        {
+            PageSize = query.PageSize,
+            CreatedBeforeUtc = query.CreatedBeforeUtc,
+            CreatedAfterUtc = query.CreatedAfterUtc,
+            UpdatedBeforeUtc = query.UpdatedBeforeUtc,
+            UpdatedAfterUtc = query.UpdatedAfterUtc,
+            Id = query.Id,
+            State = query.State,
+            UploadedByUserId = query.UploadedByUserId,
+            FileName = query.FileName,
+            IsValidated = query.IsValidated,
+            IsRejected = query.IsRejected
+        }, query.ContinuationToken, cancellationToken);
     }
 }

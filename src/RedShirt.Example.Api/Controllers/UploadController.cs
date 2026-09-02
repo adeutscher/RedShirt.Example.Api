@@ -14,7 +14,6 @@ using RedShirt.Example.Api.Core.UseCases.Upload.Queries.GetDownloadLink;
 using RedShirt.Example.Api.Core.UseCases.Upload.Queries.GetSummary;
 using RedShirt.Example.Api.Core.UseCases.Upload.Queries.SearchRecords;
 using RedShirt.Example.Api.Models.Upload;
-using RedShirt.Example.Api.Upload.Core.Models.Requests;
 using RedShirt.Example.Api.Upload.Core.Models.Responses;
 using System.Security.Claims;
 
@@ -166,20 +165,17 @@ public class UploadController : ControllerBase
             uploadScopedResourceEnforcer.ConstrainSearchUploadedByUserId(User, request.UploadedByUserId);
         var model = await searchUploadRecordsQueryHandler.Handle(
             new SearchUploadRecordsQuery(
-                new UploadServiceSearchRequest
-                {
-                    PageSize = request.PageSize,
-                    CreatedBeforeUtc = request.CreatedBeforeUtc,
-                    CreatedAfterUtc = request.CreatedAfterUtc,
-                    UpdatedBeforeUtc = request.UpdatedBeforeUtc,
-                    UpdatedAfterUtc = request.UpdatedAfterUtc,
-                    Id = request.Id,
-                    State = request.State,
-                    UploadedByUserId = uploadedByUserId,
-                    FileName = request.FileName,
-                    IsValidated = request.IsValidated,
-                    IsRejected = request.IsRejected
-                },
+                request.PageSize,
+                request.CreatedBeforeUtc,
+                request.CreatedAfterUtc,
+                request.UpdatedBeforeUtc,
+                request.UpdatedAfterUtc,
+                request.Id,
+                request.State,
+                uploadedByUserId,
+                request.FileName,
+                request.IsValidated,
+                request.IsRejected,
                 request.ContinuationToken),
             cancellationToken);
         return Ok(model);

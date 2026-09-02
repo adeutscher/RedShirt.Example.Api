@@ -1,0 +1,37 @@
+---
+description: Controllers and use-case queries must not reference service-layer request types
+globs: "{src/RedShirt.Example.Api/Controllers/**/*.cs,src/RedShirt.Example.Api.Core/UseCases/**/*.cs}"
+alwaysApply: false
+---
+
+# Use-case to service request mapping
+
+The API controller layer and use-case query/command records must stay independent of `*Service*Request` types defined in Core/Implementation service projects.
+
+```csharp
+// ✅ GOOD — controller maps API model to flat use-case query
+new SearchUploadRecordsQuery(
+    request.PageSize,
+    request.CreatedBeforeUtc,
+    /* ... */,
+    uploadedByUserId,
+    request.ContinuationToken)
+
+// ✅ GOOD — handler maps query to service request
+return await uploadService.SearchAsync(new UploadServiceSearchRequest
+{
+    PageSize = query.PageSize,
+    UploadedByUserId = query.UploadedByUserId,
+    /* ... */
+}, query.ContinuationToken, cancellationToken);
+
+// ❌ BAD — controller constructs a service request
+new SearchUploadRecordsQuery(new UploadServiceSearchRequest { /* ... */ }, token)
+
+// ❌ BAD — query embeds a service request type
+public sealed record SearchUploadRecordsQuery(UploadServiceSearchRequest Parameters, Guid? ContinuationToken);
+```
+
+- **Controllers** bind `Models/{Resource}/*Request` and construct use-case queries/commands with primitive/flat fields only.
+- **Use-case handlers** translate queries/commands into `*Service*Request` (or equivalent data-store requests) before calling services.
+- Follow `SearchProductRecordsQuery` / `SearchUploadRecordsQuery` as the reference pattern for search endpoints.

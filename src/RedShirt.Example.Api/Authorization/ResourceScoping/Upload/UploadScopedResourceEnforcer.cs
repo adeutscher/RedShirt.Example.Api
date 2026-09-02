@@ -62,6 +62,7 @@ internal sealed class UploadScopedResourceEnforcer(IAuthorizationService authori
             return requestedUploadedByUserId;
         }
 
+        // ReSharper disable once DuplicatedSequentialIfBodies
         if (!UploadScope.TryGetUserId(user, out var scopedUserId))
         {
             return UploadScope.NoAccessSentinel;
