@@ -19,7 +19,7 @@ public interface IUploadScopedResourceEnforcer
     /// <summary>
     ///     Throws <see cref="ResourceNotFoundException" /> when the caller may not access the upload.
     /// </summary>
-    Task EnsureCanAccessAsync(ClaimsPrincipal user, string uploadedByUserId);
+    Task EnsureCanAccessAsync(ClaimsPrincipal user, string uploadedByUserId, bool allowValidators = false);
 
     /// <summary>
     ///     Throws <see cref="ResourceNotFoundException" /> when the caller may not obtain a download link.
@@ -30,11 +30,11 @@ public interface IUploadScopedResourceEnforcer
 internal sealed class UploadScopedResourceEnforcer(IAuthorizationService authorization)
     : IUploadScopedResourceEnforcer
 {
-    public async Task EnsureCanAccessAsync(ClaimsPrincipal user, string uploadedByUserId)
+    public async Task EnsureCanAccessAsync(ClaimsPrincipal user, string uploadedByUserId, bool allowValidators = false)
     {
         var result = await authorization.AuthorizeAsync(
             user,
-            new UploadScopedResource(uploadedByUserId),
+            new UploadScopedResource(uploadedByUserId, allowValidators),
             BespokeAuthorizationPolicies.UploadScoped);
 
         if (!result.Succeeded)

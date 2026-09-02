@@ -61,6 +61,12 @@ public static class BespokeAuthorizationPolicies
     public const string UploadReadApproved = "UploadReadApproved";
 
     /// <summary>
+    ///     Approved Upload read: <see cref="BespokeAuthorizationPermissions.UploadRead" /> or
+    ///     <see cref="BespokeAuthorizationPermissions.UploadValidator" />. Must be on an HTTP GET .
+    /// </summary>
+    public const string UploadReadOrValidator = "UploadReadOrValidator";
+
+    /// <summary>
     ///     Upload validator worker access for verdict and move-report endpoints.
     /// </summary>
     public const string UploadValidator = "UploadValidator";

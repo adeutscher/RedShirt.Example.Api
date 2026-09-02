@@ -17,7 +17,8 @@ internal static class UploadScope
 
     public static bool IsUnrestricted(ClaimsPrincipal user)
     {
-        return user.HasClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Unrestricted);
+        return user.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+            BespokeAuthorizationPermissions.Unrestricted);
     }
 
     public static bool IsValidator(ClaimsPrincipal user)

@@ -13,7 +13,7 @@ public sealed class StubUploadScopedResourceEnforcer : IUploadScopedResourceEnfo
         return requestedUploadedByUserId;
     }
 
-    public Task EnsureCanAccessAsync(ClaimsPrincipal user, string uploadedByUserId)
+    public Task EnsureCanAccessAsync(ClaimsPrincipal user, string uploadedByUserId, bool allowValidators = false)
     {
         return Task.CompletedTask;
     }

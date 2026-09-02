@@ -6,7 +6,7 @@ namespace RedShirt.Example.Api.Authorization.ResourceScoping.Upload;
 
 internal sealed class UploadScopedResourceRequirement : IAuthorizationRequirement;
 
-internal sealed record UploadScopedResource(string UploadedByUserId);
+internal sealed record UploadScopedResource(string UploadedByUserId, bool AllowValidators);
 
 /// <summary>
 ///     Succeeds when the caller is unrestricted or the resource uploader matches the caller’s user id.
@@ -19,7 +19,14 @@ internal sealed class UploadScopedResourceEnforcerHandler
         UploadScopedResourceRequirement requirement,
         UploadScopedResource resource)
     {
+        // ReSharper disable once DuplicatedSequentialIfBodies
         if (UploadScope.IsUnrestricted(context.User))
+        {
+            context.Succeed(requirement);
+            return Task.CompletedTask;
+        }
+
+        if (resource.AllowValidators && UploadScope.IsValidator(context.User))
         {
             context.Succeed(requirement);
             return Task.CompletedTask;
@@ -51,12 +58,20 @@ internal sealed class UploadDownloadResourceEnforcerHandler
         UploadDownloadResourceRequirement requirement,
         UploadDownloadResource resource)
     {
+        // ReSharper disable once DuplicatedSequentialIfBodies
         if (UploadScope.IsUnrestricted(context.User))
         {
             context.Succeed(requirement);
             return Task.CompletedTask;
         }
 
+        if (UploadScope.IsValidator(context.User))
+        {
+            context.Succeed(requirement);
+            return Task.CompletedTask;
+        }
+
+        // ReSharper disable once InvertIf
         if (resource.State == UploadState.Stored)
         {
             if (context.User.TryGetUserId(out var userId)
@@ -64,13 +79,6 @@ internal sealed class UploadDownloadResourceEnforcerHandler
             {
                 context.Succeed(requirement);
             }
-
-            return Task.CompletedTask;
-        }
-
-        if (UploadScope.IsValidator(context.User))
-        {
-            context.Succeed(requirement);
         }
 
         return Task.CompletedTask;

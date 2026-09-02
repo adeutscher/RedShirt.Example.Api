@@ -47,7 +47,7 @@ public class UploadController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [ApproveUploadReadOnly]
+    [AuthorizeUploadReadOrValidator]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadSummaryModel))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(
@@ -60,7 +60,7 @@ public class UploadController : ControllerBase
         CancellationToken cancellationToken)
     {
         var model = await getUploadSummaryQueryHandler.Handle(new GetUploadSummaryQuery(id), cancellationToken);
-        await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, model.UploadedByUserId);
+        await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, model.UploadedByUserId, true);
         return Ok(model);
     }
 
