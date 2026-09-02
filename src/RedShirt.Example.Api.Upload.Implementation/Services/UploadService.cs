@@ -19,7 +19,7 @@ internal sealed class UploadService(
 {
     private static string BuildObjectKey(Guid uploadId, string uploadedByUserId)
     {
-        return $"{uploadId:N}/{uploadedByUserId}";
+        return $"{uploadedByUserId}/{uploadId:N}";
     }
 
     public async Task<UploadSummaryModel> CreateAsync(UploadServiceCreateRequest request,
