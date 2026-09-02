@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
+using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.DataStores.Constants;
 using RedShirt.Example.Api.Upload.Core.Models;
 using RedShirt.Example.Api.Upload.Core.Models.Requests;
@@ -16,6 +17,9 @@ namespace RedShirt.Example.Api.Upload.Implementation.Repositories;
 internal interface IUploadRepository
 {
     Task<UploadSummaryModel> AppendEventAsync(Guid uploadId, string eventType, object eventPayload,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ExistsByIdempotencyKeyAsync(string idempotencyKey,
         CancellationToken cancellationToken = default);
 
     Task<UploadAggregate> GetAggregateFromEventsAsync(Guid uploadId,
@@ -121,6 +125,27 @@ internal sealed class UploadRepository(
         return builder;
     }
 
+    private static bool IsDuplicateIdempotencyKey(DbUpdateException exception)
+    {
+        for (Exception? current = exception; current is not null; current = current.InnerException)
+        {
+            if (current.Message.Contains("Duplicate entry", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public async Task<bool> ExistsByIdempotencyKeyAsync(string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync(ConnectionStringName, cancellationToken);
+        return await context.UploadAggregates.AsNoTracking()
+            .AnyAsync(e => e.IdempotencyKey == idempotencyKey, cancellationToken);
+    }
+
     public async Task<UploadSummaryModel> AppendEventAsync(Guid uploadId, string eventType, object eventPayload,
         CancellationToken cancellationToken = default)
     {
@@ -161,6 +186,12 @@ internal sealed class UploadRepository(
         var existing = await context.UploadAggregates.FirstOrDefaultAsync(e => e.Id == uploadId, cancellationToken);
         if (existing is null)
         {
+            if (string.IsNullOrWhiteSpace(entity.IdempotencyKey))
+            {
+                throw new InvalidOperationException(
+                    "Idempotency key is required when creating a new upload aggregate.");
+            }
+
             context.UploadAggregates.Add(entity);
         }
         else
@@ -174,8 +205,16 @@ internal sealed class UploadRepository(
             existing.IsRejected = entity.IsRejected;
         }
 
-        await context.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsDuplicateIdempotencyKey(ex))
+        {
+            throw new ConflictException("An upload with this idempotency key already exists.");
+        }
+
         return aggregate.ToSummaryModel();
     }
 

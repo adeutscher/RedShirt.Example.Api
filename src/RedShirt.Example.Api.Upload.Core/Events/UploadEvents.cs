@@ -17,6 +17,7 @@ public sealed class UploadCreatedEvent
     public required string UploadedByUsername { get; init; }
     public required string UploaderIpAddress { get; init; }
     public required string FileName { get; init; }
+    public required string IdempotencyKey { get; init; }
 }
 
 public sealed class UploadCompletedEvent

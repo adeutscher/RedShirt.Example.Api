@@ -31,6 +31,7 @@ internal sealed class UploadAggregate
     public DateTime? DateRejectedUtc { get; private set; }
     public DateTime? DateStoredUtc { get; private set; }
     public DateTime? DateDeletedUtc { get; private set; }
+    public string IdempotencyKey { get; private set; } = string.Empty;
 
     public void Apply(UploadCreatedEvent uploadEvent, DateTime eventDateUtc)
     {
@@ -39,6 +40,7 @@ internal sealed class UploadAggregate
         UploadedByUsername = uploadEvent.UploadedByUsername;
         UploaderIpAddress = uploadEvent.UploaderIpAddress;
         FileName = uploadEvent.FileName;
+        IdempotencyKey = uploadEvent.IdempotencyKey;
         DateCreatedUtc = eventDateUtc;
         DateUpdatedUtc = eventDateUtc;
         State = UploadState.Uploading;
@@ -164,7 +166,8 @@ internal sealed class UploadAggregate
             State = State.ToString(),
             FileName = FileName,
             IsValidated = IsValidated,
-            IsRejected = IsRejected
+            IsRejected = IsRejected,
+            IdempotencyKey = IdempotencyKey
         };
     }
 

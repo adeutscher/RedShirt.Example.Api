@@ -1695,19 +1695,20 @@
         }
       }
     },
-    "/uploads": {
-      "post": {
+    "/uploads/{id}": {
+      "delete": {
         "tags": [
           "Upload"
         ],
-        "operationId": "Upload_Post",
+        "operationId": "Upload_Delete",
         "parameters": [
           {
-            "name": "X-File-Name",
-            "x-originalName": "fileName",
-            "in": "header",
+            "name": "id",
+            "in": "path",
+            "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "guid"
             },
             "x-position": 1
           }
@@ -1723,7 +1724,191 @@
               }
             }
           },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Upload"
+        ],
+        "operationId": "Upload_Get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadSummaryModel"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uploads/{id}/details": {
+      "get": {
+        "tags": [
+          "Upload"
+        ],
+        "operationId": "Upload_GetDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadDetailsModel"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uploads/{id}/download-link": {
+      "get": {
+        "tags": [
+          "Upload"
+        ],
+        "operationId": "Upload_GetDownloadLink",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadDownloadLinkModel"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/uploads": {
+      "post": {
+        "tags": [
+          "Upload"
+        ],
+        "operationId": "Upload_Post",
+        "parameters": [
+          {
+            "name": "X-File-Name",
+            "x-originalName": "fileName",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "Idempotency-Key",
+            "x-originalName": "idempotencyKey",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadSummaryModel"
+                }
+              }
+            }
+          },
           "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
             "description": "",
             "content": {
               "application/json": {
@@ -1874,194 +2059,6 @@
         }
       }
     },
-    "/uploads/{id}": {
-      "get": {
-        "tags": [
-          "Upload"
-        ],
-        "operationId": "Upload_Get",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UploadSummaryModel"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Upload"
-        ],
-        "operationId": "Upload_Delete",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UploadSummaryModel"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/uploads/{id}/details": {
-      "get": {
-        "tags": [
-          "Upload"
-        ],
-        "operationId": "Upload_GetDetails",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UploadDetailsModel"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/uploads/{id}/verdicts": {
-      "post": {
-        "tags": [
-          "Upload"
-        ],
-        "operationId": "Upload_SubmitVerdict",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "request",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UploadVerdictRequest"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UploadSummaryModel"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/uploads/{id}/move-reports": {
       "post": {
         "tags": [
@@ -2126,12 +2123,12 @@
         }
       }
     },
-    "/uploads/{id}/download-link": {
-      "get": {
+    "/uploads/{id}/verdicts": {
+      "post": {
         "tags": [
           "Upload"
         ],
-        "operationId": "Upload_GetDownloadLink",
+        "operationId": "Upload_SubmitVerdict",
         "parameters": [
           {
             "name": "id",
@@ -2144,13 +2141,35 @@
             "x-position": 1
           }
         ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadVerdictRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UploadDownloadLinkModel"
+                  "$ref": "#/components/schemas/UploadSummaryModel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2719,26 +2738,6 @@
           5
         ]
       },
-      "UploadSearchResponse": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "records"
-        ],
-        "properties": {
-          "records": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UploadSummaryModel"
-            }
-          },
-          "continuationToken": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          }
-        }
-      },
       "UploadDetailsModel": {
         "type": "object",
         "additionalProperties": false,
@@ -2810,15 +2809,40 @@
           }
         }
       },
-      "UploadVerdictRequest": {
+      "UploadDownloadLinkModel": {
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "approved"
+          "downloadUrl",
+          "expiresAtUtc"
         ],
         "properties": {
-          "approved": {
-            "type": "boolean"
+          "downloadUrl": {
+            "type": "string"
+          },
+          "expiresAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UploadSearchResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "records"
+        ],
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UploadSummaryModel"
+            }
+          },
+          "continuationToken": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
           }
         }
       },
@@ -2834,20 +2858,15 @@
           }
         }
       },
-      "UploadDownloadLinkModel": {
+      "UploadVerdictRequest": {
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "downloadUrl",
-          "expiresAtUtc"
+          "approved"
         ],
         "properties": {
-          "downloadUrl": {
-            "type": "string"
-          },
-          "expiresAtUtc": {
-            "type": "string",
-            "format": "date-time"
+          "approved": {
+            "type": "boolean"
           }
         }
       }

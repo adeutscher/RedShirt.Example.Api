@@ -35,6 +35,16 @@ internal sealed class UploadService(
             throw new BadRequestException("Uploading user id cannot be empty.");
         }
 
+        if (string.IsNullOrWhiteSpace(request.IdempotencyKey))
+        {
+            throw new BadRequestException("Idempotency key cannot be empty.");
+        }
+
+        if (await repository.ExistsByIdempotencyKeyAsync(request.IdempotencyKey, cancellationToken))
+        {
+            throw new ConflictException("An upload with this idempotency key already exists.");
+        }
+
         var uploadId = Guid.NewGuid();
         var createdEvent = new UploadCreatedEvent
         {
@@ -42,7 +52,8 @@ internal sealed class UploadService(
             UploadedByUserId = request.UploadedByUserId,
             UploadedByUsername = request.UploadedByUsername,
             UploaderIpAddress = request.UploaderIpAddress,
-            FileName = request.FileName
+            FileName = request.FileName,
+            IdempotencyKey = request.IdempotencyKey
         };
 
         var uploadingSummary = await repository.AppendEventAsync(uploadId, UploadEventTypes.Created, createdEvent,
@@ -81,6 +92,7 @@ internal sealed class UploadService(
     public async Task<UploadDetailsModel> GetDetailsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
+        // ReSharper disable once ConvertIfStatementToReturnStatement
         if (aggregate.Id == Guid.Empty)
         {
             throw new ResourceNotFoundException();

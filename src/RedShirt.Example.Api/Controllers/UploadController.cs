@@ -111,9 +111,12 @@ public class UploadController : ControllerBase
     [AuthorizeUploadWrite]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadSummaryModel))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Post(
         [FromHeader(Name = "X-File-Name")]
         string fileName,
+        [FromHeader(Name = EndpointConstants.IdempotencyKeyHeader)]
+        string idempotencyKey,
         [FromServices]
         ICreateUploadCommandHandler createUploadCommandHandler,
         CancellationToken cancellationToken)
@@ -124,7 +127,8 @@ public class UploadController : ControllerBase
                 User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub") ?? "anonymous",
                 User.Identity?.Name ?? "anonymous",
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                Request.Body),
+                Request.Body,
+                string.IsNullOrWhiteSpace(idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey),
             cancellationToken);
         return Ok(model);
     }

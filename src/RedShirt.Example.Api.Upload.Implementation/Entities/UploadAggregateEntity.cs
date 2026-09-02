@@ -13,4 +13,5 @@ internal sealed class UploadAggregateEntity
     public required string FileName { get; set; }
     public required bool IsValidated { get; set; }
     public required bool IsRejected { get; set; }
+    public required string IdempotencyKey { get; set; }
 }
