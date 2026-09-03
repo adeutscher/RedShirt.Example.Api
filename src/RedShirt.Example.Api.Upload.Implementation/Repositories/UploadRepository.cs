@@ -112,6 +112,12 @@ internal sealed class UploadRepository(
             builder.And(e => e.DateUpdatedUtc > updatedAfter);
         }
 
+        if (!string.IsNullOrWhiteSpace(parameters.Sha256Checksum))
+        {
+            var sha256Checksum = parameters.Sha256Checksum.ToLowerInvariant();
+            builder.And(e => e.Sha256Checksum != null && e.Sha256Checksum.ToLower() == sha256Checksum);
+        }
+
         if (parameters.State.HasValue)
         {
             var state = parameters.State.Value;
@@ -128,12 +134,6 @@ internal sealed class UploadRepository(
         {
             var fileName = parameters.FileName;
             builder.And(e => e.FileName == fileName);
-        }
-
-        if (!string.IsNullOrWhiteSpace(parameters.Sha256Checksum))
-        {
-            var sha256Checksum = parameters.Sha256Checksum.ToLowerInvariant();
-            builder.And(e => e.Sha256Checksum != null && e.Sha256Checksum.ToLower() == sha256Checksum);
         }
 
         if (parameters.FileSizeBytes.HasValue)
