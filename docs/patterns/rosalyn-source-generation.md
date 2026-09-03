@@ -4,7 +4,7 @@ This document describes the standards and decisions made around the use of Rosal
 
 ## History
 
-The use of source generation came about when I faced the following project constraints:
+The use of source generation came about when I faced the following project constraints and hurdles:
 
 * I was facing a large-scale personal project.
 * As the only developer, my resources were limited.
@@ -17,9 +17,10 @@ The use of source generation came about when I faced the following project const
 * The project was very experimental, so database tables were experimental as well.
 
 With these constraints, I needed a solution that massively cut down on implementation turnaround time. I needed to get
-my turnaround time to the point where I wouldn't feel like I wasted my time and resources if I decided the next day to
-not use a particular table at all. I had already developed a series of generic handlers for handling simple CRUD
-operations, but adding search functionality was still a lengthy task with lots of fiddly bits to get wrong by accident.
+my turnaround time cut down to the point where I wouldn't feel like I wasted my time and resources even if I decided the
+next day to not use a particular table at all. I had already developed a series of generic handlers for handling simple
+CRUD operations, but adding search functionality was still a lengthy task with lots of fiddly bits to get wrong by
+accident.
 
 I settled on a system of using Source Generation to generate the Service and Repository layers of accessing a table.
 Rosalyn Source Generators were a good fit because of their deterministic nature. Simple tables could be maintained
