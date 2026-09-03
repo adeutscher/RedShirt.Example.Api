@@ -55,6 +55,7 @@ internal sealed class UploadRepository(
             State = aggregate.State,
             FileName = aggregate.FileName,
             Flags = UploadAggregateFlagMapping.FromBoolValues(aggregate.IsValidated, aggregate.IsRejected),
+            Sha256Checksum = aggregate.Sha256Checksum,
             IdempotencyKey = aggregate.IdempotencyKey
         };
     }
@@ -70,7 +71,8 @@ internal sealed class UploadRepository(
             State = entity.State,
             FileName = entity.FileName,
             IsValidated = UploadAggregateFlagMapping.HasValidated(entity.Flags),
-            IsRejected = UploadAggregateFlagMapping.HasRejected(entity.Flags)
+            IsRejected = UploadAggregateFlagMapping.HasRejected(entity.Flags),
+            Sha256Checksum = entity.Sha256Checksum
         };
     }
 
@@ -219,6 +221,7 @@ internal sealed class UploadRepository(
             existing.State = entity.State;
             existing.FileName = entity.FileName;
             existing.Flags = entity.Flags;
+            existing.Sha256Checksum = entity.Sha256Checksum;
         }
 
         try

@@ -79,10 +79,16 @@ public class UploadRepositoryTests : IDisposable
             TestContext.Current.CancellationToken);
 
         Assert.Equal(UploadState.NotValidated, summary.State);
+        Assert.Equal("sha256", summary.Sha256Checksum);
 
         var aggregate = await repository.GetAggregateFromEventsAsync(uploadId, TestContext.Current.CancellationToken);
         Assert.Equal(UploadState.NotValidated, aggregate.State);
         Assert.Equal("user-id/upload-id", aggregate.StorageObjectKey);
+        Assert.Equal("sha256", aggregate.Sha256Checksum);
+
+        var storedSummary = await repository.GetSummaryAsync(uploadId, TestContext.Current.CancellationToken);
+        Assert.NotNull(storedSummary);
+        Assert.Equal("sha256", storedSummary.Sha256Checksum);
     }
 
     [Fact]

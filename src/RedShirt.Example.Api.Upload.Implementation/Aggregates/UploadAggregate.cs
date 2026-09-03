@@ -166,7 +166,8 @@ internal sealed class UploadAggregate
             State = State,
             FileName = FileName,
             IsValidated = IsValidated,
-            IsRejected = IsRejected
+            IsRejected = IsRejected,
+            Sha256Checksum = Sha256Checksum
         };
     }
 

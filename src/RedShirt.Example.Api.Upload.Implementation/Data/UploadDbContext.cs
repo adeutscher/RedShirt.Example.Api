@@ -16,9 +16,15 @@ internal sealed class UploadDbContext(DbContextOptions<UploadDbContext> options)
             entity.Property(e => e.UploadedByUserId).HasMaxLength(256).IsRequired();
             entity.Property(e => e.State).IsRequired();
             entity.Property(e => e.FileName).HasMaxLength(512).IsRequired();
+            entity.Property(e => e.Sha256Checksum)
+                .HasMaxLength(64)
+                .IsFixedLength()
+                .HasColumnType("char(64)")
+                .IsUnicode(false);
             entity.Property(e => e.Flags).HasConversion<int>().IsRequired();
             entity.Property(e => e.IdempotencyKey).HasMaxLength(128).IsRequired();
             entity.HasIndex(e => e.IdempotencyKey).IsUnique();
+            entity.HasIndex(e => e.Sha256Checksum);
         });
 
         modelBuilder.Entity<UploadEventEntity>(entity =>

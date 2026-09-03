@@ -2778,6 +2778,10 @@
           },
           "isRejected": {
             "type": "boolean"
+          },
+          "sha256Checksum": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
