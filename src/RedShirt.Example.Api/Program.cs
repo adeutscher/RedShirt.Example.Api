@@ -22,6 +22,12 @@ if (builder.Configuration.GetSection(UploadOptions.ConfigurationSectionName).Get
         MaxUploadSizeBytes: > 0
     } uploadOptions)
 {
+    /*
+     * Attempting to set a maximum limit through Kestrel settings.
+     * In practice in local testing, the server doesn't seem to enforce this
+     * until after significant work has been done, so implementations should
+     * also enforce their own size based on Content-Length header.
+     */
     builder.WebHost.ConfigureKestrel(options =>
     {
         options.Limits.MaxRequestBodySize = uploadOptions.MaxUploadSizeBytes.Value;

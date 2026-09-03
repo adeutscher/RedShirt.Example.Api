@@ -27,6 +27,10 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsS
                 statusCode = StatusCodes.Status409Conflict;
                 title = "Conflict";
                 return true;
+            case RequestTooLargeException:
+                statusCode = StatusCodes.Status413PayloadTooLarge;
+                title = "Payload Too Large";
+                return true;
             case NoChangesToModifyException:
                 statusCode = StatusCodes.Status304NotModified;
                 title = "Not Modified";

@@ -3,6 +3,7 @@ using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.Common.FileStorage.Services;
 using RedShirt.Example.Api.Upload.Core.Configuration;
 using RedShirt.Example.Api.Upload.Core.Events;
+using RedShirt.Example.Api.Upload.Core.Models.Requests;
 using RedShirt.Example.Api.Upload.Core.Services;
 using RedShirt.Example.Api.Upload.Implementation.Aggregates;
 using RedShirt.Example.Api.Upload.Implementation.Repositories;
@@ -16,17 +17,71 @@ public class UploadServiceTests
     private static UploadService CreateService(
         Mock<IUploadRepository> repository,
         Mock<IFileStorageService>? fileStorage = null,
-        Mock<IUploadEventBroadcaster>? eventBroadcaster = null)
+        Mock<IUploadEventBroadcaster>? eventBroadcaster = null,
+        UploadOptions? options = null)
     {
         return new UploadService(
             repository.Object,
             (fileStorage ?? new Mock<IFileStorageService>()).Object,
             (eventBroadcaster ?? new Mock<IUploadEventBroadcaster>()).Object,
-            Options.Create(new UploadOptions
+            Options.Create(options ?? new UploadOptions
             {
                 BucketUnverifiedItems = "unverified-uploads",
                 BucketVerifiedItems = "verified-uploads"
             }));
+    }
+
+    private static UploadServiceCreateRequest CreateUploadRequest(long contentLength)
+    {
+        return new UploadServiceCreateRequest
+        {
+            FileName = "file.txt",
+            UploadedByUserId = "user-id",
+            UploadedByUsername = "user",
+            UploaderIpAddress = "203.0.113.10",
+            Content = Stream.Null,
+            ContentLength = contentLength,
+            IdempotencyKey = "idem-key"
+        };
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenContentLengthExceedsMaxUploadSize_ThrowsRequestTooLargeException()
+    {
+        var repository = new Mock<IUploadRepository>();
+        var fileStorage = new Mock<IFileStorageService>();
+        var service = CreateService(
+            repository,
+            fileStorage,
+            options: new UploadOptions
+            {
+                BucketUnverifiedItems = "unverified-uploads",
+                BucketVerifiedItems = "verified-uploads",
+                MaxUploadSizeBytes = 1024
+            });
+
+        var exception = await Assert.ThrowsAsync<RequestTooLargeException>(() =>
+            service.CreateAsync(CreateUploadRequest(2048), TestContext.Current.CancellationToken));
+
+        Assert.Contains("1024", exception.Message);
+        repository.Verify(
+            x => x.ExistsByIdempotencyKeyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        repository.Verify(
+            x => x.AppendEventAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<UploadEventType>(),
+                It.IsAny<object>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        fileStorage.Verify(
+            x => x.UploadAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Stream>(),
+                It.IsAny<long?>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]

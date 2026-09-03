@@ -45,6 +45,13 @@ internal sealed class UploadService(
             throw new BadRequestException("Content-Length header is required.");
         }
 
+        var options = uploadOptions.Value;
+        if (options.MaxUploadSizeBytes is > 0 && request.ContentLength > options.MaxUploadSizeBytes)
+        {
+            throw new RequestTooLargeException(
+                $"Upload exceeds the maximum allowed size of {options.MaxUploadSizeBytes.Value} bytes.");
+        }
+
         if (await repository.ExistsByIdempotencyKeyAsync(request.IdempotencyKey, cancellationToken))
         {
             throw new ConflictException("An upload with this idempotency key already exists.");
@@ -65,7 +72,6 @@ internal sealed class UploadService(
             cancellationToken);
         await eventBroadcaster.BroadcastUploadCreatedAsync(createdEvent, uploadingSummary, cancellationToken);
 
-        var options = uploadOptions.Value;
         var objectKey = BuildObjectKey(uploadId, request.UploadedByUserId);
         var uploadResult = await fileStorageService.UploadAsync(options.BucketUnverifiedItems, objectKey,
             request.Content, request.ContentLength, cancellationToken);

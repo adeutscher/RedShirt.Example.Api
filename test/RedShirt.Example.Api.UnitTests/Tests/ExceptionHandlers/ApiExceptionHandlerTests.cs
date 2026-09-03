@@ -87,6 +87,19 @@ public class ApiExceptionHandlerTests
     }
 
     [Fact]
+    public async Task TryHandleAsync_MapsRequestTooLargeException_To413ProblemDetails()
+    {
+        var written =
+            await HandleAsync(new RequestTooLargeException("Upload exceeds the maximum allowed size of 1024 bytes."));
+
+        Assert.True(written.Handled);
+        Assert.Equal(StatusCodes.Status413PayloadTooLarge, written.StatusCode);
+        Assert.Equal("Payload Too Large", written.ProblemDetails?.Title);
+        Assert.Equal("Upload exceeds the maximum allowed size of 1024 bytes.", written.ProblemDetails?.Detail);
+        Assert.Equal(StatusCodes.Status413PayloadTooLarge, written.ProblemDetails?.Status);
+    }
+
+    [Fact]
     public async Task TryHandleAsync_MapsResourceNotFoundException_To404ProblemDetails()
     {
         var written = await HandleAsync(new ResourceNotFoundException());
