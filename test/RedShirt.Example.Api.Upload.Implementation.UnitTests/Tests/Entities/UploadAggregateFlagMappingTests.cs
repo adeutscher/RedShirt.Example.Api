@@ -14,34 +14,10 @@ public class UploadAggregateFlagMappingTests
         bool isRejected,
         int expectedFlagsValue)
     {
-        var expected = (UploadAggregateFlags)expectedFlagsValue;
+        var expected = (UploadAggregateFlags) expectedFlagsValue;
         var flags = UploadAggregateFlagMapping.FromBoolValues(isValidated, isRejected);
 
         Assert.Equal(expected, flags);
-    }
-
-    [Theory]
-    [InlineData(0, false)]
-    [InlineData(1, true)]
-    [InlineData(2, false)]
-    [InlineData(3, true)]
-    public void HasValidated_ReturnsExpectedResult(int flagsValue, bool expected)
-    {
-        var flags = (UploadAggregateFlags)flagsValue;
-
-        Assert.Equal(expected, UploadAggregateFlagMapping.HasValidated(flags));
-    }
-
-    [Theory]
-    [InlineData(0, false)]
-    [InlineData(1, false)]
-    [InlineData(2, true)]
-    [InlineData(3, true)]
-    public void HasRejected_ReturnsExpectedResult(int flagsValue, bool expected)
-    {
-        var flags = (UploadAggregateFlags)flagsValue;
-
-        Assert.Equal(expected, UploadAggregateFlagMapping.HasRejected(flags));
     }
 
     [Theory]
@@ -55,5 +31,29 @@ public class UploadAggregateFlagMappingTests
 
         Assert.Equal(isValidated, UploadAggregateFlagMapping.HasValidated(flags));
         Assert.Equal(isRejected, UploadAggregateFlagMapping.HasRejected(flags));
+    }
+
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(1, false)]
+    [InlineData(2, true)]
+    [InlineData(3, true)]
+    public void HasRejected_ReturnsExpectedResult(int flagsValue, bool expected)
+    {
+        var flags = (UploadAggregateFlags) flagsValue;
+
+        Assert.Equal(expected, UploadAggregateFlagMapping.HasRejected(flags));
+    }
+
+    [Theory]
+    [InlineData(0, false)]
+    [InlineData(1, true)]
+    [InlineData(2, false)]
+    [InlineData(3, true)]
+    public void HasValidated_ReturnsExpectedResult(int flagsValue, bool expected)
+    {
+        var flags = (UploadAggregateFlags) flagsValue;
+
+        Assert.Equal(expected, UploadAggregateFlagMapping.HasValidated(flags));
     }
 }

@@ -26,13 +26,13 @@ internal static class UploadAggregateFlagMapping
         return flags;
     }
 
-    public static bool HasValidated(UploadAggregateFlags flags)
-    {
-        return (flags & UploadAggregateFlags.IsValidated) == UploadAggregateFlags.IsValidated;
-    }
-
     public static bool HasRejected(UploadAggregateFlags flags)
     {
         return (flags & UploadAggregateFlags.IsRejected) == UploadAggregateFlags.IsRejected;
+    }
+
+    public static bool HasValidated(UploadAggregateFlags flags)
+    {
+        return (flags & UploadAggregateFlags.IsValidated) == UploadAggregateFlags.IsValidated;
     }
 }

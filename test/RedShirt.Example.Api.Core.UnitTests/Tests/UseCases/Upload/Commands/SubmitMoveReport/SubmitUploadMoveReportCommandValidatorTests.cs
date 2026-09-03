@@ -7,16 +7,6 @@ public class SubmitUploadMoveReportCommandValidatorTests
     private readonly SubmitUploadMoveReportCommandValidator _validator = new();
 
     [Fact]
-    public async Task Validate_Succeeds_ForValidCommand()
-    {
-        var result = await _validator.ValidateAsync(
-            new SubmitUploadMoveReportCommand(Guid.NewGuid(), "verified/user-id/upload-id"),
-            TestContext.Current.CancellationToken);
-
-        Assert.True(result.IsValid);
-    }
-
-    [Fact]
     public async Task Validate_Fails_WhenVerifiedStorageObjectKeyIsEmpty()
     {
         var result = await _validator.ValidateAsync(
@@ -24,5 +14,15 @@ public class SubmitUploadMoveReportCommandValidatorTests
             TestContext.Current.CancellationToken);
 
         Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public async Task Validate_Succeeds_ForValidCommand()
+    {
+        var result = await _validator.ValidateAsync(
+            new SubmitUploadMoveReportCommand(Guid.NewGuid(), "verified/user-id/upload-id"),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsValid);
     }
 }

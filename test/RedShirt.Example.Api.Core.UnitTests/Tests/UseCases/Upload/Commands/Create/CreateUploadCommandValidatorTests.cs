@@ -19,16 +19,6 @@ public class CreateUploadCommandValidatorTests
             "idem-key");
     }
 
-    [Fact]
-    public async Task Validate_Succeeds_ForPosixCompliantFileName()
-    {
-        var result = await _validator.ValidateAsync(
-            CreateCommand("document.txt"),
-            TestContext.Current.CancellationToken);
-
-        Assert.True(result.IsValid);
-    }
-
     [Theory]
     [InlineData("../secrets.txt")]
     [InlineData("bad name.txt")]
@@ -50,5 +40,15 @@ public class CreateUploadCommandValidatorTests
             TestContext.Current.CancellationToken);
 
         Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public async Task Validate_Succeeds_ForPosixCompliantFileName()
+    {
+        var result = await _validator.ValidateAsync(
+            CreateCommand("document.txt"),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsValid);
     }
 }

@@ -29,7 +29,8 @@ public class SubmitUploadMoveReportCommandHandlerTests
         UploadServiceMoveReportRequest? capturedRequest = null;
         var uploadService = new Mock<IUploadService>();
         uploadService
-            .Setup(x => x.SubmitMoveReportAsync(It.IsAny<UploadServiceMoveReportRequest>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SubmitMoveReportAsync(It.IsAny<UploadServiceMoveReportRequest>(),
+                It.IsAny<CancellationToken>()))
             .Callback<UploadServiceMoveReportRequest, CancellationToken>((request, _) => capturedRequest = request)
             .ReturnsAsync(summary);
         var validator = new Mock<ICoreRequestValidator>();

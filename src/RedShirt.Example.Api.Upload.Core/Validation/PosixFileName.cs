@@ -11,6 +11,16 @@ public static class PosixFileName
     public const string InvalidMessage =
         "File name must be a single POSIX portable file name using characters [A-Za-z0-9._-], and cannot be '.' or '..'.";
 
+    private static bool IsPortableCharacter(char character)
+    {
+        return character is >= 'A' and <= 'Z'
+            or >= 'a' and <= 'z'
+            or >= '0' and <= '9'
+            or '.'
+            or '_'
+            or '-';
+    }
+
     public static bool IsValid(string? fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName))
@@ -43,15 +53,5 @@ public static class PosixFileName
         }
 
         return true;
-    }
-
-    private static bool IsPortableCharacter(char character)
-    {
-        return character is >= 'A' and <= 'Z'
-            or >= 'a' and <= 'z'
-            or >= '0' and <= '9'
-            or '.'
-            or '_'
-            or '-';
     }
 }

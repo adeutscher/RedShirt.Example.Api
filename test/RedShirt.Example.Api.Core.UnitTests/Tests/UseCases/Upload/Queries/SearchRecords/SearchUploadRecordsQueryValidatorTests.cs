@@ -25,13 +25,14 @@ public class SearchUploadRecordsQueryValidatorTests
     }
 
     [Fact]
-    public async Task Validate_Succeeds_WhenFileNameIsNull()
+    public async Task Validate_Fails_ForNonPosixCompliantFileName()
     {
         var result = await _validator.ValidateAsync(
-            CreateQuery(),
+            CreateQuery("../secrets.txt"),
             TestContext.Current.CancellationToken);
 
-        Assert.True(result.IsValid);
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.ErrorMessage == PosixFileName.InvalidMessage);
     }
 
     [Fact]
@@ -45,13 +46,12 @@ public class SearchUploadRecordsQueryValidatorTests
     }
 
     [Fact]
-    public async Task Validate_Fails_ForNonPosixCompliantFileName()
+    public async Task Validate_Succeeds_WhenFileNameIsNull()
     {
         var result = await _validator.ValidateAsync(
-            CreateQuery("../secrets.txt"),
+            CreateQuery(),
             TestContext.Current.CancellationToken);
 
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, error => error.ErrorMessage == PosixFileName.InvalidMessage);
+        Assert.True(result.IsValid);
     }
 }

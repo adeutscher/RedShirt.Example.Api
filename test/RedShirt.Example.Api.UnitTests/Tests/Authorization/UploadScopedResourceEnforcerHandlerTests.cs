@@ -72,7 +72,7 @@ public class UploadScopedResourceEnforcerHandlerTests
         var user = Principal(
             new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.UploadValidator),
             new Claim(ClaimTypes.NameIdentifier, "validator-user-id"));
-        var context = CreateContext(user, false);
+        var context = CreateContext(user);
         var handler = new UploadScopedResourceEnforcerHandler();
 
         await handler.HandleAsync(context);
