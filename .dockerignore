@@ -10,6 +10,14 @@
 **/.vs
 **/.vscode
 **/.cursor
+**/.specstory
+**/.history
+**/.cursorrules
+**/.cursor-chat-history
+**/.agents
+**/.claude
+**/.codex
+**/.bench
 **/.idea
 **/*.*proj.user
 **/*.DotSettings*
