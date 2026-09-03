@@ -146,6 +146,7 @@ chmod +x ./get-bearer-token.py   # once
 ./get-bearer-token.py --developer
 ./get-bearer-token.py --analyst
 ./get-bearer-token.py --billing
+./get-bearer-token.py --upload-validator
 # or:
 ./get-bearer-token.py --username analystuser --password analystpass
 ```
