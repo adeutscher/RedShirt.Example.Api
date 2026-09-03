@@ -1,4 +1,3 @@
-using Amazon.S3.Model;
 using RedShirt.Example.Api.Common.Aws.S3FileStorage.IntegrationTests.Support;
 using System.Security.Cryptography;
 using System.Text;
@@ -20,7 +19,7 @@ public class S3FileStorageServiceIntegrationTests
         var (s3, service) = environment!.Value;
 
         var payload = Encoding.UTF8.GetBytes("Integration upload contains a potato.");
-        await using var source = new AsyncOnlyReadStream(payload, chunkSize: 7);
+        await using var source = new AsyncOnlyReadStream(payload, 7);
         var objectKey = $"integration-tests/{Guid.NewGuid():N}";
 
         try
@@ -65,7 +64,7 @@ public class S3FileStorageServiceIntegrationTests
         var (s3, service) = environment!.Value;
 
         var payload = Encoding.UTF8.GetBytes(new string('p', 12_000) + "otato");
-        await using var source = new AsyncOnlyReadStream(payload, chunkSize: 512);
+        await using var source = new AsyncOnlyReadStream(payload, 512);
         var objectKey = $"integration-tests/{Guid.NewGuid():N}";
 
         try

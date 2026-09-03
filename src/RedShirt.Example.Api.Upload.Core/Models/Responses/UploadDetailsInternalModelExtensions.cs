@@ -2,6 +2,17 @@ namespace RedShirt.Example.Api.Upload.Core.Models.Responses;
 
 public static class UploadDetailsInternalModelExtensions
 {
+    public static UploadInternalDetailsModel ToInternalDetailsModel(this UploadDetailsInternalModel details)
+    {
+        return new UploadInternalDetailsModel
+        {
+            UploaderIpAddress = details.UploaderIpAddress,
+            StorageObjectKey = details.DateStoredUtc.HasValue
+                ? details.VerifiedStorageObjectKey
+                : details.StorageObjectKey
+        };
+    }
+
     // ReSharper disable once ConvertToExtensionBlock
     public static UploadDetailsModel ToPublicDetailsModel(this UploadDetailsInternalModel details)
     {
@@ -18,17 +29,6 @@ public static class UploadDetailsInternalModelExtensions
             DateRejectedUtc = details.DateRejectedUtc,
             DateStoredUtc = details.DateStoredUtc,
             DateDeletedUtc = details.DateDeletedUtc
-        };
-    }
-
-    public static UploadInternalDetailsModel ToInternalDetailsModel(this UploadDetailsInternalModel details)
-    {
-        return new UploadInternalDetailsModel
-        {
-            UploaderIpAddress = details.UploaderIpAddress,
-            StorageObjectKey = details.DateStoredUtc.HasValue
-                ? details.VerifiedStorageObjectKey
-                : details.StorageObjectKey
         };
     }
 }

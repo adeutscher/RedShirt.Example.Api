@@ -4,7 +4,6 @@ using RedShirt.Example.Api.Common.Database.DapperMySql.Services;
 using RedShirt.Example.Api.Common.Database.DapperMySql.Services.Resilience;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
 using RedShirt.Example.Api.DataStores.Constants;
-using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 using System.Data;
 using System.Text.Json;
 

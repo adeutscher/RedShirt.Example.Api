@@ -1,6 +1,5 @@
 using Moq;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
-using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 
 namespace RedShirt.Example.Api.DataStores.Order.UnitTests.Tests.Services;
 

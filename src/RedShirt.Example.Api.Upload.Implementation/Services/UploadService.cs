@@ -94,7 +94,8 @@ internal sealed class UploadService(
         return summary;
     }
 
-    public async Task<UploadDetailsInternalModel> GetDetailsAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<UploadDetailsInternalModel> GetDetailsAsync(Guid id,
+        CancellationToken cancellationToken = default)
     {
         var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
         // ReSharper disable once ConvertIfStatementToReturnStatement

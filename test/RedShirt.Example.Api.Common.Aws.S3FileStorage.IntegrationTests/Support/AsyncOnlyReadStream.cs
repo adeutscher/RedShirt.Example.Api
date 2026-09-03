@@ -8,15 +8,10 @@ internal sealed class AsyncOnlyReadStream : Stream
     private const string SyncReadNotSupportedMessage =
         "Synchronous operations are disallowed. Call ReadAsync or set AllowSynchronousIO to true.";
 
-    private readonly byte[] _payload;
     private readonly int _chunkSize;
-    private int _position;
 
-    public AsyncOnlyReadStream(byte[] payload, int chunkSize = 4)
-    {
-        _payload = payload;
-        _chunkSize = Math.Max(1, chunkSize);
-    }
+    private readonly byte[] _payload;
+    private int _position;
 
     public int SyncReadAttempts { get; private set; }
 
@@ -32,6 +27,12 @@ internal sealed class AsyncOnlyReadStream : Stream
     {
         get => throw new NotSupportedException();
         set => throw new NotSupportedException();
+    }
+
+    public AsyncOnlyReadStream(byte[] payload, int chunkSize = 4)
+    {
+        _payload = payload;
+        _chunkSize = Math.Max(1, chunkSize);
     }
 
     public override void Flush()

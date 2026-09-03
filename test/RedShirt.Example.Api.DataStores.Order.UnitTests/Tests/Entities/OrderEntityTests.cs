@@ -1,6 +1,5 @@
 using RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes;
 using RedShirt.Example.Api.DataStores.Constants;
-using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 using System.Reflection;
 
 namespace RedShirt.Example.Api.DataStores.Order.UnitTests.Tests.Entities;

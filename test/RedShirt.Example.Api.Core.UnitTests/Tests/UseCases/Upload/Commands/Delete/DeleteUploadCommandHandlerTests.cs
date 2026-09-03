@@ -56,7 +56,7 @@ public class DeleteUploadCommandHandlerTests
         var handler = new DeleteUploadCommandHandler(uploadService.Object, validator.Object);
 
         var result = await handler.Handle(
-            new DeleteUploadCommand(uploadId, Purge: true),
+            new DeleteUploadCommand(uploadId, true),
             TestContext.Current.CancellationToken);
 
         Assert.Null(result);
