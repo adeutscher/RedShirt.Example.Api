@@ -1,0 +1,20 @@
+---
+description: Use asterisk markers for Markdown unordered lists
+globs: "**/*.md"
+alwaysApply: false
+---
+
+# Markdown list style
+
+Use `*` (asterisk) for unordered list items in Markdown files. Do not use `-` or `+`.
+
+Nested items use two spaces of indentation before the asterisk:
+
+```markdown
+* Top-level item
+* Another item with a nested list:
+  * Nested item
+  * Another nested item
+```
+
+When editing existing Markdown, convert `-` list markers to `*` for consistency.
