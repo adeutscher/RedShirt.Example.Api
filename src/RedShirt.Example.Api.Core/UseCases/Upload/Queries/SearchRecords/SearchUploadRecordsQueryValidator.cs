@@ -1,5 +1,12 @@
 using FluentValidation;
+using RedShirt.Example.Api.Core.Extensions.Validation;
 
 namespace RedShirt.Example.Api.Core.UseCases.Upload.Queries.SearchRecords;
 
-public class SearchUploadRecordsQueryValidator : AbstractValidator<SearchUploadRecordsQuery>;
+public class SearchUploadRecordsQueryValidator : AbstractValidator<SearchUploadRecordsQuery>
+{
+    public SearchUploadRecordsQueryValidator()
+    {
+        RuleFor(x => x.FileName).MustBePosixCompliantFileNameWhenPresent();
+    }
+}

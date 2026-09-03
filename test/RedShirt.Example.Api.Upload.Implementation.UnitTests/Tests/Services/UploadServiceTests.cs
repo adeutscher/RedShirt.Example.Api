@@ -5,6 +5,7 @@ using RedShirt.Example.Api.Upload.Core.Configuration;
 using RedShirt.Example.Api.Upload.Core.Events;
 using RedShirt.Example.Api.Upload.Core.Models.Requests;
 using RedShirt.Example.Api.Upload.Core.Services;
+using RedShirt.Example.Api.Upload.Core.Validation;
 using RedShirt.Example.Api.Upload.Implementation.Aggregates;
 using RedShirt.Example.Api.Upload.Implementation.Repositories;
 using RedShirt.Example.Api.Upload.Implementation.Services;
@@ -31,11 +32,11 @@ public class UploadServiceTests
             }));
     }
 
-    private static UploadServiceCreateRequest CreateUploadRequest(long contentLength)
+    private static UploadServiceCreateRequest CreateUploadRequest(string fileName, long contentLength)
     {
         return new UploadServiceCreateRequest
         {
-            FileName = "file.txt",
+            FileName = fileName,
             UploadedByUserId = "user-id",
             UploadedByUsername = "user",
             UploaderIpAddress = "203.0.113.10",
@@ -43,6 +44,11 @@ public class UploadServiceTests
             ContentLength = contentLength,
             IdempotencyKey = "idem-key"
         };
+    }
+
+    private static UploadServiceCreateRequest CreateUploadRequest(long contentLength)
+    {
+        return CreateUploadRequest("file.txt", contentLength);
     }
 
     [Fact]
@@ -81,6 +87,21 @@ public class UploadServiceTests
                 It.IsAny<Stream>(),
                 It.IsAny<long?>(),
                 It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenFileNameIsNotPosixCompliant_ThrowsBadRequestException()
+    {
+        var repository = new Mock<IUploadRepository>();
+        var service = CreateService(repository);
+
+        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
+            service.CreateAsync(CreateUploadRequest("../secrets.txt", 1024), TestContext.Current.CancellationToken));
+
+        Assert.Equal(PosixFileName.InvalidMessage, exception.Message);
+        repository.Verify(
+            x => x.ExistsByIdempotencyKeyAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 

@@ -7,6 +7,7 @@ using RedShirt.Example.Api.Upload.Core.Models;
 using RedShirt.Example.Api.Upload.Core.Models.Requests;
 using RedShirt.Example.Api.Upload.Core.Models.Responses;
 using RedShirt.Example.Api.Upload.Core.Services;
+using RedShirt.Example.Api.Upload.Core.Validation;
 using RedShirt.Example.Api.Upload.Implementation.Repositories;
 
 namespace RedShirt.Example.Api.Upload.Implementation.Services;
@@ -28,6 +29,11 @@ internal sealed class UploadService(
         if (string.IsNullOrWhiteSpace(request.FileName))
         {
             throw new BadRequestException("File name cannot be empty.");
+        }
+
+        if (!PosixFileName.IsValid(request.FileName))
+        {
+            throw new BadRequestException(PosixFileName.InvalidMessage);
         }
 
         if (string.IsNullOrWhiteSpace(request.UploadedByUserId))
