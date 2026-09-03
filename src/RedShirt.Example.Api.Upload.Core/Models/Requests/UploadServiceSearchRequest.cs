@@ -11,6 +11,7 @@ public sealed class UploadServiceSearchRequest
     public UploadState? State { get; init; }
     public string? UploadedByUserId { get; init; }
     public string? FileName { get; init; }
+    public string? Sha256Checksum { get; init; }
     public bool? IsValidated { get; init; }
     public bool? IsRejected { get; init; }
 }

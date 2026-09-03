@@ -2080,13 +2080,22 @@
             "x-position": 9
           },
           {
+            "name": "Sha256Checksum",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 10
+          },
+          {
             "name": "IsValidated",
             "in": "query",
             "schema": {
               "type": "boolean",
               "nullable": true
             },
-            "x-position": 10
+            "x-position": 11
           },
           {
             "name": "IsRejected",
@@ -2095,7 +2104,7 @@
               "type": "boolean",
               "nullable": true
             },
-            "x-position": 11
+            "x-position": 12
           },
           {
             "name": "ContinuationToken",
@@ -2105,7 +2114,7 @@
               "format": "guid",
               "nullable": true
             },
-            "x-position": 12
+            "x-position": 13
           }
         ],
         "responses": {

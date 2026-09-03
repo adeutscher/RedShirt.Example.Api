@@ -15,7 +15,8 @@ public class UploadRepositoryTests : IDisposable
         UploadRepository repository,
         string uploadedByUserId,
         string fileName,
-        string idempotencyKey)
+        string idempotencyKey,
+        string sha256Checksum = "sha256")
     {
         var uploadId = Guid.NewGuid();
         await repository.AppendEventAsync(
@@ -38,7 +39,7 @@ public class UploadRepositoryTests : IDisposable
             {
                 UploadId = uploadId,
                 StorageObjectKey = $"{uploadedByUserId}/{uploadId:N}",
-                Sha256Checksum = "sha256"
+                Sha256Checksum = sha256Checksum
             },
             TestContext.Current.CancellationToken);
     }
@@ -196,6 +197,38 @@ public class UploadRepositoryTests : IDisposable
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
             repository.PurgeAsync(Guid.NewGuid(), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task SearchAsync_FiltersBySha256Checksum_ExactMatchCaseInsensitive()
+    {
+        var repository = UploadRepositoryTestSupport.CreateRepository(_dbContextFactory);
+        await SeedUploadAsync(repository, "user-a", "a.txt", "idem-a", "abc123def456");
+        await SeedUploadAsync(repository, "user-a", "b.txt", "idem-b", "fed654cba321");
+
+        var lowercaseMatch = await repository.SearchAsync(
+            new UploadServiceSearchRequest
+            {
+                PageSize = 10,
+                Sha256Checksum = "abc123def456"
+            },
+            null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Single(lowercaseMatch.Records);
+        Assert.Equal("a.txt", lowercaseMatch.Records[0].FileName);
+
+        var uppercaseMatch = await repository.SearchAsync(
+            new UploadServiceSearchRequest
+            {
+                PageSize = 10,
+                Sha256Checksum = "FED654CBA321"
+            },
+            null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Single(uppercaseMatch.Records);
+        Assert.Equal("b.txt", uppercaseMatch.Records[0].FileName);
     }
 
     [Fact]

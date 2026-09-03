@@ -12,6 +12,7 @@ public sealed record SearchUploadRecordsQuery(
     UploadState? State,
     string? UploadedByUserId,
     string? FileName,
+    string? Sha256Checksum,
     bool? IsValidated,
     bool? IsRejected,
     Guid? ContinuationToken);

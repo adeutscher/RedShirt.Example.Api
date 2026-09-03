@@ -21,6 +21,7 @@ public class SearchUploadRecordsQueryValidatorTests
             fileName,
             null,
             null,
+            null,
             null);
     }
 

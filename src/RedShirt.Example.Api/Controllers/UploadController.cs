@@ -199,6 +199,7 @@ public class UploadController : ControllerBase
                 request.State,
                 uploadedByUserId,
                 request.FileName,
+                request.Sha256Checksum,
                 request.IsValidated,
                 request.IsRejected,
                 request.ContinuationToken),
