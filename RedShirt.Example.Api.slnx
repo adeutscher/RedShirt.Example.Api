@@ -5,6 +5,7 @@
     </Folder>
     <Folder Name="/Solution Items/docs/"/>
     <Folder Name="/Solution Items/docs/patterns/">
+        <File Path="docs\patterns\rosalyn-source-generation.md"/>
         <File Path="docs\patterns\uploads.md"/>
     </Folder>
     <Folder Name="/src/">

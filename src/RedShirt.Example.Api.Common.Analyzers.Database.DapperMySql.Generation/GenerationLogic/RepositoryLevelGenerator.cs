@@ -2,6 +2,7 @@ using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Exce
 using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Extensions;
 using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Models;
 using RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.Utility;
+using RedShirt.Example.Api.DataStores.Constants;
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -11,6 +12,18 @@ namespace RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.
 
 public static class RepositoryLevelGenerator
 {
+    private static string FormatConnectionStringNameConstant(ClassSummaryModel classSummaryModel)
+    {
+        // ReSharper disable once ConvertIfStatementToReturnStatement
+        if (classSummaryModel.ConnectionStringName == DatabaseConstants.PrimaryDatabaseConnectionStringName)
+        {
+            return
+                $"{classSummaryModel.BaseNamespace}.DataStores.Constants.DatabaseConstants.PrimaryDatabaseConnectionStringName";
+        }
+
+        return $"\"{classSummaryModel.ConnectionStringName}\"";
+    }
+
     private static StringBuilder AddSearchMethod(this StringBuilder sb, ClassSummaryModel classSummaryModel)
     {
         return sb.AppendLineWithIndent(
@@ -85,7 +98,7 @@ public static class RepositoryLevelGenerator
                                      + "} /**where**/ /**orderby**/ LIMIT @paramTake\", @params);")
             // Declare and act on SQL connection
             .AppendLineWithIndent(2,
-                $"using var dbConnection = await sqlConnectionFactory.GetMySqlConnectionAsync(\"{classSummaryModel.ConnectionStringName}\", cancellationToken);")
+                "using var dbConnection = await sqlConnectionFactory.GetMySqlConnectionAsync(ConnectionStringName, cancellationToken);")
             .AppendLineWithIndent(2,
                 "// Note: Generated code needs to use extension method directly as we aren't importing any using directives")
             .AppendLineWithIndent(2,
@@ -153,7 +166,7 @@ public static class RepositoryLevelGenerator
                 $"public {Helper.Taskify("bool")} DeleteAsync({typeof(Guid).FullName} id, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
             .AppendLineWithIndent(2,
-                $"return genericDtoStorage.DeleteByKeyAsync(\"{classSummaryModel.ConnectionStringName}\", id, cancellationToken);")
+                "return genericDtoStorage.DeleteByKeyAsync(ConnectionStringName, id, cancellationToken);")
             .CloseBracket()
             .AppendLine()
             // GetById
@@ -161,7 +174,7 @@ public static class RepositoryLevelGenerator
                 $"public async {Helper.Taskify(classSummaryModel.FullServiceDtoName + "?")} GetByIdAsync({typeof(Guid).FullName} id, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
             .AppendLineWithIndent(2,
-                $"var entity = await genericDtoStorage.GetByKeyAsync(\"{classSummaryModel.ConnectionStringName}\", id, cancellationToken);")
+                "var entity = await genericDtoStorage.GetByKeyAsync(ConnectionStringName, id, cancellationToken);")
             .AppendLineWithIndent(2, "return entity is null ? null : ToDto(entity);")
             .CloseBracket()
             .AppendLine()
@@ -170,7 +183,7 @@ public static class RepositoryLevelGenerator
                 $"public async {Helper.Taskify(classSummaryModel.FullServiceDtoName)} UpsertAsync({classSummaryModel.FullServiceDtoName} item, {typeof(CancellationToken).FullName} cancellationToken = default)")
             .OpenBracket()
             .AppendLineWithIndent(2,
-                $"var entity = await genericDtoStorage.UpsertAsync(\"{classSummaryModel.ConnectionStringName}\", ToEntity(item), cancellationToken);")
+                "var entity = await genericDtoStorage.UpsertAsync(ConnectionStringName, ToEntity(item), cancellationToken);")
             .AppendLineWithIndent(2, "return ToDto(entity);")
             .CloseBracket();
     }
@@ -507,7 +520,9 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(
                 $") : {classSummaryModel.RepositoryInterfaceName}")
             .OpenBracket(0)
-            .AppendLineWithIndent($"private const int MaxPageSize = {classSummaryModel.MaxSearchPageSize};");
+            .AppendLineWithIndent($"private const int MaxPageSize = {classSummaryModel.MaxSearchPageSize};")
+            .AppendLineWithIndent(
+                $"private const string ConnectionStringName = {FormatConnectionStringNameConstant(classSummaryModel)};");
 
         sb
             .WriteDtoEntityMapping(classSummaryModel)
