@@ -44,6 +44,21 @@ internal sealed class UploadRepository(
     private const string ConnectionStringName = DatabaseConstants.PrimaryDatabaseConnectionStringName;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
+    private static UploadAggregateEntity ToEntity(UploadAggregate aggregate)
+    {
+        return new UploadAggregateEntity
+        {
+            Id = aggregate.Id,
+            DateCreatedUtc = aggregate.DateCreatedUtc,
+            DateUpdatedUtc = aggregate.DateUpdatedUtc,
+            UploadedByUserId = aggregate.UploadedByUserId,
+            State = aggregate.State,
+            FileName = aggregate.FileName,
+            Flags = UploadAggregateFlagMapping.FromBoolValues(aggregate.IsValidated, aggregate.IsRejected),
+            IdempotencyKey = aggregate.IdempotencyKey
+        };
+    }
+
     private static UploadSummaryModel ToSummary(UploadAggregateEntity entity)
     {
         return new UploadSummaryModel
@@ -54,8 +69,8 @@ internal sealed class UploadRepository(
             UploadedByUserId = entity.UploadedByUserId,
             State = entity.State,
             FileName = entity.FileName,
-            IsValidated = entity.IsValidated,
-            IsRejected = entity.IsRejected
+            IsValidated = UploadAggregateFlagMapping.HasValidated(entity.Flags),
+            IsRejected = UploadAggregateFlagMapping.HasRejected(entity.Flags)
         };
     }
 
@@ -114,14 +129,14 @@ internal sealed class UploadRepository(
         if (parameters.IsValidated.HasValue)
         {
             var isValidated = parameters.IsValidated.Value;
-            builder.And(e => e.IsValidated == isValidated);
+            builder.And(e => UploadAggregateFlagMapping.HasValidated(e.Flags) == isValidated);
         }
 
         // ReSharper disable once InvertIf
         if (parameters.IsRejected.HasValue)
         {
             var isRejected = parameters.IsRejected.Value;
-            builder.And(e => e.IsRejected == isRejected);
+            builder.And(e => UploadAggregateFlagMapping.HasRejected(e.Flags) == isRejected);
         }
 
         return builder;
@@ -183,7 +198,7 @@ internal sealed class UploadRepository(
         });
 
         var aggregate = UploadAggregate.FromEvents(events);
-        var entity = aggregate.ToEntity();
+        var entity = ToEntity(aggregate);
 
         var existing = await context.UploadAggregates.FirstOrDefaultAsync(e => e.Id == uploadId, cancellationToken);
         if (existing is null)
@@ -203,8 +218,7 @@ internal sealed class UploadRepository(
             existing.UploadedByUserId = entity.UploadedByUserId;
             existing.State = entity.State;
             existing.FileName = entity.FileName;
-            existing.IsValidated = entity.IsValidated;
-            existing.IsRejected = entity.IsRejected;
+            existing.Flags = entity.Flags;
         }
 
         try

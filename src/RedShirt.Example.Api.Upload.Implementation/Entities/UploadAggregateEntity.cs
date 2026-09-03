@@ -12,7 +12,6 @@ internal sealed class UploadAggregateEntity
     public required string UploadedByUserId { get; set; }
     public required UploadState State { get; set; }
     public required string FileName { get; set; }
-    public required bool IsValidated { get; set; }
-    public required bool IsRejected { get; set; }
-    public required string IdempotencyKey { get; set; }
+    public required UploadAggregateFlags Flags { get; set; }
+    public required string IdempotencyKey { get; init; }
 }

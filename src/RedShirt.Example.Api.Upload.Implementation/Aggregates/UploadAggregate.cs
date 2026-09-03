@@ -134,22 +134,6 @@ internal sealed class UploadAggregate
         return StorageObjectKey;
     }
 
-    public UploadAggregateEntity ToEntity()
-    {
-        return new UploadAggregateEntity
-        {
-            Id = Id,
-            DateCreatedUtc = DateCreatedUtc,
-            DateUpdatedUtc = DateUpdatedUtc,
-            UploadedByUserId = UploadedByUserId,
-            State = State,
-            FileName = FileName,
-            IsValidated = IsValidated,
-            IsRejected = IsRejected,
-            IdempotencyKey = IdempotencyKey
-        };
-    }
-
     public UploadDetailsInternalModel ToInternalDetailsModel()
     {
         return new UploadDetailsInternalModel
