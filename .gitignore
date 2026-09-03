@@ -82,3 +82,19 @@ Desktop.ini
 
 # Just in case anyone took the test/local/ documentation very literally:
 **/RedShirt.Example.Schema
+
+# Local benchmarks
+.bench/
+
+# Cursor / editor artifacts (.cursor/rules/ is tracked intentionally)
+.vscode/
+.specstory/
+.history/
+.cursorrules
+.cursor-chat-history/
+.cursor/chats/
+.cursor/logs/
+.cursor/session*
+.agents/
+.claude/
+.codex/
