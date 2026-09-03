@@ -72,8 +72,14 @@ def main() -> int:
         base_url, token, "GET", f"/uploads/{args.upload_id}/download-link"
     )
     download_url = localize_ministack_download_url(link["downloadUrl"])
+    file_name = summary.get("fileName", args.upload_id)
+    print(f"Downloading file {file_name!r} for upload {args.upload_id}...")
     content = download_text(download_url)
     approved = is_valid_potato_document(content)
+    if approved:
+        print("Document is a text file containing the word 'potato'.")
+    else:
+        print("Document is not a text file containing the word 'potato'.")
     api_request(
         base_url,
         token,
