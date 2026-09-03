@@ -145,7 +145,7 @@ services:
       RATE_LIMITING__POLICIES__UPLOADS__FAIL_CLOSED: false
       # App-specific variables
       STORAGE__EXAMPLE_ITEM__TABLE_NAME: example
-      # Database (MariaDB) — path to SSM secret holding the MySql.Data connection string
+      # Database (MariaDB): path to SSM secret holding the MySql.Data connection string
       ##
       CONNECTION_STRINGS__PRIMARY: "/mysql/connection-string"
       # Foo connector (external HTTP dependency)
