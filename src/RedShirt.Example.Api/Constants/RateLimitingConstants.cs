@@ -4,4 +4,5 @@ public static class RateLimitingConstants
 {
     public const string PolicyHeaderDefault = "default";
     public const string PolicyHeaderExample = "example";
+    public const string PolicyHeaderUploads = "uploads";
 }

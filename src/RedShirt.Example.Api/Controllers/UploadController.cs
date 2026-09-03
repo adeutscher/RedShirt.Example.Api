@@ -148,6 +148,7 @@ public class UploadController : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting(RateLimitingConstants.PolicyHeaderUploads)]
     [AuthorizeUploadWrite]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(UploadSummaryModel))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
