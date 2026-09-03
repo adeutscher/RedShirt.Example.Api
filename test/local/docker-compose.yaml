@@ -138,9 +138,14 @@ services:
       RATE_LIMITING__POLICIES__EXAMPLE__WINDOW_PERMIT_LIMIT: 30
       RATE_LIMITING__POLICIES__EXAMPLE__LIMIT_WINDOW_MINUTES: 1
       RATE_LIMITING__POLICIES__EXAMPLE__FAIL_CLOSED: false
+      RATE_LIMITING__POLICIES__UPLOADS__NAME: "uploads"
+      RATE_LIMITING__POLICIES__UPLOADS__REDIS_KEY_PREFIX: "uploads"
+      RATE_LIMITING__POLICIES__UPLOADS__WINDOW_PERMIT_LIMIT: 5
+      RATE_LIMITING__POLICIES__UPLOADS__LIMIT_WINDOW_MINUTES: 1
+      RATE_LIMITING__POLICIES__UPLOADS__FAIL_CLOSED: false
       # App-specific variables
       STORAGE__EXAMPLE_ITEM__TABLE_NAME: example
-      # Database (MariaDB) — path to SSM secret holding the MySql.Data connection string
+      # Database (MariaDB): path to SSM secret holding the MySql.Data connection string
       ##
       CONNECTION_STRINGS__PRIMARY: "/mysql/connection-string"
       # Foo connector (external HTTP dependency)
