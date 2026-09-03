@@ -31,6 +31,7 @@ SEEDED_USERS = {
     "developer": ("developeruser", "developerpass"),
     "analyst": ("analystuser", "analystpass"),
     "billing": ("billinguser", "billingpass"),
+    "upload-validator": ("uploadvalidator", "uploadvalidatorpass"),
 }
 
 
@@ -110,6 +111,14 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--upload-validator",
+        action="store_true",
+        help=(
+            "Password grant as the seeded upload validator user "
+            f"({SEEDED_USERS['upload-validator'][0]} / {SEEDED_USERS['upload-validator'][1]})"
+        ),
+    )
+    parser.add_argument(
         "--print-header",
         action="store_true",
         help="Print a full Authorization header instead of the raw token",
@@ -127,11 +136,12 @@ def main() -> int:
             ("developer", args.developer),
             ("analyst", args.analyst),
             ("billing", args.billing),
+            ("upload-validator", args.upload_validator),
         )
         if selected
     ]
     if len(selected_roles) > 1:
-        raise SystemExit("Specify at most one of --developer, --analyst, --billing")
+        raise SystemExit("Specify at most one of --developer, --analyst, --billing, --upload-validator")
 
     if args.grant == "password":
         client_id = args.client_id or DEFAULT_CLIENT_ID

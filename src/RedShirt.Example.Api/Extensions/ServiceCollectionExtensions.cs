@@ -12,6 +12,7 @@ using RedShirt.Example.Api.DataStores.ExampleItem.Extensions;
 using RedShirt.Example.Api.DataStores.Order.Extensions;
 using RedShirt.Example.Api.DataStores.Product.Implementation.Extensions;
 using RedShirt.Example.Api.ExceptionHandlers;
+using RedShirt.Example.Api.Upload.Implementation.Extensions;
 
 namespace RedShirt.Example.Api.Extensions;
 
@@ -56,6 +57,7 @@ internal static class ServiceCollectionExtensions
             .AddDapperMySql(configuration) // Add Dapper support for MySQL-based database servers.
             .AddCustomers(configuration) // Customer store via Entity Framework Core (MariaDB / MySQL).
             .AddOrders()
-            .AddProducts(configuration);
+            .AddProducts(configuration)
+            .AddUploads(configuration);
     }
 }

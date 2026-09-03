@@ -129,7 +129,10 @@ public class AuthorizationServiceCollectionExtensionsTests
     [InlineData(BespokeAuthorizationRoles.Developer, BespokeAuthorizationPolicies.OrderWrite, true)]
     [InlineData(BespokeAuthorizationRoles.Admin, BespokeAuthorizationPolicies.Write, true)]
     [InlineData(BespokeAuthorizationRoles.Admin, BespokeAuthorizationPolicies.ProductWrite, true)]
-    [InlineData(BespokeAuthorizationRoles.Admin, BespokeAuthorizationPolicies.OrderWrite, true)]
+    [InlineData(BespokeAuthorizationRoles.UploadValidator, BespokeAuthorizationPolicies.UploadInternalDetailsApproved,
+        true)]
+    [InlineData(BespokeAuthorizationRoles.Developer, BespokeAuthorizationPolicies.UploadInternalDetailsApproved, false)]
+    [InlineData(BespokeAuthorizationRoles.Admin, BespokeAuthorizationPolicies.UploadInternalDetailsApproved, true)]
     public async Task AuthorizeAsync_RolePolicies(string role, string policy, bool expected)
     {
         var services = new ServiceCollection();

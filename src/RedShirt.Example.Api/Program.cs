@@ -1,5 +1,6 @@
 using RedShirt.Example.Api.Common.RateLimiting.Extensions;
 using RedShirt.Example.Api.Extensions;
+using RedShirt.Example.Api.Upload.Core.Configuration;
 
 /*
  * citing sources:
@@ -15,6 +16,23 @@ builder.Configuration
         .AddEnvironmentVariablesWithSegmentSupport()
         .Build()
     );
+
+if (builder.Configuration.GetSection(UploadOptions.ConfigurationSectionName).Get<UploadOptions>() is
+    {
+        MaxUploadSizeBytes: > 0
+    } uploadOptions)
+{
+    /*
+     * Attempting to set a maximum limit through Kestrel settings.
+     * In practice in local testing, the server doesn't seem to enforce this
+     * until after significant work has been done, so implementations should
+     * also enforce their own size based on Content-Length header.
+     */
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.Limits.MaxRequestBodySize = uploadOptions.MaxUploadSizeBytes.Value;
+    });
+}
 
 // Add services to the container.
 builder.Services

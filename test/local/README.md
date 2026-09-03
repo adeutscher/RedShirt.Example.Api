@@ -146,6 +146,7 @@ chmod +x ./get-bearer-token.py   # once
 ./get-bearer-token.py --developer
 ./get-bearer-token.py --analyst
 ./get-bearer-token.py --billing
+./get-bearer-token.py --upload-validator
 # or:
 ./get-bearer-token.py --username analystuser --password analystpass
 ```
@@ -237,6 +238,65 @@ In Swagger UI, use **Authorize**, choose **Bearer**, and paste the access token 
 
 To run the API without JWT checks locally, set `AUTHENTICATION__DISABLE_AUTHENTICATION=true`. NSwag generation sets that variable in the API project’s post-build `Exec` so OpenAPI generation does not require an identity provider.
 
+## Uploads
+
+Mock Python scripts under `scripts/upload/` are used to test the upload system locally.
+See [docs/patterns/uploads.md](../../docs/patterns/uploads.md) for descriptions on design decisions.
+Scripts are executable; run them directly from the `test/local` directory (for example `./scripts/upload/upload-file.py`).
+
+### Upload a file
+
+Requires `upload:write` (admin or developer token by default):
+
+```bash
+export API_JWT_TOKEN="$(./get-bearer-token.py)"
+./scripts/upload/upload-file.py path/to/document.txt
+```
+
+### List in-flight uploads
+
+Lists uploads in `Uploading`, `NotValidated`, or `Verified` state:
+
+```bash
+./scripts/upload/list-upload-jobs.py
+```
+
+To list all uploads regardless of state, use the `-a` switch:
+
+```bash
+./scripts/upload/list-upload-jobs.py -a
+```
+
+### Run mock workers
+
+Run against a specific upload id from that list:
+
+```bash
+./scripts/upload/upload-validate-worker.py <upload-id>
+./scripts/upload/upload-move-worker.py <upload-id>
+./scripts/upload/upload-cleanup-rejected-files-worker.py <upload-id>
+```
+
+Notes:
+
+* To confirm, in a real implementation these would be ideally be handled by messaging workers.
+* For the purposes of this local test, a valid uploaded document is a text file containing the plaintext word 'potato'.
+
+### Tokens and permissions
+
+Scripts read `API_JWT_TOKEN` (set explicitly or via `get-bearer-token.py`). By default
+they use an admin token.
+
+For least-privilege worker paths, use the upload-validator token:
+
+```bash
+export API_JWT_TOKEN="$(./get-bearer-token.py --upload-validator)"
+```
+
+The **`upload-validator`** realm role can POST `/uploads/{id}/verdicts` and
+`/uploads/{id}/move-reports`. Poll/search, download-link, delete, and end-user upload
+POST require broader permissions (`upload:read`, `upload:write`) and owner scoping.
+
 ## Foo WireMock stubs
 
 `wiremock-foo` mocks the external Foo HTTP API used by
@@ -252,6 +312,7 @@ under `wiremock/foo/mappings/`. Successful calls require header
 | GET    | `/api/foo/{id}`            | valid `x-api-key`   | 200 with `{ "Id": {id}, "Name": "Foo-{id}" }`                               |
 | GET    | `/api/foo/404`             | valid `x-api-key`   | 404 (exercises not-found handling)                                          |
 | any    | `/api/foo` or `/api/foo/…` | missing/invalid key | 401                                                                         |
+
 ### Testing Unauthorized Behaviour
 
 To conveniently set an invalid API key value in SSM, you can use the `foo-set-ssm-api-key.sh` script:
@@ -280,9 +341,9 @@ Confirming that this script will only update the in-memory versions that WireMoc
 
 Default credentials (from `make-local-aws-resources.sh`):
 
-- SSM `/bar/oauth/client-id` → `local-bar-client-id`
-- SSM `/bar/oauth/client-secret` → `local-bar-client-secret`
-- Access token returned by the token stub → `local-bar-access-token`
+* SSM `/bar/oauth/client-id` → `local-bar-client-id`
+* SSM `/bar/oauth/client-secret` → `local-bar-client-secret`
+* Access token returned by the token stub → `local-bar-access-token`
 
 Compose points the API at `http://wiremock-bar:8080` for both `BaseUrl` and
 `TokenUrl` (`…/oauth/token`), with scope form field `audience=https://bar.local/api`.

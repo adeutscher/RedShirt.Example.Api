@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11"/>
+        <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.11"/>
+        <PackageReference Include="MySql.EntityFrameworkCore" Version="10.0.1"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Aws.S3FileStorage\RedShirt.Example.Api.Common.Aws.S3FileStorage.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Database\RedShirt.Example.Api.Common.Database.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Distributed\RedShirt.Example.Api.Common.Distributed.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Exceptions\RedShirt.Example.Api.Common.Exceptions.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.FileStorage\RedShirt.Example.Api.Common.FileStorage.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Constants\RedShirt.Example.Api.DataStores.Constants.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Upload.Core\RedShirt.Example.Api.Upload.Core.csproj"/>
+    </ItemGroup>
+
+</Project>

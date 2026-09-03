@@ -5,6 +5,7 @@ using RedShirt.Example.Api.Authorization;
 using RedShirt.Example.Api.Authorization.Constants;
 using RedShirt.Example.Api.Authorization.Requirements;
 using RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
+using RedShirt.Example.Api.Authorization.ResourceScoping.Upload;
 
 namespace RedShirt.Example.Api.Extensions;
 
@@ -27,7 +28,10 @@ internal static class AuthorizationServiceCollectionExtensions
         services.AddSingleton<IClaimsTransformation, BespokeRolePermissionClaimsTransformation>();
         services.AddSingleton<IAuthorizationHandler, HttpGetAuthorizationHandler>();
         services.AddSingleton<IAuthorizationHandler, CustomerScopedResourceEnforcerHandler>();
+        services.AddSingleton<IAuthorizationHandler, UploadScopedResourceEnforcerHandler>();
+        services.AddSingleton<IAuthorizationHandler, UploadDownloadResourceEnforcerHandler>();
         services.AddSingleton<ICustomerScopedResourceEnforcer, CustomerScopedResourceEnforcer>();
+        services.AddSingleton<IUploadScopedResourceEnforcer, UploadScopedResourceEnforcer>();
 
         services.AddAuthorization(authorization =>
         {
@@ -65,6 +69,63 @@ internal static class AuthorizationServiceCollectionExtensions
                         BespokeAuthorizationPermissions.CustomerRead)
                     .AddRequirements(new HttpGetRequirement()));
 
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadWrite, policy => ConfigureApiPolicy(policy)
+                .RequireClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.UploadWrite));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadReadApproved, policy =>
+                ConfigureApiPolicy(policy)
+                    .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
+                        BespokeAuthorizationPermissions.UploadRead)
+                    .AddRequirements(new HttpGetRequirement()));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadReadOrValidator, policy =>
+                ConfigureApiPolicy(policy)
+                    .RequireAssertion(context =>
+                        context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.UploadRead)
+                        || context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.UploadValidator))
+                    .AddRequirements(new HttpGetRequirement()));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadWriteOrValidator, policy =>
+                ConfigureApiPolicy(policy)
+                    .RequireAssertion(context =>
+                        context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.UploadWrite)
+                        || context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.UploadValidator)));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadValidator, policy => ConfigureApiPolicy(policy)
+                .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
+                    BespokeAuthorizationPermissions.UploadValidator));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadDownloadApproved, policy =>
+                ConfigureApiPolicy(policy)
+                    .RequireAssertion(context =>
+                        context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.UploadRead)
+                        || context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.UploadValidator))
+                    .AddRequirements(new HttpGetRequirement()));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadScoped, policy => ConfigureApiPolicy(policy)
+                .AddRequirements(new UploadScopedResourceRequirement()));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadDownload, policy => ConfigureApiPolicy(policy)
+                .AddRequirements(new UploadDownloadResourceRequirement()));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadPurge, policy => ConfigureApiPolicy(policy)
+                .RequireClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.UploadPurge));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.UploadInternalDetailsApproved, policy =>
+                ConfigureApiPolicy(policy)
+                    .RequireAssertion(context =>
+                        context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.UploadValidator)
+                        || context.User.HasClaim(BespokeAuthorizationPermissions.ClaimType,
+                            BespokeAuthorizationPermissions.Unrestricted))
+                    .AddRequirements(new HttpGetRequirement()));
+
             authorization.AddPolicy(BespokeAuthorizationPolicies.CustomerScoped, policy => ConfigureApiPolicy(policy)
                 .AddRequirements(new CustomerScopedResourceRequirement()));
 
@@ -92,6 +153,7 @@ internal static class AuthorizationServiceCollectionExtensions
         }
 
         return services
-            .AddSingleton<ICustomerScopedResourceEnforcer, StubCustomerScopedResourceEnforcer>();
+            .AddSingleton<ICustomerScopedResourceEnforcer, StubCustomerScopedResourceEnforcer>()
+            .AddSingleton<IUploadScopedResourceEnforcer, StubUploadScopedResourceEnforcer>();
     }
 }

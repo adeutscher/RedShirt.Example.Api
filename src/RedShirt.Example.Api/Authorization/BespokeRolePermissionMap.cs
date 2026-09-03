@@ -18,7 +18,10 @@ internal static class BespokeRolePermissionMap
             BespokeAuthorizationPermissions.OrderRead,
             BespokeAuthorizationPermissions.OrderWrite,
             BespokeAuthorizationPermissions.CustomerRead,
-            BespokeAuthorizationPermissions.CustomerWrite
+            BespokeAuthorizationPermissions.CustomerWrite,
+            BespokeAuthorizationPermissions.UploadRead,
+            BespokeAuthorizationPermissions.UploadWrite,
+            BespokeAuthorizationPermissions.UploadPurge
         ],
         StringComparer.Ordinal);
 
@@ -30,6 +33,9 @@ internal static class BespokeRolePermissionMap
                 StringComparer.Ordinal),
             [BespokeAuthorizationRoles.Billing] = FrozenSet.ToFrozenSet(
                 [BespokeAuthorizationPermissions.OrderRead, BespokeAuthorizationPermissions.OrderWrite],
+                StringComparer.Ordinal),
+            [BespokeAuthorizationRoles.UploadValidator] = FrozenSet.ToFrozenSet(
+                [BespokeAuthorizationPermissions.UploadValidator],
                 StringComparer.Ordinal),
             [BespokeAuthorizationRoles.Developer] = FullAccessPermissions,
             [BespokeAuthorizationRoles.Admin] = FrozenSet.ToFrozenSet(

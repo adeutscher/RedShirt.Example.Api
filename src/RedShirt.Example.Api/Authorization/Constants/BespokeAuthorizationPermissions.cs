@@ -32,4 +32,16 @@ public static class BespokeAuthorizationPermissions
     public const string CustomerRead = "customer:read";
 
     public const string CustomerWrite = "customer:write";
+
+    public const string UploadRead = "upload:read";
+
+    public const string UploadWrite = "upload:write";
+
+    public const string UploadValidator = "upload:validator";
+
+    /// <summary>
+    ///     Hard-delete upload records and storage (granted to <see cref="BespokeAuthorizationRoles.Admin" /> and
+    ///     <see cref="BespokeAuthorizationRoles.Developer" />).
+    /// </summary>
+    public const string UploadPurge = "upload:purge";
 }

@@ -17,7 +17,10 @@ public class BespokeRolePermissionMapTests
         BespokeAuthorizationPermissions.OrderRead,
         BespokeAuthorizationPermissions.OrderWrite,
         BespokeAuthorizationPermissions.ProductRead,
-        BespokeAuthorizationPermissions.ProductWrite
+        BespokeAuthorizationPermissions.ProductWrite,
+        BespokeAuthorizationPermissions.UploadPurge,
+        BespokeAuthorizationPermissions.UploadRead,
+        BespokeAuthorizationPermissions.UploadWrite
     ];
 
     private static readonly string[] AdminPermissions =
@@ -30,7 +33,10 @@ public class BespokeRolePermissionMapTests
         BespokeAuthorizationPermissions.OrderRead,
         BespokeAuthorizationPermissions.OrderWrite,
         BespokeAuthorizationPermissions.ProductRead,
-        BespokeAuthorizationPermissions.ProductWrite
+        BespokeAuthorizationPermissions.ProductWrite,
+        BespokeAuthorizationPermissions.UploadPurge,
+        BespokeAuthorizationPermissions.UploadRead,
+        BespokeAuthorizationPermissions.UploadWrite
     ];
 
     [Fact]

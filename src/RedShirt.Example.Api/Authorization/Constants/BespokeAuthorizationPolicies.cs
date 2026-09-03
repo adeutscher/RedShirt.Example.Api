@@ -51,6 +51,61 @@ public static class BespokeAuthorizationPolicies
     public const string CustomerReadApproved = "CustomerReadApproved";
 
     /// <summary>
+    ///     Upload write access: requires <see cref="BespokeAuthorizationPermissions.UploadWrite" />.
+    /// </summary>
+    public const string UploadWrite = "UploadWrite";
+
+    /// <summary>
+    ///     Upload write access: requires <see cref="BespokeAuthorizationPermissions.UploadWrite" />or
+    ///     <see cref="BespokeAuthorizationPermissions.UploadValidator" />.
+    /// </summary>
+    public const string UploadWriteOrValidator = "UploadWriteOrValidator";
+
+    /// <summary>
+    ///     Approved Upload read: <see cref="BespokeAuthorizationPermissions.UploadRead" /> on an HTTP GET.
+    /// </summary>
+    public const string UploadReadApproved = "UploadReadApproved";
+
+    /// <summary>
+    ///     Approved Upload read: <see cref="BespokeAuthorizationPermissions.UploadRead" /> or
+    ///     <see cref="BespokeAuthorizationPermissions.UploadValidator" />. Must be on an HTTP GET .
+    /// </summary>
+    public const string UploadReadOrValidator = "UploadReadOrValidator";
+
+    /// <summary>
+    ///     Upload validator worker access for verdict and move-report endpoints.
+    /// </summary>
+    public const string UploadValidator = "UploadValidator";
+
+    /// <summary>
+    ///     Download-link access: <see cref="BespokeAuthorizationPermissions.UploadRead" /> or
+    ///     <see cref="BespokeAuthorizationPermissions.UploadValidator" />; resource rules apply via
+    ///     <see cref="BespokeAuthorizationPolicies.UploadDownload" />.
+    /// </summary>
+    public const string UploadDownloadApproved = "UploadDownloadApproved";
+
+    /// <summary>
+    ///     Resource-based access to an upload owned by a specific user.
+    /// </summary>
+    public const string UploadScoped = "UploadScoped";
+
+    /// <summary>
+    ///     Resource-based download access (state-dependent rules).
+    /// </summary>
+    public const string UploadDownload = "UploadDownload";
+
+    /// <summary>
+    ///     Hard-delete upload records and storage. Requires <see cref="BespokeAuthorizationPermissions.UploadPurge" />.
+    /// </summary>
+    public const string UploadPurge = "UploadPurge";
+
+    /// <summary>
+    ///     Internal upload metadata: <see cref="BespokeAuthorizationPermissions.UploadValidator" /> or
+    ///     <see cref="BespokeAuthorizationPermissions.Unrestricted" /> on an HTTP GET.
+    /// </summary>
+    public const string UploadInternalDetailsApproved = "UploadInternalDetailsApproved";
+
+    /// <summary>
     ///     Resource-based access to a customer-scoped record (for example an order).
     ///     Invoked with an explicit resource via <c>IAuthorizationService</c>, not as an
     ///     endpoint attribute (the resource is not available until the row is loaded).

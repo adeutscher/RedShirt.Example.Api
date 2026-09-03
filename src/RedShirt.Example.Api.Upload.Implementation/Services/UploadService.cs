@@ -1,0 +1,278 @@
+using Microsoft.Extensions.Options;
+using RedShirt.Example.Api.Common.Exceptions.Responses;
+using RedShirt.Example.Api.Common.FileStorage.Services;
+using RedShirt.Example.Api.Upload.Core.Configuration;
+using RedShirt.Example.Api.Upload.Core.Events;
+using RedShirt.Example.Api.Upload.Core.Models;
+using RedShirt.Example.Api.Upload.Core.Models.Requests;
+using RedShirt.Example.Api.Upload.Core.Models.Responses;
+using RedShirt.Example.Api.Upload.Core.Services;
+using RedShirt.Example.Api.Upload.Core.Validation;
+using RedShirt.Example.Api.Upload.Implementation.Repositories;
+
+namespace RedShirt.Example.Api.Upload.Implementation.Services;
+
+internal sealed class UploadService(
+    IUploadRepository repository,
+    IFileStorageService fileStorageService,
+    IUploadEventBroadcaster eventBroadcaster,
+    IOptions<UploadOptions> uploadOptions) : IUploadService
+{
+    private static string BuildObjectKey(Guid uploadId, string uploadedByUserId)
+    {
+        return $"{uploadedByUserId}/{uploadId:N}";
+    }
+
+    public async Task<UploadSummaryModel> CreateAsync(UploadServiceCreateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.FileName))
+        {
+            throw new BadRequestException("File name cannot be empty.");
+        }
+
+        if (!PosixFileName.IsValid(request.FileName))
+        {
+            throw new BadRequestException(PosixFileName.InvalidMessage);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.UploadedByUserId))
+        {
+            throw new BadRequestException("Uploading user id cannot be empty.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.IdempotencyKey))
+        {
+            throw new BadRequestException("Idempotency key cannot be empty.");
+        }
+
+        if (request.ContentLength is null or <= 0)
+        {
+            throw new BadRequestException("Content-Length header is required.");
+        }
+
+        var options = uploadOptions.Value;
+        if (options.MaxUploadSizeBytes is > 0 && request.ContentLength > options.MaxUploadSizeBytes)
+        {
+            throw new RequestTooLargeException(
+                $"Upload exceeds the maximum allowed size of {options.MaxUploadSizeBytes.Value} bytes.");
+        }
+
+        if (await repository.ExistsByIdempotencyKeyAsync(request.IdempotencyKey, cancellationToken))
+        {
+            throw new ConflictException("An upload with this idempotency key already exists.");
+        }
+
+        var uploadId = Guid.NewGuid();
+        var createdEvent = new UploadCreatedEvent
+        {
+            UploadId = uploadId,
+            UploadedByUserId = request.UploadedByUserId,
+            UploadedByUsername = request.UploadedByUsername,
+            UploaderIpAddress = request.UploaderIpAddress,
+            FileName = request.FileName,
+            IdempotencyKey = request.IdempotencyKey
+        };
+
+        var uploadingSummary = await repository.AppendEventAsync(uploadId, UploadEventType.Created, createdEvent,
+            cancellationToken);
+        await eventBroadcaster.BroadcastUploadCreatedAsync(createdEvent, uploadingSummary, cancellationToken);
+
+        var objectKey = BuildObjectKey(uploadId, request.UploadedByUserId);
+        var uploadResult = await fileStorageService.UploadAsync(options.BucketUnverifiedItems, objectKey,
+            request.Content, request.ContentLength, cancellationToken);
+
+        var completedEvent = new UploadCompletedEvent
+        {
+            UploadId = uploadId,
+            StorageObjectKey = objectKey,
+            Sha256Checksum = uploadResult.Sha256Checksum,
+            FileSizeBytes = request.ContentLength!.Value
+        };
+
+        var summary = await repository.AppendEventAsync(uploadId, UploadEventType.Completed, completedEvent,
+            cancellationToken);
+        await eventBroadcaster.BroadcastUploadCompletedAsync(completedEvent, summary, cancellationToken);
+        return summary;
+    }
+
+    public async Task<UploadSummaryModel> GetSummaryAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        // ReSharper disable once ConvertIfStatementToReturnStatement
+        if (await repository.GetSummaryAsync(id, cancellationToken) is not { } summary)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        return summary;
+    }
+
+    public async Task<UploadDetailsInternalModel> GetDetailsAsync(Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
+        // ReSharper disable once ConvertIfStatementToReturnStatement
+        if (aggregate.Id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        return aggregate.ToInternalDetailsModel();
+    }
+
+    public Task<UploadSearchResponse> SearchAsync(UploadServiceSearchRequest parameters, Guid? continuationToken,
+        CancellationToken cancellationToken = default)
+    {
+        return repository.SearchAsync(parameters, continuationToken, cancellationToken);
+    }
+
+    public async Task<UploadSummaryModel> SubmitVerdictAsync(UploadServiceVerdictRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var aggregate = await repository.GetAggregateFromEventsAsync(request.UploadId, cancellationToken);
+        if (aggregate.Id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        if (aggregate.State != UploadState.NotValidated)
+        {
+            throw new BadRequestException("Upload is not awaiting validation.");
+        }
+
+        if (request.Approved)
+        {
+            var validatedEvent = new UploadValidatedEvent {UploadId = request.UploadId};
+            var summary = await repository.AppendEventAsync(request.UploadId, UploadEventType.Validated,
+                validatedEvent,
+                cancellationToken);
+            await eventBroadcaster.BroadcastUploadValidatedAsync(validatedEvent, summary, cancellationToken);
+            return summary;
+        }
+
+        var rejectedEvent = new UploadRejectedEvent {UploadId = request.UploadId};
+        var rejectedSummary = await repository.AppendEventAsync(request.UploadId, UploadEventType.Rejected,
+            rejectedEvent, cancellationToken);
+        await eventBroadcaster.BroadcastUploadRejectedAsync(rejectedEvent, rejectedSummary, cancellationToken);
+        return rejectedSummary;
+    }
+
+    public async Task<UploadSummaryModel> SubmitMoveReportAsync(UploadServiceMoveReportRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var aggregate = await repository.GetAggregateFromEventsAsync(request.UploadId, cancellationToken);
+        if (aggregate.Id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        if (aggregate.State != UploadState.Verified)
+        {
+            throw new BadRequestException("Upload is not awaiting a move report.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.VerifiedStorageObjectKey))
+        {
+            throw new BadRequestException("Verified storage object key cannot be empty.");
+        }
+
+        var storedEvent = new UploadStoredEvent
+        {
+            UploadId = request.UploadId,
+            VerifiedStorageObjectKey = request.VerifiedStorageObjectKey
+        };
+
+        var summary = await repository.AppendEventAsync(request.UploadId, UploadEventType.Stored, storedEvent,
+            cancellationToken);
+        await eventBroadcaster.BroadcastUploadStoredAsync(storedEvent, summary, cancellationToken);
+        return summary;
+    }
+
+    public async Task<UploadSummaryModel> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
+        if (aggregate.Id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        if (aggregate.State == UploadState.Deleted)
+        {
+            throw new BadRequestException("Upload is already deleted.");
+        }
+
+        var options = uploadOptions.Value;
+        var bucket = aggregate.UsesVerifiedBucket()
+            ? options.BucketVerifiedItems
+            : options.BucketUnverifiedItems;
+        var objectKey = aggregate.ResolveDownloadObjectKey();
+
+        if (!string.IsNullOrWhiteSpace(objectKey))
+        {
+            await fileStorageService.DeleteAsync(bucket, objectKey, cancellationToken);
+        }
+
+        var deletedEvent = new UploadDeletedEvent {UploadId = id};
+        var summary = await repository.AppendEventAsync(id, UploadEventType.Deleted, deletedEvent,
+            cancellationToken);
+        await eventBroadcaster.BroadcastUploadDeletedAsync(deletedEvent, summary, cancellationToken);
+        return summary;
+    }
+
+    public async Task PurgeAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
+        if (aggregate.Id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        var options = uploadOptions.Value;
+        if (!string.IsNullOrWhiteSpace(aggregate.StorageObjectKey))
+        {
+            await fileStorageService.DeleteAsync(options.BucketUnverifiedItems, aggregate.StorageObjectKey,
+                cancellationToken);
+        }
+
+        if (!string.IsNullOrWhiteSpace(aggregate.VerifiedStorageObjectKey))
+        {
+            await fileStorageService.DeleteAsync(options.BucketVerifiedItems, aggregate.VerifiedStorageObjectKey,
+                cancellationToken);
+        }
+
+        await repository.PurgeAsync(id, cancellationToken);
+
+        var purgedEvent = new UploadPurgedEvent {UploadId = id};
+        await eventBroadcaster.BroadcastUploadPurgedAsync(purgedEvent, cancellationToken);
+    }
+
+    public async Task<UploadDownloadLinkModel> GetDownloadLinkAsync(Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
+        if (aggregate.Id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        if (aggregate.State is UploadState.Uploading or UploadState.Deleted)
+        {
+            throw new BadRequestException("Upload is not available for download.");
+        }
+
+        var options = uploadOptions.Value;
+        var bucket = aggregate.UsesVerifiedBucket()
+            ? options.BucketVerifiedItems
+            : options.BucketUnverifiedItems;
+        var objectKey = aggregate.ResolveDownloadObjectKey();
+        var validity = TimeSpan.FromMinutes(options.PresignedUrlLifetimeMinutes);
+        var url = await fileStorageService.GetPresignedDownloadUrlAsync(bucket, objectKey, validity,
+            aggregate.FileName, cancellationToken);
+
+        return new UploadDownloadLinkModel
+        {
+            DownloadUrl = url,
+            ExpiresAtUtc = DateTime.UtcNow.Add(validity)
+        };
+    }
+}

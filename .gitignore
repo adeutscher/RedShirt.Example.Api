@@ -46,6 +46,28 @@ appsettings.*.local.json
 # Local Docker persistence
 test/local/data/mariadb-data/
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+ENV/
+
 Thumbs.db
 Desktop.ini
 .DS_Store
