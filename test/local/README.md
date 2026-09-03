@@ -242,6 +242,7 @@ To run the API without JWT checks locally, set `AUTHENTICATION__DISABLE_AUTHENTI
 
 Mock Python scripts under `scripts/upload/` are used to test the upload system locally.
 See [docs/patterns/uploads.md](../../docs/patterns/uploads.md) for descriptions on design decisions.
+Scripts are executable; run them directly from the `test/local` directory (for example `./scripts/upload/upload-file.py`).
 
 ### Upload a file
 
@@ -249,7 +250,7 @@ Requires `upload:write` (admin or developer token by default):
 
 ```bash
 export API_JWT_TOKEN="$(./get-bearer-token.py)"
-python3 scripts/upload/upload-file.py path/to/document.txt
+./scripts/upload/upload-file.py path/to/document.txt
 ```
 
 ### List in-flight uploads
@@ -257,13 +258,13 @@ python3 scripts/upload/upload-file.py path/to/document.txt
 Lists uploads in `Uploading`, `NotValidated`, or `Verified` state:
 
 ```bash
-python3 scripts/upload/list-upload-jobs.py
+./scripts/upload/list-upload-jobs.py
 ```
 
 To list all uploads regardless of state, use the `-a` switch:
 
 ```bash
-python3 scripts/upload/list-upload-jobs.py -a
+./scripts/upload/list-upload-jobs.py -a
 ```
 
 ### Run mock workers
@@ -271,9 +272,9 @@ python3 scripts/upload/list-upload-jobs.py -a
 Run against a specific upload id from that list:
 
 ```bash
-python3 scripts/upload/upload-validate-worker.py <upload-id>
-python3 scripts/upload/upload-move-worker.py <upload-id>
-python3 scripts/upload/upload-cleanup-rejected-files-worker.py <upload-id>
+./scripts/upload/upload-validate-worker.py <upload-id>
+./scripts/upload/upload-move-worker.py <upload-id>
+./scripts/upload/upload-cleanup-rejected-files-worker.py <upload-id>
 ```
 
 Notes:
