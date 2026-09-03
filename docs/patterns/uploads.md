@@ -9,7 +9,7 @@ The short version is:
 * Uploads assume that the file storage back-end can provide a presigned download URL for downloads.
 * Uploads use event sourcing to track events.
 
-For information on testing uploads, refer to the TOMATO folder.
+For information on testing uploads, refer to the [test/local](../../test/local/) folder.
 
 # Decisions
 
@@ -26,7 +26,7 @@ In an applied version of this template, it is expected that the back-end worker 
 * The general template does not want to commit to a specific messaging technology.
 * Handling of queued messages is more in the domain of the [RedShirt.Example.JobWorker Template](https://github.com/adeutscher/RedShirt.Example.JobWorker).
 
-For information on testing uploads, refer to the TOMATO folder.
+For information on testing uploads, refer to the [test/local](../../test/local/) folder.
 
 ## Presigned Download URLs
 

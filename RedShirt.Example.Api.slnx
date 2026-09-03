@@ -5,7 +5,7 @@
     </Folder>
     <Folder Name="/Solution Items/docs/" />
     <Folder Name="/Solution Items/docs/patterns/">
-        <File Path="docs\patterns\uploads-design-decisions.md" />
+        <File Path="docs\patterns\uploads.md" />
     </Folder>
     <Folder Name="/src/">
         <Project Path="src/RedShirt.Example.Api.Core/RedShirt.Example.Api.Core.csproj" />
