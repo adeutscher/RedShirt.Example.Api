@@ -1,4 +1,5 @@
 using RedShirt.Example.Api.Core.Cqrs;
+using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 
 namespace RedShirt.Example.Api.Core.UseCases.Order.Commands.Delete;
 

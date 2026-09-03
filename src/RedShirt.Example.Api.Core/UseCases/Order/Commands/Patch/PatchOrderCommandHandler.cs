@@ -1,5 +1,6 @@
 using RedShirt.Example.Api.Core.Cqrs;
 using RedShirt.Example.Api.DataStores.Order.Models;
+using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 using System.Globalization;
 
 namespace RedShirt.Example.Api.Core.UseCases.Order.Commands.Patch;
