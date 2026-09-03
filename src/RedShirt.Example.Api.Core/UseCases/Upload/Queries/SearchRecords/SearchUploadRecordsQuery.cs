@@ -13,6 +13,9 @@ public sealed record SearchUploadRecordsQuery(
     string? UploadedByUserId,
     string? FileName,
     string? Sha256Checksum,
+    long? FileSizeBytes,
+    long? FileSizeBytesGreaterThan,
+    long? FileSizeBytesLessThan,
     bool? IsValidated,
     bool? IsRejected,
     Guid? ContinuationToken);

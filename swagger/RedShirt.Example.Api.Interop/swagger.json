@@ -2089,13 +2089,43 @@
             "x-position": 10
           },
           {
+            "name": "FileSizeBytes",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "nullable": true
+            },
+            "x-position": 11
+          },
+          {
+            "name": "FileSizeBytesGreaterThan",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "nullable": true
+            },
+            "x-position": 12
+          },
+          {
+            "name": "FileSizeBytesLessThan",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "nullable": true
+            },
+            "x-position": 13
+          },
+          {
             "name": "IsValidated",
             "in": "query",
             "schema": {
               "type": "boolean",
               "nullable": true
             },
-            "x-position": 11
+            "x-position": 14
           },
           {
             "name": "IsRejected",
@@ -2104,7 +2134,7 @@
               "type": "boolean",
               "nullable": true
             },
-            "x-position": 12
+            "x-position": 15
           },
           {
             "name": "ContinuationToken",
@@ -2114,7 +2144,7 @@
               "format": "guid",
               "nullable": true
             },
-            "x-position": 13
+            "x-position": 16
           }
         ],
         "responses": {
@@ -2790,6 +2820,11 @@
           },
           "sha256Checksum": {
             "type": "string",
+            "nullable": true
+          },
+          "fileSizeBytes": {
+            "type": "integer",
+            "format": "int64",
             "nullable": true
           }
         }

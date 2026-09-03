@@ -40,6 +40,9 @@ public class SearchUploadRecordsQueryHandlerTests
             "user-id",
             "document.txt",
             "abc123def456",
+            4096L,
+            null,
+            null,
             null,
             null,
             null);
@@ -50,5 +53,6 @@ public class SearchUploadRecordsQueryHandlerTests
         Assert.Equal("document.txt", capturedRequest!.FileName);
         Assert.Equal("user-id", capturedRequest.UploadedByUserId);
         Assert.Equal("abc123def456", capturedRequest.Sha256Checksum);
+        Assert.Equal(4096, capturedRequest.FileSizeBytes);
     }
 }

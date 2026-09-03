@@ -86,7 +86,8 @@ internal sealed class UploadService(
         {
             UploadId = uploadId,
             StorageObjectKey = objectKey,
-            Sha256Checksum = uploadResult.Sha256Checksum
+            Sha256Checksum = uploadResult.Sha256Checksum,
+            FileSizeBytes = request.ContentLength!.Value
         };
 
         var summary = await repository.AppendEventAsync(uploadId, UploadEventType.Completed, completedEvent,

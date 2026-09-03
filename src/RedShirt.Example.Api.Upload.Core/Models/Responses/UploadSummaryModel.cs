@@ -14,4 +14,5 @@ public sealed class UploadSummaryModel
     public required bool IsValidated { get; init; }
     public required bool IsRejected { get; init; }
     public string? Sha256Checksum { get; init; }
+    public long? FileSizeBytes { get; init; }
 }

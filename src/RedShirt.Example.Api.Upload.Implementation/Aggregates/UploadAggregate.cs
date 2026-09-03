@@ -12,28 +12,15 @@ namespace RedShirt.Example.Api.Upload.Implementation.Aggregates;
 internal sealed class UploadAggregate
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private string UploadedByUsername { get; set; } = string.Empty;
+    private string UploaderIpAddress { get; set; } = string.Empty;
+    private DateTime? DateCompletedUtc { get; set; }
+    private DateTime? DateValidatedUtc { get; set; }
+    private DateTime? DateRejectedUtc { get; set; }
+    private DateTime? DateStoredUtc { get; set; }
+    private DateTime? DateDeletedUtc { get; set; }
 
-    public Guid Id { get; private set; }
-    public DateTime DateCreatedUtc { get; private set; }
-    public DateTime DateUpdatedUtc { get; private set; }
-    public string UploadedByUserId { get; private set; } = string.Empty;
-    public string UploadedByUsername { get; private set; } = string.Empty;
-    public string UploaderIpAddress { get; private set; } = string.Empty;
-    public UploadState State { get; private set; }
-    public string FileName { get; private set; } = string.Empty;
-    public bool IsValidated { get; private set; }
-    public bool IsRejected { get; private set; }
-    public string StorageObjectKey { get; private set; } = string.Empty;
-    public string? VerifiedStorageObjectKey { get; private set; }
-    public string? Sha256Checksum { get; private set; }
-    public DateTime? DateCompletedUtc { get; private set; }
-    public DateTime? DateValidatedUtc { get; private set; }
-    public DateTime? DateRejectedUtc { get; private set; }
-    public DateTime? DateStoredUtc { get; private set; }
-    public DateTime? DateDeletedUtc { get; private set; }
-    public string IdempotencyKey { get; private set; } = string.Empty;
-
-    public void Apply(UploadCreatedEvent uploadEvent, DateTime eventDateUtc)
+    private void Apply(UploadCreatedEvent uploadEvent, DateTime eventDateUtc)
     {
         Id = uploadEvent.UploadId;
         UploadedByUserId = uploadEvent.UploadedByUserId;
@@ -46,16 +33,17 @@ internal sealed class UploadAggregate
         State = UploadState.Uploading;
     }
 
-    public void Apply(UploadCompletedEvent uploadEvent, DateTime eventDateUtc)
+    private void Apply(UploadCompletedEvent uploadEvent, DateTime eventDateUtc)
     {
         StorageObjectKey = uploadEvent.StorageObjectKey;
         Sha256Checksum = uploadEvent.Sha256Checksum;
+        FileSizeBytes = uploadEvent.FileSizeBytes;
         DateCompletedUtc = eventDateUtc;
         DateUpdatedUtc = eventDateUtc;
         State = UploadState.NotValidated;
     }
 
-    public void Apply(UploadValidatedEvent uploadEvent, DateTime eventDateUtc)
+    private void Apply(UploadValidatedEvent uploadEvent, DateTime eventDateUtc)
     {
         IsValidated = true;
         DateValidatedUtc = eventDateUtc;
@@ -63,7 +51,7 @@ internal sealed class UploadAggregate
         State = UploadState.Verified;
     }
 
-    public void Apply(UploadRejectedEvent uploadEvent, DateTime eventDateUtc)
+    private void Apply(UploadRejectedEvent uploadEvent, DateTime eventDateUtc)
     {
         IsRejected = true;
         DateRejectedUtc = eventDateUtc;
@@ -71,7 +59,7 @@ internal sealed class UploadAggregate
         State = UploadState.Rejected;
     }
 
-    public void Apply(UploadStoredEvent uploadEvent, DateTime eventDateUtc)
+    private void Apply(UploadStoredEvent uploadEvent, DateTime eventDateUtc)
     {
         VerifiedStorageObjectKey = uploadEvent.VerifiedStorageObjectKey;
         DateStoredUtc = eventDateUtc;
@@ -79,14 +67,14 @@ internal sealed class UploadAggregate
         State = UploadState.Stored;
     }
 
-    public void Apply(UploadDeletedEvent uploadEvent, DateTime eventDateUtc)
+    private void Apply(UploadDeletedEvent uploadEvent, DateTime eventDateUtc)
     {
         DateDeletedUtc = eventDateUtc;
         DateUpdatedUtc = eventDateUtc;
         State = UploadState.Deleted;
     }
 
-    public void ApplyEvent(UploadEventType eventType, string json, DateTime eventDateUtc)
+    private void ApplyEvent(UploadEventType eventType, string json, DateTime eventDateUtc)
     {
         switch (eventType)
         {
@@ -112,6 +100,20 @@ internal sealed class UploadAggregate
                 throw new InvalidOperationException($"Unknown upload event type '{eventType}'.");
         }
     }
+
+    public Guid Id { get; private set; }
+    public DateTime DateCreatedUtc { get; private set; }
+    public DateTime DateUpdatedUtc { get; private set; }
+    public string UploadedByUserId { get; private set; } = string.Empty;
+    public UploadState State { get; private set; }
+    public string FileName { get; private set; } = string.Empty;
+    public bool IsValidated { get; private set; }
+    public bool IsRejected { get; private set; }
+    public string StorageObjectKey { get; private set; } = string.Empty;
+    public string? VerifiedStorageObjectKey { get; private set; }
+    public string? Sha256Checksum { get; private set; }
+    public long? FileSizeBytes { get; private set; }
+    public string IdempotencyKey { get; private set; } = string.Empty;
 
     public static UploadAggregate FromEvents(IEnumerable<UploadEventEntity> events)
     {
@@ -167,7 +169,8 @@ internal sealed class UploadAggregate
             FileName = FileName,
             IsValidated = IsValidated,
             IsRejected = IsRejected,
-            Sha256Checksum = Sha256Checksum
+            Sha256Checksum = Sha256Checksum,
+            FileSizeBytes = FileSizeBytes
         };
     }
 

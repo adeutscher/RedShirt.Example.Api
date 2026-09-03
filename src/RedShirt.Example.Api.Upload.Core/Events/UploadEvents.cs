@@ -28,6 +28,7 @@ public sealed class UploadCompletedEvent
     public required Guid UploadId { get; init; }
     public required string StorageObjectKey { get; init; }
     public required string Sha256Checksum { get; init; }
+    public required long FileSizeBytes { get; init; }
 }
 
 public sealed class UploadValidatedEvent

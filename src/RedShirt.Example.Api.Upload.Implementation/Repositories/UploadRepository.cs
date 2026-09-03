@@ -54,6 +54,7 @@ internal sealed class UploadRepository(
             UploadedByUserId = aggregate.UploadedByUserId,
             State = aggregate.State,
             FileName = aggregate.FileName,
+            FileSizeBytes = aggregate.FileSizeBytes,
             Flags = UploadAggregateFlagMapping.FromBoolValues(aggregate.IsValidated, aggregate.IsRejected),
             Sha256Checksum = aggregate.Sha256Checksum,
             IdempotencyKey = aggregate.IdempotencyKey
@@ -72,7 +73,8 @@ internal sealed class UploadRepository(
             FileName = entity.FileName,
             IsValidated = UploadAggregateFlagMapping.HasValidated(entity.Flags),
             IsRejected = UploadAggregateFlagMapping.HasRejected(entity.Flags),
-            Sha256Checksum = entity.Sha256Checksum
+            Sha256Checksum = entity.Sha256Checksum,
+            FileSizeBytes = entity.FileSizeBytes
         };
     }
 
@@ -132,6 +134,24 @@ internal sealed class UploadRepository(
         {
             var sha256Checksum = parameters.Sha256Checksum.ToLowerInvariant();
             builder.And(e => e.Sha256Checksum != null && e.Sha256Checksum.ToLower() == sha256Checksum);
+        }
+
+        if (parameters.FileSizeBytes.HasValue)
+        {
+            var fileSizeBytes = parameters.FileSizeBytes.Value;
+            builder.And(e => e.FileSizeBytes == fileSizeBytes);
+        }
+
+        if (parameters.FileSizeBytesGreaterThan.HasValue)
+        {
+            var fileSizeBytesGreaterThan = parameters.FileSizeBytesGreaterThan.Value;
+            builder.And(e => e.FileSizeBytes > fileSizeBytesGreaterThan);
+        }
+
+        if (parameters.FileSizeBytesLessThan.HasValue)
+        {
+            var fileSizeBytesLessThan = parameters.FileSizeBytesLessThan.Value;
+            builder.And(e => e.FileSizeBytes < fileSizeBytesLessThan);
         }
 
         if (parameters.IsValidated.HasValue)
@@ -226,6 +246,7 @@ internal sealed class UploadRepository(
             existing.UploadedByUserId = entity.UploadedByUserId;
             existing.State = entity.State;
             existing.FileName = entity.FileName;
+            existing.FileSizeBytes = entity.FileSizeBytes;
             existing.Flags = entity.Flags;
             existing.Sha256Checksum = entity.Sha256Checksum;
         }

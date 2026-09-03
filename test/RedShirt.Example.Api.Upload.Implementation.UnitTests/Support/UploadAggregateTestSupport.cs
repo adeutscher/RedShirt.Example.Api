@@ -12,13 +12,15 @@ internal static class UploadAggregateTestSupport
     internal static (UploadEventType EventType, object Payload) Completed(
         Guid uploadId,
         string storageObjectKey,
-        string sha256 = "abc123")
+        string sha256 = "abc123",
+        long fileSizeBytes = 1024)
     {
         return (UploadEventType.Completed, new UploadCompletedEvent
         {
             UploadId = uploadId,
             StorageObjectKey = storageObjectKey,
-            Sha256Checksum = sha256
+            Sha256Checksum = sha256,
+            FileSizeBytes = fileSizeBytes
         });
     }
 

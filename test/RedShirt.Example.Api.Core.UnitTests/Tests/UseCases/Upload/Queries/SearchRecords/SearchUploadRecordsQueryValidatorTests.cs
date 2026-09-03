@@ -22,6 +22,9 @@ public class SearchUploadRecordsQueryValidatorTests
             null,
             null,
             null,
+            null,
+            null,
+            null,
             null);
     }
 

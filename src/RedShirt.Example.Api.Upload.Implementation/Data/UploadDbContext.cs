@@ -16,6 +16,7 @@ internal sealed class UploadDbContext(DbContextOptions<UploadDbContext> options)
             entity.Property(e => e.UploadedByUserId).HasMaxLength(256).IsRequired();
             entity.Property(e => e.State).IsRequired();
             entity.Property(e => e.FileName).HasMaxLength(512).IsRequired();
+            entity.Property(e => e.FileSizeBytes).HasColumnType("bigint unsigned");
             entity.Property(e => e.Sha256Checksum)
                 .HasMaxLength(64)
                 .IsFixedLength()

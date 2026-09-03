@@ -27,6 +27,9 @@ internal sealed class SearchUploadRecordsQueryHandler(
             UploadedByUserId = query.UploadedByUserId,
             FileName = query.FileName,
             Sha256Checksum = query.Sha256Checksum,
+            FileSizeBytes = query.FileSizeBytes,
+            FileSizeBytesGreaterThan = query.FileSizeBytesGreaterThan,
+            FileSizeBytesLessThan = query.FileSizeBytesLessThan,
             IsValidated = query.IsValidated,
             IsRejected = query.IsRejected
         }, query.ContinuationToken, cancellationToken);

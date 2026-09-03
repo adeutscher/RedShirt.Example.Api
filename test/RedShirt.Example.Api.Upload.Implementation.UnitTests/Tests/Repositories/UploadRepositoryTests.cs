@@ -16,7 +16,8 @@ public class UploadRepositoryTests : IDisposable
         string uploadedByUserId,
         string fileName,
         string idempotencyKey,
-        string sha256Checksum = "sha256")
+        string sha256Checksum = "sha256",
+        long fileSizeBytes = 1024)
     {
         var uploadId = Guid.NewGuid();
         await repository.AppendEventAsync(
@@ -39,7 +40,8 @@ public class UploadRepositoryTests : IDisposable
             {
                 UploadId = uploadId,
                 StorageObjectKey = $"{uploadedByUserId}/{uploadId:N}",
-                Sha256Checksum = sha256Checksum
+                Sha256Checksum = sha256Checksum,
+                FileSizeBytes = fileSizeBytes
             },
             TestContext.Current.CancellationToken);
     }
@@ -75,21 +77,25 @@ public class UploadRepositoryTests : IDisposable
             {
                 UploadId = uploadId,
                 StorageObjectKey = "user-id/upload-id",
-                Sha256Checksum = "sha256"
+                Sha256Checksum = "sha256",
+                FileSizeBytes = 2048
             },
             TestContext.Current.CancellationToken);
 
         Assert.Equal(UploadState.NotValidated, summary.State);
         Assert.Equal("sha256", summary.Sha256Checksum);
+        Assert.Equal(2048, summary.FileSizeBytes);
 
         var aggregate = await repository.GetAggregateFromEventsAsync(uploadId, TestContext.Current.CancellationToken);
         Assert.Equal(UploadState.NotValidated, aggregate.State);
         Assert.Equal("user-id/upload-id", aggregate.StorageObjectKey);
         Assert.Equal("sha256", aggregate.Sha256Checksum);
+        Assert.Equal(2048, aggregate.FileSizeBytes);
 
         var storedSummary = await repository.GetSummaryAsync(uploadId, TestContext.Current.CancellationToken);
         Assert.NotNull(storedSummary);
         Assert.Equal("sha256", storedSummary.Sha256Checksum);
+        Assert.Equal(2048, storedSummary.FileSizeBytes);
     }
 
     [Fact]
@@ -197,6 +203,52 @@ public class UploadRepositoryTests : IDisposable
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
             repository.PurgeAsync(Guid.NewGuid(), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task SearchAsync_FiltersByFileSizeBytes()
+    {
+        var repository = UploadRepositoryTestSupport.CreateRepository(_dbContextFactory);
+        await SeedUploadAsync(repository, "user-a", "small.txt", "idem-a", fileSizeBytes: 512);
+        await SeedUploadAsync(repository, "user-a", "medium.txt", "idem-b", fileSizeBytes: 2048);
+        await SeedUploadAsync(repository, "user-a", "large.txt", "idem-c", fileSizeBytes: 8192);
+
+        var exactMatch = await repository.SearchAsync(
+            new UploadServiceSearchRequest
+            {
+                PageSize = 10,
+                FileSizeBytes = 2048
+            },
+            null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Single(exactMatch.Records);
+        Assert.Equal("medium.txt", exactMatch.Records[0].FileName);
+
+        var greaterThan = await repository.SearchAsync(
+            new UploadServiceSearchRequest
+            {
+                PageSize = 10,
+                FileSizeBytesGreaterThan = 1024
+            },
+            null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, greaterThan.Records.Count);
+        Assert.Contains(greaterThan.Records, record => record.FileName == "medium.txt");
+        Assert.Contains(greaterThan.Records, record => record.FileName == "large.txt");
+
+        var lessThan = await repository.SearchAsync(
+            new UploadServiceSearchRequest
+            {
+                PageSize = 10,
+                FileSizeBytesLessThan = 2048
+            },
+            null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Single(lessThan.Records);
+        Assert.Equal("small.txt", lessThan.Records[0].FileName);
     }
 
     [Fact]
