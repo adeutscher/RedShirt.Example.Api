@@ -22,8 +22,9 @@ operations, but adding search functionality was still a lengthy task with lots o
 
 I settled on a system of using Source Generation to generate the Service and Repository layers of accessing a table.
 Rosalyn Source Generators were a good fit because of their deterministic nature. Simple tables could be maintained
-according to a consistent standard. Endpoint/CQRS-level implementation of endpoints remained a separate task because of
-their greater chance of having bespoke rules per table.
+according to a consistent standard without having to invest much time or any resources such as LLM tokens.
+Endpoint/CQRS-level implementation of endpoints remained a separate task because of their greater chance of having
+bespoke requirements per table such as authorization or validation.
 
 ## Debugging
 
