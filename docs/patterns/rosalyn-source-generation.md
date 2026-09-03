@@ -9,6 +9,7 @@ The use of source generation came about when I faced the following project const
 * I was facing a large-scale personal project.
 * As the only developer, my resources were limited.
 * The project was very data-driven and needed CRUD endpoints for a large number of tables.
+* The tables themselves were very standard (ID, modification dates, string/int values), leading to lots of repetition.
 * APIs could in theory support the main application and support applications that populate or manipulate data while
   maintaining a principle of single ownership over a table.
 * I didn't want to revisit tables for fundamental technical debt.
