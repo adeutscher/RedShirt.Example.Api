@@ -8,5 +8,6 @@ public class SearchUploadRecordsQueryValidator : AbstractValidator<SearchUploadR
     public SearchUploadRecordsQueryValidator()
     {
         RuleFor(x => x.FileName).MustBePosixCompliantFileNameWhenPresent();
+        RuleFor(x => x.Sha256Checksum).MustBeValidSha256ChecksumWhenPresent();
     }
 }
