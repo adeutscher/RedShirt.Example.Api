@@ -41,7 +41,7 @@ A future branch is planned in which the following shall be implemented:
 
 ## Streaming
 
-In order to avoid overloading the API, the upload system streams information directly into file storage.
+In order to mitigate load on the API, the upload system streams information directly into file storage.
 
 ## Verification
 
