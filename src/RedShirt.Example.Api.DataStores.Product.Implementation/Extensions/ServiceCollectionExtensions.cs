@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RedShirt.Example.Api.Common.Database.DapperMySql.Extensions;
+using RedShirt.Example.Api.DataStores.Common.DapperMySql.Extensions;
 using RedShirt.Example.Api.DataStores.Product.Core.Services;
 using RedShirt.Example.Api.DataStores.Product.Implementation.Entities;
 using RedShirt.Example.Api.DataStores.Product.Implementation.Repositories;

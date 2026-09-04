@@ -14,7 +14,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Aws.S3FileStorage\RedShirt.Example.Api.Common.Aws.S3FileStorage.csproj"/>
-        <ProjectReference Include="..\RedShirt.Example.Api.Common.Database\RedShirt.Example.Api.Common.Database.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Common\RedShirt.Example.Api.DataStores.Common.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Distributed\RedShirt.Example.Api.Common.Distributed.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Exceptions\RedShirt.Example.Api.Common.Exceptions.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.FileStorage\RedShirt.Example.Api.Common.FileStorage.csproj"/>

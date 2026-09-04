@@ -1,5 +1,5 @@
 using Moq;
-using RedShirt.Example.Api.Common.Database.Services;
+using RedShirt.Example.Api.DataStores.Common.Services;
 using RedShirt.Example.Api.DataStores.Customer.Implementation.Data;
 using RedShirt.Example.Api.DataStores.Customer.Implementation.Factories;
 

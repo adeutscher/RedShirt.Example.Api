@@ -7,8 +7,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\RedShirt.Example.Api.Common.Analyzers.Database.Abstractions\RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.csproj"/>
-        <ProjectReference Include="..\RedShirt.Example.Api.Common.Database.DapperMySql\RedShirt.Example.Api.Common.Database.DapperMySql.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Analyzers.Abstractions\RedShirt.Example.Api.DataStores.Analyzers.Abstractions.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Common.DapperMySql\RedShirt.Example.Api.DataStores.Common.DapperMySql.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Distributed\RedShirt.Example.Api.Common.Distributed.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Exceptions\RedShirt.Example.Api.Common.Exceptions.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Product.Core\RedShirt.Example.Api.DataStores.Product.Core.csproj"/>

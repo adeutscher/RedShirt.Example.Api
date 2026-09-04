@@ -1,5 +1,4 @@
 using RedShirt.Example.Api.Common.Aws.SsmSecretManager.Extensions;
-using RedShirt.Example.Api.Common.Database.DapperMySql.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Extensions;
 using RedShirt.Example.Api.Common.RateLimiting.Extensions;
@@ -7,6 +6,7 @@ using RedShirt.Example.Api.Common.SecretManagers.Core.Extensions;
 using RedShirt.Example.Api.Connectors.Bar.Implementation.Extensions;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Extensions;
 using RedShirt.Example.Api.Core.Extensions;
+using RedShirt.Example.Api.DataStores.Common.DapperMySql.Extensions;
 using RedShirt.Example.Api.DataStores.Customer.Implementation.Extensions;
 using RedShirt.Example.Api.DataStores.ExampleItem.Extensions;
 using RedShirt.Example.Api.DataStores.Order.Extensions;

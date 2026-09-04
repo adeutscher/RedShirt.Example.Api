@@ -1,4 +1,4 @@
-using RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.Attributes;
+using RedShirt.Example.Api.DataStores.Analyzers.Abstractions.Attributes;
 using RedShirt.Example.Api.DataStores.Constants;
 
 namespace RedShirt.Example.Api.DataStores.Order.Models;
