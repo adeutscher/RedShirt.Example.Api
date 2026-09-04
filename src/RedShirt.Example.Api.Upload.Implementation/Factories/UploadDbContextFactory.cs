@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using RedShirt.Example.Api.Common.Database.Services;
+using RedShirt.Example.Api.DataStores.Common.Services;
 using RedShirt.Example.Api.Upload.Implementation.Data;
 
 namespace RedShirt.Example.Api.Upload.Implementation.Factories;

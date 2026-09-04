@@ -14,24 +14,15 @@
         <Project Path="src/RedShirt.Example.Api/RedShirt.Example.Api.csproj"/>
     </Folder>
     <Folder Name="/src/common/">
-        <Project Path="src/RedShirt.Example.Api.Common.Database/RedShirt.Example.Api.Common.Database.csproj"/>
         <Project Path="src/RedShirt.Example.Api.Common.Distributed/RedShirt.Example.Api.Common.Distributed.csproj"/>
         <Project
                 Path="src/RedShirt.Example.Api.Common.Docker.SecretManager/RedShirt.Example.Api.Common.Docker.SecretManager.csproj"/>
         <Project Path="src/RedShirt.Example.Api.Common.Exceptions/RedShirt.Example.Api.Common.Exceptions.csproj"/>
         <Project
                 Path="src/RedShirt.Example.Api.Common.SecretManagers.Core/RedShirt.Example.Api.Common.SecretManagers.Core.csproj"/>
-        <Project
-                Path="src\RedShirt.Example.Api.Common.Database.DapperMySql\RedShirt.Example.Api.Common.Database.DapperMySql.csproj"/>
         <Project Path="src\RedShirt.Example.Api.Common.RateLimiting\RedShirt.Example.Api.Common.RateLimiting.csproj"/>
         <Project Path="src\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>
         <Project Path="src\RedShirt.Example.Api.Common.FileStorage\RedShirt.Example.Api.Common.FileStorage.csproj"/>
-    </Folder>
-    <Folder Name="/src/common/analyzers/">
-        <Project
-                Path="src\RedShirt.Example.Api.Common.Analyzers.Database.Abstractions\RedShirt.Example.Api.Common.Analyzers.Database.Abstractions.csproj"/>
-        <Project
-                Path="src\RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation\RedShirt.Example.Api.Common.Analyzers.Database.DapperMySql.Generation.csproj"/>
     </Folder>
     <Folder Name="/src/common/aws/">
         <Project
@@ -74,6 +65,17 @@
         <Project
                 Path="src\RedShirt.Example.Api.Upload.Implementation\RedShirt.Example.Api.Upload.Implementation.csproj"/>
     </Folder>
+    <Folder Name="/src/data-stores/analyzers/">
+        <Project
+                Path="src\RedShirt.Example.Api.DataStores.Analyzers.Abstractions\RedShirt.Example.Api.DataStores.Analyzers.Abstractions.csproj"/>
+        <Project
+                Path="src\RedShirt.Example.Api.DataStores.Analyzers.DapperMySql.Generation\RedShirt.Example.Api.DataStores.Analyzers.DapperMySql.Generation.csproj"/>
+    </Folder>
+    <Folder Name="/src/data-stores/common/">
+        <Project
+                Path="src\RedShirt.Example.Api.DataStores.Common.DapperMySql\RedShirt.Example.Api.DataStores.Common.DapperMySql.csproj"/>
+        <Project Path="src\RedShirt.Example.Api.DataStores.Common\RedShirt.Example.Api.DataStores.Common.csproj"/>
+    </Folder>
     <Folder Name="/swagger/">
         <Project Path="swagger/RedShirt.Example.Api.Interop/RedShirt.Example.Api.Interop.csproj"/>
     </Folder>
@@ -95,8 +97,6 @@
                 Path="test/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.UnitTests/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.UnitTests.csproj"/>
         <Project
                 Path="test/RedShirt.Example.Api.Common.Azure.UnitTests/RedShirt.Example.Api.Common.Azure.UnitTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Common.Database.DapperMySql.UnitTests/RedShirt.Example.Api.Common.Database.DapperMySql.UnitTests.csproj"/>
         <Project
                 Path="test/RedShirt.Example.Api.Common.Distributed.UnitTests/RedShirt.Example.Api.Common.Distributed.UnitTests.csproj"/>
         <Project
@@ -138,5 +138,9 @@
                 Path="test\RedShirt.Example.Api.DataStores.Product.Implementation.UnitTests\RedShirt.Example.Api.DataStores.Product.Implementation.UnitTests.csproj"/>
         <Project
                 Path="test\RedShirt.Example.Api.Upload.Implementation.UnitTests\RedShirt.Example.Api.Upload.Implementation.UnitTests.csproj"/>
+    </Folder>
+    <Folder Name="/test/data-stores/common/">
+        <Project
+                Path="test\RedShirt.Example.Api.DataStores.Common.DapperMySql.UnitTests\RedShirt.Example.Api.DataStores.Common.DapperMySql.UnitTests.csproj"/>
     </Folder>
 </Solution>
