@@ -1,146 +1,107 @@
 <Solution>
     <Folder Name="/Solution Items/">
-        <File Path="Dockerfile"/>
-        <File Path="README.md"/>
+        <File Path="Dockerfile" />
+        <File Path="README.md" />
     </Folder>
-    <Folder Name="/Solution Items/docs/"/>
+    <Folder Name="/Solution Items/docs/" />
     <Folder Name="/Solution Items/docs/patterns/">
-        <File Path="docs\patterns\event-sourcing.md"/>
-        <File Path="docs\patterns\rosalyn-source-generation.md"/>
-        <File Path="docs\patterns\uploads.md"/>
+        <File Path="docs\patterns\event-sourcing.md" />
+        <File Path="docs\patterns\rosalyn-source-generation.md" />
+        <File Path="docs\patterns\uploads.md" />
     </Folder>
     <Folder Name="/src/">
-        <Project Path="src/RedShirt.Example.Api.Core/RedShirt.Example.Api.Core.csproj"/>
-        <Project Path="src/RedShirt.Example.Api/RedShirt.Example.Api.csproj"/>
+        <Project Path="src/RedShirt.Example.Api.Core/RedShirt.Example.Api.Core.csproj" />
+        <Project Path="src/RedShirt.Example.Api/RedShirt.Example.Api.csproj" />
     </Folder>
     <Folder Name="/src/common/">
-        <Project Path="src/RedShirt.Example.Api.Common.Distributed/RedShirt.Example.Api.Common.Distributed.csproj"/>
-        <Project
-                Path="src/RedShirt.Example.Api.Common.Docker.SecretManager/RedShirt.Example.Api.Common.Docker.SecretManager.csproj"/>
-        <Project Path="src/RedShirt.Example.Api.Common.Exceptions/RedShirt.Example.Api.Common.Exceptions.csproj"/>
-        <Project
-                Path="src/RedShirt.Example.Api.Common.SecretManagers.Core/RedShirt.Example.Api.Common.SecretManagers.Core.csproj"/>
-        <Project Path="src\RedShirt.Example.Api.Common.RateLimiting\RedShirt.Example.Api.Common.RateLimiting.csproj"/>
-        <Project Path="src\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>
-        <Project Path="src\RedShirt.Example.Api.Common.FileStorage\RedShirt.Example.Api.Common.FileStorage.csproj"/>
+        <Project Path="src/RedShirt.Example.Api.Common.Distributed/RedShirt.Example.Api.Common.Distributed.csproj" />
+        <Project Path="src/RedShirt.Example.Api.Common.Docker.SecretManager/RedShirt.Example.Api.Common.Docker.SecretManager.csproj" />
+        <Project Path="src/RedShirt.Example.Api.Common.Exceptions/RedShirt.Example.Api.Common.Exceptions.csproj" />
+        <Project Path="src/RedShirt.Example.Api.Common.SecretManagers.Core/RedShirt.Example.Api.Common.SecretManagers.Core.csproj" />
+        <Project Path="src\RedShirt.Example.Api.Common.RateLimiting\RedShirt.Example.Api.Common.RateLimiting.csproj" />
+        <Project Path="src\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj" />
+        <Project Path="src\RedShirt.Example.Api.Common.FileStorage\RedShirt.Example.Api.Common.FileStorage.csproj" />
     </Folder>
     <Folder Name="/src/common/aws/">
-        <Project
-                Path="src/RedShirt.Example.Api.Common.Aws.SsmSecretManager/RedShirt.Example.Api.Common.Aws.SsmSecretManager.csproj"/>
-        <Project Path="src/RedShirt.Example.Api.Common.Aws/RedShirt.Example.Api.Common.Aws.csproj"/>
-        <Project
-                Path="src\RedShirt.Example.Api.Common.Aws.S3FileStorage\RedShirt.Example.Api.Common.Aws.S3FileStorage.csproj"/>
+        <Project Path="src/RedShirt.Example.Api.Common.Aws.SsmSecretManager/RedShirt.Example.Api.Common.Aws.SsmSecretManager.csproj" />
+        <Project Path="src/RedShirt.Example.Api.Common.Aws/RedShirt.Example.Api.Common.Aws.csproj" />
+        <Project Path="src\RedShirt.Example.Api.Common.Aws.S3FileStorage\RedShirt.Example.Api.Common.Aws.S3FileStorage.csproj" />
     </Folder>
     <Folder Name="/src/common/azure/">
-        <Project
-                Path="src/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.csproj"/>
-        <Project Path="src/RedShirt.Example.Api.Common.Azure/RedShirt.Example.Api.Common.Azure.csproj"/>
+        <Project Path="src/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.csproj" />
+        <Project Path="src/RedShirt.Example.Api.Common.Azure/RedShirt.Example.Api.Common.Azure.csproj" />
     </Folder>
     <Folder Name="/src/connectors/">
-        <Project Path="src/RedShirt.Example.Api.Connectors.Bar.Core/RedShirt.Example.Api.Connectors.Bar.Core.csproj"/>
-        <Project
-                Path="src/RedShirt.Example.Api.Connectors.Bar.Implementation/RedShirt.Example.Api.Connectors.Bar.Implementation.csproj"/>
-        <Project Path="src/RedShirt.Example.Api.Connectors.Foo.Core/RedShirt.Example.Api.Connectors.Foo.Core.csproj"/>
-        <Project
-                Path="src/RedShirt.Example.Api.Connectors.Foo.Implementation/RedShirt.Example.Api.Connectors.Foo.Implementation.csproj"/>
+        <Project Path="src/RedShirt.Example.Api.Connectors.Bar.Core/RedShirt.Example.Api.Connectors.Bar.Core.csproj" />
+        <Project Path="src/RedShirt.Example.Api.Connectors.Bar.Implementation/RedShirt.Example.Api.Connectors.Bar.Implementation.csproj" />
+        <Project Path="src/RedShirt.Example.Api.Connectors.Foo.Core/RedShirt.Example.Api.Connectors.Foo.Core.csproj" />
+        <Project Path="src/RedShirt.Example.Api.Connectors.Foo.Implementation/RedShirt.Example.Api.Connectors.Foo.Implementation.csproj" />
     </Folder>
     <Folder Name="/src/connectors/common/">
-        <Project
-                Path="src/RedShirt.Example.Api.Connectors.Common.Http/RedShirt.Example.Api.Connectors.Common.Http.csproj"/>
+        <Project Path="src/RedShirt.Example.Api.Connectors.Common.Http/RedShirt.Example.Api.Connectors.Common.Http.csproj" />
     </Folder>
     <Folder Name="/src/data-stores/">
-        <Project Path="src\RedShirt.Example.Api.DataStores.Constants\RedShirt.Example.Api.DataStores.Constants.csproj"/>
-        <Project
-                Path="src\RedShirt.Example.Api.DataStores.Customer.Core\RedShirt.Example.Api.DataStores.Customer.Core.csproj"/>
-        <Project
-                Path="src\RedShirt.Example.Api.DataStores.Customer.Implementation\RedShirt.Example.Api.DataStores.Customer.Implementation.csproj"/>
-        <Project
-                Path="src\RedShirt.Example.Api.DataStores.ExampleItem\RedShirt.Example.Api.DataStores.ExampleItem.csproj"/>
-        <Project Path="src\RedShirt.Example.Api.DataStores.Order\RedShirt.Example.Api.DataStores.Order.csproj"/>
-        <Project
-                Path="src\RedShirt.Example.Api.DataStores.Product.Core\RedShirt.Example.Api.DataStores.Product.Core.csproj"/>
-        <Project
-                Path="src\RedShirt.Example.Api.DataStores.Product.Implementation\RedShirt.Example.Api.DataStores.Product.Implementation.csproj"/>
-        <Project Path="src\RedShirt.Example.Api.Upload.Core\RedShirt.Example.Api.Upload.Core.csproj"/>
-        <Project
-                Path="src\RedShirt.Example.Api.Upload.Implementation\RedShirt.Example.Api.Upload.Implementation.csproj"/>
+        <Project Path="src\RedShirt.Example.Api.DataStores.Constants\RedShirt.Example.Api.DataStores.Constants.csproj" />
+        <Project Path="src\RedShirt.Example.Api.DataStores.Customer.Core\RedShirt.Example.Api.DataStores.Customer.Core.csproj" />
+        <Project Path="src\RedShirt.Example.Api.DataStores.Customer.Implementation\RedShirt.Example.Api.DataStores.Customer.Implementation.csproj" />
+        <Project Path="src\RedShirt.Example.Api.DataStores.ExampleItem\RedShirt.Example.Api.DataStores.ExampleItem.csproj" />
+        <Project Path="src\RedShirt.Example.Api.DataStores.Order\RedShirt.Example.Api.DataStores.Order.csproj" />
+        <Project Path="src\RedShirt.Example.Api.DataStores.Product.Core\RedShirt.Example.Api.DataStores.Product.Core.csproj" />
+        <Project Path="src\RedShirt.Example.Api.DataStores.Product.Implementation\RedShirt.Example.Api.DataStores.Product.Implementation.csproj" />
+        <Project Path="src\RedShirt.Example.Api.Upload.Core\RedShirt.Example.Api.Upload.Core.csproj" />
+        <Project Path="src\RedShirt.Example.Api.Upload.Implementation\RedShirt.Example.Api.Upload.Implementation.csproj" />
     </Folder>
     <Folder Name="/src/data-stores/analyzers/">
-        <Project
-                Path="src\RedShirt.Example.Api.DataStores.Analyzers.Abstractions\RedShirt.Example.Api.DataStores.Analyzers.Abstractions.csproj"/>
-        <Project
-                Path="src\RedShirt.Example.Api.DataStores.Analyzers.DapperMySql.Generation\RedShirt.Example.Api.DataStores.Analyzers.DapperMySql.Generation.csproj"/>
+        <Project Path="src\RedShirt.Example.Api.DataStores.Analyzers.Abstractions\RedShirt.Example.Api.DataStores.Analyzers.Abstractions.csproj" />
+        <Project Path="src\RedShirt.Example.Api.DataStores.Analyzers.DapperMySql.Generation\RedShirt.Example.Api.DataStores.Analyzers.DapperMySql.Generation.csproj" />
     </Folder>
     <Folder Name="/src/data-stores/common/">
-        <Project
-                Path="src\RedShirt.Example.Api.DataStores.Common.DapperMySql\RedShirt.Example.Api.DataStores.Common.DapperMySql.csproj"/>
-        <Project Path="src\RedShirt.Example.Api.DataStores.Common\RedShirt.Example.Api.DataStores.Common.csproj"/>
+        <Project Path="src\RedShirt.Example.Api.DataStores.Common.DapperMySql\RedShirt.Example.Api.DataStores.Common.DapperMySql.csproj" />
+        <Project Path="src\RedShirt.Example.Api.DataStores.Common\RedShirt.Example.Api.DataStores.Common.csproj" />
     </Folder>
+    <Folder Name="/src/events/" />
     <Folder Name="/swagger/">
-        <Project Path="swagger/RedShirt.Example.Api.Interop/RedShirt.Example.Api.Interop.csproj"/>
+        <Project Path="swagger/RedShirt.Example.Api.Interop/RedShirt.Example.Api.Interop.csproj" />
     </Folder>
     <Folder Name="/test/">
-        <Project Path="test/RedShirt.Example.Api.Core.UnitTests/RedShirt.Example.Api.Core.UnitTests.csproj"/>
-        <Project Path="test/RedShirt.Example.Api.IntegrationTests/RedShirt.Example.Api.IntegrationTests.csproj"/>
-        <Project Path="test/RedShirt.Example.Api.UnitTests/RedShirt.Example.Api.UnitTests.csproj"/>
+        <Project Path="test/RedShirt.Example.Api.Core.UnitTests/RedShirt.Example.Api.Core.UnitTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.IntegrationTests/RedShirt.Example.Api.IntegrationTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.UnitTests/RedShirt.Example.Api.UnitTests.csproj" />
     </Folder>
     <Folder Name="/test/common/">
-        <Project
-                Path="test/RedShirt.Example.Api.Common.Aws.SsmSecretManager.UnitTests/RedShirt.Example.Api.Common.Aws.SsmSecretManager.UnitTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Common.Aws.S3FileStorage.UnitTests/RedShirt.Example.Api.Common.Aws.S3FileStorage.UnitTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Common.Aws.S3FileStorage.IntegrationTests/RedShirt.Example.Api.Common.Aws.S3FileStorage.IntegrationTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Common.Aws.UnitTests/RedShirt.Example.Api.Common.Aws.UnitTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.UnitTests/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.UnitTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Common.Azure.UnitTests/RedShirt.Example.Api.Common.Azure.UnitTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Common.Distributed.UnitTests/RedShirt.Example.Api.Common.Distributed.UnitTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Common.Docker.SecretManager.UnitTests/RedShirt.Example.Api.Common.Docker.SecretManager.UnitTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Common.RateLimiting.UnitTests/RedShirt.Example.Api.Common.RateLimiting.UnitTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Common.SecretManagers.Core.UnitTests/RedShirt.Example.Api.Common.SecretManagers.Core.UnitTests.csproj"/>
-        <Project Path="test/RedShirt.Example.Api.Common.UnitTests/RedShirt.Example.Api.Common.UnitTests.csproj"/>
+        <Project Path="test/RedShirt.Example.Api.Common.Aws.SsmSecretManager.UnitTests/RedShirt.Example.Api.Common.Aws.SsmSecretManager.UnitTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.Common.Aws.S3FileStorage.UnitTests/RedShirt.Example.Api.Common.Aws.S3FileStorage.UnitTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.Common.Aws.S3FileStorage.IntegrationTests/RedShirt.Example.Api.Common.Aws.S3FileStorage.IntegrationTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.Common.Aws.UnitTests/RedShirt.Example.Api.Common.Aws.UnitTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.UnitTests/RedShirt.Example.Api.Common.Azure.KeyVaultSecretManager.UnitTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.Common.Azure.UnitTests/RedShirt.Example.Api.Common.Azure.UnitTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.Common.Distributed.UnitTests/RedShirt.Example.Api.Common.Distributed.UnitTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.Common.Docker.SecretManager.UnitTests/RedShirt.Example.Api.Common.Docker.SecretManager.UnitTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.Common.RateLimiting.UnitTests/RedShirt.Example.Api.Common.RateLimiting.UnitTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.Common.SecretManagers.Core.UnitTests/RedShirt.Example.Api.Common.SecretManagers.Core.UnitTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.Common.UnitTests/RedShirt.Example.Api.Common.UnitTests.csproj" />
     </Folder>
     <Folder Name="/test/connectors/">
-        <Project
-                Path="test/RedShirt.Example.Api.Connectors.Bar.Core.UnitTests/RedShirt.Example.Api.Connectors.Bar.Core.UnitTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Connectors.Bar.Implementation.UnitTests/RedShirt.Example.Api.Connectors.Bar.Implementation.UnitTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Connectors.Foo.Core.UnitTests/RedShirt.Example.Api.Connectors.Foo.Core.UnitTests.csproj"/>
-        <Project
-                Path="test/RedShirt.Example.Api.Connectors.Foo.Implementation.UnitTests/RedShirt.Example.Api.Connectors.Foo.Implementation.UnitTests.csproj"/>
+        <Project Path="test/RedShirt.Example.Api.Connectors.Bar.Core.UnitTests/RedShirt.Example.Api.Connectors.Bar.Core.UnitTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.Connectors.Bar.Implementation.UnitTests/RedShirt.Example.Api.Connectors.Bar.Implementation.UnitTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.Connectors.Foo.Core.UnitTests/RedShirt.Example.Api.Connectors.Foo.Core.UnitTests.csproj" />
+        <Project Path="test/RedShirt.Example.Api.Connectors.Foo.Implementation.UnitTests/RedShirt.Example.Api.Connectors.Foo.Implementation.UnitTests.csproj" />
     </Folder>
     <Folder Name="/test/connectors/common/">
-        <Project
-                Path="test/RedShirt.Example.Api.Connectors.Common.Http.UnitTests/RedShirt.Example.Api.Connectors.Common.Http.UnitTests.csproj"/>
+        <Project Path="test/RedShirt.Example.Api.Connectors.Common.Http.UnitTests/RedShirt.Example.Api.Connectors.Common.Http.UnitTests.csproj" />
     </Folder>
     <Folder Name="/test/data-stores/">
-        <Project
-                Path="test\RedShirt.Example.Api.DataStores.Customer.Core.UnitTests\RedShirt.Example.Api.DataStores.Customer.Core.UnitTests.csproj"/>
-        <Project
-                Path="test\RedShirt.Example.Api.DataStores.Customer.Implementation.UnitTests\RedShirt.Example.Api.DataStores.Customer.Implementation.UnitTests.csproj"/>
-        <Project
-                Path="test\RedShirt.Example.Api.DataStores.Customer.IntegrationTests\RedShirt.Example.Api.DataStores.Customer.IntegrationTests.csproj"/>
-        <Project
-                Path="test\RedShirt.Example.Api.DataStores.ExampleItem.UnitTests\RedShirt.Example.Api.DataStores.ExampleItem.UnitTests.csproj"/>
-        <Project
-                Path="test\RedShirt.Example.Api.DataStores.Order.UnitTests\RedShirt.Example.Api.DataStores.Order.UnitTests.csproj"/>
-        <Project
-                Path="test\RedShirt.Example.Api.DataStores.Product.Core.UnitTests\RedShirt.Example.Api.DataStores.Product.Core.UnitTests.csproj"/>
-        <Project
-                Path="test\RedShirt.Example.Api.DataStores.Product.Implementation.UnitTests\RedShirt.Example.Api.DataStores.Product.Implementation.UnitTests.csproj"/>
-        <Project
-                Path="test\RedShirt.Example.Api.Upload.Implementation.UnitTests\RedShirt.Example.Api.Upload.Implementation.UnitTests.csproj"/>
+        <Project Path="test\RedShirt.Example.Api.DataStores.Customer.Core.UnitTests\RedShirt.Example.Api.DataStores.Customer.Core.UnitTests.csproj" />
+        <Project Path="test\RedShirt.Example.Api.DataStores.Customer.Implementation.UnitTests\RedShirt.Example.Api.DataStores.Customer.Implementation.UnitTests.csproj" />
+        <Project Path="test\RedShirt.Example.Api.DataStores.Customer.IntegrationTests\RedShirt.Example.Api.DataStores.Customer.IntegrationTests.csproj" />
+        <Project Path="test\RedShirt.Example.Api.DataStores.ExampleItem.UnitTests\RedShirt.Example.Api.DataStores.ExampleItem.UnitTests.csproj" />
+        <Project Path="test\RedShirt.Example.Api.DataStores.Order.UnitTests\RedShirt.Example.Api.DataStores.Order.UnitTests.csproj" />
+        <Project Path="test\RedShirt.Example.Api.DataStores.Product.Core.UnitTests\RedShirt.Example.Api.DataStores.Product.Core.UnitTests.csproj" />
+        <Project Path="test\RedShirt.Example.Api.DataStores.Product.Implementation.UnitTests\RedShirt.Example.Api.DataStores.Product.Implementation.UnitTests.csproj" />
+        <Project Path="test\RedShirt.Example.Api.Upload.Implementation.UnitTests\RedShirt.Example.Api.Upload.Implementation.UnitTests.csproj" />
     </Folder>
     <Folder Name="/test/data-stores/common/">
-        <Project
-                Path="test\RedShirt.Example.Api.DataStores.Common.DapperMySql.UnitTests\RedShirt.Example.Api.DataStores.Common.DapperMySql.UnitTests.csproj"/>
+        <Project Path="test\RedShirt.Example.Api.DataStores.Common.DapperMySql.UnitTests\RedShirt.Example.Api.DataStores.Common.DapperMySql.UnitTests.csproj" />
     </Folder>
+    <Folder Name="/test/events/" />
 </Solution>
