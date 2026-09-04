@@ -131,6 +131,8 @@ The upload system of this API template utilizes the event sourcing pattern:
   exists under this idempotency key, then the follow-up attempt will be rejected with an HTTP 409 (Conflict) status
   code.
 
+For more information on the upload system, refer to [`uploads.md`](uploads.md).
+
 ## Other Resources
 
 This document is only my compiled notes on event sourcing. The following resources may also be useful:
