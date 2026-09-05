@@ -3,12 +3,12 @@ using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Formatter;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Exceptions;
-using RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Models;
-using RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Services;
+using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Models;
+using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Services;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
 using System.Net.Sockets;
 
-namespace RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Factories;
+namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Factories;
 
 internal interface IMqttClientFactory
 {

@@ -4,13 +4,13 @@ using MQTTnet.Protocol;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Exceptions;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Models;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Services;
-using RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Factories;
-using RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Services.Resilience;
+using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Factories;
+using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Services.Resilience;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Channels;
 
-namespace RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Services;
+namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Services;
 
 internal sealed class MqttApiClientEventReceiver<TPayload>(
     IMqttClientFactory mqttClientFactory,

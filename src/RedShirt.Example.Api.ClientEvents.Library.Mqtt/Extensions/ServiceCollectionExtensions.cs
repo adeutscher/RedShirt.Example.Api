@@ -3,13 +3,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Services;
-using RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Factories;
-using RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Services;
-using RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Services.Resilience;
+using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Factories;
+using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Services;
+using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Services.Resilience;
 using RedShirt.Example.Api.Common.Aws.Extensions;
 using RedShirt.Example.Api.Common.Extensions;
 
-namespace RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Extensions;
+namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Extensions;
 
 public static class ServiceCollectionExtensions
 {

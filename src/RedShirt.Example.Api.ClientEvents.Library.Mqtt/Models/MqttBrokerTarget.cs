@@ -1,4 +1,4 @@
-namespace RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Models;
+namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Models;
 
 internal sealed class MqttBrokerTarget
 {

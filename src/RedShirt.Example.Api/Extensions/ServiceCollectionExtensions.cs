@@ -1,5 +1,5 @@
 using RedShirt.Example.Api.ClientEvents.Domains.Example.Extensions;
-using RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Extensions;
+using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Extensions;
 using RedShirt.Example.Api.Common.Aws.SsmSecretManager.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Extensions;

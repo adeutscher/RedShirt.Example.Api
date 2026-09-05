@@ -1,6 +1,6 @@
-using RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Models;
+using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Models;
 
-namespace RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Services;
+namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Services;
 
 /// <summary>
 ///     Resolves an MQTT broker connection target when a configured <c>BrokerUrl</c> is not sufficient on its own.

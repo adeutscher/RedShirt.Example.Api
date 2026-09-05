@@ -5,7 +5,7 @@ using Polly.Retry;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Exceptions;
 using RedShirt.Example.Api.Common.Services.Utility;
 
-namespace RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Services.Resilience;
+namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Services.Resilience;
 
 /// <summary>
 ///     Retries MQTT client-events operations that fail with expected transient exceptions,

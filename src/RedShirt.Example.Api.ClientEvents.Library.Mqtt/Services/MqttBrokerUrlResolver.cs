@@ -2,9 +2,9 @@ using Amazon.IoT;
 using Amazon.IoT.Model;
 using Microsoft.Extensions.Options;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Exceptions;
-using RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Models;
+using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Models;
 
-namespace RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Services;
+namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Services;
 
 /// <summary>
 ///     Resolves an MQTT broker connection target from AWS IoT Core <c>DescribeEndpoint</c>.

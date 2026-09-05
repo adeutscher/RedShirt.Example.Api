@@ -1,10 +1,10 @@
 using RedShirt.Example.Api.ClientEvents.Library.Core.Exceptions;
-using RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Models;
+using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Models;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Exceptions;
 using System.Net.Sockets;
 using System.Text.Json;
 
-namespace RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Services.Resilience;
+namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Services.Resilience;
 
 /// <summary>
 ///     Classifies MQTT client-events exceptions for retry decisions.
