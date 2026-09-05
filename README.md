@@ -111,6 +111,11 @@ Below are the recommended steps for using this as a template:
       adjusting the comments described in `MessagesEventStreamListener`.
     * If you are not implementing Server-Side Events in your applied application, then I would recommend deleting
       `EventStreamListener.cs` outright.
+        * The pattern of emulating the generated swagger clients by throwing a `SwaggerException` required the manual
+          declaration of `SwaggerException` and `ProblemDetails` to avoid a chicken-and-egg problem on build where a
+          cold build without generated code failed because the manual code was expecting it. If you are removing
+          `EventStreamListener`, then you might also want to consider removing these manual classes and adjusting
+          `nswag.json` to generate them again.
 5. Consider revising/pruning the Markdown files such as this README or those located in the `docs/` directory. They
    heavily assume that they are speaking for a general template and not for an applied application.
 
