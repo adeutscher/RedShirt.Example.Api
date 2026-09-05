@@ -85,6 +85,9 @@ With these reasons in mind, I would only pivot to SignalR if I had a specific ca
 
 # Client Examples
 
+Reading from event stream is a different challenge then a flat HTTP request, so here are several generated code samples
+for interacting with them.
+
 ## C#
 
 ### Interop
