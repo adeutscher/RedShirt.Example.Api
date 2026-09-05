@@ -106,6 +106,105 @@ await listener.StreamEventsAsync(
     cancellationToken);
 ```
 
+### Standalone
+
+Use this approach when you do not want a dependency on `RedShirt.Example.Api.Interop`. It uses `HttpClient` to open
+`GET /messages/event-stream`, reads the response as a stream, and parses SSE blocks manually (same event name and plain
+text `data` payload as the JavaScript example).
+
+```csharp
+using System.Net.Http.Headers;
+using System.Text;
+
+static async Task ListenToMessageStreamAsync(
+    string apiBaseUrl,
+    string accessToken,
+    Action<string>? onEvent = null,
+    CancellationToken cancellationToken = default)
+{
+    onEvent ??= message => Console.WriteLine($"[message] {message}");
+
+    var baseUrl = apiBaseUrl.TrimEnd('/');
+    using var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/messages/event-stream");
+    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+    request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+
+    using var httpClient = new HttpClient();
+    using var response = await httpClient.SendAsync(
+        request,
+        HttpCompletionOption.ResponseHeadersRead,
+        cancellationToken);
+
+    if (!response.IsSuccessStatusCode)
+    {
+        var errorBody = response.Content == null
+            ? string.Empty
+            : await response.Content.ReadAsStringAsync(cancellationToken);
+        throw new HttpRequestException(
+            $"HTTP {(int)response.StatusCode}: {errorBody}",
+            null,
+            response.StatusCode);
+    }
+
+    if (response.Content == null)
+    {
+        return;
+    }
+
+    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+    using var reader = new StreamReader(stream, Encoding.UTF8);
+
+    string? eventName = null;
+    var dataLines = new List<string>();
+
+    while (!cancellationToken.IsCancellationRequested)
+    {
+        var line = await reader.ReadLineAsync(cancellationToken);
+        if (line == null)
+        {
+            break;
+        }
+
+        if (line.Length == 0)
+        {
+            if (dataLines.Count > 0)
+            {
+                var resolvedEventName = eventName ?? "message";
+                if (string.Equals(resolvedEventName, "message", StringComparison.Ordinal))
+                {
+                    onEvent(string.Join('\n', dataLines));
+                }
+            }
+
+            eventName = null;
+            dataLines.Clear();
+            continue;
+        }
+
+        if (line.StartsWith(':'))
+        {
+            continue;
+        }
+
+        if (line.StartsWith("event:", StringComparison.Ordinal))
+        {
+            eventName = line["event:".Length..].Trim();
+            continue;
+        }
+
+        if (line.StartsWith("data:", StringComparison.Ordinal))
+        {
+            dataLines.Add(line["data:".Length..].TrimStart());
+        }
+    }
+
+    cancellationToken.ThrowIfCancellationRequested();
+}
+
+// Example:
+// await ListenToMessageStreamAsync("http://localhost:8080", accessToken);
+```
+
 ## JavaScript
 
 The example stream lives at `GET /messages/event-stream`. Each event uses the SSE event name `message`, and the
