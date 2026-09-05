@@ -14,12 +14,6 @@ of reasons:
 * There could be other sources writing events directly to the external service (though this is not recommended for
   single-responsibility reasons).
 
-# Client Examples
-
-## JavaScript
-
-STUB
-
 # Special Cases
 
 ## AWS IoT Endpoint Resolution
@@ -58,3 +52,72 @@ If you want to remove the use of the `AWSSDK.IoT` altogether, then the following
     * RabbitMQ (not enabled by default, needs to be explicitly enabled)
 5. Update configuration in local `test/local/docker-compose.yaml` file to point to the new server solution.
     * You may need to also set credentials in secret managers.
+
+# Client Examples
+
+## JavaScript
+
+The example stream lives at `GET /messages/event-stream`. Each event uses the SSE event name `message`, and the
+`data` field is the plain message text (not JSON). The endpoint requires a bearer token with the `api:read` scope.
+
+Browsers cannot set custom headers on the built-in `EventSource` API, so the example below uses `fetch` and reads the
+response body as a stream. This works in modern browsers and in Node.js 18+.
+
+```javascript
+async function listenToMessageStream(apiBaseUrl, accessToken) {
+  const url = `${apiBaseUrl.replace(/\/$/, "")}/messages/event-stream`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "text/event-stream",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  console.log(`Listening on ${url} (Ctrl+C to stop)...`);
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+
+    let eventBoundary;
+    while ((eventBoundary = buffer.indexOf("\n\n")) >= 0) {
+      const block = buffer.slice(0, eventBoundary);
+      buffer = buffer.slice(eventBoundary + 2);
+
+      let eventName = "message";
+      const dataLines = [];
+
+      for (const line of block.split("\n")) {
+        if (line.startsWith("event:")) {
+          eventName = line.slice("event:".length).trim();
+        } else if (line.startsWith("data:")) {
+          dataLines.push(line.slice("data:".length).trimStart());
+        }
+      }
+
+      if (dataLines.length > 0) {
+        console.log(`[${eventName}] ${dataLines.join("\n")}`);
+      }
+    }
+  }
+}
+
+// Example:
+// listenToMessageStream("http://localhost:8080", process.env.API_JWT_TOKEN);
+```
+
+To exercise the stream locally, open a terminal running the listener above, then publish a message with
+`POST /messages` (requires `api:write`). The listener should print lines like `[message] hello from mqtt`.
