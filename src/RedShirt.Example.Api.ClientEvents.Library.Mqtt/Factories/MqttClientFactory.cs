@@ -107,10 +107,17 @@ internal sealed class ApiMqttClientFactory(
             .WithClientId($"{config.EffectiveClientIdPrefix}/{ServerHostname}/{Guid.NewGuid():N}")
             .WithCleanSession();
 
-        if (!string.IsNullOrWhiteSpace(config.ProtocolVersion) &&
-            Enum.TryParse<MqttProtocolVersion>(config.ProtocolVersion, out var protocolVersion))
+        if (!string.IsNullOrWhiteSpace(config.ProtocolVersion))
         {
-            optionsBuilder.WithProtocolVersion(protocolVersion);
+            if (Enum.TryParse<MqttProtocolVersion>(config.ProtocolVersion, out var protocolVersion))
+            {
+                optionsBuilder.WithProtocolVersion(protocolVersion);
+            }
+            else
+            {
+                logger.LogWarning("Failed to parse MQTT protocol version {ProtocolVersion} to {EnumName}",
+                    config.ProtocolVersion, typeof(MqttProtocolVersion).FullName);
+            }
         }
 
         if (!Uri.TryCreate(brokerTarget.BrokerUrl!, UriKind.Absolute, out var uri))
