@@ -121,3 +121,12 @@ async function listenToMessageStream(apiBaseUrl, accessToken) {
 
 To exercise the stream locally, open a terminal running the listener above, then publish a message with
 `POST /messages` (requires `api:write`). The listener should print lines like `[message] hello from mqtt`.
+
+# Other Resources
+
+The following links have useful reading material relating to Server-Sent Events and MQTT:
+
+* https://milanjovanovic.tech/blog/server-sent-events-in-aspnetcore-and-dotnet-10
+* https://docs.aws.amazon.com/whitepapers/latest/designing-mqtt-topics-aws-iot-core/mqtt-design-best-practices.html
+* https://github.com/dotnet/MQTTnet/wiki/Tips-and-Tricks
+* https://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices/
