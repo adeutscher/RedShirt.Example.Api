@@ -4,6 +4,13 @@ services:
     ports:
       - 4566:4566
       - 8883:8883
+    environment:
+      MINISTACK_HOST: ministack
+    networks:
+      default:
+        aliases:
+          # Must match `aws iot describe-endpoint` (account-specific prefix persists in MiniStack state).
+          - f7b11509f4d675-ats.iot.us-east-1.ministack
 
   redis:
     image: redis:latest
@@ -174,7 +181,9 @@ services:
       UPLOADS__PRESIGNED_URL_LIFETIME_MINUTES: "${UPLOADS__PRESIGNED_URL_LIFETIME_MINUTES-15}"
       # Client events (MiniStack IoT MQTT broker)
       ##
-      CLIENT_EVENTS__MQTT__BROKER_URL: "${CLIENT_EVENTS__MQTT__BROKER_URL-ws://ministack:4566}"
+      CLIENT_EVENTS__MQTT__RESOLVE_BROKER_ADDRESS_FROM_DESCRIBE_ENDPOINT: "${CLIENT_EVENTS__MQTT__RESOLVE_BROKER_ADDRESS_FROM_DESCRIBE_ENDPOINT-true}"
+      CLIENT_EVENTS__MQTT__BROKER_CONNECT_HOST: "${CLIENT_EVENTS__MQTT__BROKER_CONNECT_HOST-}"
+      CLIENT_EVENTS__MQTT__BROKER_URL: "${CLIENT_EVENTS__MQTT__BROKER_URL-}"
       CLIENT_EVENTS__MQTT__CLIENT_ID_PREFIX: "${CLIENT_EVENTS__MQTT__CLIENT_ID_PREFIX-RedShirt.Example.Api}"
       CLIENT_EVENTS__MQTT__USERNAME_SECRET_PATH: null
       CLIENT_EVENTS__MQTT__PASSWORD_SECRET_PATH: null

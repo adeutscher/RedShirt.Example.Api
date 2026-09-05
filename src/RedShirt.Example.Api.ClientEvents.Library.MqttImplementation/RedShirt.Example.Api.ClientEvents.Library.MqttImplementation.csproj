@@ -9,12 +9,14 @@
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11"/>
         <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.11"/>
+        <PackageReference Include="AWSSDK.IoT" Version="4.0.101.1"/>
         <PackageReference Include="MQTTnet" Version="5.0.1.1416"/>
         <PackageReference Include="Polly.Core" Version="8.7.0"/>
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\RedShirt.Example.Api.ClientEvents.Library.Core\RedShirt.Example.Api.ClientEvents.Library.Core.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Aws\RedShirt.Example.Api.Common.Aws.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common\RedShirt.Example.Api.Common.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.SecretManagers.Core\RedShirt.Example.Api.Common.SecretManagers.Core.csproj"/>
     </ItemGroup>

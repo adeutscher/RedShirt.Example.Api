@@ -1,9 +1,11 @@
+using Amazon.IoT;
+using Amazon.IoT.Model;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MQTTnet;
+using MQTTnet.Formatter;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Exceptions;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
-using System.Net.Sockets;
 
 namespace RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Factories;
 
@@ -15,68 +17,57 @@ internal interface IMqttClientFactory
 internal sealed class ApiMqttClientFactory(
     IOptions<ApiMqttClientFactory.ConfigurationModel> configuration,
     ISecretManagerService secretManagerService,
+    IAmazonIoT amazonIoT,
     ILogger<ApiMqttClientFactory> logger) : IMqttClientFactory
 {
     private const string DefaultClientIdPrefix = "RedShirt.Example.Api";
+    private const string DefaultWebSocketPath = "/mqtt";
+    private const string MqttWebSocketSubProtocol = "mqtt";
 
     private static readonly string ServerHostname =
         string.IsNullOrWhiteSpace(Environment.MachineName) ? "unknown" : Environment.MachineName;
 
-    public async Task<IMqttClient> CreateConnectedClientAsync(CancellationToken cancellationToken)
+    private async Task<MqttBrokerTarget> ResolveBrokerTargetAsync(ConfigurationModel config,
+        CancellationToken cancellationToken)
     {
-        var config = configuration.Value;
-        if (string.IsNullOrWhiteSpace(config.BrokerUrl))
+        if (!config.ResolveBrokerAddressFromDescribeEndpoint)
         {
-            throw new ApiClientEventsException("ClientEvents MQTT broker URL is not configured.")
+            return new MqttBrokerTarget
             {
-                CouldBeTransient = false,
-                IsHandled = false
+                BrokerUrl = config.BrokerUrl
             };
         }
 
-        var mqttFactory = new MqttClientFactory();
-        var client = mqttFactory.CreateMqttClient();
-        var optionsBuilder = new MqttClientOptionsBuilder()
-            .WithClientId($"{config.EffectiveClientIdPrefix}/{ServerHostname}/{Guid.NewGuid():N}")
-            .WithCleanSession();
+        var describeResponse = await amazonIoT.DescribeEndpointAsync(new DescribeEndpointRequest
+        {
+            EndpointType = "iot:Data-ATS"
+        }, cancellationToken);
 
-        ApplyBrokerAddress(optionsBuilder, config.BrokerUrl);
-
-        if (await TryResolveCredentialsAsync(config, cancellationToken) is { } credentials)
+        if (string.IsNullOrWhiteSpace(describeResponse.EndpointAddress))
         {
-            optionsBuilder.WithCredentials(credentials.Username, credentials.Password);
-        }
-
-        try
-        {
-            var connectResult = await client.ConnectAsync(optionsBuilder.Build(), cancellationToken);
-            if (connectResult.ResultCode != MqttClientConnectResultCode.Success)
-            {
-                throw new ApiClientEventsException(
-                    $"MQTT broker connection failed with result code {connectResult.ResultCode}.")
-                {
-                    CouldBeTransient = true,
-                    IsHandled = false
-                };
-            }
-        }
-        catch (ApiClientEventsException)
-        {
-            client.Dispose();
-            throw;
-        }
-        catch (Exception exception)
-        {
-            client.Dispose();
-            logger.LogError(exception, "Failed to connect to MQTT broker at {BrokerUrl}", config.BrokerUrl);
-            throw new ApiClientEventsException(exception)
+            throw new ApiClientEventsException("IoT DescribeEndpoint did not return an endpoint address.")
             {
                 CouldBeTransient = true,
                 IsHandled = false
             };
         }
 
-        return client;
+        var endpointAddress = describeResponse.EndpointAddress;
+        var endpointUri = BuildUriFromHostPort(endpointAddress, DefaultWebSocketPath);
+        var connectHost = string.IsNullOrWhiteSpace(config.BrokerConnectHost)
+            ? endpointUri.Host
+            : config.BrokerConnectHost;
+
+        var brokerUrl = new UriBuilder(endpointUri.Scheme, connectHost, endpointUri.Port, endpointUri.AbsolutePath)
+            .Uri
+            .ToString();
+
+        var needsHostHeader = !connectHost.Equals(endpointUri.Host, StringComparison.OrdinalIgnoreCase);
+        return new MqttBrokerTarget
+        {
+            BrokerUrl = brokerUrl,
+            WebSocketHostHeader = needsHostHeader ? endpointAddress : null
+        };
     }
 
     /// <summary>
@@ -84,36 +75,48 @@ internal sealed class ApiMqttClientFactory(
     /// </summary>
     /// <remarks>
     ///     MQTTnet does not connect from a single opaque URL string. Each transport must be configured explicitly
-    ///     (<see cref="MqttClientOptionsBuilder.WithTcpServer(string,int?, AddressFamily)" /> for native MQTT,
+    ///     (<see cref="MqttClientOptionsBuilder.WithTcpServer(string,int?)" /> for native MQTT,
     ///     <see cref="MqttClientOptionsBuilder.WithWebSocketServer(Action{MqttClientWebSocketOptionsBuilder})" />
     ///     for MQTT-over-WebSocket). Deployment environments also use different schemes for the same broker
     ///     (for example <c>ws://</c> against MiniStack locally and <c>mqtts://</c> in production), so this helper
     ///     normalizes the configured URL into the builder call the transport requires.
+    ///     MQTTnet WebSocket transport expects a full <c>ws://</c> or <c>wss://</c> URI (including the
+    ///     <c>/mqtt</c> path and <c>mqtt</c> subprotocol). MiniStack (and AWS IoT) route upgrades by the IoT
+    ///     endpoint hostname returned from <c>DescribeEndpoint</c>, not a bare gateway host name.
     /// </remarks>
-    private static void ApplyBrokerAddress(MqttClientOptionsBuilder optionsBuilder, string brokerUrl)
+    private static void ApplyBrokerAddress(
+        MqttClientOptionsBuilder optionsBuilder,
+        string brokerUrl,
+        string? webSocketHostHeader)
     {
-        // Host-only values (no scheme) are treated as a TCP host name for plain MQTT.
         if (!Uri.TryCreate(brokerUrl, UriKind.Absolute, out var uri))
         {
             optionsBuilder.WithTcpServer(brokerUrl);
             return;
         }
 
-        // WebSocket transports: MQTTnet expects "host[:port][/path]" without the ws/wss scheme prefix.
         if (uri.Scheme.Equals("ws", StringComparison.OrdinalIgnoreCase)
             || uri.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase))
         {
-            var webSocketUri = uri.IsDefaultPort
-                ? $"{uri.Host}{uri.PathAndQuery}"
-                : $"{uri.Host}:{uri.Port}{uri.PathAndQuery}";
-
+            var webSocketUri = BuildWebSocketUri(uri);
             optionsBuilder.WithWebSocketServer(webSocketBuilder =>
-                webSocketBuilder.WithUri(webSocketUri));
+            {
+                webSocketBuilder
+                    .WithUri(webSocketUri)
+                    .WithSubProtocols([MqttWebSocketSubProtocol]);
+
+                if (!string.IsNullOrWhiteSpace(webSocketHostHeader))
+                {
+                    webSocketBuilder.WithRequestHeaders(new Dictionary<string, string>
+                    {
+                        ["Host"] = webSocketHostHeader
+                    });
+                }
+            });
+
             return;
         }
 
-        // Native MQTT over TCP/TLS: map mqtt/mqtts/tcp URIs to host and port (default 1883 when omitted).
-        // ReSharper disable once InvertIf
         if (uri.Scheme.Equals("tcp", StringComparison.OrdinalIgnoreCase)
             || uri.Scheme.Equals("mqtt", StringComparison.OrdinalIgnoreCase)
             || uri.Scheme.Equals("mqtts", StringComparison.OrdinalIgnoreCase))
@@ -123,6 +126,29 @@ internal sealed class ApiMqttClientFactory(
         }
 
         throw new ApiClientEventsException($"Unsupported MQTT broker URL scheme '{uri.Scheme}'.")
+        {
+            CouldBeTransient = false,
+            IsHandled = false
+        };
+    }
+
+    private static string BuildWebSocketUri(Uri uri)
+    {
+        var path = string.IsNullOrEmpty(uri.AbsolutePath) || uri.AbsolutePath == "/"
+            ? DefaultWebSocketPath
+            : uri.AbsolutePath;
+
+        return new UriBuilder(uri.Scheme, uri.Host, uri.Port, path).Uri.ToString();
+    }
+
+    private static Uri BuildUriFromHostPort(string hostPort, string path)
+    {
+        if (Uri.TryCreate($"ws://{hostPort}{path}", UriKind.Absolute, out var uri))
+        {
+            return uri;
+        }
+
+        throw new ApiClientEventsException($"IoT endpoint address '{hostPort}' is not a valid host:port value.")
         {
             CouldBeTransient = false,
             IsHandled = false
@@ -159,6 +185,70 @@ internal sealed class ApiMqttClientFactory(
         };
     }
 
+    public async Task<IMqttClient> CreateConnectedClientAsync(CancellationToken cancellationToken)
+    {
+        var config = configuration.Value;
+        var brokerTarget = await ResolveBrokerTargetAsync(config, cancellationToken);
+        if (string.IsNullOrWhiteSpace(brokerTarget.BrokerUrl))
+        {
+            throw new ApiClientEventsException("ClientEvents MQTT broker URL is not configured.")
+            {
+                CouldBeTransient = false,
+                IsHandled = false
+            };
+        }
+
+        var mqttFactory = new MqttClientFactory();
+        var client = mqttFactory.CreateMqttClient();
+        var optionsBuilder = new MqttClientOptionsBuilder()
+            .WithClientId($"{config.EffectiveClientIdPrefix}/{ServerHostname}/{Guid.NewGuid():N}")
+            .WithCleanSession()
+            .WithProtocolVersion(MqttProtocolVersion.V311);
+
+        ApplyBrokerAddress(optionsBuilder, brokerTarget.BrokerUrl, brokerTarget.WebSocketHostHeader);
+
+        if (await TryResolveCredentialsAsync(config, cancellationToken) is { } credentials)
+        {
+            optionsBuilder.WithCredentials(credentials.Username, credentials.Password);
+        }
+
+        try
+        {
+            var connectResult = await client.ConnectAsync(optionsBuilder.Build(), cancellationToken);
+            if (connectResult.ResultCode != MqttClientConnectResultCode.Success)
+            {
+                throw new ApiClientEventsException(
+                    $"MQTT broker connection failed with result code {connectResult.ResultCode}.")
+                {
+                    CouldBeTransient = true,
+                    IsHandled = false
+                };
+            }
+        }
+        catch (ApiClientEventsException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Failed to connect to MQTT broker at {BrokerUrl}", brokerTarget.BrokerUrl);
+            throw new ApiClientEventsException(exception)
+            {
+                CouldBeTransient = true,
+                IsHandled = false
+            };
+        }
+
+        return client;
+    }
+
+    private sealed class MqttBrokerTarget
+    {
+        public string? BrokerUrl { get; init; }
+
+        public string? WebSocketHostHeader { get; init; }
+    }
+
     private sealed class MqttBrokerCredentials
     {
         public required string Username { get; init; }
@@ -175,6 +265,20 @@ internal sealed class ApiMqttClientFactory(
         public string? ClientIdPrefix { get; init; }
 
         public string? BrokerUrl { get; init; }
+
+        /// <summary>
+        ///     When true, resolves the WebSocket broker address via IoT <c>DescribeEndpoint</c> instead of using
+        ///     <see cref="BrokerUrl" /> verbatim. Required for MiniStack and AWS IoT WebSocket clients.
+        /// </summary>
+        public bool ResolveBrokerAddressFromDescribeEndpoint { get; init; }
+
+        /// <summary>
+        ///     Optional TCP/WebSocket connect host when <see cref="ResolveBrokerAddressFromDescribeEndpoint" /> is enabled.
+        ///     Use this in Docker when the IoT endpoint hostname (for example <c>*.localhost</c>) does not resolve to the
+        ///     MiniStack container; the factory connects to this host and sends the DescribeEndpoint value as the HTTP
+        ///     <c>Host</c> header.
+        /// </summary>
+        public string? BrokerConnectHost { get; init; }
 
         public string? UsernameSecretPath { get; init; }
 
