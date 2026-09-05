@@ -33,7 +33,8 @@
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Order\RedShirt.Example.Api.DataStores.Order.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Product.Implementation\RedShirt.Example.Api.DataStores.Product.Implementation.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Upload.Implementation\RedShirt.Example.Api.Upload.Implementation.csproj"/>
-        <ProjectReference Include="..\RedShirt.Example.Api.ClientEvents.Library.Mqtt\RedShirt.Example.Api.ClientEvents.Library.Mqtt.csproj" />
+        <ProjectReference Include="..\RedShirt.Example.Api.ClientEvents.Library.Mqtt\RedShirt.Example.Api.ClientEvents.Library.Mqtt.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws\RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.ClientEvents.Domains.Example\RedShirt.Example.Api.ClientEvents.Domains.Example.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.ClientEvents.Library.Core\RedShirt.Example.Api.ClientEvents.Library.Core.csproj"/>
     </ItemGroup>

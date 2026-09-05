@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AWSSDK.IoT" Version="4.0.101.1"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11"/>
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.11"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.ClientEvents.Library.Mqtt\RedShirt.Example.Api.ClientEvents.Library.Mqtt.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.Common.Aws\RedShirt.Example.Api.Common.Aws.csproj"/>
+    </ItemGroup>
+
+</Project>

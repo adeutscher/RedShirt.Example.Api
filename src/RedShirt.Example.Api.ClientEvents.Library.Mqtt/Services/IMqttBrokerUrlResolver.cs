@@ -7,8 +7,8 @@ namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Services;
 /// </summary>
 /// <remarks>
 ///     Most environments can connect using a static broker URL from configuration. This resolver exists for the special
-///     case where the broker address must be discovered at runtime.
-///     See <see cref="MqttBrokerUrlResolver" /> for environment-specific behaviour.
+///     case where the broker address must be discovered at runtime — for example via AWS IoT
+///     <c>DescribeEndpoint</c> in <c>RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws</c>.
 /// </remarks>
 internal interface IMqttBrokerUrlResolver
 {
