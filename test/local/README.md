@@ -392,7 +392,7 @@ Local Compose resolves the MQTT broker address from IoT `DescribeEndpoint` (the 
 
 | Variable                                                              | Local default          |
 |-----------------------------------------------------------------------|------------------------|
-| `CLIENT_EVENTS__MQTT__RESOLVE_BROKER_ADDRESS_FROM_DESCRIBE_ENDPOINT`  | `true`                 |
+| `CLIENT_EVENTS__MQTT__RESOLVE_BROKER_ADDRESS_EXTERNALLY`              | `true`                 |
 | `CLIENT_EVENTS__MQTT__AWS__BROKER_CONNECT_HOST`                       | unset (connect to DescribeEndpoint host) |
 | `CLIENT_EVENTS__MQTT__BROKER_URL`                                     | unset (use DescribeEndpoint) |
 | `CLIENT_EVENTS__MQTT__CLIENT_ID_PREFIX`                               | `RedShirt.Example.Api` |

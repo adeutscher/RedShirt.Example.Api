@@ -14,7 +14,7 @@ namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.Services;
 /// <remarks>
 ///     <para>
 ///         <b>Runtime resolution is optional.</b> The MQTT client factory uses this resolver only when
-///         <c>ClientEvents:Mqtt:ResolveBrokerAddressFromDescribeEndpoint</c> is <c>true</c>. In a deployed AWS
+///         <c>ClientEvents:Mqtt:ResolveBrokerAddressExternally</c> is <c>true</c>. In a deployed AWS
 ///         environment you can set that flag to <c>false</c> and supply the IoT data-plane endpoint as
 ///         <c>ClientEvents:Mqtt:BrokerUrl</c> instead (for example from IaC output, SSM, or an environment variable).
 ///         The hostname returned by <c>DescribeEndpoint</c> (<c>iot:Data-ATS</c>) is stable for a given account and
@@ -103,7 +103,7 @@ internal sealed class MqttBrokerUrlResolver(
         /// </summary>
         /// <remarks>
         ///     Intended for local Docker / MiniStack testing only, when
-        ///     <c>ResolveBrokerAddressFromDescribeEndpoint</c> is <c>true</c>. Leave unset in real AWS, where the
+        ///     <c>ResolveBrokerAddressExternally</c> is <c>true</c>. Leave unset in real AWS, where the
         ///     DescribeEndpoint hostname is both the advertised and connectable target. When set, the resolver
         ///     TCP-connects to this host and sends the DescribeEndpoint address as the HTTP <c>Host</c> header (for
         ///     example when <c>*.localhost</c> or <c>*.ministack</c> does not resolve to the MiniStack container from

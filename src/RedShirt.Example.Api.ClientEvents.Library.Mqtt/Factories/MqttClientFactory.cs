@@ -57,11 +57,14 @@ internal sealed class ApiMqttClientFactory(
     }
 
     /// <summary>
-    ///     Try to resolve broker URL.
-    ///     If <see cref="ConfigurationModel.ResolveBrokerAddressFromDescribeEndpoint"/> is <c>false</c>, then use configured broker URL.
-    ///     If <see cref="ConfigurationModel.ResolveBrokerAddressFromDescribeEndpoint"/> is <c>true</c>, then use
-    ///     <see cref="IMqttBrokerUrlResolver" />.
+    ///     Resolves the broker connection target from configuration or an external resolver.
     /// </summary>
+    /// <remarks>
+    ///     When <see cref="ConfigurationModel.ResolveBrokerAddressExternally" /> is <c>false</c>, returns
+    ///     <see cref="ConfigurationModel.BrokerUrl" /> as-is. When <c>true</c>, delegates to
+    ///     <see cref="IMqttBrokerUrlResolver" /> (for example the AWS IoT implementation in
+    ///     <c>RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws</c>).
+    /// </remarks>
     /// <param name="config"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
@@ -69,7 +72,7 @@ internal sealed class ApiMqttClientFactory(
     private async Task<MqttBrokerTarget> ResolveBrokerTargetInnerAsync(ConfigurationModel config,
         CancellationToken cancellationToken)
     {
-        if (!config.ResolveBrokerAddressFromDescribeEndpoint)
+        if (!config.ResolveBrokerAddressExternally)
         {
             return new MqttBrokerTarget
             {
@@ -267,10 +270,15 @@ internal sealed class ApiMqttClientFactory(
         public string? BrokerUrl { get; init; }
 
         /// <summary>
-        ///     When true, resolves the WebSocket broker address via IoT <c>DescribeEndpoint</c> instead of using
-        ///     <see cref="BrokerUrl" /> verbatim. Required for MiniStack and AWS IoT WebSocket clients.
+        ///     When true, resolves the broker address through <see cref="IMqttBrokerUrlResolver" /> instead of using
+        ///     <see cref="BrokerUrl" /> verbatim.
         /// </summary>
-        public bool ResolveBrokerAddressFromDescribeEndpoint { get; init; }
+        /// <remarks>
+        ///     Use this when the broker URL cannot be known up front or when the registered resolver supplies
+        ///     transport-specific connection metadata (for example a WebSocket <c>Host</c> header). When false,
+        ///     <see cref="BrokerUrl" /> must be set to a complete broker address.
+        /// </remarks>
+        public bool ResolveBrokerAddressExternally { get; init; }
 
         /// <summary>
         ///     MQTT protocol version to use when connecting. Expected to resolve to a
