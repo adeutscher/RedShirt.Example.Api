@@ -23,11 +23,14 @@ public static class ServiceCollectionExtensions
             .AddAwsServiceWithLocalSupport<IAmazonIoT>()
             .Configure<ApiMqttClientFactory.ConfigurationModel>(
                 configuration.GetSection(ConfigurationSectionName))
+            .Configure<MqttBrokerUrlResolver.ConfigurationModel>(
+                configuration.GetSection(ConfigurationSectionName))
             .Configure<MqttClientEventsRetryWrapperService.ConfigurationModel>(
                 configuration.GetSection(ConfigurationSectionName));
 
         services.TryAddSingleton<IMqttClientEventsExceptionArbiterService, MqttClientEventsExceptionArbiterService>();
         services.TryAddSingleton<IMqttClientEventsRetryWrapperService, MqttClientEventsRetryWrapperService>();
+        services.TryAddSingleton<IMqttBrokerUrlResolver, MqttBrokerUrlResolver>();
         services.TryAddSingleton<IMqttClientFactory, ApiMqttClientFactory>();
         services.TryAddSingleton(typeof(IApiClientEventSender<>), typeof(MqttApiClientEventSender<>));
         services.TryAddSingleton(typeof(IApiClientEventReceiver<>), typeof(MqttApiClientEventReceiver<>));
