@@ -6,6 +6,7 @@ using MQTTnet;
 using MQTTnet.Formatter;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Exceptions;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
+using System.Net.Sockets;
 
 namespace RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.Factories;
 
@@ -76,7 +77,7 @@ internal sealed class ApiMqttClientFactory(
     /// </summary>
     /// <remarks>
     ///     MQTTnet does not connect from a single opaque URL string. Each transport must be configured explicitly
-    ///     (<see cref="MqttClientOptionsBuilder.WithTcpServer(string,int?)" /> for native MQTT,
+    ///     (<see cref="MqttClientOptionsBuilder.WithTcpServer(string,int?, AddressFamily)" /> for native MQTT,
     ///     <see cref="MqttClientOptionsBuilder.WithWebSocketServer(Action{MqttClientWebSocketOptionsBuilder})" />
     ///     for MQTT-over-WebSocket). Deployment environments also use different schemes for the same broker
     ///     (for example <c>ws://</c> against MiniStack locally and <c>mqtts://</c> in production), so broker URLs
