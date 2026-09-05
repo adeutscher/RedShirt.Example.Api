@@ -830,6 +830,70 @@
         }
       }
     },
+    "/messages": {
+      "post": {
+        "tags": [
+          "Message"
+        ],
+        "operationId": "Message_Post",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleMessagePostRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/messages/event-stream": {
+      "get": {
+        "tags": [
+          "Message"
+        ],
+        "operationId": "Message_GetEventStream",
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/orders/{id}": {
       "delete": {
         "tags": [
@@ -2540,6 +2604,18 @@
         ],
         "properties": {
           "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ExampleMessagePostRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
             "type": "string"
           }
         }

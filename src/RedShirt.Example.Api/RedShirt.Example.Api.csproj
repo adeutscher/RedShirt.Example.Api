@@ -33,6 +33,9 @@
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Order\RedShirt.Example.Api.DataStores.Order.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Product.Implementation\RedShirt.Example.Api.DataStores.Product.Implementation.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Upload.Implementation\RedShirt.Example.Api.Upload.Implementation.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.ClientEvents.Library.MqttImplementation\RedShirt.Example.Api.ClientEvents.Library.MqttImplementation.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.ClientEvents.Domains.Example\RedShirt.Example.Api.ClientEvents.Domains.Example.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.ClientEvents.Library.Core\RedShirt.Example.Api.ClientEvents.Library.Core.csproj"/>
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">

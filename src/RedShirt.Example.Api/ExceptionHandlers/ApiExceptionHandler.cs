@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using RedShirt.Example.Api.ClientEvents.Library.Core.Exceptions;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.Connectors.Bar.Core.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
@@ -42,6 +43,7 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetailsS
                 return true;
             case FooConnectorException:
             case BarConnectorException:
+            case ApiClientEventsException:
                 statusCode = StatusCodes.Status502BadGateway;
                 title = "Bad Gateway";
                 return true;

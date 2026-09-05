@@ -3,6 +3,7 @@ services:
     image: ministackorg/ministack:latest
     ports:
       - 4566:4566
+      - 8883:8883
 
   redis:
     image: redis:latest
@@ -171,3 +172,10 @@ services:
       UPLOADS__BUCKET_VERIFIED_ITEMS: "${UPLOADS__BUCKET_VERIFIED_ITEMS-verified-uploads}"
       UPLOADS__MAX_UPLOAD_SIZE_BYTES: "${UPLOADS__MAX_UPLOAD_SIZE_BYTES-}"
       UPLOADS__PRESIGNED_URL_LIFETIME_MINUTES: "${UPLOADS__PRESIGNED_URL_LIFETIME_MINUTES-15}"
+      # Client events (MiniStack IoT MQTT broker)
+      ##
+      CLIENT_EVENTS__MQTT__BROKER_URL: "${CLIENT_EVENTS__MQTT__BROKER_URL-ws://ministack:4566}"
+      CLIENT_EVENTS__MQTT__CLIENT_ID_PREFIX: "${CLIENT_EVENTS__MQTT__CLIENT_ID_PREFIX-RedShirt.Example.Api}"
+      CLIENT_EVENTS__MQTT__USERNAME_SECRET_PATH: null
+      CLIENT_EVENTS__MQTT__PASSWORD_SECRET_PATH: null
+      CLIENT_EVENTS__MQTT__RETRY_COUNT: "${CLIENT_EVENTS__MQTT__RETRY_COUNT-3}"

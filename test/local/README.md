@@ -383,3 +383,46 @@ To update the client secret in SSM *and* WireMock's in-memory stubs (token bodyP
 ```
 
 This only updates in-memory WireMock stubs. Restarting `wiremock-bar` restores the mapping files under `wiremock/bar/`. After the script finishes, call `GET /bar/{id}` or `POST /bar` again — the connector should 401 once with the old bearer, refresh client credentials + token, then succeed with the rotated bearer.
+
+## Messages (Server-Sent Events)
+
+The API publishes example message events to MiniStack's embedded IoT MQTT broker and streams them to clients over Server-Sent Events at `GET /messages/event-stream`. Each authenticated user receives events on the MQTT topic `example-message/user/{userId}` derived from the JWT subject.
+
+Local Compose points the API at MiniStack's anonymous MQTT-over-WebSocket endpoint (`ws://ministack:4566`). Username and password secret paths are intentionally `null` so the MQTT client connects without credentials.
+
+| Variable | Local default |
+|---|---|
+| `CLIENT_EVENTS__MQTT__BROKER_URL` | `ws://ministack:4566` |
+| `CLIENT_EVENTS__MQTT__CLIENT_ID_PREFIX` | `RedShirt.Example.Api` |
+| `CLIENT_EVENTS__MQTT__USERNAME_SECRET_PATH` | `null` |
+| `CLIENT_EVENTS__MQTT__PASSWORD_SECRET_PATH` | `null` |
+| `CLIENT_EVENTS__MQTT__RETRY_COUNT` | `3` |
+
+MiniStack also exposes native MQTT over TLS on port `8883` when needed; the compose file maps that port for host-side tooling.
+
+### Scripts
+
+Mock Python scripts under `scripts/messages/` exercise the event flow locally. Run them from the `test/local` directory:
+
+```bash
+chmod +x ./scripts/messages/*.py   # once
+export API_JWT_TOKEN="$(./get-bearer-token.py)"
+```
+
+In one terminal, listen for events:
+
+```bash
+./scripts/messages/listen-messages.py
+```
+
+In another terminal, publish a message (connected clients for the same user should receive it immediately):
+
+```bash
+./scripts/messages/send-message.py "Hello over SSE"
+```
+
+Notes:
+
+* Both endpoints require a bearer token with `api:write` for `POST /messages` and `api:read` for `GET /messages/event-stream`.
+* Events are scoped to the authenticated user's id (`sub` / name identifier claim).
+* If MQTT connectivity fails, the API returns **502 Bad Gateway** with a problem-details body.
