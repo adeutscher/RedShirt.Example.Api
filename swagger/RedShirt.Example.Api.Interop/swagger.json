@@ -830,6 +830,32 @@
         }
       }
     },
+    "/messages/event-stream": {
+      "get": {
+        "tags": [
+          "Message"
+        ],
+        "operationId": "Message_GetEventStream",
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/messages": {
       "post": {
         "tags": [
@@ -850,32 +876,6 @@
         },
         "responses": {
           "202": {
-            "description": ""
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/messages/event-stream": {
-      "get": {
-        "tags": [
-          "Message"
-        ],
-        "operationId": "Message_GetEventStream",
-        "responses": {
-          "200": {
             "description": ""
           },
           "400": {
