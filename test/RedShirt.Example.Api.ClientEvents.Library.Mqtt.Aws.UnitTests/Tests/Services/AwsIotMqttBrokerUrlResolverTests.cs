@@ -7,15 +7,15 @@ using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.Services;
 
 namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.UnitTests.Tests.Services;
 
-public class MqttBrokerUrlResolverTests
+public class AwsIotMqttBrokerUrlResolverTests
 {
-    private static MqttBrokerUrlResolver CreateSut(
+    private static AwsIotMqttBrokerUrlResolver CreateSut(
         Mock<IAmazonIoT> amazonIoT,
-        MqttBrokerUrlResolver.ConfigurationModel? configuration = null)
+        AwsIotMqttBrokerUrlResolver.ConfigurationModel? configuration = null)
     {
-        return new MqttBrokerUrlResolver(
+        return new AwsIotMqttBrokerUrlResolver(
             amazonIoT.Object,
-            Options.Create(configuration ?? new MqttBrokerUrlResolver.ConfigurationModel()));
+            Options.Create(configuration ?? new AwsIotMqttBrokerUrlResolver.ConfigurationModel()));
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public class MqttBrokerUrlResolverTests
                 EndpointAddress = endpointAddress
             });
 
-        var sut = CreateSut(amazonIoT, new MqttBrokerUrlResolver.ConfigurationModel
+        var sut = CreateSut(amazonIoT, new AwsIotMqttBrokerUrlResolver.ConfigurationModel
         {
             BrokerConnectHost = "ministack"
         });

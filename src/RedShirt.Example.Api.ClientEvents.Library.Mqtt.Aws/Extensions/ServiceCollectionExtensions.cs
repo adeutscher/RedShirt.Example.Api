@@ -18,10 +18,10 @@ public static class ServiceCollectionExtensions
     {
         services
             .AddAwsServiceWithLocalSupport<IAmazonIoT>()
-            .Configure<MqttBrokerUrlResolver.ConfigurationModel>(
+            .Configure<AwsIotMqttBrokerUrlResolver.ConfigurationModel>(
                 configuration.GetSection(ConfigurationSectionName));
 
-        services.TryAddSingleton<IMqttBrokerUrlResolver, MqttBrokerUrlResolver>();
+        services.TryAddSingleton<IMqttBrokerUrlResolver, AwsIotMqttBrokerUrlResolver>();
 
         return services;
     }

@@ -42,7 +42,7 @@ public class ServiceCollectionExtensionsTests
                 .BuildServiceProvider();
 
             var resolver = provider.GetRequiredService<IMqttBrokerUrlResolver>();
-            Assert.IsType<MqttBrokerUrlResolver>(resolver);
+            Assert.IsType<AwsIotMqttBrokerUrlResolver>(resolver);
         });
     }
 }

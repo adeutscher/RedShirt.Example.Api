@@ -41,9 +41,9 @@ namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.Services;
 ///         covers endpoint discovery and URL assembly only.
 ///     </para>
 /// </remarks>
-internal sealed class MqttBrokerUrlResolver(
+internal sealed class AwsIotMqttBrokerUrlResolver(
     IAmazonIoT amazonIoT,
-    IOptions<MqttBrokerUrlResolver.ConfigurationModel> configuration) : IMqttBrokerUrlResolver
+    IOptions<AwsIotMqttBrokerUrlResolver.ConfigurationModel> configuration) : IMqttBrokerUrlResolver
 {
     private const string DefaultWebSocketPath = "/mqtt";
 
