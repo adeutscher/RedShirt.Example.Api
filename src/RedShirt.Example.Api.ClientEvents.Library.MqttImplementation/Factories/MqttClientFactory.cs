@@ -23,6 +23,7 @@ internal sealed class ApiMqttClientFactory(
     private const string DefaultClientIdPrefix = "RedShirt.Example.Api";
     private const string DefaultWebSocketPath = "/mqtt";
     private const string MqttWebSocketSubProtocol = "mqtt";
+    private const int DefaultMqttTcpPort = 1883;
 
     private static readonly string ServerHostname =
         string.IsNullOrWhiteSpace(Environment.MachineName) ? "unknown" : Environment.MachineName;
@@ -71,32 +72,41 @@ internal sealed class ApiMqttClientFactory(
     }
 
     /// <summary>
-    ///     Maps a configured <paramref name="brokerUrl" /> onto <see cref="MqttClientOptionsBuilder" />.
+    ///     Builds a fully configured <see cref="MqttClientOptionsBuilder" /> for connecting to the MQTT broker.
     /// </summary>
     /// <remarks>
     ///     MQTTnet does not connect from a single opaque URL string. Each transport must be configured explicitly
     ///     (<see cref="MqttClientOptionsBuilder.WithTcpServer(string,int?)" /> for native MQTT,
     ///     <see cref="MqttClientOptionsBuilder.WithWebSocketServer(Action{MqttClientWebSocketOptionsBuilder})" />
     ///     for MQTT-over-WebSocket). Deployment environments also use different schemes for the same broker
-    ///     (for example <c>ws://</c> against MiniStack locally and <c>mqtts://</c> in production), so this helper
-    ///     normalizes the configured URL into the builder call the transport requires.
+    ///     (for example <c>ws://</c> against MiniStack locally and <c>mqtts://</c> in production), so broker URLs
+    ///     are normalized into the builder call the transport requires.
     ///     MQTTnet WebSocket transport expects a full <c>ws://</c> or <c>wss://</c> URI (including the
     ///     <c>/mqtt</c> path and <c>mqtt</c> subprotocol). MiniStack (and AWS IoT) route upgrades by the IoT
     ///     endpoint hostname returned from <c>DescribeEndpoint</c>, not a bare gateway host name.
+    ///     MiniStack and AWS IoT data-plane brokers speak MQTT 3.1.1 only.
     /// </remarks>
-    private static void ApplyBrokerAddress(
-        MqttClientOptionsBuilder optionsBuilder,
-        string brokerUrl,
-        string? webSocketHostHeader)
+    private static MqttClientOptionsBuilder GetOptionsBuilder(
+        ConfigurationModel config,
+        MqttBrokerTarget brokerTarget,
+        MqttBrokerCredentials? credentials)
     {
-        if (!Uri.TryCreate(brokerUrl, UriKind.Absolute, out var uri))
+        var optionsBuilder = new MqttClientOptionsBuilder()
+            .WithClientId($"{config.EffectiveClientIdPrefix}/{ServerHostname}/{Guid.NewGuid():N}")
+            .WithCleanSession();
+
+        if (!string.IsNullOrWhiteSpace(config.ProtocolVersion) &&
+            Enum.TryParse<MqttProtocolVersion>(config.ProtocolVersion, out var protocolVersion))
         {
-            optionsBuilder.WithTcpServer(brokerUrl);
-            return;
+            optionsBuilder.WithProtocolVersion(protocolVersion);
         }
 
-        if (uri.Scheme.Equals("ws", StringComparison.OrdinalIgnoreCase)
-            || uri.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase))
+        if (!Uri.TryCreate(brokerTarget.BrokerUrl!, UriKind.Absolute, out var uri))
+        {
+            optionsBuilder.WithTcpServer(brokerTarget.BrokerUrl!);
+        }
+        else if (uri.Scheme.Equals("ws", StringComparison.OrdinalIgnoreCase)
+                 || uri.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase))
         {
             var webSocketUri = BuildWebSocketUri(uri);
             optionsBuilder.WithWebSocketServer(webSocketBuilder =>
@@ -105,31 +115,36 @@ internal sealed class ApiMqttClientFactory(
                     .WithUri(webSocketUri)
                     .WithSubProtocols([MqttWebSocketSubProtocol]);
 
-                if (!string.IsNullOrWhiteSpace(webSocketHostHeader))
+                if (!string.IsNullOrWhiteSpace(brokerTarget.WebSocketHostHeader))
                 {
                     webSocketBuilder.WithRequestHeaders(new Dictionary<string, string>
                     {
-                        ["Host"] = webSocketHostHeader
+                        ["Host"] = brokerTarget.WebSocketHostHeader
                     });
                 }
             });
-
-            return;
+        }
+        else if (uri.Scheme.Equals("tcp", StringComparison.OrdinalIgnoreCase)
+                 || uri.Scheme.Equals("mqtt", StringComparison.OrdinalIgnoreCase)
+                 || uri.Scheme.Equals("mqtts", StringComparison.OrdinalIgnoreCase))
+        {
+            optionsBuilder.WithTcpServer(uri.Host, uri.IsDefaultPort ? DefaultMqttTcpPort : uri.Port);
+        }
+        else
+        {
+            throw new ApiClientEventsException($"Unsupported MQTT broker URL scheme '{uri.Scheme}'.")
+            {
+                CouldBeTransient = false,
+                IsHandled = false
+            };
         }
 
-        if (uri.Scheme.Equals("tcp", StringComparison.OrdinalIgnoreCase)
-            || uri.Scheme.Equals("mqtt", StringComparison.OrdinalIgnoreCase)
-            || uri.Scheme.Equals("mqtts", StringComparison.OrdinalIgnoreCase))
+        if (credentials is not null)
         {
-            optionsBuilder.WithTcpServer(uri.Host, uri.IsDefaultPort ? 1883 : uri.Port);
-            return;
+            optionsBuilder.WithCredentials(credentials.Username, credentials.Password);
         }
 
-        throw new ApiClientEventsException($"Unsupported MQTT broker URL scheme '{uri.Scheme}'.")
-        {
-            CouldBeTransient = false,
-            IsHandled = false
-        };
+        return optionsBuilder;
     }
 
     private static string BuildWebSocketUri(Uri uri)
@@ -200,21 +215,12 @@ internal sealed class ApiMqttClientFactory(
 
         var mqttFactory = new MqttClientFactory();
         var client = mqttFactory.CreateMqttClient();
-        var optionsBuilder = new MqttClientOptionsBuilder()
-            .WithClientId($"{config.EffectiveClientIdPrefix}/{ServerHostname}/{Guid.NewGuid():N}")
-            .WithCleanSession()
-            .WithProtocolVersion(MqttProtocolVersion.V311);
-
-        ApplyBrokerAddress(optionsBuilder, brokerTarget.BrokerUrl, brokerTarget.WebSocketHostHeader);
-
-        if (await TryResolveCredentialsAsync(config, cancellationToken) is { } credentials)
-        {
-            optionsBuilder.WithCredentials(credentials.Username, credentials.Password);
-        }
+        var credentials = await TryResolveCredentialsAsync(config, cancellationToken);
+        var options = GetOptionsBuilder(config, brokerTarget, credentials).Build();
 
         try
         {
-            var connectResult = await client.ConnectAsync(optionsBuilder.Build(), cancellationToken);
+            var connectResult = await client.ConnectAsync(options, cancellationToken);
             if (connectResult.ResultCode != MqttClientConnectResultCode.Success)
             {
                 throw new ApiClientEventsException(
@@ -279,6 +285,12 @@ internal sealed class ApiMqttClientFactory(
         ///     <c>Host</c> header.
         /// </summary>
         public string? BrokerConnectHost { get; init; }
+
+        /// <summary>
+        ///     MQTT protocol version to use when connecting. Expected to resolve to a
+        ///     <see cref="MQTTnet.Formatter.MqttProtocolVersion" /> value (for example <c>V311</c> or <c>V500</c>).
+        /// </summary>
+        public string? ProtocolVersion { get; init; }
 
         public string? UsernameSecretPath { get; init; }
 
