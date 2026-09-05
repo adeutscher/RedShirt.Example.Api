@@ -1,7 +1,7 @@
 using RedShirt.Example.Api.ClientEvents.Domains.Example.Models;
+using RedShirt.Example.Api.ClientEvents.Domains.Example.Utilities;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Models;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Services;
-using RedShirt.Example.Api.ClientEvents.Domains.Example.Utilities;
 
 namespace RedShirt.Example.Api.ClientEvents.Domains.Example.Services;
 

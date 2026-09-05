@@ -15,6 +15,27 @@ internal sealed class MqttApiClientEventSender<TPayload>(
     IMqttClientEventsRetryWrapperService retryWrapperService,
     ILogger<MqttApiClientEventSender<TPayload>> logger) : IApiClientEventSender<TPayload>
 {
+    private static async Task DisconnectSafelyAsync(IMqttClient client, CancellationToken cancellationToken)
+    {
+        if (!client.IsConnected)
+        {
+            return;
+        }
+
+        try
+        {
+            await client.DisconnectAsync(cancellationToken: cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch
+        {
+            // Best-effort disconnect during cleanup.
+        }
+    }
+
     public Task SendAsync(ApiClientEventSendRequest<TPayload> request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.Topic))
@@ -73,26 +94,5 @@ internal sealed class MqttApiClientEventSender<TPayload>(
                 }
             }
         }, cancellationToken);
-    }
-
-    private static async Task DisconnectSafelyAsync(IMqttClient client, CancellationToken cancellationToken)
-    {
-        if (!client.IsConnected)
-        {
-            return;
-        }
-
-        try
-        {
-            await client.DisconnectAsync(cancellationToken: cancellationToken);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch
-        {
-            // Best-effort disconnect during cleanup.
-        }
     }
 }

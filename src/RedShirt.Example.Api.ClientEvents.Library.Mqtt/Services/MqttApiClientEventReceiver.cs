@@ -17,9 +17,31 @@ internal sealed class MqttApiClientEventReceiver<TPayload>(
     IMqttClientEventsRetryWrapperService retryWrapperService,
     ILogger<MqttApiClientEventReceiver<TPayload>> logger) : IApiClientEventReceiver<TPayload>
 {
+    private static async Task DisconnectSafelyAsync(IMqttClient client, CancellationToken cancellationToken)
+    {
+        if (!client.IsConnected)
+        {
+            return;
+        }
+
+        try
+        {
+            await client.DisconnectAsync(cancellationToken: cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch
+        {
+            // Best-effort disconnect during cleanup.
+        }
+    }
+
     public async IAsyncEnumerable<ApiClientEventReceived<TPayload>> ReceiveAsync(
         IReadOnlyList<string>? topics = null,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation]
+        CancellationToken cancellationToken = default)
     {
         IMqttClient? client = null;
         Channel<ApiClientEventReceived<TPayload>>? channel = null;
@@ -31,7 +53,7 @@ internal sealed class MqttApiClientEventReceiver<TPayload>(
                 cancellationToken);
 
             channel = Channel.CreateUnbounded<ApiClientEventReceived<TPayload>>(
-                new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });
+                new UnboundedChannelOptions {SingleReader = true, SingleWriter = false});
 
             // MQTT pushes messages on this callback thread; ReceiveAsync exposes an IAsyncEnumerable to callers.
             // The channel bridges those models: WriteAsync enqueues from the handler, and then the ReadAllAsync invocation
@@ -64,7 +86,7 @@ internal sealed class MqttApiClientEventReceiver<TPayload>(
             };
 
             var subscribeBuilder = new MqttClientSubscribeOptionsBuilder();
-            if (topics is { Count: > 0 })
+            if (topics is {Count: > 0})
             {
                 foreach (var topic in topics.Where(topic => !string.IsNullOrWhiteSpace(topic)))
                 {
@@ -75,7 +97,7 @@ internal sealed class MqttApiClientEventReceiver<TPayload>(
             {
                 subscribeBuilder.WithTopicFilter("#", MqttQualityOfServiceLevel.AtLeastOnce);
             }
-            
+
             await retryWrapperService.RunAsync(async token =>
             {
                 var subscribeResult = await client.SubscribeAsync(subscribeBuilder.Build(), token);
@@ -106,27 +128,6 @@ internal sealed class MqttApiClientEventReceiver<TPayload>(
                 await DisconnectSafelyAsync(client, cancellationToken);
                 client.Dispose();
             }
-        }
-    }
-
-    private static async Task DisconnectSafelyAsync(IMqttClient client, CancellationToken cancellationToken)
-    {
-        if (!client.IsConnected)
-        {
-            return;
-        }
-
-        try
-        {
-            await client.DisconnectAsync(cancellationToken: cancellationToken);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch
-        {
-            // Best-effort disconnect during cleanup.
         }
     }
 }

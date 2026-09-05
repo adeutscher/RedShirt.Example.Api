@@ -1,6 +1,7 @@
 using RedShirt.Example.Api.ClientEvents.Domains.Example.Models;
-using RedShirt.Example.Api.ClientEvents.Library.Core.Services;
 using RedShirt.Example.Api.ClientEvents.Domains.Example.Utilities;
+using RedShirt.Example.Api.ClientEvents.Library.Core.Services;
+using System.Runtime.CompilerServices;
 
 namespace RedShirt.Example.Api.ClientEvents.Domains.Example.Services;
 
@@ -14,7 +15,7 @@ internal sealed class ExampleMessageReceiveService(IApiClientEventReceiver<Examp
     : IExampleMessageReceiveService
 {
     public async IAsyncEnumerable<ExampleMessageModel> ReceiveForUserAsync(string userId,
-        [System.Runtime.CompilerServices.EnumeratorCancellation]
+        [EnumeratorCancellation]
         CancellationToken cancellationToken = default)
     {
         var topic = ExampleMessageTopicNames.ForUser(userId);

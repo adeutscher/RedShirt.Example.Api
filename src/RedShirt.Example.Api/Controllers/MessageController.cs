@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes.Authorization;
-using RedShirt.Example.Api.ClientEvents.Domains.Example.Models;
 using RedShirt.Example.Api.Authorization.Extensions;
+using RedShirt.Example.Api.ClientEvents.Domains.Example.Models;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Messages.Commands.Send;
 using RedShirt.Example.Api.Core.UseCases.Messages.Queries.Stream;
@@ -16,26 +16,15 @@ namespace RedShirt.Example.Api.Controllers;
 [Route("messages")]
 public class MessageController : ControllerBase
 {
-    [HttpPost]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status502BadGateway)]
-    public async Task<IActionResult> Post(
-        [FromBody]
-        ExampleMessagePostRequest request,
-        [FromServices]
-        ISendExampleMessageCommandHandler sendExampleMessageCommandHandler,
+    private static async IAsyncEnumerable<string> ToServerSentEvents(
+        IAsyncEnumerable<ExampleMessageModel> messages,
+        [EnumeratorCancellation]
         CancellationToken cancellationToken)
     {
-        if (!User.TryGetUserId(out var userId))
+        await foreach (var message in messages.WithCancellation(cancellationToken))
         {
-            return BadRequest("Authenticated user id is required.");
+            yield return message.Message;
         }
-
-        await sendExampleMessageCommandHandler.Handle(new SendExampleMessageCommand(userId, request.Message),
-            cancellationToken);
-
-        return Accepted();
     }
 
     [HttpGet("event-stream")]
@@ -59,16 +48,28 @@ public class MessageController : ControllerBase
 
         return TypedResults.ServerSentEvents(
             ToServerSentEvents(messageStream, cancellationToken),
-            eventType: "message");
+            "message");
     }
 
-    private static async IAsyncEnumerable<string> ToServerSentEvents(
-        IAsyncEnumerable<ExampleMessageModel> messages,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status502BadGateway)]
+    public async Task<IActionResult> Post(
+        [FromBody]
+        ExampleMessagePostRequest request,
+        [FromServices]
+        ISendExampleMessageCommandHandler sendExampleMessageCommandHandler,
+        CancellationToken cancellationToken)
     {
-        await foreach (var message in messages.WithCancellation(cancellationToken))
+        if (!User.TryGetUserId(out var userId))
         {
-            yield return message.Message;
+            return BadRequest("Authenticated user id is required.");
         }
+
+        await sendExampleMessageCommandHandler.Handle(new SendExampleMessageCommand(userId, request.Message),
+            cancellationToken);
+
+        return Accepted();
     }
 }

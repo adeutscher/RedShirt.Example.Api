@@ -4,7 +4,9 @@ using RedShirt.Example.Api.Core.Cqrs;
 
 namespace RedShirt.Example.Api.Core.UseCases.Messages.Queries.Stream;
 
-public interface IStreamExampleMessagesQueryHandler : ICqrsHandler<StreamExampleMessagesQuery, IAsyncEnumerable<ExampleMessageModel>>;
+public interface
+    IStreamExampleMessagesQueryHandler : ICqrsHandler<StreamExampleMessagesQuery,
+    IAsyncEnumerable<ExampleMessageModel>>;
 
 internal sealed class StreamExampleMessagesQueryHandler(
     IExampleMessageReceiveService exampleMessageReceiveService,
