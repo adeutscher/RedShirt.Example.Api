@@ -45,6 +45,8 @@ Repo features in more detail:
       manager from being continually polled.
 * Configuration is based on environment variables.
 * File upload and tracking examples.
+* Server-sent events over MQTT.
+    * For more information, see [`docs/patterns/server-sent-events.md`](docs/patterns/server-sent-events.md)
 * Documentation on common data handling practices:
     * [Event Sourcing](docs/patterns/event-sourcing.md)
 
