@@ -156,5 +156,10 @@
         <Project
                 Path="test\RedShirt.Example.Api.DataStores.Common.DapperMySql.UnitTests\RedShirt.Example.Api.DataStores.Common.DapperMySql.UnitTests.csproj"/>
     </Folder>
-    <Folder Name="/test/events/"/>
+    <Folder Name="/test/events/">
+        <Project
+                Path="test\RedShirt.Example.Api.ClientEvents.Library.Mqtt.UnitTests\RedShirt.Example.Api.ClientEvents.Library.Mqtt.UnitTests.csproj"/>
+        <Project
+                Path="test\RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.UnitTests\RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.UnitTests.csproj"/>
+    </Folder>
 </Solution>
