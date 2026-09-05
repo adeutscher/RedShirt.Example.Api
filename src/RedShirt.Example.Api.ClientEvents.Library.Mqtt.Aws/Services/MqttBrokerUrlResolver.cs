@@ -31,7 +31,7 @@ namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.Services;
 ///     <para>
 ///         <b>Local Docker / MiniStack only:</b> <see cref="ConfigurationModel.BrokerConnectHost" /> and the optional
 ///         HTTP <c>Host</c> header override. Inside Docker Compose the DescribeEndpoint hostname often does not resolve to
-///         the LocalStack/MiniStack container, so a static <c>BrokerUrl</c> alone is insufficient — TCP must connect to a
+///         the LocalStack/MiniStack container, so a static <c>BrokerUrl</c> alone is insufficient. TCP must connect to a
 ///         configured host (for example <c>ministack</c>) while the upgrade still advertises the IoT endpoint hostname.
 ///         This split connect/host behaviour is what makes runtime resolution (or equivalent manual wiring) necessary
 ///         locally but not in AWS.
