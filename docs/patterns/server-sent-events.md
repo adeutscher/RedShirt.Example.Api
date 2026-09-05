@@ -66,6 +66,23 @@ If you want to remove the use of the `AWSSDK.IoT` altogether, then the following
 5. Update configuration in local `test/local/docker-compose.yaml` file to point to the new server solution.
     * You may need to also set credentials in secret managers.
 
+# Other Technologies
+
+Server-Sent Events at the API level are a new feature in .NET 10. However, it was not the first iteration of the overall
+pattern of streaming events.
+
+## SignalR
+
+SignalR is a historically-significant library for pushing event data to connected clients in real time.
+
+I chose not to use SignalR in this template for the following reasons:
+
+* SignalR supports bidirectional communication, which seemed like more complexity than I needed for my basic goal of
+  reading events.
+* SignalR apparently has more of a resource footprint.
+
+With these reasons in mind, I would only pivot to SignalR if I had a specific case that required it.
+
 # Client Examples
 
 ## JavaScript
@@ -134,6 +151,11 @@ async function listenToMessageStream(apiBaseUrl, accessToken) {
 
 To exercise the stream locally, open a terminal running the listener above, then publish a message with
 `POST /messages` (requires `api:write`). The listener should print lines like `[message] hello from mqtt`.
+
+## Python
+
+The local-testing scripts in the `test/local/scripts/messages/` directory has a Python-based example of listening for
+events.
 
 # Other Resources
 
