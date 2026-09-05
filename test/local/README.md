@@ -390,13 +390,13 @@ The API publishes example message events to MiniStack's embedded IoT MQTT broker
 
 Local Compose points the API at MiniStack's anonymous MQTT-over-WebSocket endpoint (`ws://ministack:4566`). Username and password secret paths are intentionally `null` so the MQTT client connects without credentials.
 
-| Variable | Local default |
-|---|---|
-| `CLIENT_EVENTS__MQTT__BROKER_URL` | `ws://ministack:4566` |
-| `CLIENT_EVENTS__MQTT__CLIENT_ID_PREFIX` | `RedShirt.Example.Api` |
-| `CLIENT_EVENTS__MQTT__USERNAME_SECRET_PATH` | `null` |
-| `CLIENT_EVENTS__MQTT__PASSWORD_SECRET_PATH` | `null` |
-| `CLIENT_EVENTS__MQTT__RETRY_COUNT` | `3` |
+| Variable                                    | Local default          |
+|---------------------------------------------|------------------------|
+| `CLIENT_EVENTS__MQTT__BROKER_URL`           | `ws://ministack:4566`  |
+| `CLIENT_EVENTS__MQTT__CLIENT_ID_PREFIX`     | `RedShirt.Example.Api` |
+| `CLIENT_EVENTS__MQTT__USERNAME_SECRET_PATH` | `null`                 |
+| `CLIENT_EVENTS__MQTT__PASSWORD_SECRET_PATH` | `null`                 |
+| `CLIENT_EVENTS__MQTT__RETRY_COUNT`          | `3`                    |
 
 MiniStack also exposes native MQTT over TLS on port `8883` when needed; the compose file maps that port for host-side tooling.
 
