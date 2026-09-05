@@ -115,7 +115,13 @@ Browsers cannot set custom headers on the built-in `EventSource` API, so the exa
 response body as a stream. This works in modern browsers and in Node.js 18+.
 
 ```javascript
-async function listenToMessageStream(apiBaseUrl, accessToken) {
+async function listenToMessageStream(
+  apiBaseUrl,
+  accessToken,
+  onEvent = (eventName, data) => {
+    console.log(`[${eventName}] ${data}`);
+  },
+) {
   const url = `${apiBaseUrl.replace(/\/$/, "")}/messages/event-stream`;
 
   const response = await fetch(url, {
@@ -160,7 +166,7 @@ async function listenToMessageStream(apiBaseUrl, accessToken) {
       }
 
       if (dataLines.length > 0) {
-        console.log(`[${eventName}] ${dataLines.join("\n")}`);
+        onEvent(eventName, dataLines.join("\n"));
       }
     }
   }
@@ -180,7 +186,75 @@ events.
 
 ## TypeScript
 
-STUB
+The TypeScript example uses the same `fetch`-and-stream parsing approach as the JavaScript example above, with typed
+parameters and a stricter null check on `response.body`. It runs in Node.js 18+ (with DOM lib types) or in a browser
+build that provides `fetch`.
+
+```typescript
+async function listenToMessageStream(
+  apiBaseUrl: string,
+  accessToken: string,
+  onEvent: (eventName: string, data: string) => void = (eventName, data) => {
+    console.log(`[${eventName}] ${data}`);
+  },
+): Promise<void> {
+  const url = `${apiBaseUrl.replace(/\/$/, "")}/messages/event-stream`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "text/event-stream",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+  }
+
+  if (!response.body) {
+    throw new Error("Response body is null.");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  console.log(`Listening on ${url} (Ctrl+C to stop)...`);
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+
+    let eventBoundary: number;
+    while ((eventBoundary = buffer.indexOf("\n\n")) >= 0) {
+      const block = buffer.slice(0, eventBoundary);
+      buffer = buffer.slice(eventBoundary + 2);
+
+      let eventName = "message";
+      const dataLines: string[] = [];
+
+      for (const line of block.split("\n")) {
+        if (line.startsWith("event:")) {
+          eventName = line.slice("event:".length).trim();
+        } else if (line.startsWith("data:")) {
+          dataLines.push(line.slice("data:".length).trimStart());
+        }
+      }
+
+      if (dataLines.length > 0) {
+        onEvent(eventName, dataLines.join("\n"));
+      }
+    }
+  }
+}
+
+// Example:
+// listenToMessageStream("http://localhost:8080", process.env.API_JWT_TOKEN!);
+```
 
 # Other Resources
 
