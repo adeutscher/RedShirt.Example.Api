@@ -14,6 +14,19 @@ of reasons:
 * There could be other sources writing events directly to the external service (though this is not recommended for
   single-responsibility reasons).
 
+## Template Example
+
+This template has a simple messaging example:
+
+* The POST endpoint at `/messages` can be used by a client to send events that will be read by any instance of the
+  client's user connected to the event-stream.
+* The GET endpoint at `/messages/event-stream` can be used by a client to receive events related to their user. Users
+  will not receive messages intended for other users.
+
+# Configuration Options
+
+STUB
+
 # Special Cases
 
 ## AWS IoT Endpoint Resolution
