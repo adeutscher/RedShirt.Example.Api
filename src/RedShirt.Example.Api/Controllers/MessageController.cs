@@ -27,6 +27,12 @@ public class MessageController : ControllerBase
         }
     }
 
+    /// <summary>Event stream</summary>
+    /// <remarks>
+    ///     This GET /messages/event-stream endpoint is not directly supported by OpenAPI.
+    ///     The generated NSwag <c>MessageClient.GetEventStreamAsync</c> method is intended for connectivity checks only.
+    ///     Use MessagesEventStreamListener in RedShirt.Example.Api.Interop project to receive message events.
+    /// </remarks>
     [HttpGet("event-stream")]
     [ApproveReadOnly]
     [Produces("text/event-stream")]

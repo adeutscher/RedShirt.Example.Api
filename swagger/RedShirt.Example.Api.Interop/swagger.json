@@ -835,6 +835,8 @@
         "tags": [
           "Message"
         ],
+        "summary": "Event stream",
+        "description": "This GET /messages/event-stream endpoint is not directly supported by OpenAPI.\nThe generated NSwag MessageClient.GetEventStreamAsync method is intended for connectivity checks only.\nUse MessagesEventStreamListener in RedShirt.Example.Api.Interop project to receive message events.",
         "operationId": "Message_GetEventStream",
         "responses": {
           "200": {

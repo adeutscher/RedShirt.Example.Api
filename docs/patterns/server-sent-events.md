@@ -85,6 +85,27 @@ With these reasons in mind, I would only pivot to SignalR if I had a specific ca
 
 # Client Examples
 
+## C#
+
+### Interop
+
+A sample listener has been written for the `RedShirt.Example.Api.Interop` project, called `EventStreamListener`.
+
+Example usage:
+
+```csharp
+using var httpClient = new HttpClient();
+httpClient.DefaultRequestHeaders.Authorization =
+    new AuthenticationHeaderValue("Bearer", accessToken);
+
+var listener = new MessagesEventStreamListener("https://api.example.com", httpClient);
+
+await listener.StreamEventsAsync(
+    // Can use an Action<string> or Func<string, CancellationToken, Task> 
+    message => Console.WriteLine($"[message] {message}"),
+    cancellationToken);
+```
+
 ## JavaScript
 
 The example stream lives at `GET /messages/event-stream`. Each event uses the SSE event name `message`, and the
@@ -156,6 +177,10 @@ To exercise the stream locally, open a terminal running the listener above, then
 
 The local-testing scripts in the `test/local/scripts/messages/` directory has a Python-based example of listening for
 events.
+
+## TypeScript
+
+STUB
 
 # Other Resources
 

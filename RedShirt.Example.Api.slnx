@@ -91,6 +91,7 @@
     </Folder>
     <Folder Name="/swagger/">
         <Project Path="swagger/RedShirt.Example.Api.Interop/RedShirt.Example.Api.Interop.csproj"/>
+        <Project Path="test/RedShirt.Example.Api.Interop.UnitTests/RedShirt.Example.Api.Interop.UnitTests.csproj"/>
     </Folder>
     <Folder Name="/test/">
         <Project Path="test/RedShirt.Example.Api.Core.UnitTests/RedShirt.Example.Api.Core.UnitTests.csproj"/>

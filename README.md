@@ -102,7 +102,16 @@ Below are the recommended steps for using this as a template:
 
 2. Write database accessors and/or service connectors based on your application's needs.
 3. Prune database accessors and/or service connectors that your application does not need.
-4. Consider revising/pruning the Markdown files such as this README or those located in the `docs/` directory. They
+4. The example of Server-Sent Events needed a bespoke handler, the standard NSwag clients did not know how to support
+   event streams. This handler can be found in the `RedShirt.Example.Api.Interop` project, defined in
+   `EventStreamListener.cs`.
+    * The `EventStreamListener.cs` contains the abstract `EventStreamListener` and the applied
+      `MessagesEventStreamListener`, which sets some defaults.
+    * If you are implementing Server-Sent Events but not as `/messages` as this example does, then I would recommend
+      adjusting the comments described in `MessagesEventStreamListener`.
+    * If you are not implementing Server-Side Events in your applied application, then I would recommend deleting
+      `EventStreamListener.cs` outright.
+5. Consider revising/pruning the Markdown files such as this README or those located in the `docs/` directory. They
    heavily assume that they are speaking for a general template and not for an applied application.
 
 ## Secret Manager
