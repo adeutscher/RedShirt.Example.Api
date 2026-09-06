@@ -13,7 +13,7 @@
       "generateDtoTypes": true,
       "injectHttpClient": true,
       "disposeHttpClient": true,
-      "generateExceptionClasses": true,
+      "generateExceptionClasses": false,
       "exceptionClass": "SwaggerException",
       "wrapDtoExceptions": true,
       "useHttpClientCreationMethod": false,
@@ -54,7 +54,9 @@
       "classStyle": "Poco",
       "generateDefaultValues": true,
       "generateDataAnnotations": true,
-      "excludedTypeNames": [],
+      "excludedTypeNames": [
+        "ProblemDetails"
+      ],
       "handleReferences": false,
       "generateImmutableArrayProperties": false,
       "generateImmutableDictionaryProperties": false,

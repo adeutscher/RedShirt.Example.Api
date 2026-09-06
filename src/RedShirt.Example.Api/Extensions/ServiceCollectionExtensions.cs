@@ -1,3 +1,6 @@
+using RedShirt.Example.Api.ClientEvents.Domains.Example.Extensions;
+using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.Extensions;
+using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Extensions;
 using RedShirt.Example.Api.Common.Aws.SsmSecretManager.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Extensions;
@@ -58,6 +61,9 @@ internal static class ServiceCollectionExtensions
             .AddCustomers(configuration) // Customer store via Entity Framework Core (MariaDB / MySQL).
             .AddOrders()
             .AddProducts(configuration)
-            .AddUploads(configuration);
+            .AddUploads(configuration)
+            .AddMqttClientEvents(configuration)
+            .AddAwsMqttClientEvents(configuration)
+            .AddExampleClientEventsDomain();
     }
 }

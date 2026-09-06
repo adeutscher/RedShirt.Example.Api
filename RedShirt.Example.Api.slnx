@@ -7,6 +7,7 @@
     <Folder Name="/Solution Items/docs/patterns/">
         <File Path="docs\patterns\event-sourcing.md"/>
         <File Path="docs\patterns\rosalyn-source-generation.md"/>
+        <File Path="docs\patterns\server-sent-events.md"/>
         <File Path="docs\patterns\uploads.md"/>
     </Folder>
     <Folder Name="/src/">
@@ -76,8 +77,21 @@
                 Path="src\RedShirt.Example.Api.DataStores.Common.DapperMySql\RedShirt.Example.Api.DataStores.Common.DapperMySql.csproj"/>
         <Project Path="src\RedShirt.Example.Api.DataStores.Common\RedShirt.Example.Api.DataStores.Common.csproj"/>
     </Folder>
+    <Folder Name="/src/events/">
+        <Project
+                Path="src/RedShirt.Example.Api.ClientEvents.Domains.Example/RedShirt.Example.Api.ClientEvents.Domains.Example.csproj"/>
+    </Folder>
+    <Folder Name="/src/events/common/">
+        <Project
+                Path="src/RedShirt.Example.Api.ClientEvents.Library.Core/RedShirt.Example.Api.ClientEvents.Library.Core.csproj"/>
+        <Project
+                Path="src\RedShirt.Example.Api.ClientEvents.Library.Mqtt\RedShirt.Example.Api.ClientEvents.Library.Mqtt.csproj"/>
+        <Project
+                Path="src\RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws\RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.csproj"/>
+    </Folder>
     <Folder Name="/swagger/">
         <Project Path="swagger/RedShirt.Example.Api.Interop/RedShirt.Example.Api.Interop.csproj"/>
+        <Project Path="test/RedShirt.Example.Api.Interop.UnitTests/RedShirt.Example.Api.Interop.UnitTests.csproj"/>
     </Folder>
     <Folder Name="/test/">
         <Project Path="test/RedShirt.Example.Api.Core.UnitTests/RedShirt.Example.Api.Core.UnitTests.csproj"/>
@@ -142,5 +156,11 @@
     <Folder Name="/test/data-stores/common/">
         <Project
                 Path="test\RedShirt.Example.Api.DataStores.Common.DapperMySql.UnitTests\RedShirt.Example.Api.DataStores.Common.DapperMySql.UnitTests.csproj"/>
+    </Folder>
+    <Folder Name="/test/events/">
+        <Project
+                Path="test\RedShirt.Example.Api.ClientEvents.Library.Mqtt.UnitTests\RedShirt.Example.Api.ClientEvents.Library.Mqtt.UnitTests.csproj"/>
+        <Project
+                Path="test\RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.UnitTests\RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.UnitTests.csproj"/>
     </Folder>
 </Solution>
