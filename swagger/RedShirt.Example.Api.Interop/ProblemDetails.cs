@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace RedShirt.Example.Api.Interop.Exceptions;
+namespace RedShirt.Example.Api.Interop;
 
 // Hand-maintained DTO listed in nswag.json excludedTypeNames so NSwag does not emit a duplicate.
-// Same cold-build constraint as Exceptions/SwaggerException.cs.
+// Same cold-build constraint as SwaggerException.cs.
 // EventStreamListener references this type before Client.generated.cs exists.
 // It must live outside the generated file even though OpenAPI client methods also use it.
 public class ProblemDetails

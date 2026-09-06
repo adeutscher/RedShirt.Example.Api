@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace RedShirt.Example.Api.Interop.Exceptions;
+namespace RedShirt.Example.Api.Interop;
 
 // Hand-maintained counterpart to NSwag exceptionClass output (see nswag.json, generateExceptionClasses=false).
 // EventStreamListener.cs is compiled in the same MSBuild pass as Client.generated.cs.

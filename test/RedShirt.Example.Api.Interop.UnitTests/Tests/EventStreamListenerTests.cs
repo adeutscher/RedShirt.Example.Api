@@ -1,5 +1,4 @@
 using Moq;
-using RedShirt.Example.Api.Interop.Exceptions;
 using System.Net;
 using System.Text;
 
