@@ -13,7 +13,7 @@ namespace RedShirt.Example.Api.UnitTests.Tests.Extensions;
 
 public class ForwardingHeadersExtensionsTests
 {
-    private const string ConfigurationSectionName = "Configuration";
+    private const string ConfigurationSectionName = "HeaderForwarding";
 
     private static IConfigurationRoot CreateConfiguration(
         bool? respectHeaders = null,
