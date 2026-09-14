@@ -6,8 +6,8 @@ This document describes authentication behaviour for this API.
 
 Small reminder that **authorization** is different from **authentication**:
 
-* "**Authentication**" is centered around the question of "who are you?". In order to pass authentication, then you
-  simply need to be somebody identifiable.
+* "**Authentication**" is centered around the question of "who are you?". In order to pass authentication, then a client
+  simply needs to be somebody verified by an authority that the API recognizes.
 * "**Authorization**" is centered around the question of "what are you allowed to do?".
 
 ## Logic Flow
@@ -69,5 +69,5 @@ this is intentional.
 At time of writing, I flat-out don't have tidy answer to this conundrum for this template that I'm entirely happy with.
 I could have fallback copies of policies that are defined if authentication is disabled, but it feels like a lot of
 irresponsible duplication to give such a critical security feature such a clear off switch. The off switch is much too
-powerful just for the sake of local testing. For the moment, logging this message is good enough. 
+powerful just for the sake of local testing. For the moment, logging this message in documentation is good enough. 
 
