@@ -25,7 +25,7 @@ public static class ForwardingHeadersExtensions
     private static ConfigurationModel GetConfigurationModel(IConfiguration configuration)
     {
         return configuration
-            .GetSection("HeaderForwarding")
+            .GetSection("ForwardingHeaders")
             .Get<ConfigurationModel>() ?? new ConfigurationModel
         {
             RespectHeaders = false,

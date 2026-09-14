@@ -98,11 +98,11 @@ services:
       ASPNETCORE_ENVIRONMENT: Development # Enable swagger
       ASPNETCORE_URLS: http://*:8080
       API__PATH_BASE: null
-      # Header forwarding (X-Forwarded-* from trusted reverse proxies in front of Kestrel)
+      # Forwarding headers (X-Forwarded-* from trusted reverse proxies in front of Kestrel)
       ##
-      HEADER_FORWARDING__RESPECT_HEADERS: "${HEADER_FORWARDING__RESPECT_HEADERS-false}"
+      FORWARDING_HEADERS__RESPECT_HEADERS: "${FORWARDING_HEADERS__RESPECT_HEADERS-false}"
       # Docker user-defined bridge networks (typical compose / `proxy` network peers). Add more CIDRs as __1, __2, ...
-      HEADER_FORWARDING__TRUSTED_NETWORKS__0: "${HEADER_FORWARDING__TRUSTED_NETWORKS__0-172.16.0.0/12}"
+      FORWARDING_HEADERS__TRUSTED_NETWORKS__0: "${FORWARDING_HEADERS__TRUSTED_NETWORKS__0-172.16.0.0/12}"
       # AWS Settings
       ##
       AWS_SERVICE_URL: http://ministack:4566
