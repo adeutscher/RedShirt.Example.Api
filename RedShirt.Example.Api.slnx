@@ -5,6 +5,7 @@
     </Folder>
     <Folder Name="/Solution Items/docs/"/>
     <Folder Name="/Solution Items/docs/patterns/">
+        <File Path="docs\patterns\authentication.md"/>
         <File Path="docs\patterns\event-sourcing.md"/>
         <File Path="docs\patterns\rosalyn-source-generation.md"/>
         <File Path="docs\patterns\server-sent-events.md"/>
