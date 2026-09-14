@@ -52,7 +52,8 @@ Recapped in reverse:
 
 1. A controller/endpoint is assigned a policy, which is set up with requirements.
 2. Requirements may be derived from request properties or the request's identity (as detailed by a JWT token).
-3. The request's identity information may be enriched by a transformer.
+3. The request's identity information may be enriched by a transformer. An example of this in this template would be
+   resolving roles defined in the original identity to permissions in the enriched identity.
 
 ## On Disabling Authentication
 
