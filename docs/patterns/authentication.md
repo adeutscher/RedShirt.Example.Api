@@ -6,9 +6,9 @@ This document describes authentication behaviour for this API.
 
 Small reminder that **authorization** is different from **authentication**:
 
-* "**Authentication**" is centred around the question of "who are you?". In order to pass authentication, then you
+* "**Authentication**" is centered around the question of "who are you?". In order to pass authentication, then you
   simply need to be somebody identifiable.
-* "**Authorization**" is centred around the question of "what are you allowed to do?".
+* "**Authorization**" is centered around the question of "what are you allowed to do?".
 
 ## Logic Flow
 
