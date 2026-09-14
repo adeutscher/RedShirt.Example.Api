@@ -38,13 +38,13 @@ if (builder.Configuration.GetSection(UploadOptions.ConfigurationSectionName).Get
 builder.Services
     .AddApiSwaggerDocument(builder.Configuration)
     .ConfigureApiServices(builder.Configuration)
+    .ConsiderConfiguringForwardingHeaders(builder.Configuration)
     .AddControllersWithViews();
 
 var app = builder.Build();
 
 app
-    // If we add a path base, then it must be the first middleware that we set.
-    .ConsiderAddingPathBase()
+    .ConsiderUsingForwardedHeaders()
     .UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -70,6 +70,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 app.ConsiderUsingAuthentication();
+// Always set UseAuthorization because requirements aren't guaranteed to be based on authenticated identity.
 app.UseAuthorization();
 
 if (Environment.GetEnvironmentVariable("NSWAG_RUN") != "1")
