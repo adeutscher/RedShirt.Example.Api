@@ -97,7 +97,6 @@ services:
       ##
       ASPNETCORE_ENVIRONMENT: Development # Enable swagger
       ASPNETCORE_URLS: http://*:8080
-      API__PATH_BASE: null
       # Forwarding headers (X-Forwarded-* from trusted reverse proxies in front of Kestrel)
       ##
       FORWARDING_HEADERS__RESPECT_HEADERS: "${FORWARDING_HEADERS__RESPECT_HEADERS-false}"
