@@ -70,6 +70,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 app.ConsiderUsingAuthentication();
+// Always set UseAuthorization because requirements aren't guaranteed to be based on authenticated identity.
 app.UseAuthorization();
 
 if (Environment.GetEnvironmentVariable("NSWAG_RUN") != "1")
