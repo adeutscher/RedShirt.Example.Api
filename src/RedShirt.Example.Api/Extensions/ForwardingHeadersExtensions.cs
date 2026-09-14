@@ -64,12 +64,10 @@ public static class ForwardingHeadersExtensions
             // Docker user-defined bridges usually sit in 172.16.0.0/12, `proxy`.
             foreach (var candidateString in configurationModel.TrustedNetworks)
             {
-                if (!candidateString.TryParseCidrAddressToNetwork(out var network))
+                if (candidateString.TryParseCidrAddressToNetwork(out var network))
                 {
-                    continue;
+                    options.KnownIPNetworks.Add(network);
                 }
-
-                options.KnownIPNetworks.Add(network);
             }
         });
     }
