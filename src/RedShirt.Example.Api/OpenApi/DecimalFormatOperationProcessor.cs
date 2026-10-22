@@ -1,12 +1,22 @@
-using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using NSwag.Generation.Processors;
 using NSwag.Generation.Processors.Contexts;
+using System.Reflection;
 
 namespace RedShirt.Example.Api.OpenApi;
 
 internal sealed class DecimalFormatOperationProcessor : IOperationProcessor
 {
+    private static bool IsComplexQueryParameter(ParameterInfo parameter)
+    {
+        return parameter.ParameterType.IsClass
+               && parameter.ParameterType != typeof(string)
+               && parameter.GetCustomAttribute<FromRouteAttribute>() is null
+               && parameter.GetCustomAttribute<FromBodyAttribute>() is null
+               && parameter.GetCustomAttribute<FromHeaderAttribute>() is null
+               && parameter.GetCustomAttribute<FromServicesAttribute>() is null;
+    }
+
     public bool Process(OperationProcessorContext context)
     {
         var fromQueryTypes = context.MethodInfo.GetParameters()
@@ -41,15 +51,5 @@ internal sealed class DecimalFormatOperationProcessor : IOperationProcessor
         }
 
         return true;
-    }
-
-    private static bool IsComplexQueryParameter(ParameterInfo parameter)
-    {
-        return parameter.ParameterType.IsClass
-               && parameter.ParameterType != typeof(string)
-               && parameter.GetCustomAttribute<FromRouteAttribute>() is null
-               && parameter.GetCustomAttribute<FromBodyAttribute>() is null
-               && parameter.GetCustomAttribute<FromHeaderAttribute>() is null
-               && parameter.GetCustomAttribute<FromServicesAttribute>() is null;
     }
 }

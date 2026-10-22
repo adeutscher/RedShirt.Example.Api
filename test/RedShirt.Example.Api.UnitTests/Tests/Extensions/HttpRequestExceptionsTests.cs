@@ -17,19 +17,11 @@ public class HttpRequestExceptionsTests
             {
                 Scheme = scheme,
                 Host = port is null ? new HostString(host) : new HostString(host, port.Value),
-                PathBase = new PathString(pathBase),
-            },
+                PathBase = new PathString(pathBase)
+            }
         };
 
         return context.Request;
-    }
-
-    [Fact]
-    public void GetPublicBaseUri_ThrowsWhenRequestIsNull()
-    {
-        HttpRequest? request = null;
-
-        Assert.Throws<ArgumentNullException>(() => request!.GetPublicBaseUri());
     }
 
     [Theory]
@@ -50,5 +42,13 @@ public class HttpRequestExceptionsTests
         var uri = CreateRequest(scheme, host, port, pathBase).GetPublicBaseUri();
 
         Assert.Equal(expected, uri.ToString());
+    }
+
+    [Fact]
+    public void GetPublicBaseUri_ThrowsWhenRequestIsNull()
+    {
+        HttpRequest? request = null;
+
+        Assert.Throws<ArgumentNullException>(() => request!.GetPublicBaseUri());
     }
 }

@@ -9,8 +9,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
-        <PackageReference Include="Microsoft.OpenApi" Version="3.10.2"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13"/>
+        <PackageReference Include="Microsoft.OpenApi" Version="3.11.0"/>
         <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>
         <PackageReference Include="NSwag.AspNetCore" Version="14.7.1"/>
         <PackageReference Include="NSwag.MSBuild" Version="14.7.1">

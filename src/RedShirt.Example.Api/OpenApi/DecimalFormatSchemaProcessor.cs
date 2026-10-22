@@ -1,6 +1,6 @@
+using NJsonSchema.Generation;
 using System.Reflection;
 using System.Text.Json;
-using NJsonSchema.Generation;
 
 namespace RedShirt.Example.Api.OpenApi;
 
