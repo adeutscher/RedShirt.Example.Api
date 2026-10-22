@@ -12,7 +12,7 @@ public static class PropertyModelExtensions
     /// <param name="isNullable">Force nullable (e.g. for a Patch request)</param>
     /// <param name="isKey"></param>
     /// <param name="useServiceType">
-    ///     When true, emit <see cref="PropertyModel.ServiceType" /> (decimals for StoredAsDecimal properties).
+    ///     When true, emit <see cref="PropertyModel.ServiceType" /> instead of <see cref="PropertyModel.Type" />.
     /// </param>
     public static void Write(this PropertyModel property, StringBuilder sb, bool isNullable = false,
         bool isKey = false, bool useServiceType = false)

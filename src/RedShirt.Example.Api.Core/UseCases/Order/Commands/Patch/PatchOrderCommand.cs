@@ -4,6 +4,6 @@ public record PatchOrderCommand(
     Guid Id,
     Guid? CustomerId,
     string? Status,
-    string? TotalAmount,
-    string? TotalPrice,
+    decimal? TotalAmount,
+    decimal? TotalPrice,
     bool? ClearTotalPrice);

@@ -10,12 +10,12 @@ public class OrderSearchRequest
     public Guid? CustomerId { get; set; }
     public string? Status { get; set; }
     public string? StatusContains { get; set; }
-    public string? TotalAmount { get; set; }
-    public string? TotalAmountGreaterThan { get; set; }
-    public string? TotalAmountLessThan { get; set; }
-    public string? TotalPrice { get; set; }
-    public string? TotalPriceGreaterThan { get; set; }
-    public string? TotalPriceLessThan { get; set; }
+    public decimal? TotalAmount { get; set; }
+    public decimal? TotalAmountGreaterThan { get; set; }
+    public decimal? TotalAmountLessThan { get; set; }
+    public decimal? TotalPrice { get; set; }
+    public decimal? TotalPriceGreaterThan { get; set; }
+    public decimal? TotalPriceLessThan { get; set; }
     public bool TotalPriceIsNull { get; set; }
     public Guid? ContinuationToken { get; set; }
 }

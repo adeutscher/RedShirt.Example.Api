@@ -11,10 +11,10 @@ namespace RedShirt.Example.Api.Core.UnitTests.Tests.UseCases.Product.Commands.Pa
 /// </summary>
 public class PatchProductCommandHandlerTests
 {
-    private static ProductInternalDto CreateInternalDto(Guid id, decimal price = 9.99m)
+    private static ProductDto CreateInternalDto(Guid id, decimal price = 9.99m)
     {
         var created = DateTime.UtcNow.AddDays(-1);
-        return new ProductInternalDto
+        return new ProductDto
         {
             Id = id,
             CreatedAtUtc = created,
@@ -60,7 +60,7 @@ public class PatchProductCommandHandlerTests
             .ReturnsAsync(CreateInternalDto(id, 15.50m));
         var validator = new Mock<ICoreRequestValidator>();
         var handler = new PatchProductCommandHandler(productService.Object, validator.Object);
-        var command = new PatchProductCommand(id, "SKU-2", null, "15.50");
+        var command = new PatchProductCommand(id, "SKU-2", null, 15.50m);
 
         var result = await handler.Handle(command, TestContext.Current.CancellationToken);
 
@@ -69,7 +69,7 @@ public class PatchProductCommandHandlerTests
         Assert.Equal("SKU-2", capturedRequest.Sku);
         Assert.Null(capturedRequest.Name);
         Assert.Equal(15.50m, capturedRequest.Price);
-        Assert.Equal("15.50", result.Price);
+        Assert.Equal(15.50m, result.Price);
         validator.Verify(v => v.ValidateAsync(command, TestContext.Current.CancellationToken), Times.Once);
     }
 }

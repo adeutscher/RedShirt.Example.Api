@@ -10,10 +10,10 @@ namespace RedShirt.Example.Api.Core.UnitTests.Tests.UseCases.Product.Queries.Sea
 /// </summary>
 public class SearchProductRecordsQueryHandlerTests
 {
-    private static ProductInternalDto CreateInternalRecord(Guid? id = null, decimal price = 12.50m)
+    private static ProductDto CreateRecord(Guid? id = null, decimal price = 12.50m)
     {
         var created = DateTime.UtcNow.AddDays(-1);
-        return new ProductInternalDto
+        return new ProductDto
         {
             Id = id ?? Guid.NewGuid(),
             CreatedAtUtc = created,
@@ -28,7 +28,7 @@ public class SearchProductRecordsQueryHandlerTests
     public async Task Handle_MapsQueryToServiceRequest_AndReturnsPublicDtos()
     {
         var continuation = Guid.NewGuid();
-        var internalRecord = CreateInternalRecord(price: 42.00m);
+        var record = CreateRecord(price: 42.00m);
         ProductServiceSearchRequest? capturedRequest = null;
         var productService = new Mock<IProductService>();
         productService
@@ -41,7 +41,7 @@ public class SearchProductRecordsQueryHandlerTests
             .ReturnsAsync(new ProductServiceSearchResponse
             {
                 ContinuationToken = continuation,
-                Records = [internalRecord]
+                Records = [record]
             });
         var handler = new SearchProductRecordsQueryHandler(productService.Object);
         var createdBefore = DateTime.UtcNow.AddDays(-7);
@@ -58,9 +58,9 @@ public class SearchProductRecordsQueryHandlerTests
                 "SKU",
                 "Widget",
                 "Wid",
-                "10.00",
-                "5.50",
-                "99.99",
+                10.00m,
+                5.50m,
+                99.99m,
                 continuation),
             TestContext.Current.CancellationToken);
 
@@ -77,8 +77,8 @@ public class SearchProductRecordsQueryHandlerTests
         Assert.Equal(99.99m, capturedRequest.PriceLessThan);
         Assert.Equal(continuation, result.ContinuationToken);
         Assert.Single(result.Records);
-        Assert.Equal(internalRecord.Id, result.Records[0].Id);
-        Assert.Equal("42.00", result.Records[0].Price);
+        Assert.Equal(record.Id, result.Records[0].Id);
+        Assert.Equal(42.00m, result.Records[0].Price);
         productService.Verify(s => s.SearchAsync(
             It.IsAny<ProductServiceSearchRequest>(),
             continuation,
@@ -86,7 +86,7 @@ public class SearchProductRecordsQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_PassesNullDecimalFilters_WhenPriceStringsAreBlank()
+    public async Task Handle_PassesNullDecimalFilters_WhenOmitted()
     {
         ProductServiceSearchRequest? capturedRequest = null;
         var productService = new Mock<IProductService>();
@@ -115,9 +115,9 @@ public class SearchProductRecordsQueryHandlerTests
                 null,
                 null,
                 null,
-                " ",
                 null,
-                "",
+                null,
+                null,
                 null),
             TestContext.Current.CancellationToken);
 

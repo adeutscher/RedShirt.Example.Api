@@ -17,12 +17,12 @@ namespace RedShirt.Example.Api.DataStores.Product.Implementation.UnitTests.Tests
 /// </summary>
 public class MariaDbProductRepositoryTests
 {
-    private static ProductInternalDto CreateDto(
+    private static ProductDto CreateDto(
         Guid? id = null,
         DateTime? updatedAtUtc = null)
     {
         var updated = updatedAtUtc ?? DateTime.UtcNow;
-        return new ProductInternalDto
+        return new ProductDto
         {
             Id = id ?? Guid.NewGuid(),
             CreatedAtUtc = updated.AddDays(-1),

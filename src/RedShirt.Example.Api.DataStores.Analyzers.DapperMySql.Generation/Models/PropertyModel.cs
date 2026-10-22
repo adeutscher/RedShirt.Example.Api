@@ -21,23 +21,13 @@ public class PropertyModel
     public string EffectiveName => string.IsNullOrEmpty(ColumnName) ? Name : ColumnName;
     public string Type { get; set; }
     public bool IsNullable { get; set; }
-    public bool IsStoredAsDecimal { get; set; }
     public bool IsInternallyManaged { get; set; }
     public bool IsRangeSearchable { get; set; }
     public bool CannotFilterBy { get; set; }
     public int FilterPriorityWeight { get; set; }
 
-    /// <summary>
-    ///     CLR type used on the generated persistence entity.
-    ///     <see cref="StoredAsDecimalAttribute" /> string DTO properties map to <see cref="decimal" />.
-    /// </summary>
-    public string EntityType =>
-        IsStoredAsDecimal && Category == PropertyCategory.String ? typeof(decimal).FullName! : Type;
+    public string EntityType => Type;
 
-    /// <summary>
-    ///     CLR type used on the service-layer DTO and request objects.
-    ///     <see cref="StoredAsDecimalAttribute" /> string DTO properties map to <see cref="decimal" />.
-    /// </summary>
     public string ServiceType => EntityType;
 
     public PropertyCategory Category

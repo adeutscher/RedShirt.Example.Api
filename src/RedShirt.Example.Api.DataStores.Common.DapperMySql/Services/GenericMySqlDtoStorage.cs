@@ -43,13 +43,13 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
         var properties = GetMappedProperties().ToList();
 
         var fieldFields = string.Join(",",
-            properties.Select(p => DatabaseUtility.QuoteResource(StoredAsDecimalHelper.GetColumnName(p))));
+            properties.Select(p => DatabaseUtility.QuoteResource(DapperDtoSqlHelper.GetColumnName(p))));
         var valueFields = string.Join(",", properties.Select(p => $"@{p.Name}"));
 
         var query = $"INSERT INTO `{GetTableName()}` ({fieldFields}) VALUES ({valueFields});";
 
         await retryWrapperService.RunAsync(
-            _ => dbConnection.ExecuteAsync(query, StoredAsDecimalHelper.ToWriteParameters(itemTemplate)),
+            _ => dbConnection.ExecuteAsync(query, DapperDtoSqlHelper.ToWriteParameters(itemTemplate)),
             cancellationToken);
 
         return itemTemplate;
@@ -79,7 +79,7 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
             }
 
             changed = true;
-            var columnName = StoredAsDecimalHelper.GetColumnName(property);
+            var columnName = DapperDtoSqlHelper.GetColumnName(property);
             builder.Set($"{DatabaseUtility.QuoteResource(columnName)}=@{property.Name}");
         }
 
@@ -91,7 +91,7 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
         }
 
         var template = builder.AddTemplate($"UPDATE `{GetTableName()}` /**set**/ /**where**/");
-        var parameters = StoredAsDecimalHelper.ToWriteParameters(newDto);
+        var parameters = DapperDtoSqlHelper.ToWriteParameters(newDto);
         parameters.Add("key", GetKeyFieldValue(oldDto));
 
         await retryWrapperService.RunAsync(_ => dbConnection.ExecuteAsync(template.RawSql, parameters),
@@ -108,7 +108,7 @@ public class GenericMySqlDtoStorage<TDto, TKey>(
     private async Task<TDto?> GetByKeyAsync(IDbConnection dbConnection, TKey entryId,
         CancellationToken cancellationToken = default)
     {
-        var selectList = StoredAsDecimalHelper.BuildSelectClause(typeof(TDto));
+        var selectList = DapperDtoSqlHelper.BuildSelectClause(typeof(TDto));
         var query =
             $"SELECT {selectList} FROM `{GetTableName()}` WHERE `{GetKeyFieldName()}` = @entryId";
         var response = await retryWrapperService.RunAsync(_ => dbConnection.QueryFirstOrDefaultAsync<TDto>(query, new

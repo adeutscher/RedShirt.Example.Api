@@ -20,9 +20,9 @@ internal sealed class MariaDbProductRepository(
     private const int MaxPageSize = 100;
     private const string ConnectionStringName = DatabaseConstants.PrimaryDatabaseConnectionStringName;
 
-    private static ProductInternalDto ToInternalDto(ProductEntity entity)
+    private static ProductDto ToDto(ProductEntity entity)
     {
-        return new ProductInternalDto
+        return new ProductDto
         {
             Id = entity.Id,
             CreatedAtUtc = entity.CreatedAtUtc,
@@ -33,7 +33,7 @@ internal sealed class MariaDbProductRepository(
         };
     }
 
-    private static ProductEntity ToEntity(ProductInternalDto dto)
+    private static ProductEntity ToEntity(ProductDto dto)
     {
         return new ProductEntity
         {
@@ -134,19 +134,19 @@ internal sealed class MariaDbProductRepository(
             cancellationToken);
     }
 
-    public async Task<ProductInternalDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<ProductDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await genericDtoStorage.GetByKeyAsync(ConnectionStringName, id,
             cancellationToken);
-        return entity is null ? null : ToInternalDto(entity);
+        return entity is null ? null : ToDto(entity);
     }
 
-    public async Task<ProductInternalDto> UpsertAsync(ProductInternalDto item,
+    public async Task<ProductDto> UpsertAsync(ProductDto item,
         CancellationToken cancellationToken = default)
     {
         var entity = await genericDtoStorage.UpsertAsync(ConnectionStringName,
             ToEntity(item), cancellationToken);
-        return ToInternalDto(entity);
+        return ToDto(entity);
     }
 
     public async Task<ProductServiceSearchResponse> SearchAsync(ProductServiceSearchRequest parameters,
@@ -199,7 +199,7 @@ internal sealed class MariaDbProductRepository(
         pageSize = Math.Min(MaxPageSize, pageSize);
 
         var @params = new {paramTake = pageSize};
-        var selectList = StoredAsDecimalHelper.BuildSelectClause(typeof(ProductEntity));
+        var selectList = DapperDtoSqlHelper.BuildSelectClause(typeof(ProductEntity));
         var template = queryBuilder.AddTemplate(
             $"SELECT {selectList} FROM {DatabaseUtility.QuoteResource(genericDtoStorage.GetTableName())} /**where**/ /**orderby**/ LIMIT @paramTake",
             @params);
@@ -210,7 +210,7 @@ internal sealed class MariaDbProductRepository(
         var response = await retryWrapperService.RunAsync(
             _ => dbConnection.QueryAsync<ProductEntity>(template.RawSql, template.Parameters),
             cancellationToken);
-        var records = response.Select(ToInternalDto).ToList();
+        var records = response.Select(ToDto).ToList();
 
         continuationToken = records.Count >= pageSize ? Guid.NewGuid() : null;
         if (continuationToken.HasValue)

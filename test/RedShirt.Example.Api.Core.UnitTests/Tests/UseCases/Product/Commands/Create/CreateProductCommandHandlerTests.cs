@@ -45,7 +45,7 @@ public class CreateProductCommandHandlerTests
             UpdatedAtUtc = DateTime.UtcNow,
             Sku = "SKU-CACHED",
             Name = "Cached",
-            Price = "1.00"
+            Price = 1.00m
         };
         var productService = new Mock<IProductService>();
         var wrapper = new Mock<ICacheBasedIdempotencyWrapperService>();
@@ -58,7 +58,7 @@ public class CreateProductCommandHandlerTests
         var handler = CreateHandler(productService.Object, wrapper.Object);
 
         var result = await handler.Handle(
-            new CreateProductCommand("SKU-1", "Fresh", "9.99", "idem-1"),
+            new CreateProductCommand("SKU-1", "Fresh", 9.99m, "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.Same(cached, result);
@@ -70,7 +70,7 @@ public class CreateProductCommandHandlerTests
     [Fact]
     public async Task Handle_RunsThroughIdempotencyWrapper_AndPostsMappedRequestOnSuccess()
     {
-        var internalDto = new ProductInternalDto
+        var internalDto = new ProductDto
         {
             Id = Guid.NewGuid(),
             CreatedAtUtc = DateTime.UtcNow,
@@ -88,7 +88,7 @@ public class CreateProductCommandHandlerTests
         var wrapper = CreateInvokingWrapper();
         var validator = new Mock<ICoreRequestValidator>();
         var handler = CreateHandler(productService.Object, wrapper.Object, validator.Object);
-        var command = new CreateProductCommand("SKU-1", "Widget", "9.99", "idem-1");
+        var command = new CreateProductCommand("SKU-1", "Widget", 9.99m, "idem-1");
 
         var result = await handler.Handle(command, TestContext.Current.CancellationToken);
 
@@ -96,7 +96,7 @@ public class CreateProductCommandHandlerTests
         Assert.Equal("SKU-1", capturedRequest!.Sku);
         Assert.Equal("Widget", capturedRequest.Name);
         Assert.Equal(9.99m, capturedRequest.Price);
-        Assert.Equal("9.99", result.Price);
+        Assert.Equal(9.99m, result.Price);
         validator.Verify(v => v.ValidateAsync(command, TestContext.Current.CancellationToken), Times.Once);
         productService.Verify(
             s => s.PostAsync(It.IsAny<ProductServicePostRequest>(), TestContext.Current.CancellationToken),

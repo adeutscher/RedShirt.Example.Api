@@ -9,49 +9,24 @@ public class SearchProductRecordsQueryValidatorTests
 {
     private readonly SearchProductRecordsQueryValidator _validator = new();
 
-    private static SearchProductRecordsQuery CreateQuery(string propertyName, string? value)
-    {
-        return new SearchProductRecordsQuery(
-            10,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            propertyName == nameof(SearchProductRecordsQuery.Price) ? value : null,
-            propertyName == nameof(SearchProductRecordsQuery.PriceGreaterThan) ? value : null,
-            propertyName == nameof(SearchProductRecordsQuery.PriceLessThan) ? value : null,
-            null);
-    }
-
-    [Theory]
-    [InlineData(nameof(SearchProductRecordsQuery.Price), "not-a-decimal")]
-    [InlineData(nameof(SearchProductRecordsQuery.PriceGreaterThan), "12.34.56")]
-    [InlineData(nameof(SearchProductRecordsQuery.PriceLessThan), "abc")]
-    public async Task Validate_Fails_WhenDecimalFilterIsInvalid(string propertyName, string value)
+    [Fact]
+    public async Task Validate_Succeeds_ForTypicalQuery()
     {
         var result = await _validator.ValidateAsync(
-            CreateQuery(propertyName, value),
-            TestContext.Current.CancellationToken);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors,
-            error => error.ErrorMessage.Contains("must be a valid decimal number",
-                StringComparison.Ordinal));
-    }
-
-    [Theory]
-    [InlineData(nameof(SearchProductRecordsQuery.Price), null)]
-    [InlineData(nameof(SearchProductRecordsQuery.Price), "9.99")]
-    [InlineData(nameof(SearchProductRecordsQuery.PriceGreaterThan), "0")]
-    [InlineData(nameof(SearchProductRecordsQuery.PriceLessThan), "-1.5")]
-    public async Task Validate_Succeeds_WhenDecimalFilterIsNullOrValid(string propertyName, string? value)
-    {
-        var result = await _validator.ValidateAsync(
-            CreateQuery(propertyName, value),
+            new SearchProductRecordsQuery(
+                10,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                9.99m,
+                0m,
+                100m,
+                null),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsValid);

@@ -92,7 +92,7 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(2, "/* Declare SQL Command */")
             .AppendLineWithIndent(2, "var @params = new { paramTake = pageSize };")
             .AppendLineWithIndent(2,
-                $"var selectList = {classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.StoredAsDecimalHelper.BuildSelectClause(typeof({classSummaryModel.FullEntityName}));")
+                $"var selectList = {classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.DapperDtoSqlHelper.BuildSelectClause(typeof({classSummaryModel.FullEntityName}));")
             .AppendLineWithIndent(2, $"var template = queryBuilder.AddTemplate($\"SELECT {{selectList}} FROM {{"
                                      + $"{classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.DatabaseUtility.QuoteResource(genericDtoStorage.GetTableName())"
                                      + "} /**where**/ /**orderby**/ LIMIT @paramTake\", @params);")
@@ -333,52 +333,6 @@ public static class RepositoryLevelGenerator
                                 dtoProperty.Name, $"< @{paramName}LessThan") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName + $"LessThan = parameters.{dtoProperty.Name}LessThan.Value" + "}")
-                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
-                        .CloseBracket(baseIndentLevel);
-
-                    break;
-                case PropertyModel.PropertyCategory.String when dtoProperty.IsStoredAsDecimal:
-
-                    /* Equals */
-
-                    sb.AppendLineWithIndent(baseIndentLevel,
-                            $"if(parameters.{dtoProperty.Name}.HasValue)")
-                        .OpenBracket(baseIndentLevel)
-                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
-                        .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
-                                dtoProperty.Name, $"= @{paramName}") + ",")
-                        .AppendLineWithIndent(baseIndentLevel + 2,
-                            "new {" + paramName + $" = parameters.{dtoProperty.Name}.Value" + "}")
-                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
-                        .CloseBracket(baseIndentLevel);
-
-                    /* Greater Than / Less Than */
-
-                    // Greater Than
-
-                    sb.AppendLineWithIndent(baseIndentLevel,
-                            $"if(parameters.{dtoProperty.Name}GreaterThan.HasValue)")
-                        .OpenBracket(baseIndentLevel)
-                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
-                        .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
-                                dtoProperty.Name, $"> @{paramName}") + ",")
-                        .AppendLineWithIndent(baseIndentLevel + 2,
-                            "new {" + paramName + $" = parameters.{dtoProperty.Name}GreaterThan.Value" + "}")
-                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
-                        .CloseBracket(baseIndentLevel);
-
-                    // Less Than
-                    sb.AppendLineWithIndent(baseIndentLevel,
-                            $"if(parameters.{dtoProperty.Name}LessThan.HasValue)")
-                        .OpenBracket(baseIndentLevel)
-                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
-                        .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
-                                dtoProperty.Name, $"< @{paramName}") + ",")
-                        .AppendLineWithIndent(baseIndentLevel + 2,
-                            "new {" + paramName + $" = parameters.{dtoProperty.Name}LessThan.Value" + "}")
                         .AppendLineWithIndent(baseIndentLevel + 1, ");")
                         .CloseBracket(baseIndentLevel);
 

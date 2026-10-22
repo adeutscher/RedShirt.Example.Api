@@ -1,5 +1,6 @@
 using Moq;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
+using RedShirt.Example.Api.DataStores.Order.Models;
 using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 
 namespace RedShirt.Example.Api.DataStores.Order.UnitTests.Tests.Services;
@@ -9,7 +10,7 @@ namespace RedShirt.Example.Api.DataStores.Order.UnitTests.Tests.Services;
 /// </summary>
 public class OrderServiceTests
 {
-    private static OrderInternalDto CreateDto(
+    private static OrderDto CreateDto(
         Guid? id = null,
         Guid? customerId = null,
         string status = "Pending",
@@ -19,7 +20,7 @@ public class OrderServiceTests
         DateTime? updatedAtUtc = null)
     {
         var created = createdAtUtc ?? DateTime.UtcNow.AddDays(-1);
-        return new OrderInternalDto
+        return new OrderDto
         {
             Id = id ?? Guid.NewGuid(),
             CreatedAtUtc = created,
@@ -87,7 +88,7 @@ public class OrderServiceTests
         var repository = new Mock<IOrderRepository>();
         repository
             .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((OrderInternalDto?) null);
+            .ReturnsAsync((OrderDto?) null);
         var service = CreateService(repository.Object);
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
@@ -103,8 +104,8 @@ public class OrderServiceTests
             .Setup(r => r.GetByIdAsync(existing.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
         repository
-            .Setup(r => r.UpsertAsync(It.IsAny<OrderInternalDto>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((OrderInternalDto item, CancellationToken _) => item);
+            .Setup(r => r.UpsertAsync(It.IsAny<OrderDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OrderDto item, CancellationToken _) => item);
         var service = CreateService(repository.Object);
 
         var result = await service.PatchAsync(new OrderServicePatchRequest
@@ -147,7 +148,7 @@ public class OrderServiceTests
         var repository = new Mock<IOrderRepository>();
         repository
             .Setup(r => r.GetByIdAsync(id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((OrderInternalDto?) null);
+            .ReturnsAsync((OrderDto?) null);
         var service = CreateService(repository.Object);
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
@@ -185,8 +186,8 @@ public class OrderServiceTests
         var customerId = Guid.NewGuid();
         var repository = new Mock<IOrderRepository>();
         repository
-            .Setup(r => r.UpsertAsync(It.IsAny<OrderInternalDto>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((OrderInternalDto item, CancellationToken _) => item);
+            .Setup(r => r.UpsertAsync(It.IsAny<OrderDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OrderDto item, CancellationToken _) => item);
         var service = CreateService(repository.Object);
 
         var result = await service.PostAsync(new OrderServicePostRequest
@@ -213,8 +214,8 @@ public class OrderServiceTests
             .Setup(r => r.GetByIdAsync(existing.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
         repository
-            .Setup(r => r.UpsertAsync(It.IsAny<OrderInternalDto>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((OrderInternalDto item, CancellationToken _) => item);
+            .Setup(r => r.UpsertAsync(It.IsAny<OrderDto>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OrderDto item, CancellationToken _) => item);
         var service = CreateService(repository.Object);
 
         var result = await service.PutAsync(new OrderServicePutRequest
@@ -251,7 +252,7 @@ public class OrderServiceTests
                 TotalPrice = existing.TotalPrice
             }, TestContext.Current.CancellationToken));
 
-        repository.Verify(r => r.UpsertAsync(It.IsAny<OrderInternalDto>(), It.IsAny<CancellationToken>()), Times.Never);
+        repository.Verify(r => r.UpsertAsync(It.IsAny<OrderDto>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -276,7 +277,7 @@ public class OrderServiceTests
             TotalPriceIsNull = false
         };
         var continuation = Guid.NewGuid();
-        var expected = new OrderServiceSearchResponse
+        var expected = new OrderSearchResponse
         {
             ContinuationToken = null,
             Records = [CreateDto()]

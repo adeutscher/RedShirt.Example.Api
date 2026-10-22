@@ -11,8 +11,8 @@ public class ProductSearchRequest
     public string? SkuContains { get; set; }
     public string? Name { get; set; }
     public string? NameContains { get; set; }
-    public string? Price { get; set; }
-    public string? PriceGreaterThan { get; set; }
-    public string? PriceLessThan { get; set; }
+    public decimal? Price { get; set; }
+    public decimal? PriceGreaterThan { get; set; }
+    public decimal? PriceLessThan { get; set; }
     public Guid? ContinuationToken { get; set; }
 }

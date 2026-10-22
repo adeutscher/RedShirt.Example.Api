@@ -2,7 +2,6 @@ using RedShirt.Example.Api.Core.Cqrs;
 using RedShirt.Example.Api.Core.Services;
 using RedShirt.Example.Api.DataStores.Order.Models;
 using RedShirt.Example.Api.DataStores.Order.Models.Generated;
-using System.Globalization;
 
 namespace RedShirt.Example.Api.Core.UseCases.Order.Commands.Create;
 
@@ -14,25 +13,18 @@ internal class CreateOrderCommandHandler(
     ICoreRequestValidator coreRequestValidator)
     : ICreateOrderCommandHandler
 {
-    private static decimal? ParseOptionalDecimal(string? value)
-    {
-        return string.IsNullOrWhiteSpace(value)
-            ? null
-            : decimal.Parse(value, CultureInfo.InvariantCulture);
-    }
-
     public async Task<OrderDto> Handle(CreateOrderCommand command,
         CancellationToken cancellationToken = default)
     {
         await coreRequestValidator.ValidateAsync(command, cancellationToken);
 
         return await idempotencyWrapperService.RunIdempotentlyAsync(command.IdempotencyKey, async () =>
-            (await orderService.PostAsync(new OrderServicePostRequest
+            await orderService.PostAsync(new OrderServicePostRequest
             {
                 CustomerId = command.CustomerId,
                 Status = command.Status,
-                TotalAmount = decimal.Parse(command.TotalAmount, CultureInfo.InvariantCulture),
-                TotalPrice = ParseOptionalDecimal(command.TotalPrice)
-            }, cancellationToken)).ToDto(), cancellationToken);
+                TotalAmount = command.TotalAmount,
+                TotalPrice = command.TotalPrice
+            }, cancellationToken), cancellationToken);
     }
 }

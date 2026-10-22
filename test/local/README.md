@@ -209,7 +209,7 @@ Create an order as the admin user, then fetch it as billing / developer / admin:
 TOKEN="$(./get-bearer-token.py)"
 ORDER_JSON="$(curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
   -H 'Idempotency-Key: local-order-1' \
-  -d '{"customerId":"11111111-1111-1111-1111-111111111111","status":"open","totalAmount":"10.00"}' \
+  -d '{"customerId":"11111111-1111-1111-1111-111111111111","status":"open","totalAmount":10.00}' \
   'http://localhost:9000/orders')"
 ORDER_ID="$(echo "${ORDER_JSON}" | jq -r .id)"
 
@@ -219,7 +219,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOK
 
 OTHER_JSON="$(curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
   -H 'Idempotency-Key: local-order-2' \
-  -d '{"customerId":"22222222-2222-2222-2222-222222222222","status":"open","totalAmount":"10.00"}' \
+  -d '{"customerId":"22222222-2222-2222-2222-222222222222","status":"open","totalAmount":10.00}' \
   'http://localhost:9000/orders')"
 OTHER_ID="$(echo "${OTHER_JSON}" | jq -r .id)"
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOKEN}" \

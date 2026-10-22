@@ -43,7 +43,7 @@ public class SupportingExtensionsTests
     [Fact]
     public void IsTheSameAs_ReturnsFalse_WhenBusinessFieldsDiffer()
     {
-        var a = new ProductInternalDto
+        var a = new ProductDto
         {
             Id = Guid.NewGuid(),
             CreatedAtUtc = DateTime.UtcNow,
@@ -52,7 +52,7 @@ public class SupportingExtensionsTests
             Name = "Widget",
             Price = 9.99m
         };
-        var b = new ProductInternalDto
+        var b = new ProductDto
         {
             Id = a.Id,
             CreatedAtUtc = a.CreatedAtUtc,
@@ -68,7 +68,7 @@ public class SupportingExtensionsTests
     [Fact]
     public void IsTheSameAs_ReturnsTrue_WhenBusinessFieldsMatch()
     {
-        var a = new ProductInternalDto
+        var a = new ProductDto
         {
             Id = Guid.NewGuid(),
             CreatedAtUtc = DateTime.UtcNow,
@@ -77,7 +77,7 @@ public class SupportingExtensionsTests
             Name = "Widget",
             Price = 9.99m
         };
-        var b = new ProductInternalDto
+        var b = new ProductDto
         {
             Id = Guid.NewGuid(),
             CreatedAtUtc = DateTime.UtcNow.AddDays(-1),

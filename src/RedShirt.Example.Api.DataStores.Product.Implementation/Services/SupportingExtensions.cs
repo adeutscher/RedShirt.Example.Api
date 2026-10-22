@@ -11,7 +11,7 @@ internal static class SupportingExtensions
                || subject.Price.HasValue;
     }
 
-    public static bool IsTheSameAs(this ProductInternalDto a, ProductInternalDto b)
+    public static bool IsTheSameAs(this ProductDto a, ProductDto b)
     {
         return a.Sku == b.Sku
                && a.Name == b.Name

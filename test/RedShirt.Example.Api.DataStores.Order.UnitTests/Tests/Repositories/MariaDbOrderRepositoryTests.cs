@@ -4,6 +4,7 @@ using RedShirt.Example.Api.DataStores.Common.DapperMySql.Factories;
 using RedShirt.Example.Api.DataStores.Common.DapperMySql.Services;
 using RedShirt.Example.Api.DataStores.Common.DapperMySql.Services.Resilience;
 using RedShirt.Example.Api.DataStores.Constants;
+using RedShirt.Example.Api.DataStores.Order.Models;
 using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 using System.Data;
 using System.Text.Json;
@@ -15,12 +16,12 @@ namespace RedShirt.Example.Api.DataStores.Order.UnitTests.Tests.Repositories;
 /// </summary>
 public class MariaDbOrderRepositoryTests
 {
-    private static OrderInternalDto CreateDto(
+    private static OrderDto CreateDto(
         Guid? id = null,
         DateTime? updatedAtUtc = null)
     {
         var updated = updatedAtUtc ?? DateTime.UtcNow;
-        return new OrderInternalDto
+        return new OrderDto
         {
             Id = id ?? Guid.NewGuid(),
             CreatedAtUtc = updated.AddDays(-1),
