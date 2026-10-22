@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NJsonSchema;
 using NSwag;
 using NSwag.Generation;
 using RedShirt.Example.Api.Controllers;
@@ -12,6 +13,23 @@ namespace RedShirt.Example.Api.UnitTests.Tests.OpenApi;
 /// </summary>
 public class DecimalFormatOpenApiTests
 {
+    private static void AssertDecimalProperty(
+        OpenApiDocument document,
+        string schemaName,
+        string propertyName,
+        bool expectNullable = false)
+    {
+        var schema = document.Components.Schemas[schemaName];
+        var property = schema.Properties[propertyName];
+
+        Assert.Equal(JsonObjectType.Number, property.Type);
+        Assert.Equal("decimal", property.Format);
+        if (expectNullable)
+        {
+            Assert.True(property.IsNullableRaw);
+        }
+    }
+
     [Fact]
     public async Task OpenApiDocument_AppliesDecimalFormatToDecimalProperties()
     {
@@ -33,31 +51,14 @@ public class DecimalFormatOpenApiTests
         var document = await generators.Single().GenerateAsync("v1");
 
         AssertDecimalProperty(document, "OrderDto", "totalAmount");
-        AssertDecimalProperty(document, "OrderDto", "totalPrice", expectNullable: true);
+        AssertDecimalProperty(document, "OrderDto", "totalPrice", true);
         AssertDecimalProperty(document, "ProductDto", "price");
         AssertDecimalProperty(document, "ProductPostRequest", "price");
 
         var orderSearchPrice = document.Operations
             .SelectMany(operation => operation.Operation.Parameters)
             .Single(parameter => parameter.Name == "TotalPrice");
-        Assert.Equal(NJsonSchema.JsonObjectType.Number, orderSearchPrice.ActualSchema.Type);
+        Assert.Equal(JsonObjectType.Number, orderSearchPrice.ActualSchema.Type);
         Assert.Equal("decimal", orderSearchPrice.ActualSchema.Format);
-    }
-
-    private static void AssertDecimalProperty(
-        OpenApiDocument document,
-        string schemaName,
-        string propertyName,
-        bool expectNullable = false)
-    {
-        var schema = document.Components.Schemas[schemaName];
-        var property = schema.Properties[propertyName];
-
-        Assert.Equal(NJsonSchema.JsonObjectType.Number, property.Type);
-        Assert.Equal("decimal", property.Format);
-        if (expectNullable)
-        {
-            Assert.True(property.IsNullableRaw);
-        }
     }
 }

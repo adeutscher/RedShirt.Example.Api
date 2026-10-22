@@ -36,35 +36,11 @@ public class ForwardingHeadersExtensionsTests
     }
 
     [Fact]
-    public void ConsiderConfiguringForwardingHeaders_ReturnsSameServiceCollection()
-    {
-        var services = new ServiceCollection();
-        var configuration = CreateConfiguration(respectHeaders: true, "10.0.0.0/8");
-
-        var result = services.ConsiderConfiguringForwardingHeaders(configuration);
-
-        Assert.Same(services, result);
-    }
-
-    [Fact]
-    public void ConsiderConfiguringForwardingHeaders_DoesNotRegisterOptionsWhenDisabled()
-    {
-        var services = new ServiceCollection();
-        var configuration = CreateConfiguration(respectHeaders: false);
-
-        services.ConsiderConfiguringForwardingHeaders(configuration);
-
-        using var provider = services.BuildServiceProvider();
-
-        Assert.Null(provider.GetService<IOptions<ForwardedHeadersOptions>>());
-    }
-
-    [Fact]
     public void ConsiderConfiguringForwardingHeaders_ConfiguresOptionsWhenEnabled()
     {
         var services = new ServiceCollection();
         var configuration = CreateConfiguration(
-            respectHeaders: true,
+            true,
             "10.0.0.0/8",
             "not-a-cidr",
             " 172.16.0.0/12 ",
@@ -89,6 +65,30 @@ public class ForwardingHeadersExtensionsTests
     }
 
     [Fact]
+    public void ConsiderConfiguringForwardingHeaders_DoesNotRegisterOptionsWhenDisabled()
+    {
+        var services = new ServiceCollection();
+        var configuration = CreateConfiguration(false);
+
+        services.ConsiderConfiguringForwardingHeaders(configuration);
+
+        using var provider = services.BuildServiceProvider();
+
+        Assert.Null(provider.GetService<IOptions<ForwardedHeadersOptions>>());
+    }
+
+    [Fact]
+    public void ConsiderConfiguringForwardingHeaders_ReturnsSameServiceCollection()
+    {
+        var services = new ServiceCollection();
+        var configuration = CreateConfiguration(true, "10.0.0.0/8");
+
+        var result = services.ConsiderConfiguringForwardingHeaders(configuration);
+
+        Assert.Same(services, result);
+    }
+
+    [Fact]
     public void ConsiderConfiguringForwardingHeaders_UsesDefaultsWhenSectionMissing()
     {
         var services = new ServiceCollection();
@@ -102,15 +102,37 @@ public class ForwardingHeadersExtensionsTests
     }
 
     [Fact]
-    public void ConsiderUsingForwardedHeaders_ReturnsSameApplicationInstance()
+    public async Task ConsiderUsingForwardedHeaders_AppliesHeadersWhenEnabled()
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
-        var app = builder.Build();
+        builder.Configuration.AddInMemoryCollection(CreateConfiguration(true, "0.0.0.0/0")
+            .AsEnumerable()
+            .ToDictionary(entry => entry.Key, entry => entry.Value));
+        builder.Services
+            .ConsiderConfiguringForwardingHeaders(builder.Configuration)
+            .AddRouting();
 
-        var result = app.ConsiderUsingForwardedHeaders();
+        string? capturedScheme = null;
 
-        Assert.Same(app, result);
+        await using var app = builder.Build();
+        app.ConsiderUsingForwardedHeaders();
+        app.UseRouting();
+        app.MapGet("/", (HttpRequest request) =>
+        {
+            capturedScheme = request.Scheme;
+            return Results.NoContent();
+        });
+
+        await app.StartAsync(TestContext.Current.CancellationToken);
+        var client = app.GetTestClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/");
+        request.Headers.TryAddWithoutValidation("X-Forwarded-Proto", "https");
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(StatusCodes.Status204NoContent, (int) response.StatusCode);
+        Assert.Equal("https", capturedScheme);
     }
 
     [Fact]
@@ -118,7 +140,7 @@ public class ForwardingHeadersExtensionsTests
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
-        builder.Configuration.AddInMemoryCollection(CreateConfiguration(respectHeaders: false)
+        builder.Configuration.AddInMemoryCollection(CreateConfiguration(false)
             .AsEnumerable()
             .ToDictionary(entry => entry.Key, entry => entry.Value));
         builder.Services.AddRouting();
@@ -141,41 +163,19 @@ public class ForwardingHeadersExtensionsTests
 
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
-        Assert.Equal(StatusCodes.Status204NoContent, (int)response.StatusCode);
+        Assert.Equal(StatusCodes.Status204NoContent, (int) response.StatusCode);
         Assert.Equal("http", capturedScheme);
     }
 
     [Fact]
-    public async Task ConsiderUsingForwardedHeaders_AppliesHeadersWhenEnabled()
+    public void ConsiderUsingForwardedHeaders_ReturnsSameApplicationInstance()
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
-        builder.Configuration.AddInMemoryCollection(CreateConfiguration(respectHeaders: true, "0.0.0.0/0")
-            .AsEnumerable()
-            .ToDictionary(entry => entry.Key, entry => entry.Value));
-        builder.Services
-            .ConsiderConfiguringForwardingHeaders((IConfigurationRoot)builder.Configuration)
-            .AddRouting();
+        var app = builder.Build();
 
-        string? capturedScheme = null;
+        var result = app.ConsiderUsingForwardedHeaders();
 
-        await using var app = builder.Build();
-        app.ConsiderUsingForwardedHeaders();
-        app.UseRouting();
-        app.MapGet("/", (HttpRequest request) =>
-        {
-            capturedScheme = request.Scheme;
-            return Results.NoContent();
-        });
-
-        await app.StartAsync(TestContext.Current.CancellationToken);
-        var client = app.GetTestClient();
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/");
-        request.Headers.TryAddWithoutValidation("X-Forwarded-Proto", "https");
-
-        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
-
-        Assert.Equal(StatusCodes.Status204NoContent, (int)response.StatusCode);
-        Assert.Equal("https", capturedScheme);
+        Assert.Same(app, result);
     }
 }
