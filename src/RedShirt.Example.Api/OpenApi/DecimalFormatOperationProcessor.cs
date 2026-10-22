@@ -2,11 +2,10 @@ using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using NSwag.Generation.Processors;
 using NSwag.Generation.Processors.Contexts;
-using RedShirt.Example.Api.DataStores.Analyzers.Abstractions.Attributes;
 
 namespace RedShirt.Example.Api.OpenApi;
 
-internal sealed class StoredAsDecimalOperationProcessor : IOperationProcessor
+internal sealed class DecimalFormatOperationProcessor : IOperationProcessor
 {
     public bool Process(OperationProcessorContext context)
     {
@@ -31,12 +30,12 @@ internal sealed class StoredAsDecimalOperationProcessor : IOperationProcessor
                     operationParameter.Name,
                     BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
 
-                if (property?.GetCustomAttribute<StoredAsDecimalAttribute>() is null)
+                if (property is null || !DecimalOpenApiSchema.IsDecimalType(property.PropertyType))
                 {
                     continue;
                 }
 
-                StoredAsDecimalOpenApiSchema.Apply(operationParameter.ActualSchema);
+                DecimalOpenApiSchema.Apply(operationParameter.ActualSchema);
                 break;
             }
         }

@@ -60,27 +60,9 @@ public class ClassSummaryModel
     public string BaseName => DtoName.Replace("Dto", "");
 
     /// <summary>
-    ///     True when any property is marked with StoredAsDecimalAttribute.
-    /// </summary>
-    public bool HasStoredAsDecimalProperties =>
-        Properties.Any(p => p.IsStoredAsDecimal);
-
-    /// <summary>
-    ///     Internal DTO name (e.g. OrderInternalDto) used by services when StoredAsDecimal properties exist.
-    /// </summary>
-    public string InternalDtoName => $"{BaseName}InternalDto";
-
-    /// <summary>
-    ///     Fully-qualified path to the internal DTO.
-    /// </summary>
-    public string FullInternalDtoName => $"{GeneratedNamespace}.{InternalDtoName}";
-
-    /// <summary>
     ///     DTO type used by services and repositories.
-    ///     When StoredAsDecimal properties exist this is the internal DTO; otherwise the developer-defined DTO.
     /// </summary>
-    public string FullServiceDtoName =>
-        HasStoredAsDecimalProperties ? FullInternalDtoName : FullDtoName;
+    public string FullServiceDtoName => FullDtoName;
 
     /// <summary>
     ///     Skip generating POST-related classes/methods for this service.
@@ -135,8 +117,7 @@ public class ClassSummaryModel
     /// <summary>
     ///     Search response returned by the service/repository layer.
     /// </summary>
-    public string ServiceResponseClassSearch =>
-        HasStoredAsDecimalProperties ? $"{BaseName}ServiceSearchResponse" : ResponseClassSearch;
+    public string ServiceResponseClassSearch => ResponseClassSearch;
 
     public string FullServiceResponseClassSearch => $"{GeneratedNamespace}.{ServiceResponseClassSearch}";
 }

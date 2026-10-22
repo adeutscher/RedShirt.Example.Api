@@ -1,5 +1,4 @@
 using FluentValidation;
-using RedShirt.Example.Api.Core.Extensions.Validation;
 
 namespace RedShirt.Example.Api.Core.UseCases.Product.Queries.SearchRecords;
 
@@ -7,13 +6,5 @@ public class SearchProductRecordsQueryValidator : AbstractValidator<SearchProduc
 {
     public SearchProductRecordsQueryValidator()
     {
-        RuleFor(query => query.Price)
-            .MustBeValidStoredDecimalWhenPresent();
-
-        RuleFor(query => query.PriceGreaterThan)
-            .MustBeValidStoredDecimalWhenPresent();
-
-        RuleFor(query => query.PriceLessThan)
-            .MustBeValidStoredDecimalWhenPresent();
     }
 }

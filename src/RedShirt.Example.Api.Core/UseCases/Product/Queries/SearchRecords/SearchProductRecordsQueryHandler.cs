@@ -1,7 +1,6 @@
 using RedShirt.Example.Api.Core.Cqrs;
 using RedShirt.Example.Api.DataStores.Product.Core.Models;
 using RedShirt.Example.Api.DataStores.Product.Core.Services;
-using System.Globalization;
 
 namespace RedShirt.Example.Api.Core.UseCases.Product.Queries.SearchRecords;
 
@@ -10,13 +9,6 @@ public interface ISearchProductRecordsQueryHandler : ICqrsHandler<SearchProductR
 internal class SearchProductRecordsQueryHandler(IProductService productService)
     : ISearchProductRecordsQueryHandler
 {
-    private static decimal? ParseOptionalDecimal(string? value)
-    {
-        return string.IsNullOrWhiteSpace(value)
-            ? null
-            : decimal.Parse(value, CultureInfo.InvariantCulture);
-    }
-
     public async Task<ProductSearchResponse> Handle(SearchProductRecordsQuery query,
         CancellationToken cancellationToken = default)
     {
@@ -31,16 +23,15 @@ internal class SearchProductRecordsQueryHandler(IProductService productService)
             SkuContains = query.SkuContains,
             Name = query.Name,
             NameContains = query.NameContains,
-            Price = ParseOptionalDecimal(query.Price),
-            PriceGreaterThan = ParseOptionalDecimal(query.PriceGreaterThan),
-            PriceLessThan = ParseOptionalDecimal(query.PriceLessThan)
+            Price = query.Price,
+            PriceGreaterThan = query.PriceGreaterThan,
+            PriceLessThan = query.PriceLessThan
         }, query.ContinuationToken, cancellationToken);
 
         return new ProductSearchResponse
         {
             ContinuationToken = result.ContinuationToken,
-            // ReSharper disable once UseCollectionExpression
-            Records = result.Records.Select(record => record.ToDto()).ToList()
+            Records = result.Records
         };
     }
 }

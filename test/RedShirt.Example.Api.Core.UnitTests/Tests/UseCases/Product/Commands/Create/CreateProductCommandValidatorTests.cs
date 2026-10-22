@@ -9,30 +9,21 @@ public class CreateProductCommandValidatorTests
 {
     private readonly CreateProductCommandValidator _validator = new();
 
-    [Theory]
-    [InlineData("not-a-decimal")]
-    [InlineData("12.34.56")]
-    [InlineData("abc")]
-    public async Task Validate_Fails_WhenPriceIsNotAValidDecimal(string price)
+    [Fact]
+    public async Task Validate_Fails_WhenSkuIsEmpty()
     {
         var result = await _validator.ValidateAsync(
-            new CreateProductCommand("SKU-1", "Widget", price, "idem-1"),
+            new CreateProductCommand("", "Widget", 9.99m, "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.False(result.IsValid);
-        Assert.Contains(result.Errors,
-            error => error.ErrorMessage == "'Price' must be a valid decimal number");
     }
 
-    [Theory]
-    [InlineData("9.99")]
-    [InlineData("0")]
-    [InlineData("1000")]
-    [InlineData("-1.5")]
-    public async Task Validate_Succeeds_WhenPriceIsAValidDecimal(string price)
+    [Fact]
+    public async Task Validate_Succeeds_WhenRequiredFieldsArePresent()
     {
         var result = await _validator.ValidateAsync(
-            new CreateProductCommand("SKU-1", "Widget", price, "idem-1"),
+            new CreateProductCommand("SKU-1", "Widget", 9.99m, "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsValid);

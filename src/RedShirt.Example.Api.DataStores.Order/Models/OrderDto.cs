@@ -17,10 +17,6 @@ public class OrderDto
 
     public required Guid CustomerId { get; init; }
     public required string Status { get; init; }
-
-    [StoredAsDecimal]
-    public required string TotalAmount { get; init; }
-
-    [StoredAsDecimal]
-    public required string? TotalPrice { get; init; }
+    public required decimal TotalAmount { get; init; }
+    public required decimal? TotalPrice { get; init; }
 }

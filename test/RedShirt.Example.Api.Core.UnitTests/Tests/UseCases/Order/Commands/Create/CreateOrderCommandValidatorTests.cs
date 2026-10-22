@@ -9,25 +9,21 @@ public class CreateOrderCommandValidatorTests
 {
     private readonly CreateOrderCommandValidator _validator = new();
 
-    [Theory]
-    [InlineData("not-a-decimal")]
-    [InlineData("12.34.56")]
-    public async Task Validate_Fails_WhenTotalAmountIsNotAValidDecimal(string totalAmount)
+    [Fact]
+    public async Task Validate_Fails_WhenStatusIsEmpty()
     {
         var result = await _validator.ValidateAsync(
-            new CreateOrderCommand(Guid.NewGuid(), "Pending", totalAmount, null, "idem-1"),
+            new CreateOrderCommand(Guid.NewGuid(), "   ", 42.00m, null, "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.False(result.IsValid);
-        Assert.Contains(result.Errors,
-            error => error.ErrorMessage == "'Total Amount' must be a valid decimal number");
     }
 
     [Fact]
-    public async Task Validate_Succeeds_WhenTotalAmountIsAValidDecimal()
+    public async Task Validate_Succeeds_WhenStatusIsPresent()
     {
         var result = await _validator.ValidateAsync(
-            new CreateOrderCommand(Guid.NewGuid(), "Pending", "42.00", null, "idem-1"),
+            new CreateOrderCommand(Guid.NewGuid(), "Pending", 42.00m, null, "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsValid);

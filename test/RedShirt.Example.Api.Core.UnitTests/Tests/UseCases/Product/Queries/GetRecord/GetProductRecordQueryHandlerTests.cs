@@ -16,7 +16,7 @@ public class GetProductRecordQueryHandlerTests
     {
         var id = Guid.NewGuid();
         var created = DateTime.UtcNow.AddDays(-2);
-        var internalDto = new ProductInternalDto
+        var internalDto = new ProductDto
         {
             Id = id,
             CreatedAtUtc = created,
@@ -38,7 +38,7 @@ public class GetProductRecordQueryHandlerTests
         Assert.Equal(id, result.Id);
         Assert.Equal("SKU-1", result.Sku);
         Assert.Equal("Widget", result.Name);
-        Assert.Equal("19.99", result.Price);
+        Assert.Equal(19.99m, result.Price);
         validator.Verify(v => v.ValidateAsync(query, TestContext.Current.CancellationToken), Times.Once);
         productService.Verify(s => s.GetByIdAsync(id, TestContext.Current.CancellationToken), Times.Once);
     }

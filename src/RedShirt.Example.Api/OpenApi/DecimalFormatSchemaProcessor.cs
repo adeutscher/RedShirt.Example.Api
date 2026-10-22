@@ -1,11 +1,10 @@
 using System.Reflection;
 using System.Text.Json;
 using NJsonSchema.Generation;
-using RedShirt.Example.Api.DataStores.Analyzers.Abstractions.Attributes;
 
 namespace RedShirt.Example.Api.OpenApi;
 
-internal sealed class StoredAsDecimalSchemaProcessor : ISchemaProcessor
+internal sealed class DecimalFormatSchemaProcessor : ISchemaProcessor
 {
     public void Process(SchemaProcessorContext context)
     {
@@ -17,7 +16,7 @@ internal sealed class StoredAsDecimalSchemaProcessor : ISchemaProcessor
 
         foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
-            if (property.GetCustomAttribute<StoredAsDecimalAttribute>() is null)
+            if (!DecimalOpenApiSchema.IsDecimalType(property.PropertyType))
             {
                 continue;
             }
@@ -25,7 +24,7 @@ internal sealed class StoredAsDecimalSchemaProcessor : ISchemaProcessor
             var camelCaseName = JsonNamingPolicy.CamelCase.ConvertName(property.Name);
             if (context.Schema.Properties.TryGetValue(camelCaseName, out var propertySchema))
             {
-                StoredAsDecimalOpenApiSchema.Apply(propertySchema);
+                DecimalOpenApiSchema.Apply(propertySchema);
             }
         }
     }

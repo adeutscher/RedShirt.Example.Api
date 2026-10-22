@@ -9,59 +9,27 @@ public class SearchOrderRecordsQueryValidatorTests
 {
     private readonly SearchOrderRecordsQueryValidator _validator = new();
 
-    private static SearchOrderRecordsQuery CreateQuery(string propertyName, string? value)
-    {
-        return new SearchOrderRecordsQuery(
-            10,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            propertyName == nameof(SearchOrderRecordsQuery.TotalAmount) ? value : null,
-            propertyName == nameof(SearchOrderRecordsQuery.TotalAmountGreaterThan) ? value : null,
-            propertyName == nameof(SearchOrderRecordsQuery.TotalAmountLessThan) ? value : null,
-            propertyName == nameof(SearchOrderRecordsQuery.TotalPrice) ? value : null,
-            propertyName == nameof(SearchOrderRecordsQuery.TotalPriceGreaterThan) ? value : null,
-            propertyName == nameof(SearchOrderRecordsQuery.TotalPriceLessThan) ? value : null,
-            false,
-            null);
-    }
-
-    [Theory]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmount), "not-a-decimal")]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmountGreaterThan), "12.34.56")]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmountLessThan), "abc")]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalPrice), "nope")]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalPriceGreaterThan), "1.2.3")]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalPriceLessThan), "xyz")]
-    public async Task Validate_Fails_WhenDecimalFilterIsInvalid(string propertyName, string value)
+    [Fact]
+    public async Task Validate_Succeeds_ForTypicalQuery()
     {
         var result = await _validator.ValidateAsync(
-            CreateQuery(propertyName, value),
-            TestContext.Current.CancellationToken);
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors,
-            error => error.ErrorMessage.Contains("must be a valid decimal number",
-                StringComparison.Ordinal));
-    }
-
-    [Theory]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmount), null)]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmount), "42.00")]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmountGreaterThan), "0")]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalAmountLessThan), "100")]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalPrice), null)]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalPrice), "9.99")]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalPriceGreaterThan), "-1.5")]
-    [InlineData(nameof(SearchOrderRecordsQuery.TotalPriceLessThan), "1000")]
-    public async Task Validate_Succeeds_WhenDecimalFilterIsNullOrValid(string propertyName, string? value)
-    {
-        var result = await _validator.ValidateAsync(
-            CreateQuery(propertyName, value),
+            new SearchOrderRecordsQuery(
+                10,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                10m,
+                5m,
+                20m,
+                null,
+                null,
+                null,
+                false,
+                null),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsValid);

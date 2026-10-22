@@ -5,15 +5,15 @@ namespace RedShirt.Example.Api.DataStores.Product.Core.Services;
 public interface IProductService
 {
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<ProductInternalDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<ProductDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<ProductInternalDto> PatchAsync(ProductServicePatchRequest request,
+    Task<ProductDto> PatchAsync(ProductServicePatchRequest request,
         CancellationToken cancellationToken = default);
 
-    Task<ProductInternalDto> PostAsync(ProductServicePostRequest request,
+    Task<ProductDto> PostAsync(ProductServicePostRequest request,
         CancellationToken cancellationToken = default);
 
-    Task<ProductInternalDto> PutAsync(ProductServicePutRequest request, CancellationToken cancellationToken = default);
+    Task<ProductDto> PutAsync(ProductServicePutRequest request, CancellationToken cancellationToken = default);
 
     Task<ProductServiceSearchResponse> SearchAsync(ProductServiceSearchRequest parameters, Guid? continuationToken,
         CancellationToken cancellationToken = default);

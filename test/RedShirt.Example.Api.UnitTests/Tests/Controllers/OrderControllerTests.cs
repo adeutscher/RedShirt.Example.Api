@@ -32,7 +32,7 @@ public class OrderControllerTests
             UpdatedAtUtc = DateTime.UtcNow,
             CustomerId = customerId,
             Status = "open",
-            TotalAmount = "10.00",
+            TotalAmount = 10.00m,
             TotalPrice = null
         };
     }

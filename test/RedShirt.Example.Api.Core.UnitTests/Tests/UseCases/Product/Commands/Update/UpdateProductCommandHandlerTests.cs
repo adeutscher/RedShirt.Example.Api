@@ -15,7 +15,7 @@ public class UpdateProductCommandHandlerTests
     public async Task Handle_ValidatesAndMapsCommandToPutRequest()
     {
         var id = Guid.NewGuid();
-        var internalDto = new ProductInternalDto
+        var internalDto = new ProductDto
         {
             Id = id,
             CreatedAtUtc = DateTime.UtcNow.AddDays(-1),
@@ -32,7 +32,7 @@ public class UpdateProductCommandHandlerTests
             .ReturnsAsync(internalDto);
         var validator = new Mock<ICoreRequestValidator>();
         var handler = new UpdateProductCommandHandler(productService.Object, validator.Object);
-        var command = new UpdateProductCommand(id, "SKU-2", "Gadget", "29.95");
+        var command = new UpdateProductCommand(id, "SKU-2", "Gadget", 29.95m);
 
         var result = await handler.Handle(command, TestContext.Current.CancellationToken);
 
@@ -41,7 +41,7 @@ public class UpdateProductCommandHandlerTests
         Assert.Equal("SKU-2", capturedRequest.Sku);
         Assert.Equal("Gadget", capturedRequest.Name);
         Assert.Equal(29.95m, capturedRequest.Price);
-        Assert.Equal("29.95", result.Price);
+        Assert.Equal(29.95m, result.Price);
         validator.Verify(v => v.ValidateAsync(command, TestContext.Current.CancellationToken), Times.Once);
         productService.Verify(
             s => s.PutAsync(It.IsAny<ProductServicePutRequest>(), TestContext.Current.CancellationToken),

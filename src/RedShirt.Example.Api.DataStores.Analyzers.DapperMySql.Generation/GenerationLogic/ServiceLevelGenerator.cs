@@ -14,7 +14,7 @@ public static class ServiceLevelGenerator
 {
     private static bool UsesHasValueForChangeCheck(PropertyModel property)
     {
-        return property.IsStoredAsDecimal || property.Category != PropertyModel.PropertyCategory.String;
+        return property.Category != PropertyModel.PropertyCategory.String;
     }
 
     private static StringBuilder WriteSupportingExtensions(this StringBuilder sb, ClassSummaryModel classSummaryModel)
@@ -73,7 +73,7 @@ public static class ServiceLevelGenerator
             {
                 case PropertyModel.PropertyCategory.String:
 
-                    if (property.IsNullable || property.IsStoredAsDecimal)
+                    if (property.IsNullable)
                     {
                         break;
                     }
@@ -437,7 +437,7 @@ public static class ServiceLevelGenerator
             // Add special filters by type (e.g. text contains, greater-than/less-than)
             switch (property.Category)
             {
-                case PropertyModel.PropertyCategory.String when !property.IsStoredAsDecimal:
+                case PropertyModel.PropertyCategory.String:
                 {
                     var contains = new PropertyModel
                     {
@@ -477,7 +477,6 @@ public static class ServiceLevelGenerator
                 }
                 case PropertyModel.PropertyCategory.FloatingPointNumber:
                 case PropertyModel.PropertyCategory.Integer:
-                case PropertyModel.PropertyCategory.String when property.IsStoredAsDecimal:
                 {
                     var greaterThan = new PropertyModel
                     {
@@ -542,12 +541,6 @@ public static class ServiceLevelGenerator
     {
         // Public/API-facing search response always uses the developer-defined DTO.
         WriteSearchResponseClass(sb, classSummaryModel.ResponseClassSearch, classSummaryModel.FullDtoName);
-
-        if (classSummaryModel.HasStoredAsDecimalProperties)
-        {
-            WriteSearchResponseClass(sb, classSummaryModel.ServiceResponseClassSearch,
-                classSummaryModel.FullServiceDtoName);
-        }
 
         return sb;
     }

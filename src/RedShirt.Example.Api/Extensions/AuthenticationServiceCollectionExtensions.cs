@@ -31,8 +31,8 @@ internal static class AuthenticationServiceCollectionExtensions
         {
             document.Title = "RedShirt.Example.Api";
             document.SchemaSettings.SchemaType = SchemaType.OpenApi3;
-            document.SchemaSettings.SchemaProcessors.Add(new StoredAsDecimalSchemaProcessor());
-            document.OperationProcessors.Add(new StoredAsDecimalOperationProcessor());
+            document.SchemaSettings.SchemaProcessors.Add(new DecimalFormatSchemaProcessor());
+            document.OperationProcessors.Add(new DecimalFormatOperationProcessor());
 
             if (!authenticationEnabled)
             {

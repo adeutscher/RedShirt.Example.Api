@@ -10,7 +10,7 @@ public record SearchProductRecordsQuery(
     string? SkuContains,
     string? Name,
     string? NameContains,
-    string? Price,
-    string? PriceGreaterThan,
-    string? PriceLessThan,
+    decimal? Price,
+    decimal? PriceGreaterThan,
+    decimal? PriceLessThan,
     Guid? ContinuationToken);

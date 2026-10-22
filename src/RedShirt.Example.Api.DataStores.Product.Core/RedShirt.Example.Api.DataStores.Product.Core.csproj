@@ -7,7 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Analyzers.Abstractions\RedShirt.Example.Api.DataStores.Analyzers.Abstractions.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Constants\RedShirt.Example.Api.DataStores.Constants.csproj"/>
     </ItemGroup>
 

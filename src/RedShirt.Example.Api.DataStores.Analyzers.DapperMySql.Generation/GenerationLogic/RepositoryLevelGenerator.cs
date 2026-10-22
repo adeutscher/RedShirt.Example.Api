@@ -337,52 +337,6 @@ public static class RepositoryLevelGenerator
                         .CloseBracket(baseIndentLevel);
 
                     break;
-                case PropertyModel.PropertyCategory.String when dtoProperty.IsStoredAsDecimal:
-
-                    /* Equals */
-
-                    sb.AppendLineWithIndent(baseIndentLevel,
-                            $"if(parameters.{dtoProperty.Name}.HasValue)")
-                        .OpenBracket(baseIndentLevel)
-                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
-                        .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
-                                dtoProperty.Name, $"= @{paramName}") + ",")
-                        .AppendLineWithIndent(baseIndentLevel + 2,
-                            "new {" + paramName + $" = parameters.{dtoProperty.Name}.Value" + "}")
-                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
-                        .CloseBracket(baseIndentLevel);
-
-                    /* Greater Than / Less Than */
-
-                    // Greater Than
-
-                    sb.AppendLineWithIndent(baseIndentLevel,
-                            $"if(parameters.{dtoProperty.Name}GreaterThan.HasValue)")
-                        .OpenBracket(baseIndentLevel)
-                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
-                        .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
-                                dtoProperty.Name, $"> @{paramName}") + ",")
-                        .AppendLineWithIndent(baseIndentLevel + 2,
-                            "new {" + paramName + $" = parameters.{dtoProperty.Name}GreaterThan.Value" + "}")
-                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
-                        .CloseBracket(baseIndentLevel);
-
-                    // Less Than
-                    sb.AppendLineWithIndent(baseIndentLevel,
-                            $"if(parameters.{dtoProperty.Name}LessThan.HasValue)")
-                        .OpenBracket(baseIndentLevel)
-                        .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
-                        .AppendLineWithIndent(baseIndentLevel + 2,
-                            WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
-                                dtoProperty.Name, $"< @{paramName}") + ",")
-                        .AppendLineWithIndent(baseIndentLevel + 2,
-                            "new {" + paramName + $" = parameters.{dtoProperty.Name}LessThan.Value" + "}")
-                        .AppendLineWithIndent(baseIndentLevel + 1, ");")
-                        .CloseBracket(baseIndentLevel);
-
-                    break;
 
                 case PropertyModel.PropertyCategory.DateTime:
 

@@ -4,5 +4,5 @@ public record UpdateOrderCommand(
     Guid Id,
     Guid CustomerId,
     string Status,
-    string TotalAmount,
-    string? TotalPrice);
+    decimal TotalAmount,
+    decimal? TotalPrice);
