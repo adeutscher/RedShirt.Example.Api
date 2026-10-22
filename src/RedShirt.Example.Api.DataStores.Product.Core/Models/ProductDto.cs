@@ -1,3 +1,5 @@
+using RedShirt.Example.Api.DataStores.Analyzers.Abstractions.Attributes;
+
 namespace RedShirt.Example.Api.DataStores.Product.Core.Models;
 
 public class ProductDto
@@ -7,5 +9,7 @@ public class ProductDto
     public required DateTime UpdatedAtUtc { get; init; }
     public required string Sku { get; init; }
     public required string Name { get; init; }
+
+    [StoredAsDecimal]
     public required string Price { get; init; }
 }

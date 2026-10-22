@@ -5,6 +5,7 @@ using NJsonSchema;
 using NSwag;
 using NSwag.Generation.Processors.Security;
 using RedShirt.Example.Api.Configuration;
+using RedShirt.Example.Api.OpenApi;
 
 namespace RedShirt.Example.Api.Extensions;
 
@@ -30,6 +31,8 @@ internal static class AuthenticationServiceCollectionExtensions
         {
             document.Title = "RedShirt.Example.Api";
             document.SchemaSettings.SchemaType = SchemaType.OpenApi3;
+            document.SchemaSettings.SchemaProcessors.Add(new StoredAsDecimalSchemaProcessor());
+            document.OperationProcessors.Add(new StoredAsDecimalOperationProcessor());
 
             if (!authenticationEnabled)
             {

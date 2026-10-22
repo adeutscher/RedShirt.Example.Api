@@ -1,3 +1,5 @@
+using System.Reflection;
+using RedShirt.Example.Api.DataStores.Analyzers.Abstractions.Attributes;
 using RedShirt.Example.Api.DataStores.Product.Core.Models;
 using RedShirt.Example.Api.DataStores.Product.Core.Services;
 
@@ -40,6 +42,14 @@ public class ProductDtoTests
         Assert.Equal("SKU-1", dto.Sku);
         Assert.Equal("Widget", dto.Name);
         Assert.Equal("12.34", dto.Price);
+    }
+
+    [Fact]
+    public void ProductDto_MarksPriceAsStoredAsDecimal()
+    {
+        var property = typeof(ProductDto).GetProperty(nameof(ProductDto.Price));
+
+        Assert.NotNull(property!.GetCustomAttribute<StoredAsDecimalAttribute>());
     }
 
     [Fact]

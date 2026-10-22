@@ -1264,7 +1264,8 @@
             "name": "TotalAmount",
             "in": "query",
             "schema": {
-              "type": "string",
+              "type": "number",
+              "format": "decimal",
               "nullable": true
             },
             "x-position": 9
@@ -1273,7 +1274,8 @@
             "name": "TotalAmountGreaterThan",
             "in": "query",
             "schema": {
-              "type": "string",
+              "type": "number",
+              "format": "decimal",
               "nullable": true
             },
             "x-position": 10
@@ -1282,7 +1284,8 @@
             "name": "TotalAmountLessThan",
             "in": "query",
             "schema": {
-              "type": "string",
+              "type": "number",
+              "format": "decimal",
               "nullable": true
             },
             "x-position": 11
@@ -1291,7 +1294,8 @@
             "name": "TotalPrice",
             "in": "query",
             "schema": {
-              "type": "string",
+              "type": "number",
+              "format": "decimal",
               "nullable": true
             },
             "x-position": 12
@@ -1300,7 +1304,8 @@
             "name": "TotalPriceGreaterThan",
             "in": "query",
             "schema": {
-              "type": "string",
+              "type": "number",
+              "format": "decimal",
               "nullable": true
             },
             "x-position": 13
@@ -1309,7 +1314,8 @@
             "name": "TotalPriceLessThan",
             "in": "query",
             "schema": {
-              "type": "string",
+              "type": "number",
+              "format": "decimal",
               "nullable": true
             },
             "x-position": 14
@@ -1713,7 +1719,8 @@
             "name": "Price",
             "in": "query",
             "schema": {
-              "type": "string",
+              "type": "number",
+              "format": "decimal",
               "nullable": true
             },
             "x-position": 10
@@ -1722,7 +1729,8 @@
             "name": "PriceGreaterThan",
             "in": "query",
             "schema": {
-              "type": "string",
+              "type": "number",
+              "format": "decimal",
               "nullable": true
             },
             "x-position": 11
@@ -1731,7 +1739,8 @@
             "name": "PriceLessThan",
             "in": "query",
             "schema": {
-              "type": "string",
+              "type": "number",
+              "format": "decimal",
               "nullable": true
             },
             "x-position": 12
@@ -2655,10 +2664,12 @@
             "type": "string"
           },
           "totalAmount": {
-            "type": "string"
+            "type": "number",
+            "format": "decimal"
           },
           "totalPrice": {
-            "type": "string",
+            "type": "number",
+            "format": "decimal",
             "nullable": true
           }
         }
@@ -2677,11 +2688,13 @@
             "nullable": true
           },
           "totalAmount": {
-            "type": "string",
+            "type": "number",
+            "format": "decimal",
             "nullable": true
           },
           "totalPrice": {
-            "type": "string",
+            "type": "number",
+            "format": "decimal",
             "nullable": true
           },
           "clearTotalPrice": {
@@ -2695,7 +2708,8 @@
         "additionalProperties": false,
         "properties": {
           "totalPrice": {
-            "type": "string",
+            "type": "number",
+            "format": "decimal",
             "nullable": true
           },
           "customerId": {
@@ -2706,7 +2720,8 @@
             "type": "string"
           },
           "totalAmount": {
-            "type": "string"
+            "type": "number",
+            "format": "decimal"
           }
         }
       },
@@ -2715,7 +2730,8 @@
         "additionalProperties": false,
         "properties": {
           "totalPrice": {
-            "type": "string",
+            "type": "number",
+            "format": "decimal",
             "nullable": true
           },
           "customerId": {
@@ -2726,7 +2742,8 @@
             "type": "string"
           },
           "totalAmount": {
-            "type": "string"
+            "type": "number",
+            "format": "decimal"
           }
         }
       },
@@ -2782,7 +2799,8 @@
             "type": "string"
           },
           "price": {
-            "type": "string"
+            "type": "number",
+            "format": "decimal"
           }
         }
       },
@@ -2799,7 +2817,8 @@
             "nullable": true
           },
           "price": {
-            "type": "string",
+            "type": "number",
+            "format": "decimal",
             "nullable": true
           }
         }
@@ -2815,7 +2834,8 @@
             "type": "string"
           },
           "price": {
-            "type": "string"
+            "type": "number",
+            "format": "decimal"
           }
         }
       },
@@ -2830,7 +2850,8 @@
             "type": "string"
           },
           "price": {
-            "type": "string"
+            "type": "number",
+            "format": "decimal"
           }
         }
       },
