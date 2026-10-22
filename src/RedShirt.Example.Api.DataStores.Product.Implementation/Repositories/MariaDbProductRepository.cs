@@ -199,7 +199,7 @@ internal sealed class MariaDbProductRepository(
         pageSize = Math.Min(MaxPageSize, pageSize);
 
         var @params = new {paramTake = pageSize};
-        var selectList = StoredAsDecimalHelper.BuildSelectClause(typeof(ProductEntity));
+        var selectList = DapperDtoSqlHelper.BuildSelectClause(typeof(ProductEntity));
         var template = queryBuilder.AddTemplate(
             $"SELECT {selectList} FROM {DatabaseUtility.QuoteResource(genericDtoStorage.GetTableName())} /**where**/ /**orderby**/ LIMIT @paramTake",
             @params);

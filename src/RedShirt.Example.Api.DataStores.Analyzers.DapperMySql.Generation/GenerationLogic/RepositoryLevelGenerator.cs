@@ -92,7 +92,7 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(2, "/* Declare SQL Command */")
             .AppendLineWithIndent(2, "var @params = new { paramTake = pageSize };")
             .AppendLineWithIndent(2,
-                $"var selectList = {classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.StoredAsDecimalHelper.BuildSelectClause(typeof({classSummaryModel.FullEntityName}));")
+                $"var selectList = {classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.DapperDtoSqlHelper.BuildSelectClause(typeof({classSummaryModel.FullEntityName}));")
             .AppendLineWithIndent(2, $"var template = queryBuilder.AddTemplate($\"SELECT {{selectList}} FROM {{"
                                      + $"{classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.DatabaseUtility.QuoteResource(genericDtoStorage.GetTableName())"
                                      + "} /**where**/ /**orderby**/ LIMIT @paramTake\", @params);")

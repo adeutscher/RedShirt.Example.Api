@@ -7,7 +7,7 @@ namespace RedShirt.Example.Api.DataStores.Common.DapperMySql.Utility;
 /// <summary>
 ///     Dapper parameter and SELECT helpers for MySQL DTO types.
 /// </summary>
-public static class StoredAsDecimalHelper
+public static class DapperDtoSqlHelper
 {
     public static string BuildSelectClause(Type dtoType)
     {
