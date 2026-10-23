@@ -8,7 +8,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
 
-image_name="${IMAGE_NAME:-api}"
+image_name="${IMAGE_NAME:-redshirt-example-api}"
 image_tag="${IMAGE_TAG:-ci-local}"
 image_ref="$image_name:$image_tag"
 
