@@ -25,6 +25,12 @@ if [ -z "${NAMESPACE_NEW}" ]; then
   exit 1
 fi
 
+# C# namespace: dotted identifiers (letter or underscore, then letters, digits, or underscores).
+if ! [[ "${NAMESPACE_NEW}" =~ ^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$ ]]; then
+  echo "Namespace must look like a C# namespace (e.g. MyCompany.MyApp)."
+  exit 1
+fi
+
 while read -r f; do
   rename_project "${f}"
 done <<< "$(find . -type d -name "${NAMESPACE_OLD}*")"
