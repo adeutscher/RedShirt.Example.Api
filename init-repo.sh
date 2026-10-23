@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Initialise this template repository as a new module.
+# This is destructive: files are edited and renamed in place.
+#
+# Usage: ./init-repo.sh New.Namespace
+
 NAMESPACE_OLD="RedShirt.Example.Api"
 NAMESPACE_NEW="${1}"
 
@@ -28,6 +33,11 @@ fi
 # C# namespace: dotted identifiers (letter or underscore, then letters, digits, or underscores).
 if ! [[ "${NAMESPACE_NEW}" =~ ^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$ ]]; then
   echo "Namespace must look like a C# namespace (e.g. MyCompany.MyApp)."
+  exit 1
+fi
+
+if [ "${NAMESPACE_NEW}" = "${NAMESPACE_OLD}" ]; then
+  echo "New namespace must differ from ${NAMESPACE_OLD}."
   exit 1
 fi
 
