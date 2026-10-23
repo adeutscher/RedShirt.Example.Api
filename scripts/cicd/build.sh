@@ -26,6 +26,7 @@
 #
 # Tools:
 #   * dotnet-coverage, as "dotnet coverage", on PATH, or in ~/.dotnet/tools.
+#     To install: dotnet tool install --global dotnet-coverage
 #   * bash, find, sort, awk, and sha256sum or shasum.
 #   * In containers, a /dev/shm larger than Docker's 64 MB default. Code coverage
 #     uses shared memory, and running out crashes test apps with exit code 135.
