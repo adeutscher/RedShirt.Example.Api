@@ -1,0 +1,33 @@
+# Settings for scripts/test/test-crud-controllers.py (shape-driven CRUD integration test).
+
+# Controllers (OpenAPI tags) to skip entirely. Matching is case-insensitive.
+ignore:
+  # Foo and Bar are API connectors backed by WireMock stubs, so writes are not reflected in reads.
+  - Foo
+  - Bar
+
+# Parent links the script cannot detect from field names (fields ending in "Id" or named after a
+# controller are detected automatically). Format:
+#   <Controller>:
+#     <field or path parameter>: <ParentController>
+dependencies: {}
+
+# Sample values for fields whose valid content the OpenAPI document cannot express (for example a
+# string column that must hold JSON). A list is cycled so create, update, and patch send different
+# values. Format:
+#   <Controller>:
+#     <field>: <value or list of values>
+values: {}
+
+# Keycloak password-grant overrides. By default the realm, public client, and the password for
+# user "test-admin" are read from the realm import file mounted into the keycloak Compose service.
+# auth:
+#   realm: test
+#   client_id: example-api
+#   username: test-admin
+#   password: test-admin-pass
+#   token_url: http://localhost:9080/realms/test/protocol/openid-connect/token
+
+# Compose service names used to find published ports.
+# api_service: api
+# keycloak_service: keycloak
