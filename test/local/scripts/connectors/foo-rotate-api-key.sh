@@ -13,7 +13,7 @@ set -euo pipefail
 #
 # Pair with ./foo-set-ssm-api-key.sh (SSM only → 401) then this script (SSM + WireMock → recovery).
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WIREMOCK_URL="${WIREMOCK_URL:-http://localhost:9100}"
 SSM_PARAM_NAME="${FOO_API_KEY_SSM_PATH:-/foo/api-key}"
 NEW_KEY="${1:-rotated-foo-api-key-$(date +%s)}"
