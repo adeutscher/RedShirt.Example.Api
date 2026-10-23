@@ -108,8 +108,8 @@ services:
       args:
         TESTS_ENABLE: "${TESTS_ENABLE-1}"
     depends_on:
-      ministack-init:
-        condition: service_completed_successfully
+      ministack:
+        condition: service_started
       redis:
         condition: service_started
       mariadb:

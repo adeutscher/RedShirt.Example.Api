@@ -22,11 +22,13 @@ If you added it to `~/.bashrc`, reload:
 
 ## Steps
 
-1. Bring up `ministack`, `ministack-init`, `redis`, `mariadb`, `wiremock-foo`, `wiremock-bar`, and `keycloak` containers:
+1. Bring up supporting containers (everything except the `api` service):
 
     ```bash
-    docker compose up -d ministack ministack-init redis mariadb wiremock-foo wiremock-bar keycloak
+    ./scripts/start-supporting-services.sh
     ```
+
+    Equivalent to listing `ministack`, `ministack-init`, `redis`, `mariadb`, `wiremock-foo`, `wiremock-bar`, and `keycloak` explicitly.
 
     See **Foo WireMock stubs**, **Bar WireMock stubs**, and **Authentication and authorization (Keycloak)** below.
     Admin UIs:
