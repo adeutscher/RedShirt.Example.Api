@@ -34,12 +34,12 @@ If you added it to `~/.bashrc`, reload:
     http://localhost:9101/__admin/ (Bar),
     http://localhost:9080/ (Keycloak; admin/`admin`).
 
-2. Run `make-local-aws-resources.sh` to create ministack resources (DynamoDB table and
+2. Run `scripts/make-local-aws-resources.sh` to create ministack resources (DynamoDB table and
    SSM parameters, including `/mysql/connection-string`, `/foo/api-key`,
    `/bar/oauth/client-id`, and `/bar/oauth/client-secret`):
 
     ```bash
-    ./make-local-aws-resources.sh
+    ./scripts/make-local-aws-resources.sh
     ```
 
 3. Apply the MySQL/MariaDB schema using
@@ -139,16 +139,16 @@ docker compose up -d --force-recreate keycloak
 Use the stdlib Python helper (no pip packages required):
 
 ```bash
-chmod +x ./get-bearer-token.py   # once
-./get-bearer-token.py            # password grant as testuser (admin) → prints access_token
-./get-bearer-token.py --print-header
-./get-bearer-token.py --grant client_credentials
-./get-bearer-token.py --developer
-./get-bearer-token.py --analyst
-./get-bearer-token.py --billing
-./get-bearer-token.py --upload-validator
+chmod +x ./scripts/get-bearer-token.py   # once
+./scripts/get-bearer-token.py            # password grant as testuser (admin) → prints access_token
+./scripts/get-bearer-token.py --print-header
+./scripts/get-bearer-token.py --grant client_credentials
+./scripts/get-bearer-token.py --developer
+./scripts/get-bearer-token.py --analyst
+./scripts/get-bearer-token.py --billing
+./scripts/get-bearer-token.py --upload-validator
 # or:
-./get-bearer-token.py --username analystuser --password analystpass
+./scripts/get-bearer-token.py --username analystuser --password analystpass
 ```
 
 Or call Keycloak directly:
@@ -167,7 +167,7 @@ curl -s -X POST 'http://localhost:9080/realms/example/protocol/openid-connect/to
 Full-access admin (`admin`):
 
 ```bash
-TOKEN="$(./get-bearer-token.py)"
+TOKEN="$(./scripts/get-bearer-token.py)"
 curl -s -H "Authorization: Bearer ${TOKEN}" 'http://localhost:9000/foo/1'
 curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
   -d '{"name":"demo"}' 'http://localhost:9000/foo'
@@ -176,7 +176,7 @@ curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: applicatio
 Analyst (`analyst`) — Product GET succeeds; Product writes and other resources return 403:
 
 ```bash
-ANALYST_TOKEN="$(./get-bearer-token.py --analyst)"
+ANALYST_TOKEN="$(./scripts/get-bearer-token.py --analyst)"
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${ANALYST_TOKEN}" \
   'http://localhost:9000/products'
 curl -s -o /dev/null -w '%{http_code}\n' -X POST -H "Authorization: Bearer ${ANALYST_TOKEN}" \
@@ -189,7 +189,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${ANALYST_TOK
 Billing (`billing`) — Order read-write succeeds (within customer scope); Product and Foo return 403:
 
 ```bash
-BILLING_TOKEN="$(./get-bearer-token.py --billing)"
+BILLING_TOKEN="$(./scripts/get-bearer-token.py --billing)"
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOKEN}" \
   'http://localhost:9000/orders'
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOKEN}" \
@@ -206,14 +206,14 @@ scoped.
 Create an order as the admin user, then fetch it as billing / developer / admin:
 
 ```bash
-TOKEN="$(./get-bearer-token.py)"
+TOKEN="$(./scripts/get-bearer-token.py)"
 ORDER_JSON="$(curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
   -H 'Idempotency-Key: local-order-1' \
   -d '{"customerId":"11111111-1111-1111-1111-111111111111","status":"open","totalAmount":10.00}' \
   'http://localhost:9000/orders')"
 ORDER_ID="$(echo "${ORDER_JSON}" | jq -r .id)"
 
-BILLING_TOKEN="$(./get-bearer-token.py --billing)"
+BILLING_TOKEN="$(./scripts/get-bearer-token.py --billing)"
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOKEN}" \
   "http://localhost:9000/orders/${ORDER_ID}"   # 200
 
@@ -225,7 +225,7 @@ OTHER_ID="$(echo "${OTHER_JSON}" | jq -r .id)"
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOKEN}" \
   "http://localhost:9000/orders/${OTHER_ID}"   # 404
 
-DEV_TOKEN="$(./get-bearer-token.py --developer)"
+DEV_TOKEN="$(./scripts/get-bearer-token.py --developer)"
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${DEV_TOKEN}" \
   "http://localhost:9000/orders/${OTHER_ID}"   # 404 (developer is still scoped)
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${TOKEN}" \
@@ -249,7 +249,7 @@ Scripts are executable; run them directly from the `test/local` directory (for e
 Requires `upload:write` (admin or developer token by default):
 
 ```bash
-export API_JWT_TOKEN="$(./get-bearer-token.py)"
+export API_JWT_TOKEN="$(./scripts/get-bearer-token.py)"
 ./scripts/upload/upload-file.py path/to/document.txt
 ```
 
@@ -284,13 +284,13 @@ Notes:
 
 ### Tokens and permissions
 
-Scripts read `API_JWT_TOKEN` (set explicitly or via `get-bearer-token.py`). By default
+Scripts read `API_JWT_TOKEN` (set explicitly or via `scripts/get-bearer-token.py`). By default
 they use an admin token.
 
 For least-privilege worker paths, use the upload-validator token:
 
 ```bash
-export API_JWT_TOKEN="$(./get-bearer-token.py --upload-validator)"
+export API_JWT_TOKEN="$(./scripts/get-bearer-token.py --upload-validator)"
 ```
 
 The **`upload-validator`** realm role can POST `/uploads/{id}/verdicts` and
@@ -303,7 +303,7 @@ POST require broader permissions (`upload:read`, `upload:write`) and owner scopi
 `RedShirt.Example.Api.Connectors.Foo.Implementation` (`FooApiClient`). Mapping files live
 under `wiremock/foo/mappings/`. Successful calls require header
 `x-api-key: local-foo-api-key` (set in SSM path `/foo/api-key` from
-`make-local-aws-resources.sh`). The API container reaches WireMock at
+`scripts/make-local-aws-resources.sh`). The API container reaches WireMock at
 `http://wiremock-foo:8080`; from the host use `http://localhost:9100`.
 
 | Method | Path                       | Auth                | Result                                                                      |
@@ -339,7 +339,7 @@ Confirming that this script will only update the in-memory versions that WireMoc
 `RedShirt.Example.Api.Connectors.Bar.Implementation` (`BarApiClient` +
 `OAuthTokenSource`). Mapping files live under `wiremock/bar/mappings/`.
 
-Default credentials (from `make-local-aws-resources.sh`):
+Default credentials (from `scripts/make-local-aws-resources.sh`):
 
 * SSM `/bar/oauth/client-id` → `local-bar-client-id`
 * SSM `/bar/oauth/client-secret` → `local-bar-client-secret`
@@ -408,7 +408,7 @@ Mock Python scripts under `scripts/messages/` exercise the event flow locally. R
 
 ```bash
 chmod +x ./scripts/messages/*.py   # once
-export API_JWT_TOKEN="$(./get-bearer-token.py)"
+export API_JWT_TOKEN="$(./scripts/get-bearer-token.py)"
 ```
 
 In one terminal, listen for events:

@@ -2,13 +2,13 @@
 """Fetch a JWT access token from the local Keycloak realm (stdlib only).
 
 Examples:
-  ./get-bearer-token.py
-  ./get-bearer-token.py --print-header
-  ./get-bearer-token.py --grant client_credentials
-  ./get-bearer-token.py --username testuser --password testpass
-  ./get-bearer-token.py --developer
-  ./get-bearer-token.py --analyst
-  ./get-bearer-token.py --billing
+  ./scripts/get-bearer-token.py
+  ./scripts/get-bearer-token.py --print-header
+  ./scripts/get-bearer-token.py --grant client_credentials
+  ./scripts/get-bearer-token.py --username testuser --password testpass
+  ./scripts/get-bearer-token.py --developer
+  ./scripts/get-bearer-token.py --analyst
+  ./scripts/get-bearer-token.py --billing
 """
 
 from __future__ import annotations
