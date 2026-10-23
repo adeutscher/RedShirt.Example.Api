@@ -48,6 +48,9 @@ fi
 IMAGE_NAME_OLD="$(namespace_to_docker_image_name "${NAMESPACE_OLD}")"
 IMAGE_NAME_NEW="$(namespace_to_docker_image_name "${NAMESPACE_NEW}")"
 
+echo "Renaming namespace ${NAMESPACE_OLD} -> ${NAMESPACE_NEW}"
+echo "Renaming default Docker image ${IMAGE_NAME_OLD} -> ${IMAGE_NAME_NEW}"
+
 while read -r f; do
   rename_project "${f}"
 done <<< "$(find . -type d -name "${NAMESPACE_OLD}*")"
