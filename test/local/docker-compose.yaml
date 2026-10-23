@@ -1,3 +1,5 @@
+name: redshirt-example-api
+
 services:
   ministack:
     image: ministackorg/ministack:latest
