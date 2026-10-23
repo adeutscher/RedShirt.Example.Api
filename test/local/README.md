@@ -22,10 +22,10 @@ If you added it to `~/.bashrc`, reload:
 
 ## Steps
 
-1. Bring up `ministack`, `redis`, `mariadb`, `wiremock-foo`, `wiremock-bar`, and `keycloak` containers:
+1. Bring up `ministack`, `ministack-init`, `redis`, `mariadb`, `wiremock-foo`, `wiremock-bar`, and `keycloak` containers:
 
     ```bash
-    docker compose up -d ministack redis mariadb wiremock-foo wiremock-bar keycloak
+    docker compose up -d ministack ministack-init redis mariadb wiremock-foo wiremock-bar keycloak
     ```
 
     See **Foo WireMock stubs**, **Bar WireMock stubs**, and **Authentication and authorization (Keycloak)** below.
@@ -34,12 +34,20 @@ If you added it to `~/.bashrc`, reload:
     http://localhost:9101/__admin/ (Bar),
     http://localhost:9080/ (Keycloak; admin/`admin`).
 
-2. Run `scripts/make-local-aws-resources.sh` to create ministack resources (DynamoDB table and
+2. `ministack-init` waits for `ministack` to be healthy, then runs `scripts/make-local-aws-resources.sh`
+   inside a container to create ministack resources (DynamoDB table, S3 buckets, and
    SSM parameters, including `/mysql/connection-string`, `/foo/api-key`,
-   `/bar/oauth/client-id`, and `/bar/oauth/client-secret`):
+   `/bar/oauth/client-id`, and `/bar/oauth/client-secret`). It exits once done. The `api`
+   service waits for it to complete successfully. Check its output with:
 
     ```bash
-    ./scripts/make-local-aws-resources.sh
+    docker compose logs ministack-init
+    ```
+
+    The script is safe to re-run. To run it again (for example after changing it):
+
+    ```bash
+    docker compose up ministack-init
     ```
 
 3. Apply the MySQL/MariaDB schema using

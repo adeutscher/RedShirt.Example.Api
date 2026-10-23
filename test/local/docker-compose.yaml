@@ -6,11 +6,33 @@ services:
       - 8883:8883
     environment:
       MINISTACK_HOST: ministack
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4566/_ministack/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
     networks:
       default:
         aliases:
           # Must match `aws iot describe-endpoint` (account-specific prefix persists in MiniStack state).
           - f7b11509f4d675-ats.iot.us-east-1.ministack
+
+  # One-shot: waits for ministack to be healthy, then creates the DynamoDB table, SSM parameters and S3 buckets.
+  ministack-init:
+    image: ministackorg/ministack:latest
+    depends_on:
+      ministack:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "/make-local-aws-resources.sh"]
+    environment:
+      MINISTACK_ENDPOINT: http://ministack:4566
+    restart: "no"
+    volumes:
+      - type: bind
+        source: ./scripts/make-local-aws-resources.sh
+        target: /make-local-aws-resources.sh
+        read_only: true
 
   redis:
     image: redis:latest
@@ -84,12 +106,18 @@ services:
       args:
         TESTS_ENABLE: "${TESTS_ENABLE-1}"
     depends_on:
-      - ministack
-      - redis
-      - mariadb
-      - wiremock-foo
-      - wiremock-bar
-      - keycloak
+      ministack-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+      mariadb:
+        condition: service_started
+      wiremock-foo:
+        condition: service_started
+      wiremock-bar:
+        condition: service_started
+      keycloak:
+        condition: service_started
     ports:
       - "9000:8080"
     environment:

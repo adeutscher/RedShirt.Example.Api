@@ -37,7 +37,7 @@ internal static class MinistackTestEnvironment
         {
             Assert.Skip(
                 $"Ministack S3 bucket '{IntegrationBucketName}' is not reachable at {ServiceUrl}. " +
-                "Start ministack and run test/local/scripts/make-local-aws-resources.sh.");
+                "Start ministack and ministack-init from test/local (docker compose up -d ministack ministack-init).");
         }
     }
 
