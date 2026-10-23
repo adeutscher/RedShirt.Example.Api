@@ -8,6 +8,10 @@
 NAMESPACE_OLD="RedShirt.Example.Api"
 NAMESPACE_NEW="${1}"
 
+namespace_to_docker_image_name() {
+  tr '[:upper:]' '[:lower:]' <<< "${1}" | tr '.' '-'
+}
+
 rename_project() {
   local directory
   directory="$(dirname "${1}")"
@@ -41,6 +45,9 @@ if [ "${NAMESPACE_NEW}" = "${NAMESPACE_OLD}" ]; then
   exit 1
 fi
 
+IMAGE_NAME_OLD="$(namespace_to_docker_image_name "${NAMESPACE_OLD}")"
+IMAGE_NAME_NEW="$(namespace_to_docker_image_name "${NAMESPACE_NEW}")"
+
 while read -r f; do
   rename_project "${f}"
 done <<< "$(find . -type d -name "${NAMESPACE_OLD}*")"
@@ -49,7 +56,10 @@ mv "${NAMESPACE_OLD}.slnx" "${NAMESPACE_NEW}.slnx"
 
 while read -r f; do
   [ -z "${f}" ] && continue
-  sed -i "s/${NAMESPACE_OLD}/${NAMESPACE_NEW}/g" "${f}"
+  sed -i \
+    -e "s/${NAMESPACE_OLD}/${NAMESPACE_NEW}/g" \
+    -e "s/${IMAGE_NAME_OLD}/${IMAGE_NAME_NEW}/g" \
+    "${f}"
 done <<< "$(find . \( \
   -name '*.cs' -o \
   -name '*.csproj' -o \
