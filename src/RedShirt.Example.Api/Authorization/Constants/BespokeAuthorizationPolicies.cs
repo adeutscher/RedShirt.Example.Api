@@ -111,4 +111,6 @@ public static class BespokeAuthorizationPolicies
     ///     endpoint attribute (the resource is not available until the row is loaded).
     /// </summary>
     public const string CustomerScoped = "ApiCustomerScoped";
+
+    // scaffold:policies
 }

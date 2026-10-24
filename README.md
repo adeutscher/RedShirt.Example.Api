@@ -28,6 +28,9 @@ Repo features in more detail:
     * This is demonstrated in the implementation for accessing the `Order` data store.
     * For more information on source generation,
       see [docs/patterns/rosalyn-source-generation.md](docs/patterns/rosalyn-source-generation.md).
+* A scaffolding tool (`scripts/scaffold.sh`) that writes the controller, CQRS use cases, request models, authorization
+  wiring, and test skeletons for a data store resource as ordinary source files for review and customization.
+    * For more information, see [docs/patterns/scaffolding.md](docs/patterns/scaffolding.md).
 * Configurable rate limiting using a sliding window system:
     * Uses either Redis or in-memory for storing limits.
 * JWT bearer authentication and role-based authorization (optional; Keycloak in the local Compose stack).

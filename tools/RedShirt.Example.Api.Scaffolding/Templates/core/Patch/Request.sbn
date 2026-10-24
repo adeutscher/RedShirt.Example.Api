@@ -1,0 +1,7 @@
+{{ usings model.patch_namespaces }}namespace {{ model.use_case_namespace }}.Commands.Patch;
+
+public record Patch{{ model.name }}Command(
+    {{ model.key.type }} {{ model.key.name }}{{ if model.patch_properties.size == 0 }});{{ else }},{{ end }}
+{{~ for p in model.patch_properties ~}}
+    {{ p.type }} {{ p.name }}{{ if for.last }});{{ else }},{{ end }}
+{{~ end ~}}

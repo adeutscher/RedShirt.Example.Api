@@ -1,0 +1,4 @@
+<Solution>
+    <Project Path="RedShirt.Example.Api.Scaffolding/RedShirt.Example.Api.Scaffolding.csproj"/>
+    <Project Path="RedShirt.Example.Api.Scaffolding.UnitTests/RedShirt.Example.Api.Scaffolding.UnitTests.csproj"/>
+</Solution>

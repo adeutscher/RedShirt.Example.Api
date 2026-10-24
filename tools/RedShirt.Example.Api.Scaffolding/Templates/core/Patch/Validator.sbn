@@ -1,0 +1,7 @@
+using FluentValidation;
+
+namespace {{ model.use_case_namespace }}.Commands.Patch;
+
+public class Patch{{ model.name }}CommandValidator : AbstractValidator<Patch{{ model.name }}Command>
+{
+}

@@ -1,0 +1,40 @@
+{{~ n = model.name ~}}
+{{ usings ([model.use_case_namespace + ".Commands.Update"] | array.add_range model.put_namespaces) }}namespace {{ model.core_namespace }}.UnitTests.Tests.UseCases.{{ model.name }}.Commands.Update;
+
+/// <summary>
+///     Scaffolded by scripts/scaffold.sh.
+/// </summary>
+public class Update{{ n }}CommandValidatorTests
+{
+    private readonly Update{{ n }}CommandValidator _validator = new();
+{{~ for s in model.put_required_strings ~}}
+
+    [Fact]
+    public async Task Validate_Fails_When{{ s.name }}IsEmpty()
+    {
+        var result = await _validator.ValidateAsync(
+            new Update{{ n }}Command(
+                {{ model.key.sample_value }},
+{{~ for p in model.put_properties ~}}
+                {{ if p.name == s.name }}"   "{{ else }}{{ p.sample_value }}{{ end }}{{ if for.last }}),{{ else }},{{ end }}
+{{~ end ~}}
+            TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsValid);
+    }
+{{~ end ~}}
+
+    [Fact]
+    public async Task Validate_Succeeds_WhenRequiredValuesArePresent()
+    {
+        var result = await _validator.ValidateAsync(
+            new Update{{ n }}Command(
+                {{ model.key.sample_value }},
+{{~ for p in model.put_properties ~}}
+                {{ p.sample_value }}{{ if for.last }}),{{ else }},{{ end }}
+{{~ end ~}}
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsValid);
+    }
+}

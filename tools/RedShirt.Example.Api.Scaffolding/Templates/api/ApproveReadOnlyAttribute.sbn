@@ -1,0 +1,17 @@
+using Microsoft.AspNetCore.Authorization;
+using {{ model.api_namespace }}.Authorization.Constants;
+
+namespace {{ model.api_namespace }}.Attributes.Authorization;
+
+/// <summary>
+///     Marks a {{ model.name }} endpoint as approved for
+///     <see cref="BespokeAuthorizationPermissions.{{ model.name }}Read" /> on HTTP GET.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public sealed class Approve{{ model.name }}ReadOnlyAttribute : AuthorizeAttribute
+{
+    public Approve{{ model.name }}ReadOnlyAttribute()
+    {
+        Policy = BespokeAuthorizationPolicies.{{ model.name }}ReadApproved;
+    }
+}

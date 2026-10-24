@@ -1,0 +1,135 @@
+{{~
+n = model.name
+api = model.api_namespace
+use_cases = model.use_case_namespace
+scope = model.customer_scope
+key = model.key.name
+u = ["Microsoft.AspNetCore.Mvc", "Moq", api + ".Controllers", model.dto_namespace] | array.add_range model.dto_property_namespaces
+if scope; u = u | array.add (api + ".Authorization.ResourceScoping.Customer") | array.add (api + ".Common.Exceptions.Responses") | array.add "System.Security.Claims"; end
+if model.has_delete; u = u | array.add (use_cases + ".Commands.Delete"); end
+if model.has_get; u = u | array.add (use_cases + ".Queries.GetRecord"); end
+if model.has_search; u = u | array.add (use_cases + ".Queries.SearchRecords") | array.add model.search_response.namespace | array.add (api + ".Models." + n); end
+~}}
+{{ usings u }}namespace {{ api }}.UnitTests.Tests.Controllers;
+
+/// <summary>
+///     Scaffolded by scripts/scaffold.sh.
+/// </summary>
+public class {{ n }}ControllerTests
+{
+    private readonly {{ n }}Controller _controller = new();
+
+    private static {{ model.dto_type }} CreateDto()
+    {
+        return new {{ model.dto_type }}
+        {
+{{~ for p in model.dto_properties ~}}
+            {{ p.name }} = {{ p.sample_value }}{{ if !for.last }},{{ end }}
+{{~ end ~}}
+        };
+    }
+{{~ if model.has_delete ~}}
+
+{{~ if scope ~}}
+    [Fact]
+    public async Task Delete_DoesNotDelete_WhenResourceAuthorizationFails()
+    {
+        var existing = CreateDto();
+        var getHandler = new Mock<IGet{{ n }}RecordQueryHandler>();
+        getHandler
+            .Setup(handler => handler.Handle(It.IsAny<Get{{ n }}RecordQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        var enforcer = new Mock<ICustomerScopedResourceEnforcer>();
+        enforcer
+            .Setup(e => e.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(), existing.CustomerId))
+            .ThrowsAsync(new ResourceNotFoundException());
+        var deleteHandler = new Mock<IDelete{{ n }}CommandHandler>();
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
+            _controller.Delete(existing.{{ key }}, getHandler.Object, enforcer.Object, deleteHandler.Object,
+                TestContext.Current.CancellationToken));
+
+        deleteHandler.Verify(
+            handler => handler.Handle(It.IsAny<Delete{{ n }}Command>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+{{~ else ~}}
+    [Fact]
+    public async Task Delete_ReturnsOk_AfterDeleting()
+    {
+        var key = {{ model.key.sample_value }};
+        var deleteHandler = new Mock<IDelete{{ n }}CommandHandler>();
+
+        var result = await _controller.Delete(key, deleteHandler.Object, TestContext.Current.CancellationToken);
+
+        Assert.IsType<OkResult>(result);
+        deleteHandler.Verify(
+            handler => handler.Handle(It.Is<Delete{{ n }}Command>(command => command.{{ key }} == key),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+{{~ end ~}}
+{{~ end ~}}
+{{~ if model.has_get ~}}
+
+    [Fact]
+    public async Task Get_ReturnsOk_WithRecord()
+    {
+        var expected = CreateDto();
+        var getHandler = new Mock<IGet{{ n }}RecordQueryHandler>();
+        getHandler
+            .Setup(handler => handler.Handle(
+                It.Is<Get{{ n }}RecordQuery>(query => query.{{ key }} == expected.{{ key }}),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
+{{~ if scope ~}}
+        var enforcer = new Mock<ICustomerScopedResourceEnforcer>();
+{{~ end ~}}
+
+        var result = await _controller.Get(expected.{{ key }}, getHandler.Object,{{ if scope }} enforcer.Object,{{ end }}
+            TestContext.Current.CancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(expected, ok.Value);
+{{~ if scope ~}}
+        enforcer.Verify(e => e.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(), expected.CustomerId), Times.Once);
+{{~ end ~}}
+    }
+{{~ end ~}}
+{{~ if model.has_search ~}}
+
+    [Fact]
+    public async Task Search_ReturnsOk_WithResults()
+    {
+        var expected = new {{ model.search_response.name }}
+        {
+{{~ for p in model.search_response.properties ~}}
+            {{ p.name }} = {{ p.sample_value }}{{ if !for.last }},{{ end }}
+{{~ end ~}}
+        };
+{{~ if scope ~}}
+        var customerId = Guid.NewGuid();
+        var enforcer = new Mock<ICustomerScopedResourceEnforcer>();
+        enforcer
+            .Setup(e => e.ConstrainSearchCustomerId(It.IsAny<ClaimsPrincipal>(), null))
+            .Returns(customerId);
+{{~ end ~}}
+        var searchHandler = new Mock<ISearch{{ n }}RecordsQueryHandler>();
+        searchHandler
+            .Setup(handler => handler.Handle(
+{{~ if scope ~}}
+                It.Is<Search{{ n }}RecordsQuery>(query => query.CustomerId == customerId),
+{{~ else ~}}
+                It.IsAny<Search{{ n }}RecordsQuery>(),
+{{~ end ~}}
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
+
+        var result = await _controller.Search(new {{ n }}SearchRequest(),{{ if scope }} enforcer.Object,{{ end }}
+            searchHandler.Object, TestContext.Current.CancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(expected, ok.Value);
+    }
+{{~ end ~}}
+}

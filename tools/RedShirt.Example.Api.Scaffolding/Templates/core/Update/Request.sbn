@@ -1,0 +1,7 @@
+{{ usings model.put_namespaces }}namespace {{ model.use_case_namespace }}.Commands.Update;
+
+public record Update{{ model.name }}Command(
+    {{ model.key.type }} {{ model.key.name }}{{ if model.put_properties.size == 0 }});{{ else }},{{ end }}
+{{~ for p in model.put_properties ~}}
+    {{ p.type }} {{ p.name }}{{ if for.last }});{{ else }},{{ end }}
+{{~ end ~}}

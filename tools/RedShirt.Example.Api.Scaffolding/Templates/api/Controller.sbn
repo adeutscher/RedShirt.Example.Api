@@ -1,0 +1,236 @@
+{{~
+n = model.name
+kv = model.key_variable
+key_type = model.key.type
+route = model.key_route_template
+scope = model.customer_scope
+api = model.api_namespace
+use_cases = model.use_case_namespace
+u = ["Microsoft.AspNetCore.Mvc", "Microsoft.AspNetCore.RateLimiting", api + ".Attributes", api + ".Attributes.Authorization", api + ".Constants", model.dto_namespace] | array.add_range model.key_namespaces
+if scope; u = u | array.add (api + ".Authorization.ResourceScoping.Customer"); end
+if model.has_create; u = u | array.add (use_cases + ".Commands.Create"); end
+if model.has_delete; u = u | array.add (use_cases + ".Commands.Delete"); end
+if model.has_patch; u = u | array.add (use_cases + ".Commands.Patch"); end
+if model.has_update; u = u | array.add (use_cases + ".Commands.Update"); end
+if model.has_get; u = u | array.add (use_cases + ".Queries.GetRecord"); end
+if model.has_search; u = u | array.add (use_cases + ".Queries.SearchRecords") | array.add model.search_response.namespace; end
+if model.has_create || model.has_update || model.has_patch || model.has_search; u = u | array.add (api + ".Models." + n); end
+emitted = false
+~}}
+{{ usings u }}namespace {{ api }}.Controllers;
+
+[ApiController]
+[EnableRateLimiting(RateLimitingConstants.PolicyHeaderDefault)]
+[Route("{{ model.route }}")]
+[ProducesJson]
+public class {{ n }}Controller : ControllerBase
+{
+{{~ if model.has_delete ~}}
+{{~ emitted = true ~}}
+    [HttpDelete("{{ route }}")]
+    [Authorize{{ n }}Write]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(
+        [FromRoute]
+        {{ key_type }} {{ kv }},
+{{~ if scope ~}}
+        [FromServices]
+        IGet{{ n }}RecordQueryHandler get{{ n }}RecordQueryHandler,
+        [FromServices]
+        ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
+{{~ end ~}}
+        [FromServices]
+        IDelete{{ n }}CommandHandler delete{{ n }}CommandHandler,
+        CancellationToken cancellationToken)
+    {
+{{~ if scope ~}}
+        var existing =
+            await get{{ n }}RecordQueryHandler.Handle(new Get{{ n }}RecordQuery({{ kv }}),
+                cancellationToken);
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
+{{~ end ~}}
+        await delete{{ n }}CommandHandler.Handle(new Delete{{ n }}Command({{ kv }}), cancellationToken);
+        return Ok();
+    }
+{{~ end ~}}
+{{~ if model.has_get ~}}
+{{~ if emitted ~}}
+
+{{~ end ~}}
+{{~ emitted = true ~}}
+    [HttpGet("{{ route }}")]
+    [Approve{{ n }}ReadOnly]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof({{ model.dto_type }}))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Get(
+        [FromRoute]
+        {{ key_type }} {{ kv }},
+        [FromServices]
+        IGet{{ n }}RecordQueryHandler get{{ n }}RecordQueryHandler,
+{{~ if scope ~}}
+        [FromServices]
+        ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
+{{~ end ~}}
+        CancellationToken cancellationToken)
+    {
+        var model = await get{{ n }}RecordQueryHandler.Handle(new Get{{ n }}RecordQuery({{ kv }}),
+            cancellationToken);
+{{~ if scope ~}}
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, model.CustomerId);
+{{~ end ~}}
+        return Ok(model);
+    }
+{{~ end ~}}
+{{~ if model.has_patch ~}}
+{{~ if emitted ~}}
+
+{{~ end ~}}
+{{~ emitted = true ~}}
+    [HttpPatch("{{ route }}")]
+    [Authorize{{ n }}Write]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof({{ model.dto_type }}))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Patch(
+        [FromRoute]
+        {{ key_type }} {{ kv }},
+        [FromBody]
+        {{ n }}PatchRequest request,
+{{~ if scope ~}}
+        [FromServices]
+        IGet{{ n }}RecordQueryHandler get{{ n }}RecordQueryHandler,
+        [FromServices]
+        ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
+{{~ end ~}}
+        [FromServices]
+        IPatch{{ n }}CommandHandler patch{{ n }}CommandHandler,
+        CancellationToken cancellationToken)
+    {
+{{~ if scope ~}}
+        var existing =
+            await get{{ n }}RecordQueryHandler.Handle(new Get{{ n }}RecordQuery({{ kv }}),
+                cancellationToken);
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
+{{~ end ~}}
+        var model = await patch{{ n }}CommandHandler.Handle(
+            new Patch{{ n }}Command(
+                {{ kv }}{{ if model.patch_properties.size == 0 }}),{{ else }},{{ end }}
+{{~ for p in model.patch_properties ~}}
+                request.{{ p.name }}{{ if for.last }}),{{ else }},{{ end }}
+{{~ end ~}}
+            cancellationToken);
+        return Ok(model);
+    }
+{{~ end ~}}
+{{~ if model.has_create ~}}
+{{~ if emitted ~}}
+
+{{~ end ~}}
+{{~ emitted = true ~}}
+    [HttpPost]
+    [Authorize{{ n }}Write]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof({{ model.dto_type }}))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Post(
+        [FromBody]
+        {{ n }}PostRequest request,
+        [FromHeader(Name = EndpointConstants.IdempotencyKeyHeader)]
+        string idempotencyKey,
+        [FromServices]
+        ICreate{{ n }}CommandHandler create{{ n }}CommandHandler,
+        CancellationToken cancellationToken)
+    {
+        var model = await create{{ n }}CommandHandler.Handle(
+            new Create{{ n }}Command(
+{{~ for p in model.post_properties ~}}
+                request.{{ p.name }},
+{{~ end ~}}
+                string.IsNullOrWhiteSpace(idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey),
+            cancellationToken);
+
+        return Ok(model);
+    }
+{{~ end ~}}
+{{~ if model.has_update ~}}
+{{~ if emitted ~}}
+
+{{~ end ~}}
+{{~ emitted = true ~}}
+    [HttpPut("{{ route }}")]
+    [Authorize{{ n }}Write]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof({{ model.dto_type }}))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Put(
+        [FromRoute]
+        {{ key_type }} {{ kv }},
+        [FromBody]
+        {{ n }}PutRequest request,
+{{~ if scope ~}}
+        [FromServices]
+        IGet{{ n }}RecordQueryHandler get{{ n }}RecordQueryHandler,
+        [FromServices]
+        ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
+{{~ end ~}}
+        [FromServices]
+        IUpdate{{ n }}CommandHandler update{{ n }}CommandHandler,
+        CancellationToken cancellationToken)
+    {
+{{~ if scope ~}}
+        var existing =
+            await get{{ n }}RecordQueryHandler.Handle(new Get{{ n }}RecordQuery({{ kv }}),
+                cancellationToken);
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
+{{~ end ~}}
+        var model = await update{{ n }}CommandHandler.Handle(
+            new Update{{ n }}Command(
+                {{ kv }}{{ if model.put_properties.size == 0 }}),{{ else }},{{ end }}
+{{~ for p in model.put_properties ~}}
+                request.{{ p.name }}{{ if for.last }}),{{ else }},{{ end }}
+{{~ end ~}}
+            cancellationToken);
+        return Ok(model);
+    }
+{{~ end ~}}
+{{~ if model.has_search ~}}
+{{~ if emitted ~}}
+
+{{~ end ~}}
+    [HttpGet]
+    [Approve{{ n }}ReadOnly]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof({{ model.search_response.name }}))]
+    public async Task<IActionResult> Search(
+        [FromQuery]
+        {{ n }}SearchRequest request,
+{{~ if scope ~}}
+        [FromServices]
+        ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
+{{~ end ~}}
+        [FromServices]
+        ISearch{{ n }}RecordsQueryHandler search{{ n }}RecordsQueryHandler,
+        CancellationToken cancellationToken)
+    {
+{{~ if scope ~}}
+        var customerId =
+            customerScopedResourceEnforcer.ConstrainSearchCustomerId(User,
+                request.CustomerId);
+{{~ end ~}}
+        var model = await search{{ n }}RecordsQueryHandler.Handle(
+            new Search{{ n }}RecordsQuery(
+{{~ for p in model.search_properties ~}}
+{{~ if scope && p.name == "CustomerId" ~}}
+                customerId,
+{{~ else ~}}
+                request.{{ p.name }},
+{{~ end ~}}
+{{~ end ~}}
+                request.ContinuationToken),
+            cancellationToken);
+        return Ok(model);
+    }
+{{~ end ~}}
+}

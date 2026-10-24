@@ -1,0 +1,8 @@
+{{ usings model.patch_namespaces }}namespace {{ model.api_namespace }}.Models.{{ model.name }};
+
+public class {{ model.name }}PatchRequest
+{
+{{~ for p in model.patch_properties ~}}
+    public {{ p.type }} {{ p.name }} { get; set; }
+{{~ end ~}}
+}

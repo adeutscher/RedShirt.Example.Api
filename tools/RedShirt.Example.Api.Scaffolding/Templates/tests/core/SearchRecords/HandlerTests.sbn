@@ -1,0 +1,38 @@
+{{~ n = model.name; req = model.search_request.name ~}}
+{{ usings (["Moq", model.core_namespace + ".Cqrs", model.use_case_namespace + ".Queries.SearchRecords", model.service_namespace, model.search_request.namespace] | array.add_range model.search_namespaces) }}namespace {{ model.core_namespace }}.UnitTests.Tests.UseCases.{{ model.name }}.Queries.SearchRecords;
+
+/// <summary>
+///     Scaffolded by scripts/scaffold.sh.
+/// </summary>
+public class Search{{ n }}RecordsQueryHandlerTests
+{
+    [Fact]
+    public async Task Handle_ValidatesAndMapsQueryToSearchRequest()
+    {
+        var expected = {{ n }}TestData.CreateSearchResponse();
+        {{ req }}? capturedRequest = null;
+        var service = new Mock<{{ model.service_interface }}>();
+        service
+            .Setup(s => s.SearchAsync(It.IsAny<{{ req }}>(), It.IsAny<{{ model.continuation_token_type }}>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<{{ req }}, {{ model.continuation_token_type }}, CancellationToken>((request, _, _) =>
+                capturedRequest = request)
+            .ReturnsAsync(expected);
+        var validator = new Mock<ICoreRequestValidator>();
+        var handler = new Search{{ n }}RecordsQueryHandler(service.Object, validator.Object);
+        var query = new Search{{ n }}RecordsQuery(
+{{~ for p in model.search_properties ~}}
+            {{ p.sample_value }},
+{{~ end ~}}
+            null);
+
+        var result = await handler.Handle(query, TestContext.Current.CancellationToken);
+
+        Assert.Same(expected, result);
+        Assert.NotNull(capturedRequest);
+{{~ for p in model.search_properties ~}}
+        Assert.Equal(query.{{ p.name }}, capturedRequest.{{ p.name }});
+{{~ end ~}}
+        validator.Verify(v => v.ValidateAsync(query, TestContext.Current.CancellationToken), Times.Once);
+    }
+}

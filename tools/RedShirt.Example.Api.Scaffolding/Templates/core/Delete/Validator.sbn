@@ -1,0 +1,15 @@
+using FluentValidation;
+
+namespace {{ model.use_case_namespace }}.Commands.Delete;
+
+public class Delete{{ model.name }}CommandValidator : AbstractValidator<Delete{{ model.name }}Command>
+{
+{{~ if model.key_is_guid ~}}
+    public Delete{{ model.name }}CommandValidator()
+    {
+        RuleFor(command => command.{{ model.key.name }})
+            .Must({{ model.key_variable }} => {{ model.key_variable }} != Guid.Empty)
+            .WithMessage("{{ model.key.name }} is required");
+    }
+{{~ end ~}}
+}

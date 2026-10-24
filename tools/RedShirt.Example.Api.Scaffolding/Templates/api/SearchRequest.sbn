@@ -1,0 +1,9 @@
+{{ usings model.search_namespaces }}namespace {{ model.api_namespace }}.Models.{{ model.name }};
+
+public class {{ model.name }}SearchRequest
+{
+{{~ for p in model.search_properties ~}}
+    public {{ p.type }} {{ p.name }} { get; set; }{{ if p.is_array && !p.is_nullable }} = [];{{ end }}
+{{~ end ~}}
+    public {{ model.continuation_token_type }} ContinuationToken { get; set; }
+}

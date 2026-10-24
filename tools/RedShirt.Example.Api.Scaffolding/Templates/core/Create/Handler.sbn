@@ -1,0 +1,25 @@
+{{~ n = model.name; sv = model.service_variable ~}}
+{{ usings [model.core_namespace + ".Cqrs", model.core_namespace + ".Services", model.service_namespace, model.dto_namespace, model.post_request.namespace] }}namespace {{ model.use_case_namespace }}.Commands.Create;
+
+public interface ICreate{{ n }}CommandHandler : ICqrsHandler<Create{{ n }}Command, {{ model.dto_type }}>;
+
+internal class Create{{ n }}CommandHandler(
+    {{ model.service_interface }} {{ sv }},
+    ICacheBasedIdempotencyWrapperService idempotencyWrapperService,
+    ICoreRequestValidator coreRequestValidator)
+    : ICreate{{ n }}CommandHandler
+{
+    public async Task<{{ model.dto_type }}> Handle(Create{{ n }}Command command,
+        CancellationToken cancellationToken = default)
+    {
+        await coreRequestValidator.ValidateAsync(command, cancellationToken);
+
+        return await idempotencyWrapperService.RunIdempotentlyAsync(command.IdempotencyKey, async () =>
+            await {{ sv }}.PostAsync(new {{ model.post_request.name }}
+            {
+{{~ for p in model.post_properties ~}}
+                {{ p.name }} = command.{{ p.name }}{{ if !for.last }},{{ end }}
+{{~ end ~}}
+            }, cancellationToken), cancellationToken);
+    }
+}

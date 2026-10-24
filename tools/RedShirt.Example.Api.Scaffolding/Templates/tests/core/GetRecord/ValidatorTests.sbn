@@ -1,0 +1,30 @@
+{{~ n = model.name ~}}
+using {{ model.use_case_namespace }}.Queries.GetRecord;
+
+namespace {{ model.core_namespace }}.UnitTests.Tests.UseCases.{{ model.name }}.Queries.GetRecord;
+
+/// <summary>
+///     Scaffolded by scripts/scaffold.sh.
+/// </summary>
+public class Get{{ n }}RecordQueryValidatorTests
+{
+    private readonly Get{{ n }}RecordQueryValidator _validator = new();
+
+    [Fact]
+    public async Task Validate_Fails_When{{ model.key.name }}IsEmpty()
+    {
+        var result = await _validator.ValidateAsync(new Get{{ n }}RecordQuery(Guid.Empty),
+            TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public async Task Validate_Succeeds_When{{ model.key.name }}IsPresent()
+    {
+        var result = await _validator.ValidateAsync(new Get{{ n }}RecordQuery(Guid.NewGuid()),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsValid);
+    }
+}

@@ -1,0 +1,17 @@
+{{~ n = model.name; sv = model.service_variable ~}}
+{{ usings [model.core_namespace + ".Cqrs", model.service_namespace, model.dto_namespace] }}namespace {{ model.use_case_namespace }}.Queries.GetRecord;
+
+public interface IGet{{ n }}RecordQueryHandler : ICqrsHandler<Get{{ n }}RecordQuery, {{ model.dto_type }}>;
+
+internal class Get{{ n }}RecordQueryHandler(
+    {{ model.service_interface }} {{ sv }},
+    ICoreRequestValidator coreRequestValidator)
+    : IGet{{ n }}RecordQueryHandler
+{
+    public async Task<{{ model.dto_type }}> Handle(Get{{ n }}RecordQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        await coreRequestValidator.ValidateAsync(query, cancellationToken);
+        return await {{ sv }}.GetByIdAsync(query.{{ model.key.name }}, cancellationToken);
+    }
+}

@@ -8,10 +8,13 @@
         <File Path="docs\patterns\authentication.md"/>
         <File Path="docs\patterns\event-sourcing.md"/>
         <File Path="docs\patterns\rosalyn-source-generation.md"/>
+        <File Path="docs\patterns\scaffolding.md"/>
         <File Path="docs\patterns\server-sent-events.md"/>
         <File Path="docs\patterns\uploads.md"/>
     </Folder>
-    <Folder Name="/Solution Items/scripts/"/>
+    <Folder Name="/Solution Items/scripts/">
+        <File Path="scripts\scaffold.sh"/>
+    </Folder>
     <Folder Name="/Solution Items/scripts/cicd/">
         <File Path="scripts\cicd\build.sh"/>
         <File Path="scripts\cicd\docker-build.sh"/>

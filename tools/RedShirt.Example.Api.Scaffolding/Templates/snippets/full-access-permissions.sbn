@@ -1,0 +1,2 @@
+BespokeAuthorizationPermissions.{{ model.name }}Read,
+BespokeAuthorizationPermissions.{{ model.name }}Write,

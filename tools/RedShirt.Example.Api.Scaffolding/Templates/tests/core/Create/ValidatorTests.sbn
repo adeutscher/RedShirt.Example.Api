@@ -1,0 +1,40 @@
+{{~ n = model.name ~}}
+{{ usings ([model.use_case_namespace + ".Commands.Create"] | array.add_range model.post_namespaces) }}namespace {{ model.core_namespace }}.UnitTests.Tests.UseCases.{{ model.name }}.Commands.Create;
+
+/// <summary>
+///     Scaffolded by scripts/scaffold.sh.
+/// </summary>
+public class Create{{ n }}CommandValidatorTests
+{
+    private readonly Create{{ n }}CommandValidator _validator = new();
+{{~ for s in model.post_required_strings ~}}
+
+    [Fact]
+    public async Task Validate_Fails_When{{ s.name }}IsEmpty()
+    {
+        var result = await _validator.ValidateAsync(
+            new Create{{ n }}Command(
+{{~ for p in model.post_properties ~}}
+                {{ if p.name == s.name }}"   "{{ else }}{{ p.sample_value }}{{ end }},
+{{~ end ~}}
+                "idempotency-key"),
+            TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsValid);
+    }
+{{~ end ~}}
+
+    [Fact]
+    public async Task Validate_Succeeds_WhenRequiredValuesArePresent()
+    {
+        var result = await _validator.ValidateAsync(
+            new Create{{ n }}Command(
+{{~ for p in model.post_properties ~}}
+                {{ p.sample_value }},
+{{~ end ~}}
+                "idempotency-key"),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsValid);
+    }
+}

@@ -1,0 +1,7 @@
+{{ usings model.search_namespaces }}namespace {{ model.use_case_namespace }}.Queries.SearchRecords;
+
+public record Search{{ model.name }}RecordsQuery(
+{{~ for p in model.search_properties ~}}
+    {{ p.type }} {{ p.name }},
+{{~ end ~}}
+    {{ model.continuation_token_type }} ContinuationToken);

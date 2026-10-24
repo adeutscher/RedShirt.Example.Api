@@ -1,0 +1,30 @@
+{{~ n = model.name ~}}
+using {{ model.use_case_namespace }}.Commands.Delete;
+
+namespace {{ model.core_namespace }}.UnitTests.Tests.UseCases.{{ model.name }}.Commands.Delete;
+
+/// <summary>
+///     Scaffolded by scripts/scaffold.sh.
+/// </summary>
+public class Delete{{ n }}CommandValidatorTests
+{
+    private readonly Delete{{ n }}CommandValidator _validator = new();
+
+    [Fact]
+    public async Task Validate_Fails_When{{ model.key.name }}IsEmpty()
+    {
+        var result = await _validator.ValidateAsync(new Delete{{ n }}Command(Guid.Empty),
+            TestContext.Current.CancellationToken);
+
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public async Task Validate_Succeeds_When{{ model.key.name }}IsPresent()
+    {
+        var result = await _validator.ValidateAsync(new Delete{{ n }}Command(Guid.NewGuid()),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsValid);
+    }
+}

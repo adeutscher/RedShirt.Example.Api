@@ -1,0 +1,23 @@
+{{~ n = model.name ~}}
+{{ usings (["Moq", model.core_namespace + ".Cqrs", model.use_case_namespace + ".Commands.Delete", model.service_namespace] | array.add_range model.key_namespaces) }}namespace {{ model.core_namespace }}.UnitTests.Tests.UseCases.{{ model.name }}.Commands.Delete;
+
+/// <summary>
+///     Scaffolded by scripts/scaffold.sh.
+/// </summary>
+public class Delete{{ n }}CommandHandlerTests
+{
+    [Fact]
+    public async Task Handle_ValidatesAndDeletesByKey()
+    {
+        var service = new Mock<{{ model.service_interface }}>();
+        var validator = new Mock<ICoreRequestValidator>();
+        var handler = new Delete{{ n }}CommandHandler(service.Object, validator.Object);
+        var command = new Delete{{ n }}Command({{ model.key.sample_value }});
+
+        await handler.Handle(command, TestContext.Current.CancellationToken);
+
+        validator.Verify(v => v.ValidateAsync(command, TestContext.Current.CancellationToken), Times.Once);
+        service.Verify(s => s.DeleteAsync(command.{{ model.key.name }}, TestContext.Current.CancellationToken),
+            Times.Once);
+    }
+}

@@ -1,0 +1,23 @@
+{{~ n = model.name; sv = model.service_variable ~}}
+{{ usings [model.core_namespace + ".Cqrs", model.service_namespace, model.search_request.namespace, model.search_response.namespace] }}namespace {{ model.use_case_namespace }}.Queries.SearchRecords;
+
+public interface ISearch{{ n }}RecordsQueryHandler : ICqrsHandler<Search{{ n }}RecordsQuery, {{ model.search_response.name }}>;
+
+internal class Search{{ n }}RecordsQueryHandler(
+    {{ model.service_interface }} {{ sv }},
+    ICoreRequestValidator coreRequestValidator)
+    : ISearch{{ n }}RecordsQueryHandler
+{
+    public async Task<{{ model.search_response.name }}> Handle(Search{{ n }}RecordsQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        await coreRequestValidator.ValidateAsync(query, cancellationToken);
+
+        return await {{ sv }}.SearchAsync(new {{ model.search_request.name }}
+        {
+{{~ for p in model.search_properties ~}}
+            {{ p.name }} = query.{{ p.name }}{{ if !for.last }},{{ end }}
+{{~ end ~}}
+        }, query.ContinuationToken, cancellationToken);
+    }
+}

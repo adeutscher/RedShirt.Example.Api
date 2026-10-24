@@ -129,6 +129,8 @@ internal static class AuthorizationServiceCollectionExtensions
             authorization.AddPolicy(BespokeAuthorizationPolicies.CustomerScoped, policy => ConfigureApiPolicy(policy)
                 .AddRequirements(new CustomerScopedResourceRequirement()));
 
+            // scaffold:policy-registrations
+
             authorization.FallbackPolicy = authorization.GetPolicy(BespokeAuthorizationPolicies.Write);
         });
 
