@@ -112,6 +112,48 @@ BINARY_FORMATS = ("binary", "byte")
 
 HTTP_METHODS = ("get", "post", "put", "patch", "delete")
 
+# Extended checks.
+# A server timestamp further than this from the local clock fails the "current" check.
+TIMESTAMP_SKEW_SECONDS = 600
+# Pages read with a page size of 1 when checking that paging is clean.
+PAGING_MAX_PAGES = 30
+# Pages read for each exact-match filter query.
+FILTER_MAX_PAGES = 10
+# Problems listed per check before the rest are summarized as a count.
+MAX_ISSUES_SHOWN = 5
+# A request body that is not valid JSON, for the bad request body checks.
+MALFORMED_JSON = b'{"crudTest": '
+# Larger than any 64-bit integer type, for the integer overflow check.
+INTEGER_OVERFLOW = 10**20
+# Response header prefixes that announce rate limits (IETF RateLimit draft and the common X- forms).
+RATE_LIMIT_HEADER_PREFIXES = ("ratelimit", "x-ratelimit", "x-rate-limit")
+GUID_PATTERN = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
+
+# Authorization header variants for the 401 checks.
+AUTH_TOKEN = "token"
+AUTH_NONE = "none"
+AUTH_GARBLED = "garbled"
+AUTH_TAMPERED = "tampered"
+
+# Possible future checks, not implemented yet:
+#   * Reader role cannot write: writes as a configured read-only user answer 403 and reads answer 200.
+#   * Idempotency-Key replay: a POST repeated with the same Idempotency-Key returns the first record
+#     instead of creating a second one.
+#   * Parent existence is enforced: a parent-keyed write (Realm API CharacterLocation PUT /{id}) for an
+#     unknown parent answers 404. This version of the standard does not enforce a parent's existence and
+#     treats children as standalone tables, so today any non-5xx answer passes.
+#   * Deleting a parent that still has children answers 409 instead of a 500 from a foreign key. The
+#     current standard does not cover automatic cascades, so a cascading delete would need its own
+#     expectation.
+#   * Range and partial-match filters (Contains, GreaterThan, LessThan, IsNull suffixes). Only exact
+#     filters named after read-model fields are checked today.
+#   * Status codes are among those the OpenAPI document declares for the operation.
+#   * Concurrent identical writes answer 2xx, 304, or 409 without 500s from lock contention.
+#   * Uniqueness conflicts (409) for fields that config declares unique.
+#   * Missing rate-limit headers and a 429 without Retry-After fail instead of being noted.
+
 VERBOSE = False
 WARNED: set[str] = set()
 
@@ -474,6 +516,8 @@ class Response:
     status: int
     body: Any
     text: str
+    # Response headers with lower-case names.
+    headers: dict[str, str] = field(default_factory=dict)
 
     @property
     def ok(self) -> bool:
@@ -492,6 +536,34 @@ class Response:
             if title:
                 return f"HTTP {self.status} {title}"
         return f"HTTP {self.status} {truncate(self.text, 200)}".strip()
+
+
+def problem_details_issue(response: Response) -> str | None:
+    """Describe how a 4xx body falls short of RFC 9457 ProblemDetails, or None when it complies."""
+    if not response.text.strip():
+        return "empty body"
+    if not isinstance(response.body, dict) or not {"status", "title"} <= set(
+        response.body
+    ):
+        return "body has no status or title"
+    if response.body.get("status") != response.status:
+        return f"body status is {response.body.get('status')!r}"
+    return None
+
+
+def problem_content_type_issue(response: Response) -> str | None:
+    """RFC 9457 media type check, reported as a note rather than a failure."""
+    content_type = response.headers.get("content-type", "")
+    if "application/problem+json" in content_type:
+        return None
+    return f"content type {content_type.split(';')[0] or '(none)'}"
+
+
+def tampered_token(token: str) -> str:
+    """The same JWT with its signature replaced, so only signature validation can reject it."""
+    header, _, rest = token.partition(".")
+    payload, _, signature = rest.partition(".")
+    return f"{header}.{payload}.{'A' * max(len(signature), 16)}"
 
 
 def retry_after_seconds(value: str | None) -> float | None:
@@ -514,6 +586,11 @@ class ApiClient:
         self.tokens = tokens
         # (METHOD, path template) of every operation called, for the end report.
         self.endpoints_called: set[tuple[str, str]] = set()
+        # Callables given (operation, response) after every call.
+        self.observers: list[Any] = []
+        # Rate-limited (429) responses that had no Retry-After header, or a Retry-After of 0.
+        self.retry_after_missing = 0
+        self.retry_after_zero = 0
 
     def call(
         self,
@@ -521,6 +598,8 @@ class ApiClient:
         path_values: dict[str, Any] | None = None,
         query: dict[str, Any] | None = None,
         body: Any = None,
+        raw_body: bytes | None = None,
+        auth: str = AUTH_TOKEN,
     ) -> Response:
         path = operation.path
         for name, value in (path_values or {}).items():
@@ -547,19 +626,37 @@ class ApiClient:
             # Idempotency-Key and similar request headers get a fresh unique value per call.
             headers[parameter] = str(uuid.uuid4())
         data = None
-        if body is not None:
+        if raw_body is not None:
+            data = raw_body
+            headers["Content-Type"] = "application/json"
+        elif body is not None:
             data = json.dumps(body).encode("utf-8")
             headers["Content-Type"] = "application/json"
         self.endpoints_called.add((operation.method.upper(), operation.path))
-        return self._send(operation.method.upper(), url, headers, data)
+        response = self._send(operation.method.upper(), url, headers, data, auth)
+        for observer in self.observers:
+            observer(operation, response)
+        return response
 
     def _send(
-        self, method: str, url: str, headers: dict[str, str], data: bytes | None
+        self,
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        data: bytes | None,
+        auth: str = AUTH_TOKEN,
     ) -> Response:
         backoff = 1.0
         refreshed = False
         for attempt in range(1, MAX_RETRY_ATTEMPTS + 1):
-            headers["Authorization"] = f"Bearer {self.tokens.get()}"
+            if auth == AUTH_TOKEN:
+                headers["Authorization"] = f"Bearer {self.tokens.get()}"
+            elif auth == AUTH_GARBLED:
+                headers["Authorization"] = "Bearer not-a-real-token"
+            elif auth == AUTH_TAMPERED:
+                headers["Authorization"] = f"Bearer {tampered_token(self.tokens.get())}"
+            else:
+                headers.pop("Authorization", None)
             request = urllib.request.Request(
                 url, data=data, method=method, headers=headers
             )
@@ -575,21 +672,29 @@ class ApiClient:
                         raw.read().decode("utf-8", "replace"),
                         None,
                     )
+                    response_headers = {k.lower(): v for k, v in raw.headers.items()}
             except urllib.error.HTTPError as exc:
                 status = exc.code
                 text = exc.read().decode("utf-8", "replace")
                 retry_after = exc.headers.get("Retry-After")
+                response_headers = {k.lower(): v for k, v in exc.headers.items()}
             except urllib.error.URLError as exc:
                 return Response(0, None, f"connection failed: {exc.reason}")
-            if status == 401 and not refreshed:
+            if status == 429 and retry_after is None:
+                self.retry_after_missing += 1
+            if status == 401 and not refreshed and auth == AUTH_TOKEN:
                 self.tokens.get(force=True)
                 refreshed = True
                 continue
             if status == 429 and attempt < MAX_RETRY_ATTEMPTS:
-                delay = retry_after_seconds(retry_after)
-                if delay is None:
-                    delay = backoff
-                    backoff = min(backoff * 2, MAX_BACKOFF_SECONDS)
+                advised = retry_after_seconds(retry_after)
+                if advised is not None and advised < 1:
+                    self.retry_after_zero += 1
+                # Retry-After is a floor, and backoff still doubles on repeated 429s. The example API
+                # (2026-10-23) advised Retry-After 0-3 while its window stayed closed, which used up every
+                # retry within seconds when Retry-After alone set the delay.
+                delay = max(advised or 0.0, backoff)
+                backoff = min(backoff * 2, MAX_BACKOFF_SECONDS)
                 delay = min(delay, MAX_BACKOFF_SECONDS)
                 info(
                     f"    {colour('rate limited (429)', 'yellow')}, "
@@ -602,7 +707,7 @@ class ApiClient:
             except json.JSONDecodeError:
                 body = None
             debug(f"-> {status} {truncate(text, 400)}")
-            return Response(status, body, text)
+            return Response(status, body, text, response_headers)
         return Response(429, None, "rate limited: retries exhausted")
 
 
@@ -694,6 +799,187 @@ class Spec:
             self.contains_binary(child, depth + 1)
             for child in self.fields(schema).values()
         )
+
+
+def parse_datetime(value: Any) -> dt.datetime | None:
+    """Parse an ISO 8601 timestamp. .NET may send 7 fractional digits, and no zone means UTC."""
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if text.endswith(("Z", "z")):
+        text = text[:-1] + "+00:00"
+    match = re.match(r"^(.+T\d{2}:\d{2}:\d{2})(\.\d+)?(.*)$", text)
+    if match:
+        # Python accepts at most 6 fractional digits.
+        text = match.group(1) + (match.group(2) or "")[:7] + match.group(3)
+    try:
+        parsed = dt.datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=dt.timezone.utc)
+
+
+class SchemaValidator:
+    """Checks a JSON value against an OpenAPI schema: types, formats, enums, required, and nullable."""
+
+    def __init__(self, spec: Spec):
+        self.spec = spec
+
+    def nullable(self, schema: dict | None) -> bool:
+        schema = schema or {}
+        for _ in range(32):
+            if schema.get("nullable"):
+                return True
+            if "$ref" in schema:
+                schema = self.spec.schemas.get(schema["$ref"].split("/")[-1], {})
+                continue
+            members = schema.get("allOf") or schema.get("oneOf") or schema.get("anyOf")
+            if members and any(member.get("type") == "null" for member in members):
+                return True
+            if members and len(members) == 1 and not schema.get("properties"):
+                schema = members[0]
+                continue
+            return False
+        return False
+
+    def required(self, schema: dict | None) -> set[str]:
+        resolved = self.spec.deref(schema)
+        names = set(resolved.get("required") or [])
+        for member in resolved.get("allOf") or []:
+            names |= self.required(member)
+        return names
+
+    def validate(self, schema: dict | None, value: Any) -> list[str]:
+        issues: list[str] = []
+        self._check(schema, value, "$", issues, 0)
+        return issues
+
+    def _check(
+        self, schema: dict | None, value: Any, path: str, issues: list[str], depth: int
+    ) -> None:
+        if depth > 12 or len(issues) >= MAX_ISSUES_SHOWN:
+            return
+        if value is None:
+            if not self.nullable(schema):
+                issues.append(f"{path} is null but not nullable")
+            return
+        resolved = self.spec.deref(schema)
+        kind = self.spec.kind(resolved)
+        found = type(value).__name__
+        if kind == "enum":
+            allowed = [
+                str(item)
+                for item in (resolved.get("enum") or [])
+                + (resolved.get("x-enumNames") or [])
+            ]
+            if str(value) not in allowed:
+                issues.append(f"{path} {value!r} is not an enum value")
+        elif kind in ("string", "guid", "datetime", "date", "binary"):
+            if not isinstance(value, str):
+                issues.append(f"{path} is {found}, expected string")
+            elif kind == "guid" and not GUID_PATTERN.match(value):
+                issues.append(f"{path} {value!r} is not a GUID")
+            elif kind == "datetime" and parse_datetime(value) is None:
+                issues.append(f"{path} {value!r} is not a date-time")
+        elif kind == "integer":
+            if isinstance(value, bool) or not isinstance(value, int):
+                issues.append(f"{path} is {found}, expected integer")
+        elif kind == "number":
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                issues.append(f"{path} is {found}, expected number")
+        elif kind == "boolean":
+            if not isinstance(value, bool):
+                issues.append(f"{path} is {found}, expected boolean")
+        elif kind == "array":
+            if not isinstance(value, list):
+                issues.append(f"{path} is {found}, expected array")
+            else:
+                item = self.spec.array_item(resolved)
+                for index, child in enumerate(value[:20]):
+                    self._check(item, child, f"{path}[{index}]", issues, depth + 1)
+        elif kind == "object":
+            if not isinstance(value, dict):
+                issues.append(f"{path} is {found}, expected object")
+                return
+            for name in sorted(self.required(resolved)):
+                if name not in value:
+                    issues.append(f"{path}.{name} is required but missing")
+            for name, child in self.spec.fields(resolved).items():
+                if name in value:
+                    self._check(child, value[name], f"{path}.{name}", issues, depth + 1)
+
+
+class ResponseAudit:
+    """Watches every API response for spec drift, ProblemDetails use, and rate-limit headers."""
+
+    def __init__(self, spec: Spec):
+        self.validator = SchemaValidator(spec)
+        self.spec_issues: list[str] = []
+        self.problem_issues: list[str] = []
+        self.content_type_issues: list[str] = []
+        self.rate_limit_issues: list[str] = []
+        self.client_errors = 0
+        self.responses = 0
+        self.rate_limit_headers: set[str] = set()
+
+    def __call__(self, operation: "Operation", response: Response) -> None:
+        self.responses += 1
+        for name in response.headers:
+            if name.startswith(RATE_LIMIT_HEADER_PREFIXES):
+                self.rate_limit_headers.add(name)
+        if response.ok and operation.response_schema is not None:
+            if response.body is None:
+                if response.status != 204:
+                    self.spec_issues.append(
+                        f"{operation.label}: HTTP {response.status} has no JSON body, "
+                        "the spec declares one"
+                    )
+            else:
+                for issue in self.validator.validate(
+                    operation.response_schema, response.body
+                ):
+                    self.spec_issues.append(f"{operation.label}: {issue}")
+        if response.status == 429:
+            issue = problem_details_issue(response)
+            if issue:
+                self.rate_limit_issues.append(f"{operation.label}: 429 {issue}")
+        # 401 is the authentication handler's bare challenge (WWW-Authenticate), not an API error body.
+        # 429 is reported as a note (above) while rate-limit behaviour is not yet held to the standard.
+        if 400 <= response.status < 500 and response.status not in (401, 429):
+            self.client_errors += 1
+            issue = problem_details_issue(response)
+            if issue:
+                self.problem_issues.append(
+                    f"{operation.label} HTTP {response.status}: {issue}"
+                )
+            else:
+                issue = problem_content_type_issue(response)
+                if issue:
+                    self.content_type_issues.append(
+                        f"{operation.label} HTTP {response.status}: {issue}"
+                    )
+
+    def take(self) -> tuple[list[str], list[str], list[str], int]:
+        """Return and reset what was seen since the last call."""
+        taken = (
+            list(dict.fromkeys(self.spec_issues)),
+            list(dict.fromkeys(self.problem_issues)),
+            list(dict.fromkeys(self.content_type_issues)),
+            self.client_errors,
+        )
+        self.spec_issues, self.problem_issues = [], []
+        self.content_type_issues, self.client_errors = [], 0
+        return taken
+
+
+def summarize(issues: list[str]) -> str:
+    shown = "; ".join(issues[:MAX_ISSUES_SHOWN])
+    hidden = len(issues) - MAX_ISSUES_SHOWN
+    return shown + (f"; and {hidden} more" if hidden > 0 else "")
+
+
+def lowered(value: Any) -> dict[str, Any]:
+    return {norm(k): v for k, v in value.items()} if isinstance(value, dict) else {}
 
 
 def overlap(source: dict[str, dict], target: dict[str, dict]) -> float:
@@ -987,13 +1273,27 @@ def classify(spec: Spec, controller: Controller, ignored: set[str]) -> None:
         default=0.0,
     )
 
+    read_names = {norm(name) for name in read_fields}
+    key_names = {norm(name) for name in controller.get_by_id.path_params}
+
+    def patch_addressable(op: Operation) -> bool:
+        """Same key count as GET-by-ID, or extra parent parameters the read model can fill.
+
+        World API ItemEquipmentStat (2026-10-23) patches at /items/{itemId}/equipment/stat/{entryId}
+        while its GET-by-ID is /items/attributes/equipment/stat/{entryId}.
+        """
+        if len(op.path_params) == key_count:
+            return True
+        extra = [norm(name) for name in op.path_params if norm(name) not in key_names]
+        return len(op.path_params) > key_count and all(name in read_names for name in extra)
+
+    patch_candidates = [
+        op for op in controller.operations
+        if op.method == "patch" and op.body_schema and patch_addressable(op)
+    ]
+    patch_candidates.sort(key=lambda op: len(op.path_params) != key_count)
     for op in controller.operations:
-        if (
-            op.method == "patch"
-            and op.body_schema
-            and len(op.path_params) == key_count
-            and controller.patch is None
-        ):
+        if op is (patch_candidates[0] if patch_candidates else None):
             if (
                 op.response_schema is None
                 or overlap(read_fields, spec.fields(op.response_schema))
@@ -1445,6 +1745,8 @@ class Record:
     keys: dict[str, Any]
     body: dict
     data: Any
+    # Last PATCH body that succeeded, reused for the unknown-key PATCH check.
+    patch_body: dict | None = None
 
 
 class Runner:
@@ -1466,6 +1768,10 @@ class Runner:
         self.parents: dict[str, Record | None] = {}
         self.parent_order: list[Record] = []
         self.parent_in_progress: set[str] = set()
+        self.audit = ResponseAudit(spec)
+        self.client.observers = [self.audit]
+        self.retry_after_missing_at_start = client.retry_after_missing
+        self.retry_after_zero_at_start = client.retry_after_zero
 
     # --- keys -------------------------------------------------------------------------------------
 
@@ -1683,6 +1989,29 @@ class Runner:
                     f"cleanup of parent {record.controller.name} {record.keys} failed: {response.describe()}"
                 )
 
+    def record_path_values(self, operation: Operation, record: Record) -> dict[str, Any]:
+        """Path values for an operation addressing a written record.
+
+        With the same parameter count as GET-by-ID the keys are used in order. Otherwise each parameter
+        takes a key of the same name or the record field of the same name (a parent ID).
+        """
+        keys = list(record.keys.values())
+        if len(operation.path_params) == len(keys):
+            return dict(zip(operation.path_params, keys))
+        named_keys = {norm(name): value for name, value in record.keys.items()}
+        fields = (
+            {norm(name): value for name, value in record.data.items()}
+            if isinstance(record.data, dict)
+            else {}
+        )
+        values = {}
+        for name in operation.path_params:
+            if norm(name) in named_keys:
+                values[name] = named_keys[norm(name)]
+            elif norm(name) in fields:
+                values[name] = fields[norm(name)]
+        return values
+
     def delete_path(self, record: Record) -> dict[str, Any]:
         delete = record.controller.delete
         return dict(zip(delete.path_params, record.keys.values()))
@@ -1702,18 +2031,32 @@ class Runner:
                 f"{operation.label} needs query {unsatisfied}, list not tested"
             )
             return
-        path_values = {}
-        if operation.path_params:
-            # List scoped to a parent (World API ItemEquipmentStat_ListByItemId style); reuse key values.
-            path_values = dict(zip(operation.path_params, record.keys.values()))
-        key_items = {norm(k): v for k, v in record.keys.items()}
-        record_fields = (
-            {norm(k): v for k, v in record.data.items()}
-            if isinstance(record.data, dict)
-            else {}
+        filters = self.list_key_filters(controller, record)
+        found, pages, problem = (
+            self.scan_list(controller, record, filters) if filters else (False, 0, "")
         )
-        # Narrow the search with query parameters named after a key parameter, or after a record field
-        # holding a key value (Customer GET /{id} with search ?Id=, Item GET /{entryId} with ?Id=).
+        how = f"filtered by {sorted(filters)}"
+        if not found and not problem:
+            found, pages, problem = self.scan_list(controller, record, {})
+            how = "unfiltered"
+        detail = problem or f"{how}, {pages} page(s)"
+        result.check(f"list {operation.label} contains record", found, detail)
+
+    def list_path_values(self, controller: Controller, record: Record) -> dict[str, Any]:
+        operation = controller.list_op
+        if not operation.path_params:
+            return {}
+        # List scoped to a parent (World API ItemEquipmentStat_ListByItemId style).
+        return self.record_path_values(operation, record)
+
+    def list_key_filters(self, controller: Controller, record: Record) -> dict[str, Any]:
+        """Query parameters that narrow a list to the record by its key.
+
+        Uses parameters named after a key parameter, or after a record field holding a key value
+        (Customer GET /{id} with search ?Id=, Item GET /{entryId} with ?Id=).
+        """
+        key_items = lowered(record.keys)
+        record_fields = lowered(record.data)
         key_values = {str(v).lower() for v in record.keys.values()}
         key_fields = {
             name
@@ -1721,35 +2064,29 @@ class Runner:
             if str(value).lower() in key_values
         }
         filters = {}
-        for name in operation.query_params:
-            lowered = norm(name)
-            if lowered in key_items:
-                filters[name] = key_items[lowered]
-            elif lowered in key_fields:
-                filters[name] = record_fields[lowered]
+        for name in controller.list_op.query_params:
+            if norm(name) in key_items:
+                filters[name] = key_items[norm(name)]
+            elif norm(name) in key_fields:
+                filters[name] = record_fields[norm(name)]
+        return filters
+
+    def scan_list(
+        self, controller: Controller, record: Record, query: dict
+    ) -> tuple[bool, int, str]:
+        """Page through the list looking for the record. Returns (found, pages, problem)."""
+        operation = controller.list_op
         pagination = pagination_for(self.spec, operation)
-
-        def scan(query: dict) -> tuple[bool, int, str]:
-            pages = 0
-            for response in pagination.pages(
-                self.client, operation, path_values, query
-            ):
-                pages += 1
-                if not response.ok or not isinstance(response.body, dict):
-                    return False, pages, response.describe()
-                lowered_body = {norm(k): v for k, v in response.body.items()}
-                for item in lowered_body.get(norm(controller.list_array_field)) or []:
-                    if self.matches_keys(item, record):
-                        return True, pages, ""
-            return False, pages, ""
-
-        found, pages, problem = scan(filters) if filters else (False, 0, "")
-        how = f"filtered by {sorted(filters)}"
-        if not found and not problem:
-            found, pages, problem = scan({})
-            how = "unfiltered"
-        detail = problem or f"{how}, {pages} page(s)"
-        result.check(f"list {operation.label} contains record", found, detail)
+        path_values = self.list_path_values(controller, record)
+        pages = 0
+        for response in pagination.pages(self.client, operation, path_values, query):
+            pages += 1
+            if not response.ok or not isinstance(response.body, dict):
+                return False, pages, response.describe()
+            for item in lowered(response.body).get(norm(controller.list_array_field)) or []:
+                if self.matches_keys(item, record):
+                    return True, pages, ""
+        return False, pages, ""
 
     def matches_keys(self, item: Any, record: Record) -> bool:
         if not isinstance(item, dict):
@@ -1777,6 +2114,444 @@ class Runner:
             ):
                 return False
         return True
+
+    # --- extended checks --------------------------------------------------------------------------
+
+    def write_operation(self, controller: Controller, resolver: DependencyResolver) -> Operation:
+        """The write the controller creates records with."""
+        if controller.shape == SHAPE_COLLECTION:
+            return controller.put
+        if controller.create and not self.create_with_put(controller, resolver):
+            return controller.create
+        return controller.put
+
+    def remove_unexpected(
+        self, controller: Controller, response: Response, path_values: dict[str, Any]
+    ) -> None:
+        """Delete a record a negative check created by mistake, so it does not linger."""
+        if not controller.delete or not isinstance(response.body, dict):
+            return
+        known = dict(zip(controller.get_by_id.path_params, path_values.values()))
+        keys = self.key_values(controller, response.body, known)
+        if keys:
+            stray = Record(controller, keys, {}, response.body)
+            self.client.call(controller.delete, self.delete_path(stray))
+
+    def server_time_fields(self, controller: Controller) -> list[str]:
+        """Read-model date-time fields that no write model sends, so the server manages them."""
+        written: set[str] = set()
+        for operation in (controller.create, controller.put, controller.patch):
+            if operation:
+                written |= {norm(name) for name in self.spec.fields(operation.body_schema)}
+        return [
+            name
+            for name, schema in self.spec.fields(controller.read_schema).items()
+            if self.spec.kind(schema) == "datetime" and norm(name) not in written
+        ]
+
+    def check_timestamps_current(
+        self, controller: Controller, record: Record, result: Result
+    ) -> None:
+        data = record.data if isinstance(record.data, dict) else {}
+        names = [name for name in self.server_time_fields(controller) if name in data]
+        if not names:
+            return
+        now = dt.datetime.now(dt.timezone.utc)
+        problems = []
+        for name in names:
+            parsed = parse_datetime(data.get(name))
+            if parsed is None or abs((parsed - now).total_seconds()) > TIMESTAMP_SKEW_SECONDS:
+                problems.append(f"{name}={data.get(name)!r}")
+        result.check(
+            "server timestamps are current",
+            not problems,
+            summarize(problems) or f"{len(names)} field(s)",
+        )
+
+    def wait_for_clock_tick(self, controller: Controller, record: Record) -> None:
+        """Sleep past the next second when stored timestamps only keep whole seconds.
+
+        Realm and World API timestamps are MariaDB DATETIME (2026-10-23), so an update within the same
+        second would leave the "last changed" timestamp equal and look like it never moved.
+        """
+        data = record.data if isinstance(record.data, dict) else {}
+        values = [
+            data.get(name)
+            for name in self.server_time_fields(controller)
+            if isinstance(data.get(name), str)
+        ]
+        if values and not any(re.search(r"\.\d*[1-9]", value) for value in values):
+            time.sleep(1.1)
+
+    def check_timestamps_on_update(
+        self, controller: Controller, before: Any, after: Any, result: Result, what: str
+    ) -> None:
+        """One server timestamp (creation) stays put and another (last change) moves forward."""
+        before_data = before if isinstance(before, dict) else {}
+        after_data = after if isinstance(after, dict) else {}
+        pairs = {}
+        for name in self.server_time_fields(controller):
+            old, new = parse_datetime(before_data.get(name)), parse_datetime(after_data.get(name))
+            if old is not None and new is not None:
+                pairs[name] = (old, new)
+        if not pairs:
+            return
+        constant = [name for name, (old, new) in pairs.items() if new == old]
+        advanced = [name for name, (old, new) in pairs.items() if new > old]
+        backwards = [name for name, (old, new) in pairs.items() if new < old]
+        if len(pairs) == 1:
+            # A single timestamp may record either creation or the last change, so only order is checked.
+            ok = not backwards
+        else:
+            ok = bool(constant) and bool(advanced) and not backwards
+        detail = f"unchanged {constant or '-'}, advanced {advanced or '-'}"
+        if backwards:
+            detail += f", went backwards {backwards}"
+        result.check(f"server timestamps after {what}", ok, detail)
+
+    def check_patch_integrity(
+        self,
+        controller: Controller,
+        patched: str,
+        before: Any,
+        after: Any,
+        result: Result,
+    ) -> None:
+        """Fields the PATCH did not name keep their values (server timestamps aside)."""
+        before_data, after_data = lowered(before), lowered(after)
+        skip = {norm(patched)} | {norm(name) for name in self.server_time_fields(controller)}
+        changed = []
+        for name, schema in self.spec.fields(controller.read_schema).items():
+            key = norm(name)
+            if key in skip or key not in before_data:
+                continue
+            old, new = before_data.get(key), after_data.get(key)
+            same = json.dumps(old, sort_keys=True) == json.dumps(new, sort_keys=True) or (
+                old is not None
+                and new is not None
+                and values_match(self.spec, schema, old, new)
+            )
+            if not same:
+                changed.append(f"{name}: {old!r} -> {new!r}")
+        result.check("PATCH leaves other fields unchanged", not changed, summarize(changed))
+
+    def check_filters(self, controller: Controller, record: Record, result: Result) -> None:
+        """Exact-match filters named after read-model fields return the record and only matches."""
+        operation = controller.list_op
+        pagination = pagination_for(self.spec, operation)
+        skip = {norm(getattr(pagination, "query_name", "")), norm(self.page_size_param(controller) or "")}
+        read_fields = {norm(name): schema for name, schema in self.spec.fields(controller.read_schema).items()}
+        data = lowered(record.data)
+        path_values = self.list_path_values(controller, record)
+        tested, problems = [], []
+        for name, query_schema in operation.query_params.items():
+            key = norm(name)
+            if key in skip or key not in read_fields or data.get(key) is None:
+                continue
+            field_schema = read_fields[key]
+            if self.spec.kind(field_schema) not in ("string", "guid", "integer", "number", "enum", "boolean"):
+                continue
+            value = data[key]
+            query = {name: [value] if self.spec.kind(query_schema) == "array" else value}
+            found, wrong, pages = False, 0, 0
+            for response in pagination.pages(self.client, operation, path_values, query):
+                pages += 1
+                if not response.ok or not isinstance(response.body, dict):
+                    problems.append(f"{name}: {response.describe()}")
+                    break
+                for item in lowered(response.body).get(norm(controller.list_array_field)) or []:
+                    if not values_match(self.spec, field_schema, value, lowered(item).get(key)):
+                        wrong += 1
+                    if self.matches_keys(item, record):
+                        found = True
+                if pages >= FILTER_MAX_PAGES:
+                    break
+            tested.append(name)
+            if not found:
+                problems.append(f"{name}={value!r} did not return the record")
+            if wrong:
+                problems.append(f"{name}={value!r} returned {wrong} non-matching record(s)")
+        if tested:
+            result.check(f"exact filters ({', '.join(tested)})", not problems, summarize(problems))
+
+    def page_size_param(self, controller: Controller) -> str | None:
+        """An integer query parameter not named after (or as a range on) a read-model field."""
+        read_names = [norm(name) for name in self.spec.fields(controller.read_schema)]
+        for name, schema in controller.list_op.query_params.items():
+            if self.spec.kind(schema) != "integer":
+                continue
+            if any(norm(name).startswith(read_name) for read_name in read_names):
+                continue
+            return name
+        return None
+
+    def identity_field(self, record: Record) -> str | None:
+        """The read-model field holding the record's first key value."""
+        first = next(iter(record.keys.values()), None)
+        for name, value in lowered(record.data).items():
+            if first is not None and str(value).lower() == str(first).lower():
+                return name
+        return None
+
+    def check_paging(
+        self, controller: Controller, record: Record, resolver: DependencyResolver, result: Result
+    ) -> None:
+        """With a page size of 1, pages hold at most one record, never repeat one, and run out."""
+        operation = controller.list_op
+        pagination = pagination_for(self.spec, operation)
+        size_param = self.page_size_param(controller)
+        if not isinstance(pagination, ContinuationTokenPagination) or not size_param:
+            result.notes.append(
+                f"{operation.label} has no page-size and continuation-token pair, paging not checked"
+            )
+            return
+        # A second record makes paging meaningful. It is always deleted afterwards, --keep or not,
+        # because it only exists for this check.
+        extra = None
+        if controller.create and not self.create_with_put(controller, resolver):
+            extra = self.write_new(controller, resolver, None)
+        identity = self.identity_field(record)
+        path_values = self.list_path_values(controller, record)
+        seen: set[str] = set()
+        repeated = oversized = pages = 0
+        exhausted, problem, token = False, "", None
+        for _ in range(PAGING_MAX_PAGES):
+            query = {size_param: 1}
+            if token:
+                query[pagination.query_name] = token
+            response = self.client.call(operation, path_values, query)
+            pages += 1
+            if not response.ok or not isinstance(response.body, dict):
+                problem = response.describe()
+                break
+            body = lowered(response.body)
+            items = body.get(norm(controller.list_array_field)) or []
+            if len(items) > 1:
+                oversized += 1
+            for item in items:
+                marker = json.dumps(lowered(item).get(identity) if identity else item, sort_keys=True)
+                if marker in seen:
+                    repeated += 1
+                seen.add(marker)
+            token = body.get(norm(pagination.response_name))
+            if not token:
+                exhausted = True
+                break
+        if extra and controller.delete:
+            self.client.call(controller.delete, self.delete_path(extra))
+        if problem:
+            result.check(f"paging {operation.label} with {size_param}=1", False, problem)
+            return
+        if exhausted and len(seen) < 2:
+            result.notes.append(f"{operation.label} listed fewer than 2 records, paging not exercised")
+            return
+        problems = []
+        if oversized:
+            problems.append(f"{oversized} page(s) held more than 1 record")
+        if repeated:
+            problems.append(f"{repeated} record(s) repeated across pages")
+        detail = f"{pages} page(s), {len(seen)} record(s)"
+        if not exhausted:
+            detail += f", stopped after {PAGING_MAX_PAGES} pages"
+        result.check(
+            f"paging {operation.label} with {size_param}=1 is clean",
+            not problems,
+            summarize(problems) or detail,
+        )
+
+    def random_keys(self, controller: Controller) -> dict[str, Any]:
+        operation = controller.get_by_id
+        return {
+            name: self.factory.scalar(
+                operation.path_param_schemas.get(name) or {"type": "string", "format": "uuid"}
+            )
+            for name in operation.path_params
+        }
+
+    def unknown_keys(self, controller: Controller) -> tuple[dict[str, Any], Response]:
+        """A random key and the GET-by-ID answer for it."""
+        keys = self.random_keys(controller)
+        response = self.client.call(controller.get_by_id, keys)
+        if response.ok:
+            # A random GUID matching a stored record is so unlikely it should never happen (random wide
+            # integers and run-unique strings nearly so), but retry once with a fresh key before failing.
+            keys = self.random_keys(controller)
+            response = self.client.call(controller.get_by_id, keys)
+        return keys, response
+
+    def negative_sweep(
+        self, controller: Controller, record: Record, resolver: DependencyResolver, result: Result
+    ) -> None:
+        keys, response = self.unknown_keys(controller)
+        missing = response.status == 404
+        result.check(
+            f"GET unknown key {controller.get_by_id.label} is 404",
+            missing,
+            "" if missing else f"got HTTP {response.status}",
+        )
+        if missing:
+            # Writes and deletes only use a key the GET just confirmed is absent.
+            ghost = Record(controller, keys, {}, record.data)
+            if controller.patch and record.patch_body:
+                response = self.client.call(
+                    controller.patch, self.record_path_values(controller.patch, ghost), body=record.patch_body
+                )
+                result.check(
+                    f"PATCH unknown key {controller.patch.label} is 404",
+                    response.status == 404,
+                    "" if response.status == 404 else f"got HTTP {response.status}",
+                )
+            if controller.put and controller.put.path_params:
+                path_values = self.record_path_values(controller.put, ghost)
+                body = self.factory.generate(controller.put.body_schema, resolver)
+                response = self.client.call(controller.put, path_values, body=body)
+                if controller.create:
+                    # Update-style PUT: 404, or create the record at that key (PUT as upsert is valid HTTP).
+                    created = response.ok and all(
+                        str(lowered(response.body).get(norm(name), value)).lower()
+                        == str(value).lower()
+                        for name, value in path_values.items()
+                    )
+                    ok, expected = response.status == 404 or created, "is 404 or creates it"
+                    if created:
+                        result.notes.append(
+                            f"{controller.put.label} creates a record at an unknown key (upsert)"
+                        )
+                else:
+                    # Parent-keyed upsert. Children are standalone tables in the current standard, so an
+                    # unknown parent may be accepted. Only a server error fails (see future checks above).
+                    ok, expected = response.status < 500, "is not a server error"
+                result.check(
+                    f"PUT unknown key {controller.put.label} {expected}",
+                    ok,
+                    "" if ok else response.describe(),
+                )
+                if response.ok and controller.delete:
+                    self.client.call(controller.delete, self.delete_path(ghost))
+            if controller.delete:
+                response = self.client.call(controller.delete, self.delete_path(ghost))
+                result.check(
+                    f"DELETE unknown key {controller.delete.label} is 404",
+                    response.status == 404,
+                    "" if response.status == 404 else f"got HTTP {response.status}",
+                )
+        self.malformed_key_checks(controller, record, result)
+
+    def malformed_key_checks(self, controller: Controller, record: Record, result: Result) -> None:
+        """A GUID path parameter given a non-GUID answers 400 or 404, never 5xx or success."""
+        problems, tried = [], 0
+        for operation in (controller.get_by_id, controller.delete):
+            if operation is None:
+                continue
+            values = self.record_path_values(operation, record)
+            for name in operation.path_params:
+                if self.spec.kind(operation.path_param_schemas.get(name)) != "guid":
+                    continue
+                tried += 1
+                response = self.client.call(operation, dict(values, **{name: "not-a-guid"}))
+                if response.status not in (400, 404):
+                    problems.append(f"{operation.label} {name}: HTTP {response.status}")
+        if tried:
+            result.check(
+                "malformed GUID keys are 400/404",
+                not problems,
+                summarize(problems) or f"{tried} request(s)",
+            )
+
+    def bad_body_checks(
+        self, controller: Controller, record: Record, resolver: DependencyResolver, result: Result
+    ) -> None:
+        """Malformed JSON, a wrong-typed field, and an integer overflow answer 400 (or 422)."""
+        operation = self.write_operation(controller, resolver)
+        path_values = self.record_path_values(operation, record) if operation.path_params else {}
+        valid = self.factory.generate(operation.body_schema, resolver)
+        fields = self.spec.fields(operation.body_schema)
+        cases: list[tuple[str, Any, bytes | None]] = [("malformed JSON", None, MALFORMED_JSON)]
+        if fields and isinstance(valid, dict):
+            name, schema = next(iter(fields.items()))
+            kind = self.spec.kind(schema)
+            wrong = 12345 if kind in ("string", "datetime", "date") else f"not-a-{kind}"
+            cases.append((f"wrong type for {name}", dict(valid, **{name: wrong}), None))
+            integers = [n for n, s in fields.items() if self.spec.kind(s) == "integer"]
+            if integers:
+                cases.append(
+                    (
+                        f"integer overflow for {integers[0]}",
+                        dict(valid, **{integers[0]: INTEGER_OVERFLOW}),
+                        None,
+                    )
+                )
+        problems = []
+        for label, body, raw in cases:
+            response = self.client.call(operation, path_values, body=body, raw_body=raw)
+            if response.status not in (400, 422):
+                problems.append(f"{label}: {response.describe()}")
+                if response.ok and not operation.path_params:
+                    self.remove_unexpected(controller, response, path_values)
+        result.check(
+            f"bad request bodies to {operation.label} are 400",
+            not problems,
+            summarize(problems) or f"{len(cases)} case(s)",
+        )
+
+    def auth_checks(
+        self, controller: Controller, record: Record, resolver: DependencyResolver, result: Result
+    ) -> None:
+        """No token, a garbled token, and a token with a broken signature all answer 401."""
+        write = self.write_operation(controller, resolver)
+        write_path = self.record_path_values(write, record) if write.path_params else {}
+        targets = [(controller.get_by_id, dict(record.keys), None)]
+        if controller.list_op and not controller.list_op.required_query:
+            targets.append((controller.list_op, self.list_path_values(controller, record), None))
+        targets.append((write, write_path, self.factory.generate(write.body_schema, resolver)))
+        problems, sent = [], 0
+        for operation, path_values, body in targets:
+            for mode in (AUTH_NONE, AUTH_GARBLED, AUTH_TAMPERED):
+                sent += 1
+                response = self.client.call(operation, path_values, body=body, auth=mode)
+                if response.status != 401:
+                    problems.append(f"{operation.label} ({mode} token): HTTP {response.status}")
+                    if response.ok and body is not None and not write.path_params:
+                        self.remove_unexpected(controller, response, path_values)
+        result.check(
+            "requests without a valid token are 401",
+            not problems,
+            summarize(problems) or f"{sent} request(s)",
+        )
+
+    def audit_checks(self, result: Result) -> None:
+        spec_issues, problem_issues, type_issues, client_errors = self.audit.take()
+        result.check("responses match the spec", not spec_issues, summarize(spec_issues))
+        if client_errors:
+            result.check(
+                "4xx responses use ProblemDetails",
+                not problem_issues,
+                summarize(problem_issues) or f"{client_errors} response(s)",
+            )
+        if type_issues:
+            result.notes.append(
+                "ProblemDetails bodies not sent as application/problem+json: "
+                + summarize(type_issues)
+            )
+
+    def document_notes(self) -> list[str]:
+        notes = []
+        if not self.audit.rate_limit_headers:
+            notes.append(
+                f"no rate-limit headers (RateLimit-*, X-RateLimit-*) seen on {self.audit.responses} response(s)"
+            )
+        missing = self.client.retry_after_missing - self.retry_after_missing_at_start
+        if missing:
+            notes.append(f"{missing} rate-limited (429) response(s) had no Retry-After header")
+        zero = self.client.retry_after_zero - self.retry_after_zero_at_start
+        if zero:
+            notes.append(f"{zero} rate-limited (429) response(s) advised Retry-After under 1 second")
+        if self.audit.rate_limit_issues:
+            notes.append(
+                "429 bodies are not ProblemDetails: "
+                + summarize(list(dict.fromkeys(self.audit.rate_limit_issues)))
+            )
+        return notes
 
     # --- controller tests -------------------------------------------------------------------------
 
@@ -1808,6 +2583,7 @@ class Runner:
                 "read matches written values", not mismatches, "; ".join(mismatches)
             )
             record.data = response.body
+            self.check_timestamps_current(controller, record, result)
 
         if controller.put and (controller.create or not controller.put.path_params):
             self.update_with_put(controller, record, resolver, result)
@@ -1820,6 +2596,13 @@ class Runner:
 
         if controller.list_op:
             self.find_in_list(controller, record, result)
+            if not controller.list_op.required_query:
+                self.check_filters(controller, record, result)
+                self.check_paging(controller, record, resolver, result)
+
+        self.negative_sweep(controller, record, resolver, result)
+        self.bad_body_checks(controller, record, resolver, result)
+        self.auth_checks(controller, record, resolver, result)
 
         if controller.delete:
             if self.keep:
@@ -1847,6 +2630,8 @@ class Runner:
         result: Result,
     ):
         operation = controller.put
+        before = record.data
+        self.wait_for_clock_tick(controller, record)
         body = self.factory.generate(operation.body_schema, resolver)
         lowered_data = (
             {norm(k): v for k, v in record.data.items()}
@@ -1893,6 +2678,9 @@ class Runner:
             )
             result.check(
                 "read matches updated values", not mismatches, "; ".join(mismatches)
+            )
+            self.check_timestamps_on_update(
+                controller, before, response.body, result, "update"
             )
             record.data = response.body
             record.body = body
@@ -1966,7 +2754,9 @@ class Runner:
         if not has_sample:
             value = self.factory.scalar(schema, avoid=current.get(norm(name)))
         body = {name: value}
-        path_values = dict(zip(operation.path_params, record.keys.values()))
+        before = record.data
+        self.wait_for_clock_tick(controller, record)
+        path_values = self.record_path_values(operation, record)
         response = self.client.call(operation, path_values, body=body)
         if not result.check(
             f"patch {operation.label} ({name})",
@@ -1989,7 +2779,12 @@ class Runner:
                 self.spec, controller.read_schema, body, response.body
             )
             result.check("read reflects patch", not mismatches, "; ".join(mismatches))
+            self.check_patch_integrity(controller, name, before, response.body, result)
+            self.check_timestamps_on_update(
+                controller, before, response.body, result, "patch"
+            )
             record.data = response.body
+            record.patch_body = body
 
     def delete_record(
         self, controller: Controller, record: Record, result: Result, what: str
@@ -2007,6 +2802,32 @@ class Runner:
             "read after delete is 404/410",
             gone,
             "" if gone else f"got HTTP {response.status}",
+        )
+        response = self.client.call(controller.delete, self.delete_path(record))
+        result.check(
+            "second DELETE of the same record is 404",
+            response.status == 404,
+            "" if response.status == 404 else f"got HTTP {response.status}",
+        )
+        if controller.list_op and not controller.list_op.required_query:
+            filters = self.list_key_filters(controller, record)
+            found, pages, problem = self.scan_list(controller, record, filters)
+            how = f"filtered by {sorted(filters)}" if filters else "unfiltered"
+            result.check(
+                "deleted record is gone from list",
+                not found and not problem,
+                problem or ("still listed" if found else f"{how}, {pages} page(s)"),
+            )
+
+    def collection_unknown_parent(self, controller: Controller, result: Result) -> None:
+        """GET for an unknown parent: 404, or 200 with an empty collection (both acceptable)."""
+        _, response = self.unknown_keys(controller)
+        items = lowered(response.body).get(norm(controller.collection_read_field))
+        empty = response.ok and not items
+        result.check(
+            f"GET unknown key {controller.get_by_id.label} is 404 or empty",
+            response.status == 404 or empty,
+            "" if response.status == 404 or empty else response.describe(),
         )
 
     def test_collection(self, controller: Controller) -> Result:
@@ -2060,6 +2881,10 @@ class Runner:
                 f"missing {missing}" if missing else f"{len(read_items)} item(s)",
             )
         self.repeat_put(operation, path_values, body, result)
+        record = Record(controller, keys, body, None)
+        self.collection_unknown_parent(controller, result)
+        self.bad_body_checks(controller, record, resolver, result)
+        self.auth_checks(controller, record, resolver, result)
         if not self.keep:
             body = {controller.collection_write_field: []}
             response = self.client.call(operation, path_values, body=body)
@@ -2109,10 +2934,12 @@ class Runner:
                 f"\n  {colour(controller.name)} [{controller.shape}: {controller.variant()}]"
             )
             before = set(self.client.endpoints_called)
+            self.audit.take()
             if controller.shape == SHAPE_CRUD:
                 result = self.test_crud(controller)
             else:
                 result = self.test_collection(controller)
+            self.audit_checks(result)
             result.endpoints = {
                 e
                 for e in self.client.endpoints_called - before
@@ -2177,6 +3004,7 @@ def report(
     results: list[Result],
     endpoints_tested: int,
     formats: dict[str, int],
+    notes: list[str] | None = None,
 ) -> None:
     info(f"\n{colour('==== Report:')} {fpath(document_label)}")
     rows = []
@@ -2220,6 +3048,8 @@ def report(
             "String/number formats generated: "
             + ", ".join(f"{k} ({v})" for k, v in sorted(formats.items()))
         )
+    for note in notes or []:
+        info(f"{colour('Note:', 'yellow')} {note}")
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -2410,6 +3240,7 @@ def run(args: argparse.Namespace) -> int:
                 results,
                 len(client.endpoints_called - before),
                 runner.factory.formats_seen,
+                runner.document_notes(),
             )
             if any(r.status == STATUS_FAIL for r in results):
                 exit_code = max(exit_code, 1)

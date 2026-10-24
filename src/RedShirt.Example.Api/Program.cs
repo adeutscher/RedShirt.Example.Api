@@ -45,7 +45,9 @@ var app = builder.Build();
 
 app
     .ConsiderUsingForwardedHeaders()
-    .UseExceptionHandler();
+    .UseExceptionHandler()
+    // Empty error responses (for example a route constraint miss) get a ProblemDetails body.
+    .UseStatusCodePages();
 
 if (app.Environment.IsDevelopment())
 {

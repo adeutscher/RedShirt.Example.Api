@@ -306,7 +306,9 @@ internal sealed class UploadRepository(
         {
             var checkpoint = continuationParameters.LastUpdatedAtUtc;
             var lastId = continuationParameters.LastId;
-            predicate.And(e => e.DateUpdatedUtc <= checkpoint && e.Id != lastId);
+            // Keyset continuation on (DateUpdatedUtc, Id), matching the DESC ordering below.
+            predicate.And(e => e.DateUpdatedUtc < checkpoint
+                               || (e.DateUpdatedUtc == checkpoint && e.Id.CompareTo(lastId) < 0));
         }
 
         var pageSize = parameters.PageSize <= 0 ? MaxPageSize : Math.Min(MaxPageSize, parameters.PageSize);

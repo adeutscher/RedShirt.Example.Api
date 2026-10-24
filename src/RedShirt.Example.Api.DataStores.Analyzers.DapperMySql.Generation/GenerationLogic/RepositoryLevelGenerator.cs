@@ -51,6 +51,11 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(3,
                 "$\"{" +
                 $"{classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullEntityName}.{classSummaryModel.UpdatedAt.Name}))" +
+                "} DESC\",")
+            // The key breaks ties between records updated at the same instant, so pages have a total order.
+            .AppendLineWithIndent(3,
+                "$\"{" +
+                $"{classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullEntityName}.{classSummaryModel.Key.Name}))" +
                 "} DESC\"")
             .AppendLineWithIndent(2, "];")
             .AppendLine()
@@ -69,11 +74,15 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(2, "if (continuationParameters is not null)")
             .OpenBracket(2)
             .AppendLineWithIndent(3, "queryBuilder = queryBuilder.Where(")
-            .AppendLineWithIndent(4, "$\"{"
+            // Keyset continuation on (UpdatedAt, Key): strictly after the last record in the DESC order.
+            // Excluding only the last key repeated records that shared its UpdatedAt value.
+            .AppendLineWithIndent(4, "$\"({"
                                      + $"{classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullEntityName}.{classSummaryModel.UpdatedAt.Name}))"
-                                     + "} <= @checkpoint AND {"
+                                     + "} < @checkpoint OR ({"
+                                     + $"{classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullEntityName}.{classSummaryModel.UpdatedAt.Name}))"
+                                     + "} = @checkpoint AND {"
                                      + $"{classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullEntityName}.{classSummaryModel.Key.Name}))"
-                                     + "} != @id\",")
+                                     + "} < @id))\",")
             .AppendLineWithIndent(4, "new")
             .OpenBracket(4)
             .AppendLineWithIndent(5, $"checkpoint = continuationParameters.Last{classSummaryModel.UpdatedAt.Name},")
