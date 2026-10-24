@@ -1,0 +1,3 @@
+{{ usings model.key_namespaces }}namespace {{ model.use_case_namespace }}.Queries.GetRecord;
+
+public record Get{{ model.name }}RecordQuery({{ model.key.type }} {{ model.key.name }});

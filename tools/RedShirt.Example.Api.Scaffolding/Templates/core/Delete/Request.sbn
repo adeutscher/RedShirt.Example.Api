@@ -1,0 +1,3 @@
+{{ usings model.key_namespaces }}namespace {{ model.use_case_namespace }}.Commands.Delete;
+
+public record Delete{{ model.name }}Command({{ model.key.type }} {{ model.key.name }});

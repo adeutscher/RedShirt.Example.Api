@@ -1,0 +1,20 @@
+using FluentValidation;
+
+namespace {{ model.use_case_namespace }}.Commands.Create;
+
+public class Create{{ model.name }}CommandValidator : AbstractValidator<Create{{ model.name }}Command>
+{
+{{~ if model.post_required_strings.size > 0 ~}}
+    public Create{{ model.name }}CommandValidator()
+    {
+{{~ for p in model.post_required_strings ~}}
+{{~ if !for.first ~}}
+
+{{~ end ~}}
+        RuleFor(command => command.{{ p.name }})
+            .Must({{ p.camel_name }} => !string.IsNullOrWhiteSpace({{ p.camel_name }}))
+            .WithMessage("'{{ p.name }}' must not be empty.");
+{{~ end ~}}
+    }
+{{~ end ~}}
+}

@@ -1,0 +1,16 @@
+using Microsoft.AspNetCore.Authorization;
+using {{ model.api_namespace }}.Authorization.Constants;
+
+namespace {{ model.api_namespace }}.Attributes.Authorization;
+
+/// <summary>
+///     Requires <see cref="BespokeAuthorizationPermissions.{{ model.name }}Write" />.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public sealed class Authorize{{ model.name }}WriteAttribute : AuthorizeAttribute
+{
+    public Authorize{{ model.name }}WriteAttribute()
+    {
+        Policy = BespokeAuthorizationPolicies.{{ model.name }}Write;
+    }
+}

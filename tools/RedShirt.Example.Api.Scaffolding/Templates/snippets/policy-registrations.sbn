@@ -1,0 +1,10 @@
+authorization.AddPolicy(BespokeAuthorizationPolicies.{{ model.name }}Write, policy => ConfigureApiPolicy(policy)
+    .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
+        BespokeAuthorizationPermissions.{{ model.name }}Write));
+
+authorization.AddPolicy(BespokeAuthorizationPolicies.{{ model.name }}ReadApproved, policy =>
+    ConfigureApiPolicy(policy)
+        .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
+            BespokeAuthorizationPermissions.{{ model.name }}Read)
+        .AddRequirements(new HttpGetRequirement()));
+

@@ -1,0 +1,4 @@
+public const string {{ model.name }}Read = "{{ model.permission_prefix }}:read";
+
+public const string {{ model.name }}Write = "{{ model.permission_prefix }}:write";
+

@@ -20,7 +20,8 @@ public class BespokeRolePermissionMapTests
         BespokeAuthorizationPermissions.ProductWrite,
         BespokeAuthorizationPermissions.UploadPurge,
         BespokeAuthorizationPermissions.UploadRead,
-        BespokeAuthorizationPermissions.UploadWrite
+        BespokeAuthorizationPermissions.UploadWrite,
+        // scaffold:test-full-access-permissions
     ];
 
     private static readonly string[] AdminPermissions =
@@ -36,7 +37,8 @@ public class BespokeRolePermissionMapTests
         BespokeAuthorizationPermissions.ProductWrite,
         BespokeAuthorizationPermissions.UploadPurge,
         BespokeAuthorizationPermissions.UploadRead,
-        BespokeAuthorizationPermissions.UploadWrite
+        BespokeAuthorizationPermissions.UploadWrite,
+        // scaffold:test-admin-permissions
     ];
 
     [Fact]
@@ -85,7 +87,7 @@ public class BespokeRolePermissionMapTests
     {
         var permissions = BespokeRolePermissionMap.GetPermissions([BespokeAuthorizationRoles.Developer]);
 
-        Assert.Equal(FullAccessPermissions, permissions.Order(StringComparer.Ordinal));
+        Assert.Equal(FullAccessPermissions.Order(StringComparer.Ordinal), permissions.Order(StringComparer.Ordinal));
         Assert.DoesNotContain(BespokeAuthorizationPermissions.Unrestricted, permissions);
     }
 

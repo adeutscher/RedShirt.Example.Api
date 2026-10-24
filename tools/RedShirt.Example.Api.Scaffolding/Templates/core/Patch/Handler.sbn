@@ -1,0 +1,24 @@
+{{~ n = model.name; sv = model.service_variable ~}}
+{{ usings [model.core_namespace + ".Cqrs", model.service_namespace, model.dto_namespace, model.patch_request.namespace] }}namespace {{ model.use_case_namespace }}.Commands.Patch;
+
+public interface IPatch{{ n }}CommandHandler : ICqrsHandler<Patch{{ n }}Command, {{ model.dto_type }}>;
+
+internal class Patch{{ n }}CommandHandler(
+    {{ model.service_interface }} {{ sv }},
+    ICoreRequestValidator coreRequestValidator)
+    : IPatch{{ n }}CommandHandler
+{
+    public async Task<{{ model.dto_type }}> Handle(Patch{{ n }}Command command,
+        CancellationToken cancellationToken = default)
+    {
+        await coreRequestValidator.ValidateAsync(command, cancellationToken);
+
+        return await {{ sv }}.PatchAsync(new {{ model.patch_request.name }}
+        {
+            {{ model.key.name }} = command.{{ model.key.name }}{{ if model.patch_properties.size > 0 }},{{ end }}
+{{~ for p in model.patch_properties ~}}
+            {{ p.name }} = command.{{ p.name }}{{ if !for.last }},{{ end }}
+{{~ end ~}}
+        }, cancellationToken);
+    }
+}

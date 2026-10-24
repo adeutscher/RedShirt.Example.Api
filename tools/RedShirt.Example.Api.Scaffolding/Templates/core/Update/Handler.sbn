@@ -1,0 +1,24 @@
+{{~ n = model.name; sv = model.service_variable ~}}
+{{ usings [model.core_namespace + ".Cqrs", model.service_namespace, model.dto_namespace, model.put_request.namespace] }}namespace {{ model.use_case_namespace }}.Commands.Update;
+
+public interface IUpdate{{ n }}CommandHandler : ICqrsHandler<Update{{ n }}Command, {{ model.dto_type }}>;
+
+internal class Update{{ n }}CommandHandler(
+    {{ model.service_interface }} {{ sv }},
+    ICoreRequestValidator coreRequestValidator)
+    : IUpdate{{ n }}CommandHandler
+{
+    public async Task<{{ model.dto_type }}> Handle(Update{{ n }}Command command,
+        CancellationToken cancellationToken = default)
+    {
+        await coreRequestValidator.ValidateAsync(command, cancellationToken);
+
+        return await {{ sv }}.PutAsync(new {{ model.put_request.name }}
+        {
+            {{ model.key.name }} = command.{{ model.key.name }}{{ if model.put_properties.size > 0 }},{{ end }}
+{{~ for p in model.put_properties ~}}
+            {{ p.name }} = command.{{ p.name }}{{ if !for.last }},{{ end }}
+{{~ end ~}}
+        }, cancellationToken);
+    }
+}

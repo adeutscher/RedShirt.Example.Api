@@ -1,0 +1,15 @@
+{{ usings model.post_namespaces }}namespace {{ model.api_namespace }}.Models.{{ model.name }};
+
+public class {{ model.name }}PostRequest
+{
+{{~ for p in model.post_nullable ~}}
+    public {{ p.type }} {{ p.name }} { get; set; }
+{{~ end ~}}
+{{~ if model.post_non_nullable.size > 0 ~}}
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+{{~ for p in model.post_non_nullable ~}}
+    public {{ p.type }} {{ p.name }} { get; set; }
+{{~ end ~}}
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
+{{~ end ~}}
+}

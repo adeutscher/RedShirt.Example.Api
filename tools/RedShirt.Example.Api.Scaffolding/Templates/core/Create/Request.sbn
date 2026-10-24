@@ -1,0 +1,7 @@
+{{ usings model.post_namespaces }}namespace {{ model.use_case_namespace }}.Commands.Create;
+
+public record Create{{ model.name }}Command(
+{{~ for p in model.post_properties ~}}
+    {{ p.type }} {{ p.name }},
+{{~ end ~}}
+    string IdempotencyKey);

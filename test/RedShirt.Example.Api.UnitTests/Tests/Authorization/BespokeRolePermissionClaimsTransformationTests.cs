@@ -69,21 +69,22 @@ public class BespokeRolePermissionClaimsTransformationTests
         var permissions = principal.FindAll(BespokeAuthorizationPermissions.ClaimType)
             .Select(claim => claim.Value)
             .ToList();
-        Assert.Equal(
-            [
-                BespokeAuthorizationPermissions.Read,
-                BespokeAuthorizationPermissions.Write,
-                BespokeAuthorizationPermissions.CustomerRead,
-                BespokeAuthorizationPermissions.CustomerWrite,
-                BespokeAuthorizationPermissions.OrderRead,
-                BespokeAuthorizationPermissions.OrderWrite,
-                BespokeAuthorizationPermissions.ProductRead,
-                BespokeAuthorizationPermissions.ProductWrite,
-                BespokeAuthorizationPermissions.UploadPurge,
-                BespokeAuthorizationPermissions.UploadRead,
-                BespokeAuthorizationPermissions.UploadWrite
-            ],
-            permissions.Order(StringComparer.Ordinal));
+        string[] expected =
+        [
+            BespokeAuthorizationPermissions.Read,
+            BespokeAuthorizationPermissions.Write,
+            BespokeAuthorizationPermissions.CustomerRead,
+            BespokeAuthorizationPermissions.CustomerWrite,
+            BespokeAuthorizationPermissions.OrderRead,
+            BespokeAuthorizationPermissions.OrderWrite,
+            BespokeAuthorizationPermissions.ProductRead,
+            BespokeAuthorizationPermissions.ProductWrite,
+            BespokeAuthorizationPermissions.UploadPurge,
+            BespokeAuthorizationPermissions.UploadRead,
+            BespokeAuthorizationPermissions.UploadWrite,
+            // scaffold:test-claims-full-access-permissions
+        ];
+        Assert.Equal(expected.Order(StringComparer.Ordinal), permissions.Order(StringComparer.Ordinal));
         Assert.DoesNotContain(BespokeAuthorizationPermissions.Unrestricted, permissions);
     }
 

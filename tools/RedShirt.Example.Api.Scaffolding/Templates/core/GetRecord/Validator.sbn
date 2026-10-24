@@ -1,0 +1,15 @@
+using FluentValidation;
+
+namespace {{ model.use_case_namespace }}.Queries.GetRecord;
+
+public class Get{{ model.name }}RecordQueryValidator : AbstractValidator<Get{{ model.name }}RecordQuery>
+{
+{{~ if model.key_is_guid ~}}
+    public Get{{ model.name }}RecordQueryValidator()
+    {
+        RuleFor(query => query.{{ model.key.name }})
+            .Must({{ model.key_variable }} => {{ model.key_variable }} != Guid.Empty)
+            .WithMessage("{{ model.key.name }} is required");
+    }
+{{~ end ~}}
+}

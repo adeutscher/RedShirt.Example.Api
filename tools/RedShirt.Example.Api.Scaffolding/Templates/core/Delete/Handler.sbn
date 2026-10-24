@@ -1,0 +1,16 @@
+{{~ n = model.name; sv = model.service_variable ~}}
+{{ usings [model.core_namespace + ".Cqrs", model.service_namespace] }}namespace {{ model.use_case_namespace }}.Commands.Delete;
+
+public interface IDelete{{ n }}CommandHandler : ICqrsHandler<Delete{{ n }}Command>;
+
+internal class Delete{{ n }}CommandHandler(
+    {{ model.service_interface }} {{ sv }},
+    ICoreRequestValidator coreRequestValidator)
+    : IDelete{{ n }}CommandHandler
+{
+    public async Task Handle(Delete{{ n }}Command command, CancellationToken cancellationToken = default)
+    {
+        await coreRequestValidator.ValidateAsync(command, cancellationToken);
+        await {{ sv }}.DeleteAsync(command.{{ model.key.name }}, cancellationToken);
+    }
+}

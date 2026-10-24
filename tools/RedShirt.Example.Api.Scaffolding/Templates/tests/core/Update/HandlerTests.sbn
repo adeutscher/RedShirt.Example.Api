@@ -1,0 +1,37 @@
+{{~ n = model.name; req = model.put_request.name ~}}
+{{ usings (["Moq", model.core_namespace + ".Cqrs", model.use_case_namespace + ".Commands.Update", model.service_namespace, model.dto_namespace, model.put_request.namespace] | array.add_range model.put_namespaces) }}namespace {{ model.core_namespace }}.UnitTests.Tests.UseCases.{{ model.name }}.Commands.Update;
+
+/// <summary>
+///     Scaffolded by scripts/scaffold.sh.
+/// </summary>
+public class Update{{ n }}CommandHandlerTests
+{
+    [Fact]
+    public async Task Handle_ValidatesAndMapsCommandToPutRequest()
+    {
+        var expected = {{ n }}TestData.CreateDto();
+        {{ req }}? capturedRequest = null;
+        var service = new Mock<{{ model.service_interface }}>();
+        service
+            .Setup(s => s.PutAsync(It.IsAny<{{ req }}>(), It.IsAny<CancellationToken>()))
+            .Callback<{{ req }}, CancellationToken>((request, _) => capturedRequest = request)
+            .ReturnsAsync(expected);
+        var validator = new Mock<ICoreRequestValidator>();
+        var handler = new Update{{ n }}CommandHandler(service.Object, validator.Object);
+        var command = new Update{{ n }}Command(
+            {{ model.key.sample_value }}{{ if model.put_properties.size == 0 }});{{ else }},{{ end }}
+{{~ for p in model.put_properties ~}}
+            {{ p.sample_value }}{{ if for.last }});{{ else }},{{ end }}
+{{~ end ~}}
+
+        var result = await handler.Handle(command, TestContext.Current.CancellationToken);
+
+        Assert.Same(expected, result);
+        Assert.NotNull(capturedRequest);
+        Assert.Equal(command.{{ model.key.name }}, capturedRequest.{{ model.key.name }});
+{{~ for p in model.put_properties ~}}
+        Assert.Equal(command.{{ p.name }}, capturedRequest.{{ p.name }});
+{{~ end ~}}
+        validator.Verify(v => v.ValidateAsync(command, TestContext.Current.CancellationToken), Times.Once);
+    }
+}

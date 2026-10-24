@@ -1,0 +1,10 @@
+/// <summary>
+///     {{ model.name }} write access: requires <see cref="BespokeAuthorizationPermissions.{{ model.name }}Write" />.
+/// </summary>
+public const string {{ model.name }}Write = "{{ model.name }}Write";
+
+/// <summary>
+///     Approved {{ model.name }} read: <see cref="BespokeAuthorizationPermissions.{{ model.name }}Read" /> on an HTTP GET.
+/// </summary>
+public const string {{ model.name }}ReadApproved = "{{ model.name }}ReadApproved";
+

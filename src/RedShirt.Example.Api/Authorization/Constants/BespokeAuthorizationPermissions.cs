@@ -44,4 +44,6 @@ public static class BespokeAuthorizationPermissions
     ///     <see cref="BespokeAuthorizationRoles.Developer" />).
     /// </summary>
     public const string UploadPurge = "upload:purge";
+
+    // scaffold:permissions
 }

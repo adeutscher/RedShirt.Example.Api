@@ -1,0 +1,33 @@
+{{~
+u = [model.dto_namespace] | array.add_range model.dto_property_namespaces
+if model.has_search; u = u | array.add model.search_response.namespace; end
+~}}
+{{ usings u }}namespace {{ model.core_namespace }}.UnitTests.Tests.UseCases.{{ model.name }};
+
+/// <summary>
+///     Scaffolded by scripts/scaffold.sh.
+/// </summary>
+internal static class {{ model.name }}TestData
+{
+    public static {{ model.dto_type }} CreateDto()
+    {
+        return new {{ model.dto_type }}
+        {
+{{~ for p in model.dto_properties ~}}
+            {{ p.name }} = {{ p.sample_value }}{{ if !for.last }},{{ end }}
+{{~ end ~}}
+        };
+    }
+{{~ if model.has_search ~}}
+
+    public static {{ model.search_response.name }} CreateSearchResponse()
+    {
+        return new {{ model.search_response.name }}
+        {
+{{~ for p in model.search_response.properties ~}}
+            {{ p.name }} = {{ p.sample_value }}{{ if !for.last }},{{ end }}
+{{~ end ~}}
+        };
+    }
+{{~ end ~}}
+}

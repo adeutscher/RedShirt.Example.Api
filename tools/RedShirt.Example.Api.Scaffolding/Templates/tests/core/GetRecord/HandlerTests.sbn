@@ -1,0 +1,26 @@
+{{~ n = model.name ~}}
+{{ usings (["Moq", model.core_namespace + ".Cqrs", model.use_case_namespace + ".Queries.GetRecord", model.service_namespace] | array.add_range model.key_namespaces) }}namespace {{ model.core_namespace }}.UnitTests.Tests.UseCases.{{ model.name }}.Queries.GetRecord;
+
+/// <summary>
+///     Scaffolded by scripts/scaffold.sh.
+/// </summary>
+public class Get{{ n }}RecordQueryHandlerTests
+{
+    [Fact]
+    public async Task Handle_ValidatesAndReturnsRecord()
+    {
+        var expected = {{ n }}TestData.CreateDto();
+        var service = new Mock<{{ model.service_interface }}>();
+        service
+            .Setup(s => s.GetByIdAsync(expected.{{ model.key.name }}, TestContext.Current.CancellationToken))
+            .ReturnsAsync(expected);
+        var validator = new Mock<ICoreRequestValidator>();
+        var handler = new Get{{ n }}RecordQueryHandler(service.Object, validator.Object);
+        var query = new Get{{ n }}RecordQuery(expected.{{ model.key.name }});
+
+        var result = await handler.Handle(query, TestContext.Current.CancellationToken);
+
+        Assert.Same(expected, result);
+        validator.Verify(v => v.ValidateAsync(query, TestContext.Current.CancellationToken), Times.Once);
+    }
+}

@@ -1,0 +1,47 @@
+{{~ n = model.name; dto = model.dto_type; req = model.post_request.name ~}}
+{{ usings (["Moq", model.core_namespace + ".Cqrs", model.core_namespace + ".Services", model.use_case_namespace + ".Commands.Create", model.service_namespace, model.dto_namespace, model.post_request.namespace] | array.add_range model.post_namespaces) }}namespace {{ model.core_namespace }}.UnitTests.Tests.UseCases.{{ model.name }}.Commands.Create;
+
+/// <summary>
+///     Scaffolded by scripts/scaffold.sh.
+/// </summary>
+public class Create{{ n }}CommandHandlerTests
+{
+    [Fact]
+    public async Task Handle_ValidatesAndMapsCommandToPostRequest()
+    {
+        var expected = {{ n }}TestData.CreateDto();
+        {{ req }}? capturedRequest = null;
+        var service = new Mock<{{ model.service_interface }}>();
+        service
+            .Setup(s => s.PostAsync(It.IsAny<{{ req }}>(), It.IsAny<CancellationToken>()))
+            .Callback<{{ req }}, CancellationToken>((request, _) => capturedRequest = request)
+            .ReturnsAsync(expected);
+        var idempotencyWrapper = new Mock<ICacheBasedIdempotencyWrapperService>();
+        idempotencyWrapper
+            .Setup(w => w.RunIdempotentlyAsync(
+                It.IsAny<string>(),
+                It.IsAny<Func<Task<{{ dto }}>>>(),
+                It.IsAny<CancellationToken>()))
+            .Returns((string _, Func<Task<{{ dto }}>> callback, CancellationToken _) => callback());
+        var validator = new Mock<ICoreRequestValidator>();
+        var handler = new Create{{ n }}CommandHandler(service.Object, idempotencyWrapper.Object, validator.Object);
+        var command = new Create{{ n }}Command(
+{{~ for p in model.post_properties ~}}
+            {{ p.sample_value }},
+{{~ end ~}}
+            "idempotency-key");
+
+        var result = await handler.Handle(command, TestContext.Current.CancellationToken);
+
+        Assert.Same(expected, result);
+        Assert.NotNull(capturedRequest);
+{{~ for p in model.post_properties ~}}
+        Assert.Equal(command.{{ p.name }}, capturedRequest.{{ p.name }});
+{{~ end ~}}
+        validator.Verify(v => v.ValidateAsync(command, TestContext.Current.CancellationToken), Times.Once);
+        idempotencyWrapper.Verify(w => w.RunIdempotentlyAsync(
+            "idempotency-key",
+            It.IsAny<Func<Task<{{ dto }}>>>(),
+            TestContext.Current.CancellationToken), Times.Once);
+    }
+}

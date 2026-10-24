@@ -1,0 +1,7 @@
+using FluentValidation;
+
+namespace {{ model.use_case_namespace }}.Queries.SearchRecords;
+
+public class Search{{ model.name }}RecordsQueryValidator : AbstractValidator<Search{{ model.name }}RecordsQuery>
+{
+}
