@@ -88,3 +88,5 @@ app
     .ConsiderRequiringRateLimiting(app.Configuration);
 
 await app.RunAsync();
+
+public partial class Program;

@@ -6,7 +6,7 @@
       "documentName": "v1",
       "msBuildProjectExtensionsPath": null,
       "configuration": "$(Configuration)",
-      "runtime": null,
+      "runtime": "$(RuntimeIdentifier)",
       "targetFramework": null,
       "noBuild": true,
       "msBuildOutputPath": null,

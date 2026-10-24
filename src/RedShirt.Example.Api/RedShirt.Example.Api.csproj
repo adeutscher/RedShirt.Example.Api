@@ -41,8 +41,14 @@
         <ProjectReference Include="..\RedShirt.Example.Api.ClientEvents.Library.Core\RedShirt.Example.Api.ClientEvents.Library.Core.csproj"/>
     </ItemGroup>
 
-    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-        <Exec Command="$(NSwagExe_Net100) run nswag.json /variables:Configuration=$(Configuration)"
+    <!--
+        Regenerates the committed swagger.json from the built assembly after every build (local, GitHub, and
+        Azure DevOps alike). RuntimeIdentifier is passed through so RID-specific output
+        (bin/<Configuration>/<TargetFramework>/<RID>/) is found as well. SkipNSwag=true opts out; only the
+        Dockerfile publish stage uses it, because its build stage has already regenerated the document.
+    -->
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(SkipNSwag)' != 'true'">
+        <Exec Command="$(NSwagExe_Net100) run nswag.json /variables:Configuration=$(Configuration),RuntimeIdentifier=$(RuntimeIdentifier)"
               EnvironmentVariables="NSWAG_RUN=1;AUTHENTICATION__DISABLE_AUTHENTICATION=true"/>
     </Target>
 
