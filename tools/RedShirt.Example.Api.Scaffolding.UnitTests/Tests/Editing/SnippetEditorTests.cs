@@ -76,6 +76,33 @@ public class SnippetEditorTests
     }
 
     [Fact]
+    public void Contains_IgnoresTrailingComments_AndRemoveDeletesTheWholeLine()
+    {
+        const string text = """
+                            services
+                                .AddCustomers(configuration) // Customer store via Entity Framework Core.
+                                // scaffold:registrations
+                                .AddOther();
+                            """;
+        const string snippet = ".AddCustomers(configuration)\n";
+
+        Assert.True(SnippetEditor.Contains(text, "registrations", snippet));
+        Assert.Equal("""
+                     services
+                         // scaffold:registrations
+                         .AddOther();
+                     """, SnippetEditor.Remove(text, "registrations", snippet));
+    }
+
+    [Fact]
+    public void Contains_DoesNotTreatCommentOnlyLinesAsCode()
+    {
+        const string text = "// Read\n// scaffold:a\n";
+
+        Assert.False(SnippetEditor.Contains(text, "a", "Read\n"));
+    }
+
+    [Fact]
     public void Insert_Throws_WhenAnchorIsMissing()
     {
         var exception = Assert.Throws<AnchorException>(() => SnippetEditor.Insert("class A {}", "permissions", Snippet));

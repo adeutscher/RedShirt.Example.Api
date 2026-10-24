@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace RedShirt.Example.Api.Scaffolding.Editing;
 
 internal sealed class AnchorException(string message) : Exception(message);
@@ -9,8 +11,12 @@ internal sealed class AnchorException(string message) : Exception(message);
 ///         That keeps identical snippets for different anchors in one file (e.g. two permission lists in the same
 ///         test class) apart. Snippets are rendered at column 0 and indented to match the anchor.
 ///     </para>
+///     <para>
+///         Lines are compared without trailing whitespace or a trailing end-of-line comment, so a hand-written
+///         <c>.AddCustomers(configuration) // explanation</c> still counts as the registration snippet.
+///     </para>
 /// </summary>
-internal static class SnippetEditor
+internal static partial class SnippetEditor
 {
     public const string AnchorPrefix = "// scaffold:";
 
@@ -27,7 +33,7 @@ internal static class SnippetEditor
     public static bool Contains(string text, string anchor, string snippet)
     {
         var (regionStart, anchorStart, indent) = Locate(text, anchor);
-        return FindInRegion(text, regionStart, anchorStart, Indent(snippet, indent)) >= 0;
+        return FindInRegion(text, regionStart, anchorStart, Indent(snippet, indent)) is not null;
     }
 
     /// <summary>
@@ -52,9 +58,9 @@ internal static class SnippetEditor
     public static string? Remove(string text, string anchor, string snippet)
     {
         var (regionStart, anchorStart, indent) = Locate(text, anchor);
-        var indented = Indent(snippet, indent);
-        var index = FindInRegion(text, regionStart, anchorStart, indented);
-        return index < 0 ? null : text.Remove(index, indented.Length);
+        return FindInRegion(text, regionStart, anchorStart, Indent(snippet, indent)) is { } match
+            ? text.Remove(match.Start, match.Length)
+            : null;
     }
 
     public static string Indent(string snippet, string indent)
@@ -94,20 +100,60 @@ internal static class SnippetEditor
         return (regionStart, anchorStart, indent);
     }
 
-    private static int FindInRegion(string text, int regionStart, int regionEnd, string value)
+    [GeneratedRegex(@"^(?<code>\s*[^\s/].*?)\s+//.*$")]
+    private static partial Regex TrailingComment();
+
+    /// <summary>
+    ///     Find the last run of whole lines in the region that matches the snippet's lines, comparing
+    ///     <see cref="Normalize" />d lines. Returns the run's start and length in the original text.
+    /// </summary>
+    private static (int Start, int Length)? FindInRegion(string text, int regionStart, int regionEnd, string snippet)
     {
-        var region = text[regionStart..regionEnd];
-        for (var index = region.LastIndexOf(value, StringComparison.Ordinal);
-             index >= 0;
-             index = index == 0 ? -1 : region.LastIndexOf(value, index - 1, StringComparison.Ordinal))
+        var wanted = SplitLines(snippet).Select(Normalize).ToList();
+        if (wanted.Count == 0)
         {
-            if (index == 0 || region[index - 1] == '\n')
+            return null;
+        }
+
+        var lines = new List<(int Start, int Length, string Normalized)>();
+        var start = regionStart;
+        foreach (var line in SplitLines(text[regionStart..regionEnd]))
+        {
+            lines.Add((start, line.Length + 1, Normalize(line)));
+            start += line.Length + 1;
+        }
+
+        for (var first = lines.Count - wanted.Count; first >= 0; first--)
+        {
+            if (wanted.Select((line, offset) => lines[first + offset].Normalized == line).All(match => match))
             {
-                return regionStart + index;
+                var last = lines[first + wanted.Count - 1];
+                var end = Math.Min(last.Start + last.Length, text.Length);
+                return (lines[first].Start, end - lines[first].Start);
             }
         }
 
-        return -1;
+        return null;
+    }
+
+    /// <summary>
+    ///     Lines of text that ends with a newline, without the empty entry after the final newline.
+    /// </summary>
+    private static List<string> SplitLines(string text)
+    {
+        var lines = text.Split('\n').ToList();
+        if (lines.Count > 0 && lines[^1].Length == 0)
+        {
+            lines.RemoveAt(lines.Count - 1);
+        }
+
+        return lines;
+    }
+
+    private static string Normalize(string line)
+    {
+        var match = TrailingComment().Match(line);
+        return (match.Success ? match.Groups["code"].Value : line).TrimEnd();
     }
 
     private static List<int> FindAnchorLines(string text, string anchor)

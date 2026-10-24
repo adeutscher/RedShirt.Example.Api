@@ -233,6 +233,10 @@ C# collection expressions allow this.
 * `--scope customer` mirrors `OrderController`. `Post` does not check the `CustomerId` in the request, and `Put` and
   `Patch` check the existing record's customer but not a new `CustomerId`. Review this for each resource.
 * Search handlers call the request validator, which the Order and Product search handlers do not.
+* Running create on a resource whose controller and use cases were written by hand (such as `Product` or `Customer`)
+  only fills the gaps, which are mostly tests. Those tests assume the templates' shape, so they do not compile wherever
+  the hand-written code differs. Scaffold a resource from the start, or delete the gap-fill files (the manifest lists
+  them).
 * The data store `using` is added at the end of the `using` block, not in sorted order.
 * Project references are only recognised when the `<ProjectReference .../>` element is on a single line.
 * Data store limits show up as build errors in the data store, not in the scaffolder. At the time of writing, the
