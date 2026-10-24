@@ -22,11 +22,13 @@ If you added it to `~/.bashrc`, reload:
 
 ## Steps
 
-1. Bring up `ministack`, `redis`, `mariadb`, `wiremock-foo`, `wiremock-bar`, and `keycloak` containers:
+1. Bring up supporting containers (everything except the `api` service):
 
     ```bash
-    docker compose up -d ministack redis mariadb wiremock-foo wiremock-bar keycloak
+    ./scripts/start-supporting-services.sh
     ```
+
+    Equivalent to listing `ministack`, `ministack-init`, `redis`, `mariadb`, `wiremock-foo`, `wiremock-bar`, and `keycloak` explicitly.
 
     See **Foo WireMock stubs**, **Bar WireMock stubs**, and **Authentication and authorization (Keycloak)** below.
     Admin UIs:
@@ -34,12 +36,20 @@ If you added it to `~/.bashrc`, reload:
     http://localhost:9101/__admin/ (Bar),
     http://localhost:9080/ (Keycloak; admin/`admin`).
 
-2. Run `make-local-aws-resources.sh` to create ministack resources (DynamoDB table and
+2. `ministack-init` waits for `ministack` to be healthy, then runs `scripts/make-local-aws-resources.sh`
+   inside a container to create ministack resources (DynamoDB table, S3 buckets, and
    SSM parameters, including `/mysql/connection-string`, `/foo/api-key`,
-   `/bar/oauth/client-id`, and `/bar/oauth/client-secret`):
+   `/bar/oauth/client-id`, and `/bar/oauth/client-secret`). It exits once done. The `api`
+   service waits for it to complete successfully. Check its output with:
 
     ```bash
-    ./make-local-aws-resources.sh
+    docker compose logs ministack-init
+    ```
+
+    The script is safe to re-run. To run it again (for example after changing it):
+
+    ```bash
+    docker compose up ministack-init
     ```
 
 3. Apply the MySQL/MariaDB schema using
@@ -81,8 +91,8 @@ Local Compose runs Keycloak on http://localhost:9080 with realm `example` import
 | Variable                                 | Local default                                                                                         |
 |------------------------------------------|-------------------------------------------------------------------------------------------------------|
 | `AUTHENTICATION__DISABLE_AUTHENTICATION` | `false`                                                                                               |
-| `AUTHENTICATION__AUTHORITY`              | `http://localhost:9080/realms/example` (token `iss`)                                                  |
-| `AUTHENTICATION__METADATA_ADDRESS`       | `http://keycloak:8080/realms/example/.well-known/openid-configuration` (JWKS discovery inside Docker) |
+| `AUTHENTICATION__AUTHORITY`              | `http://localhost:9080/realms/test` (token `iss`)                                                  |
+| `AUTHENTICATION__METADATA_ADDRESS`       | `http://keycloak:8080/realms/test/.well-known/openid-configuration` (JWKS discovery inside Docker) |
 | `AUTHENTICATION__AUDIENCE`               | `example-api`                                                                                         |
 | `AUTHENTICATION__REQUIRE_HTTPS_METADATA` | `false`                                                                                               |
 
@@ -108,7 +118,7 @@ does not depend on the IdP sending both role claims.
 
 Keycloak imports `keycloak/realm-example.json` on each container start (`kc.sh import --override true`,
 then `start-dev`), so seeded users and roles stay in sync with that file. That override **replaces the
-entire `example` realm**: users, clients, roles, and mappers created in the Keycloak admin console (or
+entire `test` realm**: users, clients, roles, and mappers created in the Keycloak admin console (or
 otherwise missing from the JSON) are removed. Put durable local identities in `realm-example.json`
 instead of creating them only in the UI. Restart Keycloak after editing the realm JSON:
 
@@ -122,7 +132,7 @@ docker compose up -d --force-recreate keycloak
 |---------------------|-------------------|--------------------------|-------------------------------------------------------------------------|
 | Public client       | `example-api`     | _(none)_                 | Password grant for interactive testing                                  |
 | Confidential client | `example-service` | `example-service-secret` | Client-credentials grant; realm role `admin`                            |
-| User                | `testuser`        | `testpass`               | Realm role `admin` (full access, unrestricted)                          |
+| User                | `test-admin`      | `test-admin-pass`        | Realm role `admin` (full access, unrestricted)                          |
 | User                | `developeruser`   | `developerpass`          | `developer`; JWT `customer_id` = `11111111-1111-1111-1111-111111111111` |
 | User                | `analystuser`     | `analystpass`            | `analyst` (Product GET only)                                            |
 | User                | `billinguser`     | `billingpass`            | `billing`; JWT `customer_id` = `11111111-1111-1111-1111-111111111111`   |
@@ -139,27 +149,27 @@ docker compose up -d --force-recreate keycloak
 Use the stdlib Python helper (no pip packages required):
 
 ```bash
-chmod +x ./get-bearer-token.py   # once
-./get-bearer-token.py            # password grant as testuser (admin) → prints access_token
-./get-bearer-token.py --print-header
-./get-bearer-token.py --grant client_credentials
-./get-bearer-token.py --developer
-./get-bearer-token.py --analyst
-./get-bearer-token.py --billing
-./get-bearer-token.py --upload-validator
+chmod +x ./scripts/get-bearer-token.py   # once
+./scripts/get-bearer-token.py            # password grant as test-admin (admin, default) -> prints access_token
+./scripts/get-bearer-token.py --print-header
+./scripts/get-bearer-token.py --grant client_credentials
+./scripts/get-bearer-token.py --developer
+./scripts/get-bearer-token.py --analyst
+./scripts/get-bearer-token.py --billing
+./scripts/get-bearer-token.py --upload-validator
 # or:
-./get-bearer-token.py --username analystuser --password analystpass
+./scripts/get-bearer-token.py --username analystuser --password analystpass
 ```
 
 Or call Keycloak directly:
 
 ```bash
-curl -s -X POST 'http://localhost:9080/realms/example/protocol/openid-connect/token' \
+curl -s -X POST 'http://localhost:9080/realms/test/protocol/openid-connect/token' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'grant_type=password' \
   -d 'client_id=example-api' \
-  -d 'username=testuser' \
-  -d 'password=testpass' | jq -r .access_token
+  -d 'username=test-admin' \
+  -d 'password=test-admin-pass' | jq -r .access_token
 ```
 
 ### Call the API
@@ -167,7 +177,7 @@ curl -s -X POST 'http://localhost:9080/realms/example/protocol/openid-connect/to
 Full-access admin (`admin`):
 
 ```bash
-TOKEN="$(./get-bearer-token.py)"
+TOKEN="$(./scripts/get-bearer-token.py)"
 curl -s -H "Authorization: Bearer ${TOKEN}" 'http://localhost:9000/foo/1'
 curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
   -d '{"name":"demo"}' 'http://localhost:9000/foo'
@@ -176,7 +186,7 @@ curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: applicatio
 Analyst (`analyst`) — Product GET succeeds; Product writes and other resources return 403:
 
 ```bash
-ANALYST_TOKEN="$(./get-bearer-token.py --analyst)"
+ANALYST_TOKEN="$(./scripts/get-bearer-token.py --analyst)"
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${ANALYST_TOKEN}" \
   'http://localhost:9000/products'
 curl -s -o /dev/null -w '%{http_code}\n' -X POST -H "Authorization: Bearer ${ANALYST_TOKEN}" \
@@ -189,7 +199,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${ANALYST_TOK
 Billing (`billing`) — Order read-write succeeds (within customer scope); Product and Foo return 403:
 
 ```bash
-BILLING_TOKEN="$(./get-bearer-token.py --billing)"
+BILLING_TOKEN="$(./scripts/get-bearer-token.py --billing)"
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOKEN}" \
   'http://localhost:9000/orders'
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOKEN}" \
@@ -199,21 +209,21 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOK
 ### Orders: customer-scoped access
 
 `developeruser` and `billinguser` have user attribute `customer_id` =
-`11111111-1111-1111-1111-111111111111` (mapped into the access token). `testuser` has
+`11111111-1111-1111-1111-111111111111` (mapped into the access token). `test-admin` has
 `api:unrestricted` and is not scoped. `developer` has full Order permissions but is still
 scoped.
 
 Create an order as the admin user, then fetch it as billing / developer / admin:
 
 ```bash
-TOKEN="$(./get-bearer-token.py)"
+TOKEN="$(./scripts/get-bearer-token.py)"
 ORDER_JSON="$(curl -s -X POST -H "Authorization: Bearer ${TOKEN}" -H 'Content-Type: application/json' \
   -H 'Idempotency-Key: local-order-1' \
   -d '{"customerId":"11111111-1111-1111-1111-111111111111","status":"open","totalAmount":10.00}' \
   'http://localhost:9000/orders')"
 ORDER_ID="$(echo "${ORDER_JSON}" | jq -r .id)"
 
-BILLING_TOKEN="$(./get-bearer-token.py --billing)"
+BILLING_TOKEN="$(./scripts/get-bearer-token.py --billing)"
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOKEN}" \
   "http://localhost:9000/orders/${ORDER_ID}"   # 200
 
@@ -225,7 +235,7 @@ OTHER_ID="$(echo "${OTHER_JSON}" | jq -r .id)"
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${BILLING_TOKEN}" \
   "http://localhost:9000/orders/${OTHER_ID}"   # 404
 
-DEV_TOKEN="$(./get-bearer-token.py --developer)"
+DEV_TOKEN="$(./scripts/get-bearer-token.py --developer)"
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${DEV_TOKEN}" \
   "http://localhost:9000/orders/${OTHER_ID}"   # 404 (developer is still scoped)
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer ${TOKEN}" \
@@ -249,7 +259,7 @@ Scripts are executable; run them directly from the `test/local` directory (for e
 Requires `upload:write` (admin or developer token by default):
 
 ```bash
-export API_JWT_TOKEN="$(./get-bearer-token.py)"
+export API_JWT_TOKEN="$(./scripts/get-bearer-token.py)"
 ./scripts/upload/upload-file.py path/to/document.txt
 ```
 
@@ -284,13 +294,13 @@ Notes:
 
 ### Tokens and permissions
 
-Scripts read `API_JWT_TOKEN` (set explicitly or via `get-bearer-token.py`). By default
+Scripts read `API_JWT_TOKEN` (set explicitly or via `scripts/get-bearer-token.py`). By default
 they use an admin token.
 
 For least-privilege worker paths, use the upload-validator token:
 
 ```bash
-export API_JWT_TOKEN="$(./get-bearer-token.py --upload-validator)"
+export API_JWT_TOKEN="$(./scripts/get-bearer-token.py --upload-validator)"
 ```
 
 The **`upload-validator`** realm role can POST `/uploads/{id}/verdicts` and
@@ -303,7 +313,7 @@ POST require broader permissions (`upload:read`, `upload:write`) and owner scopi
 `RedShirt.Example.Api.Connectors.Foo.Implementation` (`FooApiClient`). Mapping files live
 under `wiremock/foo/mappings/`. Successful calls require header
 `x-api-key: local-foo-api-key` (set in SSM path `/foo/api-key` from
-`make-local-aws-resources.sh`). The API container reaches WireMock at
+`scripts/make-local-aws-resources.sh`). The API container reaches WireMock at
 `http://wiremock-foo:8080`; from the host use `http://localhost:9100`.
 
 | Method | Path                       | Auth                | Result                                                                      |
@@ -318,7 +328,7 @@ under `wiremock/foo/mappings/`. Successful calls require header
 To conveniently set an invalid API key value in SSM, you can use the `foo-set-ssm-api-key.sh` script:
 
 ```bash
-./foo-set-ssm-api-key.sh 'bogus-key-value-here'
+./scripts/connectors/foo-set-ssm-api-key.sh 'bogus-key-value-here'
 ```
 
 Silly reminder: The API caches a successful key for its entire lifetime or until such a time as it becomes an unsuccessful key. This means that if the API instance is told to make a request to the Foo service and *then* a bad value is stored in SSM the API will have no reason to pull that bad key. This paragraph was made because of a local testing mix-up when the Foo example was first being developed (the hazards of developing code in one sitting and then local testing in the next). In order to force the pull of a bad key, you would need to use the below rotation script to update the key in WireMock and then manually.
@@ -328,7 +338,7 @@ Silly reminder: The API caches a successful key for its entire lifetime or until
 To conveniently set a new API key value in SSM *and* update WireMock's mappings (in-memory), use the `foo-rotate-api-key.sh` script.
 
 ```bash
-./foo-rotate-api-key.sh
+./scripts/connectors/foo-rotate-api-key.sh
 ```
 
 Confirming that this script will only update the in-memory versions that WireMock has loaded from disk. It will not adjust the mapping files mapped from the `wiremock/foo/` directory.
@@ -339,7 +349,7 @@ Confirming that this script will only update the in-memory versions that WireMoc
 `RedShirt.Example.Api.Connectors.Bar.Implementation` (`BarApiClient` +
 `OAuthTokenSource`). Mapping files live under `wiremock/bar/mappings/`.
 
-Default credentials (from `make-local-aws-resources.sh`):
+Default credentials (from `scripts/make-local-aws-resources.sh`):
 
 * SSM `/bar/oauth/client-id` → `local-bar-client-id`
 * SSM `/bar/oauth/client-secret` → `local-bar-client-secret`
@@ -362,7 +372,7 @@ From the host use `http://localhost:9101`.
 To put an invalid client secret in SSM (token endpoint will 401 once credentials are refreshed):
 
 ```bash
-./bar-set-ssm-oauth-secret.sh 'bogus-secret-value-here'
+./scripts/connectors/bar-set-ssm-oauth-secret.sh 'bogus-secret-value-here'
 ```
 
 Same caching caveat as Foo: a successfully obtained bearer token stays cached until it fails or expires. Setting a bad secret in SSM alone does not invalidate an already-cached token. To force WireMock to reject the current token (and exercise refresh), use the rotation script below so the API's cached token no longer matches WireMock's Authorization matcher—or restart the API after changing secrets.
@@ -377,9 +387,9 @@ elapse before returning.
 To update the client secret in SSM *and* WireMock's in-memory stubs (token bodyPatterns, returned `access_token`, and API `Authorization` matchers):
 
 ```bash
-./bar-rotate-oauth-credentials.sh
+./scripts/connectors/bar-rotate-oauth-credentials.sh
 # or:
-./bar-rotate-oauth-credentials.sh 'my-new-secret' 'my-new-access-token'
+./scripts/connectors/bar-rotate-oauth-credentials.sh 'my-new-secret' 'my-new-access-token'
 ```
 
 This only updates in-memory WireMock stubs. Restarting `wiremock-bar` restores the mapping files under `wiremock/bar/`. After the script finishes, call `GET /bar/{id}` or `POST /bar` again — the connector should 401 once with the old bearer, refresh client credentials + token, then succeed with the rotated bearer.
@@ -408,7 +418,7 @@ Mock Python scripts under `scripts/messages/` exercise the event flow locally. R
 
 ```bash
 chmod +x ./scripts/messages/*.py   # once
-export API_JWT_TOKEN="$(./get-bearer-token.py)"
+export API_JWT_TOKEN="$(./scripts/get-bearer-token.py)"
 ```
 
 In one terminal, listen for events:
@@ -428,3 +438,39 @@ Notes:
 * Both endpoints require a bearer token with `api:write` for `POST /messages` and `api:read` for `GET /messages/event-stream`.
 * Events are scoped to the authenticated user's id (`sub` / name identifier claim).
 * If MQTT connectivity fails, the API returns **502 Bad Gateway** with a problem-details body.
+
+## CRUD integration test
+
+`scripts/test/test-crud-controllers.py` exercises the basic RESTful CRUD controllers of the running `api`
+container. It reads every `swagger.json` under the repository's `swagger/` directory and decides what each
+controller is from its HTTP verbs and model shapes, not from path text or model names. Records it creates are
+deleted afterwards unless `--keep` is given (with `--keep`, one extra record per DELETE endpoint is still
+deleted to confirm DELETE works).
+
+It needs PyYAML, a running supporting stack, and the `api` service:
+
+```bash
+./scripts/start-supporting-services.sh
+docker compose up -d --build api
+./scripts/test/test-crud-controllers.py
+```
+
+Useful options:
+
+* `--classify-only`: print each controller's detected shape without calling the API.
+* `--only <Controller>`: limit the run to one controller (repeatable).
+* `--keep`: keep created records.
+* `-v`: print every request and response.
+* `--no-color`: disable coloured output. Colour is also off when `NO_COLOR` is set to any non-empty value or
+  when output is not a terminal.
+* `--config-dir`, `--config`, `--compose-file`, `--swagger-dir`: point one copy of the script at another
+  repository. Environment variables `CRUD_TEST_CONFIG_DIR`, `CRUD_TEST_CONFIG`, `CRUD_TEST_COMPOSE_FILE`, and
+  `CRUD_TEST_SWAGGER_DIR` do the same.
+
+`crud-test.yaml` in this directory configures ignored controllers, parent links that cannot be detected from
+field names, sample values for fields with content rules the OpenAPI document cannot express, and Keycloak
+overrides. The script signs in as `test-admin` and reads the realm, client, and password from the realm import
+file mounted into the `keycloak` service.
+
+Exit codes: `0` passed (or no basic CRUD controllers found, with a warning), `1` a controller test failed,
+`2` setup problem or no controllers to consider, `3` the API or Keycloak port is not open.

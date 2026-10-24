@@ -2,13 +2,13 @@
 """Fetch a JWT access token from the local Keycloak realm (stdlib only).
 
 Examples:
-  ./get-bearer-token.py
-  ./get-bearer-token.py --print-header
-  ./get-bearer-token.py --grant client_credentials
-  ./get-bearer-token.py --username testuser --password testpass
-  ./get-bearer-token.py --developer
-  ./get-bearer-token.py --analyst
-  ./get-bearer-token.py --billing
+  ./scripts/get-bearer-token.py            # test-admin (default)
+  ./scripts/get-bearer-token.py --print-header
+  ./scripts/get-bearer-token.py --grant client_credentials
+  ./scripts/get-bearer-token.py --username analystuser --password analystpass
+  ./scripts/get-bearer-token.py --developer
+  ./scripts/get-bearer-token.py --analyst
+  ./scripts/get-bearer-token.py --billing
 """
 
 from __future__ import annotations
@@ -20,12 +20,12 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-DEFAULT_TOKEN_URL = "http://localhost:9080/realms/example/protocol/openid-connect/token"
+DEFAULT_TOKEN_URL = "http://localhost:9080/realms/test/protocol/openid-connect/token"
 DEFAULT_CLIENT_ID = "example-api"
 DEFAULT_SERVICE_CLIENT_ID = "example-service"
 DEFAULT_SERVICE_CLIENT_SECRET = "example-service-secret"
-DEFAULT_USERNAME = "testuser"
-DEFAULT_PASSWORD = "testpass"
+DEFAULT_USERNAME = "test-admin"
+DEFAULT_PASSWORD = "test-admin-pass"
 
 SEEDED_USERS = {
     "developer": ("developeruser", "developerpass"),
@@ -61,7 +61,10 @@ def request_token(token_url: str, form: dict[str, str]) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Obtain a bearer access token from local Keycloak."
+        description=(
+            "Obtain a bearer access token from local Keycloak. Without a role flag or "
+            f"--username, the password grant uses the default admin user {DEFAULT_USERNAME!r}."
+        )
     )
     parser.add_argument(
         "--token-url",
@@ -84,8 +87,16 @@ def main() -> int:
         default=DEFAULT_SERVICE_CLIENT_SECRET,
         help="Client secret for client_credentials grant",
     )
-    parser.add_argument("--username", default=None)
-    parser.add_argument("--password", default=None)
+    parser.add_argument(
+        "--username",
+        default=None,
+        help=f"Username for the password grant (default: {DEFAULT_USERNAME!r})",
+    )
+    parser.add_argument(
+        "--password",
+        default=None,
+        help=f"Password for the password grant (default: {DEFAULT_PASSWORD!r})",
+    )
     parser.add_argument(
         "--developer",
         action="store_true",

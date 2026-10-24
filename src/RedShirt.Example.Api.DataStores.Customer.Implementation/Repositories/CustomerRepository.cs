@@ -162,7 +162,9 @@ internal sealed class CustomerRepository(
         {
             var checkpoint = continuationParameters.LastUpdatedAtUtc;
             var lastId = continuationParameters.LastId;
-            predicate.And(c => c.UpdatedAtUtc <= checkpoint && c.Id != lastId);
+            // Keyset continuation on (UpdatedAtUtc, Id), matching the DESC ordering below.
+            predicate.And(c => c.UpdatedAtUtc < checkpoint
+                               || (c.UpdatedAtUtc == checkpoint && c.Id.CompareTo(lastId) < 0));
         }
 
         var pageSize = parameters.PageSize;

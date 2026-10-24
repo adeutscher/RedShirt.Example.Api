@@ -168,7 +168,9 @@ internal sealed class MariaDbProductRepository(
 
         var orderBys = continuationParameters?.OrderBys ??
         [
-            $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.UpdatedAtUtc))} DESC"
+            $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.UpdatedAtUtc))} DESC",
+            // The key breaks ties between records updated at the same instant, so pages have a total order.
+            $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Id))} DESC"
         ];
 
         var queryBuilder = new SqlBuilder();
@@ -181,8 +183,9 @@ internal sealed class MariaDbProductRepository(
 
         if (continuationParameters is not null)
         {
+            // Keyset continuation on (UpdatedAtUtc, Id): strictly after the last record in the DESC order.
             queryBuilder = queryBuilder.Where(
-                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.UpdatedAtUtc))} <= @checkpoint AND {DatabaseUtility.QuoteResource(nameof(ProductEntity.Id))} != @id",
+                $"({DatabaseUtility.QuoteResource(nameof(ProductEntity.UpdatedAtUtc))} < @checkpoint OR ({DatabaseUtility.QuoteResource(nameof(ProductEntity.UpdatedAtUtc))} = @checkpoint AND {DatabaseUtility.QuoteResource(nameof(ProductEntity.Id))} < @id))",
                 new
                 {
                     checkpoint = continuationParameters.LastUpdatedAtUtc,

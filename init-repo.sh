@@ -3,13 +3,22 @@
 # Initialise this template repository as a new module.
 # This is destructive: files are edited and renamed in place.
 #
+# The current namespace is read from the solution file at the repository root,
+# so the script can be run again to move an initialised repository to another namespace.
+#
 # Usage: ./init-repo.sh New.Namespace
 
-NAMESPACE_OLD="RedShirt.Example.Api"
+cd "$(dirname "${0}")" || exit 1
+
 NAMESPACE_NEW="${1}"
 
 namespace_to_docker_image_name() {
   tr '[:upper:]' '[:lower:]' <<< "${1}" | tr '.' '-'
+}
+
+# Escape a literal string for use in a sed regular expression.
+sed_escape_pattern() {
+  sed 's/[][\.*^$/]/\\&/g' <<< "${1}"
 }
 
 rename_project() {
@@ -21,11 +30,13 @@ rename_project() {
   csproj="${1}/${name}.csproj"
 
   local nameNew
-  nameNew="$(sed "s/${NAMESPACE_OLD}/${NAMESPACE_NEW}/g" <<< "${name}")"
+  nameNew="${NAMESPACE_NEW}${name#"${NAMESPACE_OLD}"}"
   local csprojNew
   csprojNew="${1}/${nameNew}.csproj"
 
-  mv "${csproj}" "${csprojNew}"
+  if [ -f "${csproj}" ]; then
+    mv "${csproj}" "${csprojNew}"
+  fi
   mv "${1}" "${directory}/${nameNew}"
 }
 
@@ -40,6 +51,15 @@ if ! [[ "${NAMESPACE_NEW}" =~ ^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+
   exit 1
 fi
 
+shopt -s nullglob
+SOLUTIONS=(*.slnx)
+shopt -u nullglob
+if [ "${#SOLUTIONS[@]}" -ne 1 ]; then
+  echo "Expected exactly one .slnx file in $(pwd) to detect the current namespace, found ${#SOLUTIONS[@]}."
+  exit 1
+fi
+NAMESPACE_OLD="${SOLUTIONS[0]%.slnx}"
+
 if [ "${NAMESPACE_NEW}" = "${NAMESPACE_OLD}" ]; then
   echo "New namespace must differ from ${NAMESPACE_OLD}."
   exit 1
@@ -48,22 +68,30 @@ fi
 IMAGE_NAME_OLD="$(namespace_to_docker_image_name "${NAMESPACE_OLD}")"
 IMAGE_NAME_NEW="$(namespace_to_docker_image_name "${NAMESPACE_NEW}")"
 
+# Match whole names only, so that Foo.Bar does not also rewrite Foo.Barn or Foo.Bar_X.
+NAMESPACE_OLD_PATTERN="\\b$(sed_escape_pattern "${NAMESPACE_OLD}")\\b"
+IMAGE_NAME_OLD_PATTERN="\\b$(sed_escape_pattern "${IMAGE_NAME_OLD}")\\b"
+
 echo "Renaming namespace ${NAMESPACE_OLD} -> ${NAMESPACE_NEW}"
 echo "Renaming default Docker image ${IMAGE_NAME_OLD} -> ${IMAGE_NAME_NEW}"
 
+# Paths that never hold template sources: VCS metadata, build output, local container data, and this script.
+PRUNE=(\( -path './.git' -o -name 'bin' -o -name 'obj' -o -path './test/local/data' -o -path './init-repo.sh' \) -prune -o)
+
 while read -r f; do
+  [ -z "${f}" ] && continue
   rename_project "${f}"
-done <<< "$(find . -type d -name "${NAMESPACE_OLD}*")"
+done <<< "$(find . "${PRUNE[@]}" -type d \( -name "${NAMESPACE_OLD}" -o -name "${NAMESPACE_OLD}.*" \) -print)"
 
 mv "${NAMESPACE_OLD}.slnx" "${NAMESPACE_NEW}.slnx"
 
 while read -r f; do
   [ -z "${f}" ] && continue
   sed -i \
-    -e "s/${NAMESPACE_OLD}/${NAMESPACE_NEW}/g" \
-    -e "s/${IMAGE_NAME_OLD}/${IMAGE_NAME_NEW}/g" \
+    -e "s/${NAMESPACE_OLD_PATTERN}/${NAMESPACE_NEW}/g" \
+    -e "s/${IMAGE_NAME_OLD_PATTERN}/${IMAGE_NAME_NEW}/g" \
     "${f}"
-done <<< "$(find . \( \
+done <<< "$(find . "${PRUNE[@]}" -type f \( \
   -name '*.cs' -o \
   -name '*.csproj' -o \
   -name '*.md' -o \
@@ -74,4 +102,4 @@ done <<< "$(find . \( \
   -name 'nswag.json' -o \
   -path './test/local/docker-compose.yaml' -o \
   \( -path './.github/*' -a \( -name '*.yml' -o -name '*.yaml' \) \) \
-\))"
+\) -print)"

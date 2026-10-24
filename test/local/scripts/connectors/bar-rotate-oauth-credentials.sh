@@ -14,7 +14,7 @@ set -euo pipefail
 #
 # Pair with ./bar-set-ssm-oauth-secret.sh (SSM only → token 401) then this script (SSM + WireMock → recovery).
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WIREMOCK_URL="${WIREMOCK_URL:-http://localhost:9101}"
 SSM_PARAM_NAME="${BAR_CLIENT_SECRET_SSM_PATH:-/bar/oauth/client-secret}"
 NEW_SECRET="${1:-rotated-bar-client-secret-$(date +%s)}"

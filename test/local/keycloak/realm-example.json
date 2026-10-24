@@ -1,5 +1,5 @@
 {
-  "realm": "example",
+  "realm": "test",
   "enabled": true,
   "sslRequired": "none",
   "registrationAllowed": false,
@@ -49,16 +49,16 @@
   },
   "users": [
     {
-      "username": "testuser",
+      "username": "test-admin",
       "enabled": true,
       "emailVerified": true,
       "firstName": "Test",
-      "lastName": "User",
-      "email": "testuser@example.local",
+      "lastName": "Admin",
+      "email": "test-admin@example.local",
       "credentials": [
         {
           "type": "password",
-          "value": "testpass",
+          "value": "test-admin-pass",
           "temporary": false
         }
       ],

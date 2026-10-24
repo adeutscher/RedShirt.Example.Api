@@ -12,7 +12,7 @@ API_BASE_URL_ENV = "API_BASE_URL"
 ENV_HELP_EPILOG = f"""\
 environment variables:
   {API_JWT_TOKEN_ENV}    Bearer access token (required). Populate from get-bearer-token.py, e.g.:
-                         export {API_JWT_TOKEN_ENV}="$(./test/local/get-bearer-token.py)"
+                         export {API_JWT_TOKEN_ENV}="$(./test/local/scripts/get-bearer-token.py)"
   {API_BASE_URL_ENV}    API base URL (default: {DEFAULT_API_BASE})
 """
 
@@ -30,7 +30,7 @@ def require_api_jwt_token() -> str:
     if not token:
         raise SystemExit(
             f"Set {API_JWT_TOKEN_ENV} to a bearer access token "
-            f'(see --help; e.g. export {API_JWT_TOKEN_ENV}="$(./test/local/get-bearer-token.py)").'
+            f'(see --help; e.g. export {API_JWT_TOKEN_ENV}="$(./test/local/scripts/get-bearer-token.py)").'
         )
     return token
 
