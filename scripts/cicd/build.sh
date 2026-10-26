@@ -30,8 +30,9 @@
 #   * dotnet-coverage, as "dotnet coverage", on PATH, or in ~/.dotnet/tools.
 #     To install: dotnet tool install --global dotnet-coverage
 #   * bash, find, sort, awk, and sha256sum or shasum.
-#   * In containers, a /dev/shm larger than Docker's 64 MB default. Code coverage
-#     uses shared memory, and running out crashes test apps with exit code 135.
+#   * /proc/sys/kernel/random/uuid or uuidgen, for the coverage session ID.
+#   * TMPDIR left unset. dotnet-coverage writes its data files to /tmp regardless, and
+#     with TMPDIR pointing elsewhere the coverage report comes out empty.
 #
 # Settings (environment variables):
 #   * SLN_FILE: solution to build. Default: the single .sln or .slnx in the root.
@@ -141,7 +142,10 @@ for tool_sln in "${tool_solutions[@]}"; do
 done
 
 mkdir -p artifacts/ci
-test_inner="dotnet test $sln --no-build --configuration $configuration --report-xunit-xml --results-directory artifacts/ci"
+# Run test apps one at a time. Test apps starting in parallel under one dotnet-coverage session
+# race in the coverage profiler and crash with SIGBUS (exit 135), usually hidden by a restart.
+# Workaround for https://github.com/microsoft/codecoverage/issues/253. Remove once that is fixed.
+test_inner="dotnet test $sln --no-build --configuration $configuration --max-parallel-test-modules 1 --report-xunit-xml --results-directory artifacts/ci"
 
 echo "==> $test_inner"
 coverage_cmd=""
@@ -156,6 +160,19 @@ else
   exit 1
 fi
 
-$coverage_cmd collect "$test_inner" -f xml -o artifacts/ci/coverage.cobertura.xml
+# dotnet-coverage leaves CodeCoverage.<session-id>.* files in /tmp. Use a known session ID so
+# this run's files can be removed. Clean up on any exit, including test failures and crashes.
+if [[ -r /proc/sys/kernel/random/uuid ]]; then
+  coverage_session="$(cat /proc/sys/kernel/random/uuid)"
+else
+  coverage_session="$(uuidgen | tr '[:upper:]' '[:lower:]')"
+fi
+
+cleanup_coverage_tmp() {
+  find /tmp -maxdepth 1 -name "CodeCoverage.${coverage_session}.*" -delete 2>/dev/null || true
+}
+trap cleanup_coverage_tmp EXIT
+
+$coverage_cmd collect --session-id "$coverage_session" "$test_inner" -f xml -o artifacts/ci/coverage.cobertura.xml
 
 echo "==> build clean"
