@@ -142,7 +142,10 @@ for tool_sln in "${tool_solutions[@]}"; do
 done
 
 mkdir -p artifacts/ci
-test_inner="dotnet test $sln --no-build --configuration $configuration --report-xunit-xml --results-directory artifacts/ci"
+# Run test apps one at a time. Test apps starting in parallel under one dotnet-coverage session
+# race in the coverage profiler and crash with SIGBUS (exit 135), usually hidden by a restart.
+# Workaround for https://github.com/microsoft/codecoverage/issues/253. Remove once that is fixed.
+test_inner="dotnet test $sln --no-build --configuration $configuration --max-parallel-test-modules 1 --report-xunit-xml --results-directory artifacts/ci"
 
 echo "==> $test_inner"
 coverage_cmd=""
