@@ -2,6 +2,7 @@ using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Core.Models;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Clients;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 
 namespace RedShirt.Example.Api.Connectors.Foo.Implementation.UnitTests.Tests.Clients;
@@ -88,6 +89,62 @@ public class FooApiClientTests
             client.GetFooByIdAsync(1, TestContext.Current.CancellationToken));
 
         Assert.Equal(HttpStatusCode.InternalServerError, ex.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateFooAsync_ThrowsUnhandledThrottledConnectorException_On429()
+    {
+        var handler = new StubHandler(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+            response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(7));
+            return response;
+        });
+        var client = CreateClient(handler);
+
+        var ex = await Assert.ThrowsAsync<FooConnectorException>(() =>
+            client.CreateFooAsync(
+                new CreateFooConnectorRequest {Name = "widget"},
+                TestContext.Current.CancellationToken));
+
+        Assert.False(ex.IsHandled);
+        Assert.True(ex.CouldBeTransient);
+        Assert.True(ex.IsThrottled);
+        Assert.Equal(TimeSpan.FromSeconds(7), ex.RetryAfter);
+        Assert.Equal(HttpStatusCode.TooManyRequests, Assert.IsType<HttpRequestException>(ex.InnerException).StatusCode);
+    }
+
+    [Fact]
+    public async Task GetFooByIdAsync_ThrowsUnhandledConnectorException_On503WithoutHint()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
+        var client = CreateClient(handler);
+
+        var ex = await Assert.ThrowsAsync<FooConnectorException>(() =>
+            client.GetFooByIdAsync(1, TestContext.Current.CancellationToken));
+
+        Assert.False(ex.IsHandled);
+        Assert.True(ex.CouldBeTransient);
+        Assert.False(ex.IsThrottled);
+        Assert.Null(ex.RetryAfter);
+    }
+
+    [Fact]
+    public async Task GetFooByIdAsync_ReadsDateHint_On503()
+    {
+        var handler = new StubHandler(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+            response.Headers.RetryAfter = new RetryConditionHeaderValue(DateTimeOffset.UtcNow.AddMinutes(5));
+            return response;
+        });
+        var client = CreateClient(handler);
+
+        var ex = await Assert.ThrowsAsync<FooConnectorException>(() =>
+            client.GetFooByIdAsync(1, TestContext.Current.CancellationToken));
+
+        Assert.NotNull(ex.RetryAfter);
+        Assert.InRange(ex.RetryAfter.Value, TimeSpan.FromMinutes(4), TimeSpan.FromMinutes(5));
     }
 
     private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
