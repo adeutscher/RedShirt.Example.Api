@@ -81,7 +81,7 @@ public class BespokeRolePermissionClaimsTransformationTests
             BespokeAuthorizationPermissions.ProductWrite,
             BespokeAuthorizationPermissions.UploadPurge,
             BespokeAuthorizationPermissions.UploadRead,
-            BespokeAuthorizationPermissions.UploadWrite,
+            BespokeAuthorizationPermissions.UploadWrite
             // scaffold:test-claims-full-access-permissions
         ];
         Assert.Equal(expected.Order(StringComparer.Ordinal), permissions.Order(StringComparer.Ordinal));

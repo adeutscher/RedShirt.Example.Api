@@ -25,6 +25,29 @@ internal interface IBarApiClient
 /// </summary>
 internal sealed class BarApiClient(HttpClient httpClient, string baseUrl) : IBarApiClient
 {
+    private static Exception CreateFailureException(HttpResponseMessage response)
+    {
+        var exception = new HttpRequestException(
+            $"Response status code does not indicate success: {(int) response.StatusCode} ({response.StatusCode}).",
+            null,
+            response.StatusCode);
+
+        if (response.StatusCode is not (HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable))
+        {
+            return exception;
+        }
+
+        // Not yet handled, so the connector retry wrapper still retries it and can honour the hint.
+        return new BarConnectorException(exception)
+        {
+            IsHandled = false,
+            CouldBeTransient = true,
+            CouldBeExternallySolvable = true,
+            IsThrottled = response.StatusCode == HttpStatusCode.TooManyRequests,
+            RetryAfter = response.GetRetryAfter(DateTimeOffset.UtcNow)
+        };
+    }
+
     public async Task<CreateBarConnectorResponse> CreateBarAsync(CreateBarConnectorRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -84,29 +107,6 @@ internal sealed class BarApiClient(HttpClient httpClient, string baseUrl) : IBar
         {
             Id = responseObject.Id,
             Name = responseObject.Name
-        };
-    }
-
-    private static Exception CreateFailureException(HttpResponseMessage response)
-    {
-        var exception = new HttpRequestException(
-            $"Response status code does not indicate success: {(int) response.StatusCode} ({response.StatusCode}).",
-            null,
-            response.StatusCode);
-
-        if (response.StatusCode is not (HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable))
-        {
-            return exception;
-        }
-
-        // Not yet handled, so the connector retry wrapper still retries it and can honour the hint.
-        return new BarConnectorException(exception)
-        {
-            IsHandled = false,
-            CouldBeTransient = true,
-            CouldBeExternallySolvable = true,
-            IsThrottled = response.StatusCode == HttpStatusCode.TooManyRequests,
-            RetryAfter = response.GetRetryAfter(DateTimeOffset.UtcNow)
         };
     }
 }

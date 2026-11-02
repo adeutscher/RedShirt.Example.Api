@@ -51,6 +51,29 @@ public class BarApiClientTests
     }
 
     [Fact]
+    public async Task CreateBarAsync_ThrowsUnhandledThrottledConnectorException_On429()
+    {
+        var handler = new StubHandler(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+            response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(7));
+            return response;
+        });
+        var client = CreateClient(handler);
+
+        var ex = await Assert.ThrowsAsync<BarConnectorException>(() =>
+            client.CreateBarAsync(
+                new CreateBarConnectorRequest {Name = "widget"},
+                TestContext.Current.CancellationToken));
+
+        Assert.False(ex.IsHandled);
+        Assert.True(ex.CouldBeTransient);
+        Assert.True(ex.IsThrottled);
+        Assert.Equal(TimeSpan.FromSeconds(7), ex.RetryAfter);
+        Assert.Equal(HttpStatusCode.TooManyRequests, Assert.IsType<HttpRequestException>(ex.InnerException).StatusCode);
+    }
+
+    [Fact]
     public async Task GetBarByIdAsync_GetsJson_AndMapsResponse()
     {
         var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
@@ -65,6 +88,24 @@ public class BarApiClientTests
         Assert.Equal("Bar-5", result.Name);
         Assert.Equal(HttpMethod.Get, handler.LastRequest!.Method);
         Assert.Equal("http://bar.test/api/bar/5", handler.LastRequest.RequestUri!.ToString());
+    }
+
+    [Fact]
+    public async Task GetBarByIdAsync_ReadsDateHint_On503()
+    {
+        var handler = new StubHandler(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+            response.Headers.RetryAfter = new RetryConditionHeaderValue(DateTimeOffset.UtcNow.AddMinutes(5));
+            return response;
+        });
+        var client = CreateClient(handler);
+
+        var ex = await Assert.ThrowsAsync<BarConnectorException>(() =>
+            client.GetBarByIdAsync(1, TestContext.Current.CancellationToken));
+
+        Assert.NotNull(ex.RetryAfter);
+        Assert.InRange(ex.RetryAfter.Value, TimeSpan.FromMinutes(4), TimeSpan.FromMinutes(5));
     }
 
     [Fact]
@@ -92,29 +133,6 @@ public class BarApiClientTests
     }
 
     [Fact]
-    public async Task CreateBarAsync_ThrowsUnhandledThrottledConnectorException_On429()
-    {
-        var handler = new StubHandler(_ =>
-        {
-            var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
-            response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(7));
-            return response;
-        });
-        var client = CreateClient(handler);
-
-        var ex = await Assert.ThrowsAsync<BarConnectorException>(() =>
-            client.CreateBarAsync(
-                new CreateBarConnectorRequest {Name = "widget"},
-                TestContext.Current.CancellationToken));
-
-        Assert.False(ex.IsHandled);
-        Assert.True(ex.CouldBeTransient);
-        Assert.True(ex.IsThrottled);
-        Assert.Equal(TimeSpan.FromSeconds(7), ex.RetryAfter);
-        Assert.Equal(HttpStatusCode.TooManyRequests, Assert.IsType<HttpRequestException>(ex.InnerException).StatusCode);
-    }
-
-    [Fact]
     public async Task GetBarByIdAsync_ThrowsUnhandledConnectorException_On503WithoutHint()
     {
         var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
@@ -127,24 +145,6 @@ public class BarApiClientTests
         Assert.True(ex.CouldBeTransient);
         Assert.False(ex.IsThrottled);
         Assert.Null(ex.RetryAfter);
-    }
-
-    [Fact]
-    public async Task GetBarByIdAsync_ReadsDateHint_On503()
-    {
-        var handler = new StubHandler(_ =>
-        {
-            var response = new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
-            response.Headers.RetryAfter = new RetryConditionHeaderValue(DateTimeOffset.UtcNow.AddMinutes(5));
-            return response;
-        });
-        var client = CreateClient(handler);
-
-        var ex = await Assert.ThrowsAsync<BarConnectorException>(() =>
-            client.GetBarByIdAsync(1, TestContext.Current.CancellationToken));
-
-        Assert.NotNull(ex.RetryAfter);
-        Assert.InRange(ex.RetryAfter.Value, TimeSpan.FromMinutes(4), TimeSpan.FromMinutes(5));
     }
 
     private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

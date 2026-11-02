@@ -47,13 +47,13 @@ Repo features in more detail:
       rotation on both connectors is throttled by a refresh cooldown parameter preventing bad credentials in the secret
       manager from being continually polled.
     * Both connectors honour retry hints: When the dependency throttles a call (HTTP 429) or is unavailable (HTTP 503)
-      and names a wait, the connector waits exactly that long before retrying. Other transient failures use
-      exponential backoff with jitter. A failure that outlasts the retries is thrown as `BarConnectorException` or
+      and names a wait, the connector waits exactly that long before retrying. Other transient failures use exponential
+      backoff with jitter. A failure that outlasts the retries is thrown as `BarConnectorException` or
       `FooConnectorException` with `IsThrottled` and `RetryAfter` set, so callers can back off themselves.
     * Retry settings per connector (`Connectors__Bar__*` or `Connectors__Foo__*`):
         * `RetryCount` (default 3): Retries per call, shared by every transient failure.
-        * `MaxRetryAfterSeconds` (default 30): Longest hint waited out. A longer hint fails the call at once. 0 or
-          less accepts any hint.
+        * `MaxRetryAfterSeconds` (default 30): Longest hint waited out. A longer hint fails the call at once. 0 or less
+          accepts any hint.
         * `RetryThrottledPerpetually` (default false): Keep retrying a throttled call with a hint without using up
           `RetryCount`. Only the caller's cancellation token ends it.
 * Configuration is based on environment variables.

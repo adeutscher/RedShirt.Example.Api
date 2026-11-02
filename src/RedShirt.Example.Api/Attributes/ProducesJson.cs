@@ -12,7 +12,7 @@ public class ProducesJsonAttribute() : ProducesAttribute("application/json")
 {
     public override void OnResultExecuting(ResultExecutingContext context)
     {
-        if (context.Result is ObjectResult { Value: ProblemDetails })
+        if (context.Result is ObjectResult {Value: ProblemDetails})
         {
             return;
         }

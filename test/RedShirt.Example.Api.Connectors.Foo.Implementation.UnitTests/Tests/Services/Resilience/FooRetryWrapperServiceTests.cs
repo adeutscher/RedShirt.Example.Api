@@ -61,6 +61,65 @@ public class FooRetryWrapperServiceTests
     }
 
     [Fact]
+    public async Task RunAsync_AcceptsAnyRetryAfter_WhenCapIsZero()
+    {
+        var delays = new List<TimeSpan>();
+        var attempts = 0;
+        var sut = CreateSut(sleep: CreateRecordingSleep(delays).Object, maxRetryAfterSeconds: 0);
+
+        await sut.RunAsync(_ =>
+        {
+            if (++attempts < 2)
+            {
+                throw CreateHinted(HttpStatusCode.TooManyRequests, TimeSpan.FromHours(1));
+            }
+
+            return Task.FromResult(true);
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Equal([TimeSpan.FromHours(1)], delays);
+    }
+
+    [Fact]
+    public async Task RunAsync_BacksOffWithJitter_WhenNoHint()
+    {
+        var delays = new List<TimeSpan>();
+        var attempts = 0;
+        var sut = CreateSut(sleep: CreateRecordingSleep(delays).Object);
+
+        await sut.RunAsync(_ =>
+        {
+            if (++attempts < 3)
+            {
+                throw new HttpRequestException("unavailable", null, HttpStatusCode.ServiceUnavailable);
+            }
+
+            return Task.FromResult(true);
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, delays.Count);
+        Assert.InRange(delays[0], TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1.2));
+        Assert.InRange(delays[1], TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2.4));
+    }
+
+    [Fact]
+    public async Task RunAsync_DoesNotRewrap_HandledFooConnectorException()
+    {
+        var original = new FooConnectorException("done")
+        {
+            IsHandled = true,
+            CouldBeTransient = true,
+            CouldBeExternallySolvable = true
+        };
+        var sut = CreateSut();
+
+        var thrown = await Assert.ThrowsAsync<FooConnectorException>(() =>
+            sut.RunAsync<int>(_ => throw original, TestContext.Current.CancellationToken));
+
+        Assert.Same(original, thrown);
+    }
+
+    [Fact]
     public async Task RunAsync_DoesNotWrap_UnexpectedExceptions()
     {
         var sut = CreateSut();
@@ -80,6 +139,35 @@ public class FooRetryWrapperServiceTests
                 TestContext.Current.CancellationToken));
 
         Assert.Equal(5, ex.Id);
+    }
+
+    [Fact]
+    public async Task RunAsync_PerpetualThrottling_EndsOnCallerCancellation()
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var attempts = 0;
+        var sleep = new Mock<ISleepService>(MockBehavior.Strict);
+        sleep
+            .Setup(s => s.DelayAsync(It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+            .Returns<TimeSpan, CancellationToken>((_, token) =>
+            {
+                if (attempts == 5)
+                {
+                    cts.Cancel();
+                }
+
+                return token.IsCancellationRequested ? Task.FromCanceled(token) : Task.CompletedTask;
+            });
+        var sut = CreateSut(sleep: sleep.Object, retryCount: 1, retryThrottledPerpetually: true);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            sut.RunAsync<int>(_ =>
+            {
+                attempts++;
+                throw CreateHinted(HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(1));
+            }, cts.Token));
+
+        Assert.Equal(5, attempts);
     }
 
     [Fact]
@@ -117,6 +205,112 @@ public class FooRetryWrapperServiceTests
         var result = await sut.RunAsync(_ => Task.FromResult(42), TestContext.Current.CancellationToken);
 
         Assert.Equal(42, result);
+    }
+
+    [Fact]
+    public async Task RunAsync_StopsAtOnce_WhenRetryAfterExceedsCap()
+    {
+        var delays = new List<TimeSpan>();
+        var attempts = 0;
+        var sut = CreateSut(sleep: CreateRecordingSleep(delays).Object);
+
+        var wrapped = await Assert.ThrowsAsync<FooConnectorException>(() =>
+            sut.RunAsync<int>(_ =>
+            {
+                attempts++;
+                throw CreateHinted(HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(60));
+            }, TestContext.Current.CancellationToken));
+
+        Assert.Equal(1, attempts);
+        Assert.Empty(delays);
+        Assert.True(wrapped.IsHandled);
+        Assert.True(wrapped.IsThrottled);
+        Assert.Equal(TimeSpan.FromSeconds(60), wrapped.RetryAfter);
+        Assert.IsType<HttpRequestException>(wrapped.InnerException);
+    }
+
+    [Fact]
+    public async Task RunAsync_ThrottledRetriesPastBudget_WhenPerpetual()
+    {
+        var delays = new List<TimeSpan>();
+        var attempts = 0;
+        var sut = CreateSut(sleep: CreateRecordingSleep(delays).Object, retryCount: 1,
+            retryThrottledPerpetually: true);
+
+        var result = await sut.RunAsync(_ =>
+        {
+            if (++attempts <= 10)
+            {
+                throw CreateHinted(HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(1));
+            }
+
+            return Task.FromResult("ok");
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Equal("ok", result);
+        Assert.Equal(11, attempts);
+        Assert.Equal(10, delays.Count);
+    }
+
+    [Fact]
+    public async Task RunAsync_ThrottledUsesRetryBudget_ByDefault()
+    {
+        var delays = new List<TimeSpan>();
+        var attempts = 0;
+        var sut = CreateSut(sleep: CreateRecordingSleep(delays).Object, retryCount: 2);
+
+        var wrapped = await Assert.ThrowsAsync<FooConnectorException>(() =>
+            sut.RunAsync<int>(_ =>
+            {
+                attempts++;
+                throw CreateHinted(HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(1));
+            }, TestContext.Current.CancellationToken));
+
+        Assert.Equal(3, attempts);
+        Assert.Equal(2, delays.Count);
+        Assert.True(wrapped.IsHandled);
+        Assert.True(wrapped.CouldBeTransient);
+        Assert.True(wrapped.IsThrottled);
+        Assert.Equal(TimeSpan.FromSeconds(1), wrapped.RetryAfter);
+    }
+
+    [Fact]
+    public async Task RunAsync_UnavailableWithHint_UsesRetryBudget_EvenWhenPerpetual()
+    {
+        var attempts = 0;
+        var sut = CreateSut(sleep: CreateRecordingSleep([]).Object, retryCount: 1, retryThrottledPerpetually: true);
+
+        var wrapped = await Assert.ThrowsAsync<FooConnectorException>(() =>
+            sut.RunAsync<int>(_ =>
+            {
+                attempts++;
+                throw CreateHinted(HttpStatusCode.ServiceUnavailable, TimeSpan.FromSeconds(1));
+            }, TestContext.Current.CancellationToken));
+
+        Assert.Equal(2, attempts);
+        Assert.True(wrapped.IsHandled);
+        Assert.False(wrapped.IsThrottled);
+    }
+
+    [Fact]
+    public async Task RunAsync_WaitsExactlyRetryAfter_ThenSucceeds()
+    {
+        var delays = new List<TimeSpan>();
+        var attempts = 0;
+        var sut = CreateSut(sleep: CreateRecordingSleep(delays).Object);
+
+        var result = await sut.RunAsync(_ =>
+        {
+            if (++attempts < 2)
+            {
+                throw CreateHinted(HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(5));
+            }
+
+            return Task.FromResult("ok");
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Equal("ok", result);
+        Assert.Equal([TimeSpan.FromSeconds(5)], delays);
     }
 
     [Fact]
@@ -163,199 +357,5 @@ public class FooRetryWrapperServiceTests
         Assert.False(wrapped.CouldBeTransient);
         Assert.True(wrapped.CouldBeExternallySolvable);
         Assert.IsType<FooUnavailableException>(wrapped.InnerException);
-    }
-
-    [Fact]
-    public async Task RunAsync_BacksOffWithJitter_WhenNoHint()
-    {
-        var delays = new List<TimeSpan>();
-        var attempts = 0;
-        var sut = CreateSut(sleep: CreateRecordingSleep(delays).Object);
-
-        await sut.RunAsync(_ =>
-        {
-            if (++attempts < 3)
-            {
-                throw new HttpRequestException("unavailable", null, HttpStatusCode.ServiceUnavailable);
-            }
-
-            return Task.FromResult(true);
-        }, TestContext.Current.CancellationToken);
-
-        Assert.Equal(2, delays.Count);
-        Assert.InRange(delays[0], TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1.2));
-        Assert.InRange(delays[1], TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(2.4));
-    }
-
-    [Fact]
-    public async Task RunAsync_WaitsExactlyRetryAfter_ThenSucceeds()
-    {
-        var delays = new List<TimeSpan>();
-        var attempts = 0;
-        var sut = CreateSut(sleep: CreateRecordingSleep(delays).Object);
-
-        var result = await sut.RunAsync(_ =>
-        {
-            if (++attempts < 2)
-            {
-                throw CreateHinted(HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(5));
-            }
-
-            return Task.FromResult("ok");
-        }, TestContext.Current.CancellationToken);
-
-        Assert.Equal("ok", result);
-        Assert.Equal([TimeSpan.FromSeconds(5)], delays);
-    }
-
-    [Fact]
-    public async Task RunAsync_StopsAtOnce_WhenRetryAfterExceedsCap()
-    {
-        var delays = new List<TimeSpan>();
-        var attempts = 0;
-        var sut = CreateSut(sleep: CreateRecordingSleep(delays).Object);
-
-        var wrapped = await Assert.ThrowsAsync<FooConnectorException>(() =>
-            sut.RunAsync<int>(_ =>
-            {
-                attempts++;
-                throw CreateHinted(HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(60));
-            }, TestContext.Current.CancellationToken));
-
-        Assert.Equal(1, attempts);
-        Assert.Empty(delays);
-        Assert.True(wrapped.IsHandled);
-        Assert.True(wrapped.IsThrottled);
-        Assert.Equal(TimeSpan.FromSeconds(60), wrapped.RetryAfter);
-        Assert.IsType<HttpRequestException>(wrapped.InnerException);
-    }
-
-    [Fact]
-    public async Task RunAsync_AcceptsAnyRetryAfter_WhenCapIsZero()
-    {
-        var delays = new List<TimeSpan>();
-        var attempts = 0;
-        var sut = CreateSut(sleep: CreateRecordingSleep(delays).Object, maxRetryAfterSeconds: 0);
-
-        await sut.RunAsync(_ =>
-        {
-            if (++attempts < 2)
-            {
-                throw CreateHinted(HttpStatusCode.TooManyRequests, TimeSpan.FromHours(1));
-            }
-
-            return Task.FromResult(true);
-        }, TestContext.Current.CancellationToken);
-
-        Assert.Equal([TimeSpan.FromHours(1)], delays);
-    }
-
-    [Fact]
-    public async Task RunAsync_ThrottledUsesRetryBudget_ByDefault()
-    {
-        var delays = new List<TimeSpan>();
-        var attempts = 0;
-        var sut = CreateSut(sleep: CreateRecordingSleep(delays).Object, retryCount: 2);
-
-        var wrapped = await Assert.ThrowsAsync<FooConnectorException>(() =>
-            sut.RunAsync<int>(_ =>
-            {
-                attempts++;
-                throw CreateHinted(HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(1));
-            }, TestContext.Current.CancellationToken));
-
-        Assert.Equal(3, attempts);
-        Assert.Equal(2, delays.Count);
-        Assert.True(wrapped.IsHandled);
-        Assert.True(wrapped.CouldBeTransient);
-        Assert.True(wrapped.IsThrottled);
-        Assert.Equal(TimeSpan.FromSeconds(1), wrapped.RetryAfter);
-    }
-
-    [Fact]
-    public async Task RunAsync_UnavailableWithHint_UsesRetryBudget_EvenWhenPerpetual()
-    {
-        var attempts = 0;
-        var sut = CreateSut(sleep: CreateRecordingSleep([]).Object, retryCount: 1, retryThrottledPerpetually: true);
-
-        var wrapped = await Assert.ThrowsAsync<FooConnectorException>(() =>
-            sut.RunAsync<int>(_ =>
-            {
-                attempts++;
-                throw CreateHinted(HttpStatusCode.ServiceUnavailable, TimeSpan.FromSeconds(1));
-            }, TestContext.Current.CancellationToken));
-
-        Assert.Equal(2, attempts);
-        Assert.True(wrapped.IsHandled);
-        Assert.False(wrapped.IsThrottled);
-    }
-
-    [Fact]
-    public async Task RunAsync_ThrottledRetriesPastBudget_WhenPerpetual()
-    {
-        var delays = new List<TimeSpan>();
-        var attempts = 0;
-        var sut = CreateSut(sleep: CreateRecordingSleep(delays).Object, retryCount: 1,
-            retryThrottledPerpetually: true);
-
-        var result = await sut.RunAsync(_ =>
-        {
-            if (++attempts <= 10)
-            {
-                throw CreateHinted(HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(1));
-            }
-
-            return Task.FromResult("ok");
-        }, TestContext.Current.CancellationToken);
-
-        Assert.Equal("ok", result);
-        Assert.Equal(11, attempts);
-        Assert.Equal(10, delays.Count);
-    }
-
-    [Fact]
-    public async Task RunAsync_PerpetualThrottling_EndsOnCallerCancellation()
-    {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
-        var attempts = 0;
-        var sleep = new Mock<ISleepService>(MockBehavior.Strict);
-        sleep
-            .Setup(s => s.DelayAsync(It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
-            .Returns<TimeSpan, CancellationToken>((_, token) =>
-            {
-                if (attempts == 5)
-                {
-                    cts.Cancel();
-                }
-
-                return token.IsCancellationRequested ? Task.FromCanceled(token) : Task.CompletedTask;
-            });
-        var sut = CreateSut(sleep: sleep.Object, retryCount: 1, retryThrottledPerpetually: true);
-
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
-            sut.RunAsync<int>(_ =>
-            {
-                attempts++;
-                throw CreateHinted(HttpStatusCode.TooManyRequests, TimeSpan.FromSeconds(1));
-            }, cts.Token));
-
-        Assert.Equal(5, attempts);
-    }
-
-    [Fact]
-    public async Task RunAsync_DoesNotRewrap_HandledFooConnectorException()
-    {
-        var original = new FooConnectorException("done")
-        {
-            IsHandled = true,
-            CouldBeTransient = true,
-            CouldBeExternallySolvable = true
-        };
-        var sut = CreateSut();
-
-        var thrown = await Assert.ThrowsAsync<FooConnectorException>(() =>
-            sut.RunAsync<int>(_ => throw original, TestContext.Current.CancellationToken));
-
-        Assert.Same(original, thrown);
     }
 }

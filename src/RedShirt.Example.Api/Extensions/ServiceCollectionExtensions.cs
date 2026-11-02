@@ -16,6 +16,7 @@ using RedShirt.Example.Api.DataStores.Order.Extensions;
 using RedShirt.Example.Api.DataStores.Product.Implementation.Extensions;
 using RedShirt.Example.Api.ExceptionHandlers;
 using RedShirt.Example.Api.Upload.Implementation.Extensions;
+
 // scaffold:data-store-usings
 
 namespace RedShirt.Example.Api.Extensions;

@@ -24,22 +24,6 @@ public class HttpResponseMessageExtensionsTests
     }
 
     [Fact]
-    public void GetRetryAfter_ReturnsTimeUntilDate_WhenHeaderIsFutureDate()
-    {
-        using var response = CreateResponse(new RetryConditionHeaderValue(Now.AddSeconds(12)));
-
-        Assert.Equal(TimeSpan.FromSeconds(12), response.GetRetryAfter(Now));
-    }
-
-    [Fact]
-    public void GetRetryAfter_ReturnsZero_WhenHeaderIsPastDate()
-    {
-        using var response = CreateResponse(new RetryConditionHeaderValue(Now.AddSeconds(-12)));
-
-        Assert.Equal(TimeSpan.Zero, response.GetRetryAfter(Now));
-    }
-
-    [Fact]
     public void GetRetryAfter_ReturnsNull_WhenHeaderIsMissing()
     {
         using var response = CreateResponse(null);
@@ -54,5 +38,21 @@ public class HttpResponseMessageExtensionsTests
         response.Headers.TryAddWithoutValidation("Retry-After", "soon");
 
         Assert.Null(response.GetRetryAfter(Now));
+    }
+
+    [Fact]
+    public void GetRetryAfter_ReturnsTimeUntilDate_WhenHeaderIsFutureDate()
+    {
+        using var response = CreateResponse(new RetryConditionHeaderValue(Now.AddSeconds(12)));
+
+        Assert.Equal(TimeSpan.FromSeconds(12), response.GetRetryAfter(Now));
+    }
+
+    [Fact]
+    public void GetRetryAfter_ReturnsZero_WhenHeaderIsPastDate()
+    {
+        using var response = CreateResponse(new RetryConditionHeaderValue(Now.AddSeconds(-12)));
+
+        Assert.Equal(TimeSpan.Zero, response.GetRetryAfter(Now));
     }
 }
