@@ -38,12 +38,13 @@ public class BarApiRequestHandlerRetryWrapperServiceTests
             }));
     }
 
-    private static OAuthTokenCacheResponse Token(string accessToken, TokenCacheState state)
+    private static OAuthTokenCacheResponse Token(string accessToken, TokenCacheState state,
+        DateTimeOffset? expiresAtUtc = null)
     {
         return new OAuthTokenCacheResponse
         {
             AccessToken = accessToken,
-            ExpiresAtUtc = DateTimeOffset.UtcNow.AddHours(1),
+            ExpiresAtUtc = expiresAtUtc ?? DateTimeOffset.UtcNow.AddHours(1),
             TokenCacheState = state
         };
     }
@@ -62,6 +63,40 @@ public class BarApiRequestHandlerRetryWrapperServiceTests
         };
 
         Assert.Equal(TimeSpan.FromSeconds(1), model.EffectiveTokenRefreshCooldown);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_DoesNotHitHandler_WithExpiredToken()
+    {
+        var cache = new Mock<IOAuthTokenCache>(MockBehavior.Strict);
+        cache
+            .SetupSequence(c => c.GetAsync(
+                It.IsAny<OAuthClientCredentialsRequest>(),
+                false,
+                false,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Token("expired-token", TokenCacheState.FreshToken, DateTimeOffset.UtcNow.AddSeconds(-1)))
+            .ReturnsAsync(Token("new-token", TokenCacheState.FreshToken));
+
+        var sut = CreateSut(cache.Object);
+        await sut.GetAccessTokenAsync(TestContext.Current.CancellationToken);
+
+        var attempts = 0;
+        var result = await sut.ExecuteAsync(async ct =>
+        {
+            attempts++;
+            var token = await sut.GetAccessTokenAsync(ct);
+            if (token == "expired-token")
+            {
+                throw new BarUnauthorizedException();
+            }
+
+            return token;
+        }, TestContext.Current.CancellationToken);
+
+        // Replaced up front, so no unauthorized round trip and no forced refresh.
+        Assert.Equal("new-token", result);
+        Assert.Equal(1, attempts);
     }
 
     [Fact]
@@ -192,5 +227,32 @@ public class BarApiRequestHandlerRetryWrapperServiceTests
         cache.Verify(
             c => c.GetAsync(It.IsAny<OAuthClientCredentialsRequest>(), false, false, It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAccessTokenAsync_ReplacesExpiredToken_WithoutForcing()
+    {
+        var cache = new Mock<IOAuthTokenCache>(MockBehavior.Strict);
+        cache
+            .SetupSequence(c => c.GetAsync(
+                It.IsAny<OAuthClientCredentialsRequest>(),
+                false,
+                false,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Token("expired-token", TokenCacheState.FreshToken, DateTimeOffset.UtcNow.AddSeconds(-1)))
+            .ReturnsAsync(Token("new-token", TokenCacheState.FreshToken));
+
+        var sut = CreateSut(cache.Object);
+
+        var first = await sut.GetAccessTokenAsync(TestContext.Current.CancellationToken);
+        var second = await sut.GetAccessTokenAsync(TestContext.Current.CancellationToken);
+        var third = await sut.GetAccessTokenAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal("expired-token", first);
+        Assert.Equal("new-token", second);
+        Assert.Equal("new-token", third);
+        cache.Verify(
+            c => c.GetAsync(It.IsAny<OAuthClientCredentialsRequest>(), false, false, It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
     }
 }

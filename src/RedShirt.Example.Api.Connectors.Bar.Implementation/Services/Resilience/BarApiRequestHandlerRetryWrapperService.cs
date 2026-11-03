@@ -21,7 +21,8 @@ internal interface IBarApiRequestHandlerRetryWrapperService
     Task<T> ExecuteAsync<T>(Func<CancellationToken, Task<T>> func, CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///     Ensures a bearer access token is loaded (from OAuth token cache or provider) and returns it.
+    ///     Ensures an unexpired bearer access token is loaded (from OAuth token cache or provider) and returns it.
+    ///     A held token past its expiry is replaced before use rather than waiting for an unauthorized response.
     /// </summary>
     Task<string> GetAccessTokenAsync(CancellationToken cancellationToken = default);
 }
@@ -65,6 +66,16 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
             ScopeLabel = configuration.ScopeLabel,
             ScopeValue = configuration.ScopeValue
         };
+    }
+
+    /// <summary>
+    ///     The held access token, or null when none is held or it has passed its expiry.
+    /// </summary>
+    private string? GetUnexpiredAccessToken()
+    {
+        return _tokenResult is { } token && token.ExpiresAtUtc > DateTimeOffset.UtcNow
+            ? token.AccessToken
+            : null;
     }
 
     private bool IsWithinTokenRefreshCooldown()
@@ -223,21 +234,22 @@ internal sealed class BarApiRequestHandlerRetryWrapperService(
 
     public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken = default)
     {
-        if (_tokenResult is not null)
+        if (GetUnexpiredAccessToken() is { } accessToken)
         {
-            return _tokenResult.AccessToken;
+            return accessToken;
         }
 
         await _tokenGate.WaitAsync(cancellationToken);
         try
         {
-            if (_tokenResult is not null) // Need to re-check after acquiring lock
+            if (GetUnexpiredAccessToken() is { } lockedAccessToken) // Need to re-check after acquiring lock
             {
-                return _tokenResult.AccessToken;
+                return lockedAccessToken;
             }
 
-            await RefreshAndGetAccessTokenAsync(false, false, cancellationToken);
-            return _tokenResult!.AccessToken;
+            // Missing or expired, so the token cache will request a new token.
+            var result = await RefreshAndGetAccessTokenAsync(false, false, cancellationToken);
+            return result.AccessToken;
         }
         finally
         {
