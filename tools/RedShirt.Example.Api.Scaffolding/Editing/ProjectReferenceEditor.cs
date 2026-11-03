@@ -11,50 +11,6 @@ internal static partial class ProjectReferenceEditor
     [GeneratedRegex("""^(?<indent>[ \t]*)<ProjectReference\s+Include="(?<include>[^"]+)"[^>]*/>[ \t]*$""")]
     private static partial Regex SingleLineReference();
 
-    public static bool HasReference(string projectPath, string referencePath)
-    {
-        return FindReferenceLine(TextFile.Read(projectPath).Text.Split('\n'), projectPath, referencePath) >= 0;
-    }
-
-    /// <summary>
-    ///     Insert a reference after the last single-line ProjectReference, matching its indentation.
-    /// </summary>
-    public static void Add(string projectPath, string referencePath)
-    {
-        var file = TextFile.Read(projectPath);
-        var lines = file.Text.Split('\n').ToList();
-        var last = lines.FindLastIndex(line => SingleLineReference().IsMatch(line));
-        if (last < 0)
-        {
-            throw new InvalidOperationException(
-                $"'{projectPath}' has no single-line <ProjectReference .../> to add a reference beside.");
-        }
-
-        var indent = SingleLineReference().Match(lines[last]).Groups["indent"].Value;
-        lines.Insert(last + 1, $"{indent}<ProjectReference Include=\"{IncludePath(projectPath, referencePath)}\"/>");
-        file.Text = string.Join('\n', lines);
-        file.Write(projectPath);
-    }
-
-    /// <summary>
-    ///     Remove the reference's line. Returns false when it is not a single-line ProjectReference.
-    /// </summary>
-    public static bool Remove(string projectPath, string referencePath)
-    {
-        var file = TextFile.Read(projectPath);
-        var lines = file.Text.Split('\n').ToList();
-        var index = FindReferenceLine(lines, projectPath, referencePath);
-        if (index < 0)
-        {
-            return false;
-        }
-
-        lines.RemoveAt(index);
-        file.Text = string.Join('\n', lines);
-        file.Write(projectPath);
-        return true;
-    }
-
     private static int FindReferenceLine(IList<string> lines, string projectPath, string referencePath)
     {
         var projectDirectory = Path.GetDirectoryName(Path.GetFullPath(projectPath))!;
@@ -81,7 +37,52 @@ internal static partial class ProjectReferenceEditor
     /// </summary>
     private static string IncludePath(string projectPath, string referencePath)
     {
-        return Path.GetRelativePath(Path.GetDirectoryName(Path.GetFullPath(projectPath))!, Path.GetFullPath(referencePath))
+        return Path.GetRelativePath(Path.GetDirectoryName(Path.GetFullPath(projectPath))!,
+                Path.GetFullPath(referencePath))
             .Replace('/', '\\');
+    }
+
+    /// <summary>
+    ///     Insert a reference after the last single-line ProjectReference, matching its indentation.
+    /// </summary>
+    public static void Add(string projectPath, string referencePath)
+    {
+        var file = TextFile.Read(projectPath);
+        var lines = file.Text.Split('\n').ToList();
+        var last = lines.FindLastIndex(line => SingleLineReference().IsMatch(line));
+        if (last < 0)
+        {
+            throw new InvalidOperationException(
+                $"'{projectPath}' has no single-line <ProjectReference .../> to add a reference beside.");
+        }
+
+        var indent = SingleLineReference().Match(lines[last]).Groups["indent"].Value;
+        lines.Insert(last + 1, $"{indent}<ProjectReference Include=\"{IncludePath(projectPath, referencePath)}\"/>");
+        file.Text = string.Join('\n', lines);
+        file.Write(projectPath);
+    }
+
+    public static bool HasReference(string projectPath, string referencePath)
+    {
+        return FindReferenceLine(TextFile.Read(projectPath).Text.Split('\n'), projectPath, referencePath) >= 0;
+    }
+
+    /// <summary>
+    ///     Remove the reference's line. Returns false when it is not a single-line ProjectReference.
+    /// </summary>
+    public static bool Remove(string projectPath, string referencePath)
+    {
+        var file = TextFile.Read(projectPath);
+        var lines = file.Text.Split('\n').ToList();
+        var index = FindReferenceLine(lines, projectPath, referencePath);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        lines.RemoveAt(index);
+        file.Text = string.Join('\n', lines);
+        file.Write(projectPath);
+        return true;
     }
 }

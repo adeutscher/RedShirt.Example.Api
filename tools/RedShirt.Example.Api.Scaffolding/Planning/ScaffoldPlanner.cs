@@ -9,14 +9,6 @@ namespace RedShirt.Example.Api.Scaffolding.Planning;
 /// </summary>
 internal static class ScaffoldPlanner
 {
-    private sealed record UseCase(
-        string Key,
-        string Kind,
-        string Folder,
-        Func<string, string> TypeName,
-        Func<ResourceModel, bool> Applies,
-        Func<ResourceModel, bool> HasValidatorTests);
-
     private static readonly UseCase[] UseCases =
     [
         new("Create", "Commands", "Create", name => $"Create{name}Command",
@@ -32,8 +24,6 @@ internal static class ScaffoldPlanner
         new("SearchRecords", "Queries", "SearchRecords", name => $"Search{name}RecordsQuery",
             model => model.HasSearch, _ => false)
     ];
-
-    private sealed record ApiModel(string Suffix, Func<ResourceModel, bool> Applies);
 
     private static readonly ApiModel[] ApiModels =
     [
@@ -140,4 +130,14 @@ internal static class ScaffoldPlanner
 
         return new ScaffoldPlan(files, snippets, references, pruneRoots);
     }
+
+    private sealed record UseCase(
+        string Key,
+        string Kind,
+        string Folder,
+        Func<string, string> TypeName,
+        Func<ResourceModel, bool> Applies,
+        Func<ResourceModel, bool> HasValidatorTests);
+
+    private sealed record ApiModel(string Suffix, Func<ResourceModel, bool> Applies);
 }

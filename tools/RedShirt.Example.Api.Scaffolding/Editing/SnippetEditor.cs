@@ -20,55 +20,6 @@ internal static partial class SnippetEditor
 {
     public const string AnchorPrefix = "// scaffold:";
 
-    public static string AnchorComment(string anchor)
-    {
-        return AnchorPrefix + anchor;
-    }
-
-    public static bool HasAnchor(string text, string anchor)
-    {
-        return FindAnchorLines(text, anchor).Count == 1;
-    }
-
-    public static bool Contains(string text, string anchor, string snippet)
-    {
-        var (regionStart, anchorStart, indent) = Locate(text, anchor);
-        return FindInRegion(text, regionStart, anchorStart, Indent(snippet, indent)) is not null;
-    }
-
-    /// <summary>
-    ///     Whether the anchor's region mentions <paramref name="token" /> at all (e.g. the resource name), to tell an
-    ///     edited snippet apart from one that is already gone.
-    /// </summary>
-    public static bool RegionMentions(string text, string anchor, string token)
-    {
-        var (regionStart, anchorStart, _) = Locate(text, anchor);
-        return text[regionStart..anchorStart].Contains(token, StringComparison.Ordinal);
-    }
-
-    public static string Insert(string text, string anchor, string snippet)
-    {
-        var (_, anchorStart, indent) = Locate(text, anchor);
-        return text.Insert(anchorStart, Indent(snippet, indent));
-    }
-
-    /// <summary>
-    ///     Remove the snippet nearest above the anchor. Returns null when the snippet is not in the anchor's region.
-    /// </summary>
-    public static string? Remove(string text, string anchor, string snippet)
-    {
-        var (regionStart, anchorStart, indent) = Locate(text, anchor);
-        return FindInRegion(text, regionStart, anchorStart, Indent(snippet, indent)) is { } match
-            ? text.Remove(match.Start, match.Length)
-            : null;
-    }
-
-    public static string Indent(string snippet, string indent)
-    {
-        var lines = snippet.Split('\n');
-        return string.Join('\n', lines.Select(line => line.Length == 0 ? line : indent + line));
-    }
-
     private static (int RegionStart, int AnchorStart, string Indent) Locate(string text, string anchor)
     {
         var anchors = FindAnchorLines(text, anchor);
@@ -179,5 +130,54 @@ internal static partial class SnippetEditor
             yield return (start, end);
             start = end + 1;
         }
+    }
+
+    public static string AnchorComment(string anchor)
+    {
+        return AnchorPrefix + anchor;
+    }
+
+    public static bool Contains(string text, string anchor, string snippet)
+    {
+        var (regionStart, anchorStart, indent) = Locate(text, anchor);
+        return FindInRegion(text, regionStart, anchorStart, Indent(snippet, indent)) is not null;
+    }
+
+    public static bool HasAnchor(string text, string anchor)
+    {
+        return FindAnchorLines(text, anchor).Count == 1;
+    }
+
+    public static string Indent(string snippet, string indent)
+    {
+        var lines = snippet.Split('\n');
+        return string.Join('\n', lines.Select(line => line.Length == 0 ? line : indent + line));
+    }
+
+    public static string Insert(string text, string anchor, string snippet)
+    {
+        var (_, anchorStart, indent) = Locate(text, anchor);
+        return text.Insert(anchorStart, Indent(snippet, indent));
+    }
+
+    /// <summary>
+    ///     Whether the anchor's region mentions <paramref name="token" /> at all (e.g. the resource name), to tell an
+    ///     edited snippet apart from one that is already gone.
+    /// </summary>
+    public static bool RegionMentions(string text, string anchor, string token)
+    {
+        var (regionStart, anchorStart, _) = Locate(text, anchor);
+        return text[regionStart..anchorStart].Contains(token, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    ///     Remove the snippet nearest above the anchor. Returns null when the snippet is not in the anchor's region.
+    /// </summary>
+    public static string? Remove(string text, string anchor, string snippet)
+    {
+        var (regionStart, anchorStart, indent) = Locate(text, anchor);
+        return FindInRegion(text, regionStart, anchorStart, Indent(snippet, indent)) is { } match
+            ? text.Remove(match.Start, match.Length)
+            : null;
     }
 }

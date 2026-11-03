@@ -1,15 +1,14 @@
 # Scaffolding
 
-This document describes the scaffolding tool. The scaffolding tool is a convenience utility
-which writes the API controller, CQRS use cases, request models, authorization wiring,
-and test skeletons for a data store resource.
+This document describes the scaffolding tool. The scaffolding tool is a convenience utility which writes the API
+controller, CQRS use cases, request models, authorization wiring, and test skeletons for a data store resource.
 
 ## Why scaffolding and not source generation
 
-[Rosalyn source generation](rosalyn-source-generation.md) owns the data store layer: services, repositories, and
-search requests are regenerated on every build and are never edited by hand. The layers above it are different.
-Controllers and use cases tend to pick up bespoke authorization, validation, and mapping over time, so they need to be
-ordinary source files that can be reviewed and changed case by case.
+[Rosalyn source generation](rosalyn-source-generation.md) owns the data store layer: services, repositories, and search
+requests are regenerated on every build and are never edited by hand. The layers above it are different. Controllers and
+use cases tend to pick up bespoke authorization, validation, and mapping over time, so they need to be ordinary source
+files that can be reviewed and changed case by case.
 
 The scaffolding tool fills that gap. It writes literal `.cs` files into `RedShirt.Example.Api`,
 `RedShirt.Example.Api.Core`, and their unit test projects. Once written, the files belong to you. The tool never
@@ -31,9 +30,9 @@ included. For a resource named `Order` it looks for:
 * The search response and continuation token type, from `SearchAsync`.
 * One public `IServiceCollection` extension method in the registration project (`AddOrders`).
 
-The request types already describe the exact shape the layers above them need: which search filters exist, which
-fields are nullable, and which patch fields have a `Clear` flag. Reading them means the scaffolder never repeats the
-source generator's rules and cannot drift from them.
+The request types already describe the exact shape the layers above them need: which search filters exist, which fields
+are nullable, and which patch fields have a `Clear` flag. Reading them means the scaffolder never repeats the source
+generator's rules and cannot drift from them.
 
 Data store projects are found by convention under `src/`:
 
@@ -45,12 +44,12 @@ Pass `--data-store` (and `--registration-project`) for anything else.
 
 ## What it writes
 
-Use cases are written under `src/RedShirt.Example.Api.Core/UseCases/<Resource>/`. Each use case has a request record,
-a handler, and a validator. A use case is skipped when the service has no matching method (for example, there is no
+Use cases are written under `src/RedShirt.Example.Api.Core/UseCases/<Resource>/`. Each use case has a request record, a
+handler, and a validator. A use case is skipped when the service has no matching method (for example, there is no
 `Create` for a DTO marked `[DoNotGeneratePost]`).
 
 | Use case                | Service method | Controller action      |
-| ----------------------- | -------------- | ---------------------- |
+|-------------------------|----------------|------------------------|
 | `Commands/Create`       | `PostAsync`    | `POST /<route>`        |
 | `Commands/Delete`       | `DeleteAsync`  | `DELETE /<route>/{id}` |
 | `Commands/Patch`        | `PatchAsync`   | `PATCH /<route>/{id}`  |
@@ -75,7 +74,7 @@ strings must not be blank on create and update. Add bespoke rules by hand.
 Wiring that has to live in existing files is inserted just above anchor comments such as `// scaffold:permissions`.
 
 | Anchor                                | File                                                                    | Inserted content                                         |
-| ------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------- |
+|---------------------------------------|-------------------------------------------------------------------------|----------------------------------------------------------|
 | `permissions`                         | `Authorization/Constants/BespokeAuthorizationPermissions.cs`            | `<Resource>Read` and `<Resource>Write` constants         |
 | `policies`                            | `Authorization/Constants/BespokeAuthorizationPolicies.cs`               | `<Resource>Write` and `<Resource>ReadApproved` constants |
 | `policy-registrations`                | `Extensions/AuthorizationServiceCollectionExtensions.cs`                | Two `AddPolicy` calls                                    |
@@ -86,9 +85,9 @@ Wiring that has to live in existing files is inserted just above anchor comments
 | `test-admin-permissions`              | `Tests/Authorization/BespokeRolePermissionMapTests.cs`                  | Both permissions                                         |
 | `test-claims-full-access-permissions` | `Tests/Authorization/BespokeRolePermissionClaimsTransformationTests.cs` | Both permissions                                         |
 
-Each snippet is matched by its exact text, so the tool can tell whether it is already present (create skips it) and
-find it again later (remove deletes it). An anchor only owns the lines between itself and the anchor above it, which
-keeps identical snippets for two anchors in the same file apart.
+Each snippet is matched by its exact text, so the tool can tell whether it is already present (create skips it) and find
+it again later (remove deletes it). An anchor only owns the lines between itself and the anchor above it, which keeps
+identical snippets for two anchors in the same file apart.
 
 Only the full-access roles get the new permissions. Granting them to other roles (such as `billing`) is a business
 decision, so do that by hand in `BespokeRolePermissionMap`.
@@ -98,8 +97,8 @@ style as the existing ones.
 
 ## Running scaffolding
 
-The recommended entrypoint is `scripts/scaffold.sh`. It builds the data store project first, so source-generated
-types are up to date, and then runs the tool.
+The recommended entrypoint is `scripts/scaffold.sh`. It builds the data store project first, so source-generated types
+are up to date, and then runs the tool.
 
 ```bash
 scripts/scaffold.sh create Order --dry-run
@@ -119,8 +118,8 @@ modified       src/RedShirt.Example.Api/Authorization/Constants/BespokeAuthoriza
 
 With `--dry-run`, the same lines start with `would create`, `would modify`, or `would remove`, and nothing is written.
 
-Before create writes anything, it checks that every anchor exists exactly once. If one is missing, it lists the
-problems and changes nothing.
+Before create writes anything, it checks that every anchor exists exactly once. If one is missing, it lists the problems
+and changes nothing.
 
 After scaffolding, build and test, then review the new files like any other change:
 
@@ -133,7 +132,7 @@ Building the API also regenerates `swagger/RedShirt.Example.Api.Interop/swagger.
 ### Options
 
 | Option                            | Mode   | Description                                                           |
-| --------------------------------- | ------ | --------------------------------------------------------------------- |
+|-----------------------------------|--------|-----------------------------------------------------------------------|
 | `--data-store <csproj>`           | both   | Project declaring `I<Resource>Service`. Default: found by convention. |
 | `--registration-project <csproj>` | both   | Project declaring the `IServiceCollection` registration.              |
 | `--registration <name>`           | both   | Registration method name, when the project has more than one.         |
@@ -173,8 +172,8 @@ Remove is careful about your changes:
 
 * A file is only deleted when it still matches the template output exactly. Edited files are reported as
   `kept (modified since scaffolding, use --force)`.
-* A shared-file snippet is only deleted when its exact text is still there. An edited snippet is reported as a
-  warning, and you remove it by hand.
+* A shared-file snippet is only deleted when its exact text is still there. An edited snippet is reported as a warning,
+  and you remove it by hand.
 * `-y` and `--force` are separate. `remove -y` skips the question but still keeps your edits. `--force` also deletes
   edited files.
 * Empty use case and model directories are deleted.
@@ -187,8 +186,7 @@ After removing, build and test to find anything else that still refers to the re
 ### Running the project directly
 
 `scripts/scaffold.sh` is a thin wrapper. You can run the tool with `dotnet run` instead, as long as you build the data
-store project first and tell the tool where the repository is (it searches upward from the working directory
-otherwise):
+store project first and tell the tool where the repository is (it searches upward from the working directory otherwise):
 
 ```bash
 dotnet build src/RedShirt.Example.Api.DataStores.Order
@@ -202,7 +200,8 @@ Everything after `--` goes to the tool. `--help` prints the full usage.
 
 ## Customizing the templates
 
-Templates are [Scriban](https://github.com/scriban/scriban) files under `tools/RedShirt.Example.Api.Scaffolding/Templates/`:
+Templates are [Scriban](https://github.com/scriban/scriban) files under
+`tools/RedShirt.Example.Api.Scaffolding/Templates/`:
 
 * `core/<UseCase>/`: the request record, handler, and validator for each use case.
 * `api/`: the controller, request models, and authorization attributes.
@@ -213,8 +212,8 @@ Each template sees a `model` object with snake_case members, such as `model.name
 `model.search_properties`, and `model.customer_scope`. See `Rendering/ResourceModel.cs` for the full list. A `usings`
 function turns a list of namespaces into sorted `using` lines.
 
-Changing a template only affects files scaffolded afterwards. Because remove compares files with the current
-templates, files scaffolded before a template change count as modified.
+Changing a template only affects files scaffolded afterwards. Because remove compares files with the current templates,
+files scaffolded before a template change count as modified.
 
 ## Adding an anchor
 
@@ -225,8 +224,8 @@ To insert into another shared file:
 * Add a snippet template under `Templates/snippets/`.
 * Add a `Snippet(...)` entry in `Planning/ScaffoldPlanner.cs`.
 
-A list that new entries are appended to needs a trailing comma after its last item, so the anchor can sit below it.
-C# collection expressions allow this.
+A list that new entries are appended to needs a trailing comma after its last item, so the anchor can sit below it. C#
+collection expressions allow this.
 
 ## Known limitations
 
@@ -239,8 +238,8 @@ C# collection expressions allow this.
   them).
 * The data store `using` is added at the end of the `using` block, not in sorted order.
 * Project references are only recognised when the `<ProjectReference .../>` element is on a single line.
-* Data store limits show up as build errors in the data store, not in the scaffolder. At the time of writing, the
-  source generator rejects enum properties, and `[RangeSearchable]` produces a search request that does not compile.
+* Data store limits show up as build errors in the data store, not in the scaffolder. At the time of writing, the source
+  generator rejects enum properties, and `[RangeSearchable]` produces a search request that does not compile.
 
 ## Tests for the tool
 

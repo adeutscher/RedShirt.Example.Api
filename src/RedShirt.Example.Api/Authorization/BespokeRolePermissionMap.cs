@@ -21,7 +21,7 @@ internal static class BespokeRolePermissionMap
             BespokeAuthorizationPermissions.CustomerWrite,
             BespokeAuthorizationPermissions.UploadRead,
             BespokeAuthorizationPermissions.UploadWrite,
-            BespokeAuthorizationPermissions.UploadPurge,
+            BespokeAuthorizationPermissions.UploadPurge
             // scaffold:full-access-permissions
         ],
         StringComparer.Ordinal);

@@ -12,6 +12,15 @@ public sealed class TextFileTests : IDisposable
     }
 
     [Fact]
+    public void Matches_IgnoresLineEndings()
+    {
+        File.WriteAllText(_path, "a\r\nb\r\n");
+
+        Assert.True(TextFile.Matches(_path, "a\nb\n"));
+        Assert.False(TextFile.Matches(_path, "a\nc\n"));
+    }
+
+    [Fact]
     public void Write_KeepsBomAndCrLf()
     {
         byte[] original = [0xEF, 0xBB, 0xBF, (byte) 'a', (byte) '\r', (byte) '\n', (byte) 'b'];
@@ -24,14 +33,5 @@ public sealed class TextFileTests : IDisposable
         file.Write(_path);
 
         Assert.Equal([.. original, (byte) '\r', (byte) '\n', (byte) 'c'], File.ReadAllBytes(_path));
-    }
-
-    [Fact]
-    public void Matches_IgnoresLineEndings()
-    {
-        File.WriteAllText(_path, "a\r\nb\r\n");
-
-        Assert.True(TextFile.Matches(_path, "a\nb\n"));
-        Assert.False(TextFile.Matches(_path, "a\nc\n"));
     }
 }

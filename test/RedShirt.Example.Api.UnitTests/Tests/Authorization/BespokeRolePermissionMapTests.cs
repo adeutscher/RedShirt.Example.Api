@@ -20,7 +20,7 @@ public class BespokeRolePermissionMapTests
         BespokeAuthorizationPermissions.ProductWrite,
         BespokeAuthorizationPermissions.UploadPurge,
         BespokeAuthorizationPermissions.UploadRead,
-        BespokeAuthorizationPermissions.UploadWrite,
+        BespokeAuthorizationPermissions.UploadWrite
         // scaffold:test-full-access-permissions
     ];
 
@@ -37,7 +37,7 @@ public class BespokeRolePermissionMapTests
         BespokeAuthorizationPermissions.ProductWrite,
         BespokeAuthorizationPermissions.UploadPurge,
         BespokeAuthorizationPermissions.UploadRead,
-        BespokeAuthorizationPermissions.UploadWrite,
+        BespokeAuthorizationPermissions.UploadWrite
         // scaffold:test-admin-permissions
     ];
 

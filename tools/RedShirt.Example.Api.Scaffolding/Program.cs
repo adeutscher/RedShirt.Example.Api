@@ -10,39 +10,6 @@ namespace RedShirt.Example.Api.Scaffolding;
 
 internal static class Program
 {
-    public static async Task<int> Main(string[] args)
-    {
-        if (args.Length == 0 || args.Any(arg => arg is "-h" or "--help"))
-        {
-            Console.WriteLine(ScaffoldOptionsParser.Usage);
-            return args.Length == 0 ? ExitCodes.Usage : ExitCodes.Success;
-        }
-
-        ScaffoldOptions options;
-        RepositoryLayout layout;
-        try
-        {
-            options = ScaffoldOptionsParser.Parse(args);
-            layout = RepositoryLayout.Discover(options.RepositoryRoot);
-        }
-        catch (OptionsException exception)
-        {
-            await Console.Error.WriteLineAsync(exception.Message);
-            await Console.Error.WriteLineAsync("Run with --help for usage.");
-            return ExitCodes.Usage;
-        }
-
-        try
-        {
-            return await RunAsync(options, layout);
-        }
-        catch (Exception exception) when (exception is OptionsException or AnchorException)
-        {
-            await Console.Error.WriteLineAsync(exception.Message);
-            return ExitCodes.Failure;
-        }
-    }
-
     private static async Task<int> RunAsync(ScaffoldOptions options, RepositoryLayout layout)
     {
         var dataStore = layout.FindDataStoreProjects(options);
@@ -85,5 +52,38 @@ internal static class Program
         }
 
         return result;
+    }
+
+    public static async Task<int> Main(string[] args)
+    {
+        if (args.Length == 0 || args.Any(arg => arg is "-h" or "--help"))
+        {
+            Console.WriteLine(ScaffoldOptionsParser.Usage);
+            return args.Length == 0 ? ExitCodes.Usage : ExitCodes.Success;
+        }
+
+        ScaffoldOptions options;
+        RepositoryLayout layout;
+        try
+        {
+            options = ScaffoldOptionsParser.Parse(args);
+            layout = RepositoryLayout.Discover(options.RepositoryRoot);
+        }
+        catch (OptionsException exception)
+        {
+            await Console.Error.WriteLineAsync(exception.Message);
+            await Console.Error.WriteLineAsync("Run with --help for usage.");
+            return ExitCodes.Usage;
+        }
+
+        try
+        {
+            return await RunAsync(options, layout);
+        }
+        catch (Exception exception) when (exception is OptionsException or AnchorException)
+        {
+            await Console.Error.WriteLineAsync(exception.Message);
+            return ExitCodes.Failure;
+        }
     }
 }

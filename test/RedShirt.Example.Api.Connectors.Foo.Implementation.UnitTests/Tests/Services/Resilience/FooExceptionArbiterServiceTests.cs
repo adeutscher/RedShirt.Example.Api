@@ -126,6 +126,22 @@ public class FooExceptionArbiterServiceTests
     }
 
     [Fact]
+    public void GetReport_UnhandledFooConnectorException_IsTransient()
+    {
+        var report = _sut.GetReport(new FooConnectorException("throttled")
+        {
+            IsHandled = false,
+            CouldBeTransient = true,
+            CouldBeExternallySolvable = true,
+            IsThrottled = true,
+            RetryAfter = TimeSpan.FromSeconds(1)
+        });
+
+        Assert.True(report.IsExpected);
+        Assert.True(report.CouldBeTransient);
+    }
+
+    [Fact]
     public void GetReport_UnknownException_IsUnexpected()
     {
         var report = _sut.GetReport(new InvalidOperationException("surprise"));

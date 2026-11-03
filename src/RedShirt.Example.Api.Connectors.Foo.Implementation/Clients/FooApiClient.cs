@@ -1,3 +1,4 @@
+using RedShirt.Example.Api.Connectors.Common.Http.Extensions;
 using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Core.Models;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Models.Requests;
@@ -19,10 +20,34 @@ internal interface IFooApiClient
 /// <summary>
 ///     HTTP transport for the Foo dependency. Failures surface as raw framework exceptions
 ///     (<see cref="HttpRequestException" />, <see cref="JsonException" />, timeouts, etc.),
-///     except get-by-id HTTP 404 which surfaces as <see cref="FooRecordNotFoundException" />.
+///     except get-by-id HTTP 404 which surfaces as <see cref="FooRecordNotFoundException" />, and HTTP 429 or 503
+///     which surface as an unhandled <see cref="FooConnectorException" /> carrying the dependency's retry hint.
 /// </summary>
 internal sealed class FooApiClient(HttpClient httpClient, string baseUrl) : IFooApiClient
 {
+    private static Exception CreateFailureException(HttpResponseMessage response)
+    {
+        var exception = new HttpRequestException(
+            $"Response status code does not indicate success: {(int) response.StatusCode} ({response.StatusCode}).",
+            null,
+            response.StatusCode);
+
+        if (response.StatusCode is not (HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable))
+        {
+            return exception;
+        }
+
+        // Not yet handled, so the connector retry wrapper still retries it and can honour the hint.
+        return new FooConnectorException(exception)
+        {
+            IsHandled = false,
+            CouldBeTransient = true,
+            CouldBeExternallySolvable = true,
+            IsThrottled = response.StatusCode == HttpStatusCode.TooManyRequests,
+            RetryAfter = response.GetRetryAfter(DateTimeOffset.UtcNow)
+        };
+    }
+
     public async Task<CreateFooConnectorResponse> CreateFooAsync(CreateFooConnectorRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -36,10 +61,7 @@ internal sealed class FooApiClient(HttpClient httpClient, string baseUrl) : IFoo
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(
-                $"Response status code does not indicate success: {(int) response.StatusCode} ({response.StatusCode}).",
-                null,
-                response.StatusCode);
+            throw CreateFailureException(response);
         }
 
         var stringResponse = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -71,10 +93,7 @@ internal sealed class FooApiClient(HttpClient httpClient, string baseUrl) : IFoo
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException(
-                $"Response status code does not indicate success: {(int) response.StatusCode} ({response.StatusCode}).",
-                null,
-                response.StatusCode);
+            throw CreateFailureException(response);
         }
 
         var stringResponse = await response.Content.ReadAsStringAsync(cancellationToken);

@@ -5,16 +5,6 @@ namespace RedShirt.Example.Api.Scaffolding.UnitTests.Tests.Utility;
 public class NamingTests
 {
     [Theory]
-    [InlineData("Order", "order")]
-    [InlineData("BeansWidget", "beans-widget")]
-    [InlineData("HTTPRequest", "http-request")]
-    [InlineData("Item2Value", "item2-value")]
-    public void ToKebabCase_SplitsWords(string input, string expected)
-    {
-        Assert.Equal(expected, Naming.ToKebabCase(input));
-    }
-
-    [Theory]
     [InlineData("Order", "orders")]
     [InlineData("BeansWidget", "beans-widgets")]
     [InlineData("Category", "categories")]
@@ -30,5 +20,15 @@ public class NamingTests
     public void ToCamelCase_LowersFirstLetter()
     {
         Assert.Equal("beansWidget", Naming.ToCamelCase("BeansWidget"));
+    }
+
+    [Theory]
+    [InlineData("Order", "order")]
+    [InlineData("BeansWidget", "beans-widget")]
+    [InlineData("HTTPRequest", "http-request")]
+    [InlineData("Item2Value", "item2-value")]
+    public void ToKebabCase_SplitsWords(string input, string expected)
+    {
+        Assert.Equal(expected, Naming.ToKebabCase(input));
     }
 }

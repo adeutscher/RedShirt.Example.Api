@@ -165,6 +165,22 @@ public class BarExceptionArbiterServiceTests
     }
 
     [Fact]
+    public void GetReport_UnhandledBarConnectorException_IsTransient()
+    {
+        var report = _sut.GetReport(new BarConnectorException("throttled")
+        {
+            IsHandled = false,
+            CouldBeTransient = true,
+            CouldBeExternallySolvable = true,
+            IsThrottled = true,
+            RetryAfter = TimeSpan.FromSeconds(1)
+        });
+
+        Assert.True(report.IsExpected);
+        Assert.True(report.CouldBeTransient);
+    }
+
+    [Fact]
     public void GetReport_UnknownException_IsUnexpected()
     {
         var report = _sut.GetReport(new InvalidOperationException("surprise"));

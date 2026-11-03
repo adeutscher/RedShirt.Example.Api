@@ -24,6 +24,16 @@ public sealed class FooConnectorException : Exception
     /// </summary>
     public required bool CouldBeExternallySolvable { get; init; }
 
+    /// <summary>
+    ///     When <c>true</c>, the dependency is limiting how often this application may call it.
+    /// </summary>
+    public bool IsThrottled { get; init; }
+
+    /// <summary>
+    ///     How long the dependency asked callers to wait before trying again, or null when it gave no usable hint.
+    /// </summary>
+    public TimeSpan? RetryAfter { get; init; }
+
     public FooConnectorException(Exception innerException) : base(innerException.Message, innerException)
     {
     }

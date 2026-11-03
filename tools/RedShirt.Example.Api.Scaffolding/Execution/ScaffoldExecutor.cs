@@ -21,6 +21,56 @@ internal sealed class ScaffoldExecutor(
     TextWriter output,
     bool inputIsInteractive)
 {
+    private string? SnippetProblem(SnippetTarget snippet)
+    {
+        var path = layout.Absolute(snippet.Path);
+        if (!File.Exists(path))
+        {
+            return $"{snippet.Path}: file not found";
+        }
+
+        return SnippetEditor.HasAnchor(TextFile.Read(path).Text, snippet.Anchor)
+            ? null
+            : $"{snippet.Path}: needs exactly one '{SnippetEditor.AnchorComment(snippet.Anchor)}' line";
+    }
+
+    private void WriteNotes(IEnumerable<(string Verb, string Path, string Detail)> notes)
+    {
+        foreach (var (verb, path, detail) in notes)
+        {
+            if (verb == "kept")
+            {
+                reporter.Kept(path, detail);
+            }
+            else
+            {
+                reporter.Warning(path, detail);
+            }
+        }
+    }
+
+    private static void PruneEmptyDirectories(string root)
+    {
+        if (!Directory.Exists(root))
+        {
+            return;
+        }
+
+        foreach (var directory in Directory.GetDirectories(root, "*", SearchOption.AllDirectories)
+                     .OrderByDescending(directory => directory.Length))
+        {
+            if (!Directory.EnumerateFileSystemEntries(directory).Any())
+            {
+                Directory.Delete(directory);
+            }
+        }
+
+        if (!Directory.EnumerateFileSystemEntries(root).Any())
+        {
+            Directory.Delete(root);
+        }
+    }
+
     public int Create(ScaffoldPlan plan)
     {
         var problems = plan.Snippets
@@ -131,7 +181,8 @@ internal sealed class ScaffoldExecutor(
             var path = layout.Absolute(snippet.Path);
             if (snippet.Content is null)
             {
-                notes.Add(("warning", snippet.Path, $"{snippet.Anchor}: cannot render without the data store contract, check by hand"));
+                notes.Add(("warning", snippet.Path,
+                    $"{snippet.Anchor}: cannot render without the data store contract, check by hand"));
                 continue;
             }
 
@@ -190,7 +241,9 @@ internal sealed class ScaffoldExecutor(
             output.WriteLine($"This will remove the following for {options.Resource}:");
             foreach (var removal in removals)
             {
-                output.WriteLine(removal.Detail is null ? $"  * {removal.Path}" : $"  * {removal.Path} ({removal.Detail})");
+                output.WriteLine(removal.Detail is null
+                    ? $"  * {removal.Path}"
+                    : $"  * {removal.Path} ({removal.Detail})");
             }
 
             WriteNotes(notes);
@@ -233,55 +286,5 @@ internal sealed class ScaffoldExecutor(
         }
 
         return ExitCodes.Success;
-    }
-
-    private string? SnippetProblem(SnippetTarget snippet)
-    {
-        var path = layout.Absolute(snippet.Path);
-        if (!File.Exists(path))
-        {
-            return $"{snippet.Path}: file not found";
-        }
-
-        return SnippetEditor.HasAnchor(TextFile.Read(path).Text, snippet.Anchor)
-            ? null
-            : $"{snippet.Path}: needs exactly one '{SnippetEditor.AnchorComment(snippet.Anchor)}' line";
-    }
-
-    private void WriteNotes(IEnumerable<(string Verb, string Path, string Detail)> notes)
-    {
-        foreach (var (verb, path, detail) in notes)
-        {
-            if (verb == "kept")
-            {
-                reporter.Kept(path, detail);
-            }
-            else
-            {
-                reporter.Warning(path, detail);
-            }
-        }
-    }
-
-    private static void PruneEmptyDirectories(string root)
-    {
-        if (!Directory.Exists(root))
-        {
-            return;
-        }
-
-        foreach (var directory in Directory.GetDirectories(root, "*", SearchOption.AllDirectories)
-                     .OrderByDescending(directory => directory.Length))
-        {
-            if (!Directory.EnumerateFileSystemEntries(directory).Any())
-            {
-                Directory.Delete(directory);
-            }
-        }
-
-        if (!Directory.EnumerateFileSystemEntries(root).Any())
-        {
-            Directory.Delete(root);
-        }
     }
 }
