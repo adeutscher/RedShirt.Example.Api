@@ -8,19 +8,11 @@ internal static partial class Naming
     private static partial Regex WordBoundary();
 
     /// <summary>
-    ///     "BeansWidget" -> "beans-widget"
+    ///     "BeansWidget" -> "beans-widgets"
     /// </summary>
-    public static string ToKebabCase(string pascal)
+    public static string DefaultRoute(string pascal)
     {
-        return WordBoundary().Replace(pascal, "-").ToLowerInvariant();
-    }
-
-    /// <summary>
-    ///     "BeansWidget" -> "beansWidget"
-    /// </summary>
-    public static string ToCamelCase(string pascal)
-    {
-        return pascal.Length == 0 ? pascal : char.ToLowerInvariant(pascal[0]) + pascal[1..];
+        return Pluralize(ToKebabCase(pascal));
     }
 
     /// <summary>
@@ -43,10 +35,18 @@ internal static partial class Naming
     }
 
     /// <summary>
-    ///     "BeansWidget" -> "beans-widgets"
+    ///     "BeansWidget" -> "beansWidget"
     /// </summary>
-    public static string DefaultRoute(string pascal)
+    public static string ToCamelCase(string pascal)
     {
-        return Pluralize(ToKebabCase(pascal));
+        return pascal.Length == 0 ? pascal : char.ToLowerInvariant(pascal[0]) + pascal[1..];
+    }
+
+    /// <summary>
+    ///     "BeansWidget" -> "beans-widget"
+    /// </summary>
+    public static string ToKebabCase(string pascal)
+    {
+        return WordBoundary().Replace(pascal, "-").ToLowerInvariant();
     }
 }

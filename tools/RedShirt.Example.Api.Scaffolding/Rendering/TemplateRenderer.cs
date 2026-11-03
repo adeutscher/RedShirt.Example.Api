@@ -10,22 +10,6 @@ internal sealed class TemplateRenderer(string templateDirectory)
 {
     private readonly Dictionary<string, Template> _cache = new(StringComparer.Ordinal);
 
-    public static TemplateRenderer Default => new(Path.Combine(AppContext.BaseDirectory, "Templates"));
-
-    public string Render(string templatePath, ResourceModel model)
-    {
-        var template = Load(templatePath);
-
-        var globals = new ScriptObject();
-        globals.Import(typeof(TemplateFunctions));
-        globals.SetValue("model", model, true);
-
-        var context = new TemplateContext {StrictVariables = true};
-        context.PushGlobal(globals);
-
-        return template.Render(context).Replace("\r\n", "\n");
-    }
-
     private Template Load(string templatePath)
     {
         if (_cache.TryGetValue(templatePath, out var cached))
@@ -43,6 +27,22 @@ internal sealed class TemplateRenderer(string templateDirectory)
 
         _cache[templatePath] = template;
         return template;
+    }
+
+    public static TemplateRenderer Default => new(Path.Combine(AppContext.BaseDirectory, "Templates"));
+
+    public string Render(string templatePath, ResourceModel model)
+    {
+        var template = Load(templatePath);
+
+        var globals = new ScriptObject();
+        globals.Import(typeof(TemplateFunctions));
+        globals.SetValue("model", model, true);
+
+        var context = new TemplateContext {StrictVariables = true};
+        context.PushGlobal(globals);
+
+        return template.Render(context).Replace("\r\n", "\n");
     }
 
     /// <summary>

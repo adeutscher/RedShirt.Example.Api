@@ -91,6 +91,24 @@ internal static partial class ScaffoldOptionsParser
     [GeneratedRegex("^[A-Z][A-Za-z0-9]*$")]
     private static partial Regex ResourcePattern();
 
+    private static bool ParseScope(string value)
+    {
+        return value == "customer"
+            ? true
+            : throw new OptionsException($"Unknown scope '{value}'. The only supported scope is 'customer'.");
+    }
+
+    private static string Value(IReadOnlyList<string> args, ref int i)
+    {
+        if (i + 1 >= args.Count || args[i + 1].StartsWith("--", StringComparison.Ordinal))
+        {
+            throw new OptionsException($"Option '{args[i]}' needs a value.");
+        }
+
+        i++;
+        return args[i];
+    }
+
     public static ScaffoldOptions Parse(IReadOnlyList<string> args)
     {
         if (args.Count < 2)
@@ -138,23 +156,5 @@ internal static partial class ScaffoldOptionsParser
         }
 
         return options;
-    }
-
-    private static bool ParseScope(string value)
-    {
-        return value == "customer"
-            ? true
-            : throw new OptionsException($"Unknown scope '{value}'. The only supported scope is 'customer'.");
-    }
-
-    private static string Value(IReadOnlyList<string> args, ref int i)
-    {
-        if (i + 1 >= args.Count || args[i + 1].StartsWith("--", StringComparison.Ordinal))
-        {
-            throw new OptionsException($"Option '{args[i]}' needs a value.");
-        }
-
-        i++;
-        return args[i];
     }
 }

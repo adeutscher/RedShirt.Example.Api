@@ -21,6 +21,25 @@ internal sealed class ResourceModel
         Contract = contract;
     }
 
+    private ResourceContract Required => Contract
+                                         ?? throw new InvalidOperationException(
+                                             "This template needs the data store's service contract.");
+
+    private IReadOnlyList<ContractProperty> WithoutKey(ContractType? request)
+    {
+        return request?.Properties.Where(property => property.Name != Key.Name).ToList() ?? [];
+    }
+
+    private static IReadOnlyList<ContractProperty> RequiredStrings(IEnumerable<ContractProperty> properties)
+    {
+        return properties.Where(property => property is {IsString: true, IsNullable: false}).ToList();
+    }
+
+    private static IReadOnlyList<string> Namespaces(IEnumerable<ContractProperty> properties)
+    {
+        return properties.Select(property => property.Namespace).Where(ns => ns.Length > 0).Distinct().ToList();
+    }
+
     public ResourceContract? Contract { get; }
 
     public string Name { get; }
@@ -79,10 +98,16 @@ internal sealed class ResourceModel
     public IReadOnlyList<ContractProperty> SearchProperties => Required.SearchRequest?.Properties ?? [];
     public string ContinuationTokenType => Required.ContinuationTokenType ?? "Guid?";
 
-    public IReadOnlyList<ContractProperty> PostNullable => PostProperties.Where(property => property.IsNullable).ToList();
-    public IReadOnlyList<ContractProperty> PostNonNullable => PostProperties.Where(property => !property.IsNullable).ToList();
+    public IReadOnlyList<ContractProperty> PostNullable =>
+        PostProperties.Where(property => property.IsNullable).ToList();
+
+    public IReadOnlyList<ContractProperty> PostNonNullable =>
+        PostProperties.Where(property => !property.IsNullable).ToList();
+
     public IReadOnlyList<ContractProperty> PutNullable => PutProperties.Where(property => property.IsNullable).ToList();
-    public IReadOnlyList<ContractProperty> PutNonNullable => PutProperties.Where(property => !property.IsNullable).ToList();
+
+    public IReadOnlyList<ContractProperty> PutNonNullable =>
+        PutProperties.Where(property => !property.IsNullable).ToList();
 
     public IReadOnlyList<ContractProperty> PostRequiredStrings => RequiredStrings(PostProperties);
     public IReadOnlyList<ContractProperty> PutRequiredStrings => RequiredStrings(PutProperties);
@@ -91,6 +116,7 @@ internal sealed class ResourceModel
     ///     Namespaces needed by property types (e.g. enums declared beside the DTO).
     /// </summary>
     public IReadOnlyList<string> PostNamespaces => Namespaces(PostProperties);
+
     public IReadOnlyList<string> PutNamespaces => Namespaces([Key, .. PutProperties]);
     public IReadOnlyList<string> PatchNamespaces => Namespaces([Key, .. PatchProperties]);
     public IReadOnlyList<string> SearchNamespaces => Namespaces(SearchProperties);
@@ -103,10 +129,6 @@ internal sealed class ResourceModel
 
     public string RegistrationNamespace => Required.RegistrationNamespace;
 
-    private ResourceContract Required => Contract
-                                         ?? throw new InvalidOperationException(
-                                             "This template needs the data store's service contract.");
-
     public static ResourceModel Create(RepositoryLayout layout, ScaffoldOptions options, ResourceContract? contract)
     {
         var model = new ResourceModel(layout, options, contract);
@@ -117,7 +139,8 @@ internal sealed class ResourceModel
                 contract.SearchRequest?.Properties.FirstOrDefault(property => property.Name == "CustomerId");
             if (!contract.HasGet)
             {
-                throw new OptionsException("--scope customer needs GetByIdAsync to load the record before checking scope.");
+                throw new OptionsException(
+                    "--scope customer needs GetByIdAsync to load the record before checking scope.");
             }
 
             if (dtoCustomer is not {NonNullableType: "Guid", IsNullable: false} ||
@@ -130,20 +153,5 @@ internal sealed class ResourceModel
         }
 
         return model;
-    }
-
-    private IReadOnlyList<ContractProperty> WithoutKey(ContractType? request)
-    {
-        return request?.Properties.Where(property => property.Name != Key.Name).ToList() ?? [];
-    }
-
-    private static IReadOnlyList<ContractProperty> RequiredStrings(IEnumerable<ContractProperty> properties)
-    {
-        return properties.Where(property => property is {IsString: true, IsNullable: false}).ToList();
-    }
-
-    private static IReadOnlyList<string> Namespaces(IEnumerable<ContractProperty> properties)
-    {
-        return properties.Select(property => property.Namespace).Where(ns => ns.Length > 0).Distinct().ToList();
     }
 }

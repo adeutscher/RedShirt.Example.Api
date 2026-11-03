@@ -13,61 +13,6 @@ internal static class ContractLoader
     private static readonly SymbolDisplayFormat TypeFormat = SymbolDisplayFormat.MinimallyQualifiedFormat
         .AddMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
-    public static async Task<ResourceContract> LoadAsync(string resource, string contractProject,
-        string registrationProject, string? registrationName, CancellationToken cancellationToken)
-    {
-        using var workspace = MSBuildWorkspace.Create();
-        var contractCompilation = await CompileAsync(workspace, contractProject, cancellationToken);
-        var registrationCompilation = registrationProject == contractProject
-            ? contractCompilation
-            : await CompileAsync(workspace, registrationProject, cancellationToken);
-
-        var serviceName = $"I{resource}Service";
-        var service = FindType(contractCompilation.Assembly.GlobalNamespace, serviceName)
-                      ?? throw new OptionsException(
-                          $"'{contractProject}' does not declare {serviceName}. If the data store is source-generated, " +
-                          "build it first so the generator output is available.");
-
-        var getById = Method(service, "GetByIdAsync");
-        var delete = Method(service, "DeleteAsync");
-        var post = Method(service, "PostAsync");
-        var put = Method(service, "PutAsync");
-        var patch = Method(service, "PatchAsync");
-        var search = Method(service, "SearchAsync");
-
-        var dtoSymbol = (getById ?? post ?? put ?? patch) is { } dtoSource
-            ? UnwrapTask(dtoSource.ReturnType)
-            : throw new OptionsException($"{serviceName} has no GetByIdAsync, PostAsync, PutAsync, or PatchAsync.");
-
-        var keySymbol = (getById ?? delete)?.Parameters.FirstOrDefault()?.Type
-                        ?? throw new OptionsException(
-                            $"{serviceName} has no GetByIdAsync or DeleteAsync to give the key type.");
-
-        var putRequest = RequestType(put);
-        var patchRequest = RequestType(patch);
-        var keyName = (patchRequest ?? putRequest)?.Properties.FirstOrDefault()?.Name ?? "Id";
-
-        var registration = FindRegistration(registrationCompilation, registrationProject, registrationName);
-
-        return new ResourceContract
-        {
-            Service = ToType(service, false),
-            Dto = ToType(dtoSymbol, true),
-            Key = ToProperty(keyName, keySymbol),
-            HasGet = getById is not null,
-            HasDelete = delete is not null,
-            PostRequest = RequestType(post),
-            PutRequest = putRequest,
-            PatchRequest = patchRequest,
-            SearchRequest = RequestType(search),
-            SearchResponse = search is null ? null : ToType(UnwrapTask(search.ReturnType), true),
-            ContinuationTokenType = search?.Parameters.Skip(1).FirstOrDefault()?.Type.ToDisplayString(TypeFormat),
-            RegistrationMethod = registration.Name,
-            RegistrationNamespace = registration.ContainingNamespace.ToDisplayString(),
-            RegistrationTakesConfiguration = registration.Parameters.Length == 2
-        };
-    }
-
     private static async Task<Compilation> CompileAsync(MSBuildWorkspace workspace, string projectPath,
         CancellationToken cancellationToken)
     {
@@ -83,7 +28,8 @@ internal static class ContractLoader
             return type;
         }
 
-        return ns.GetNamespaceMembers().Select(child => FindType(child, name)).FirstOrDefault(found => found is not null);
+        return ns.GetNamespaceMembers().Select(child => FindType(child, name))
+            .FirstOrDefault(found => found is not null);
     }
 
     private static IMethodSymbol? Method(INamedTypeSymbol service, string name)
@@ -122,7 +68,8 @@ internal static class ContractLoader
         var isNullableValue = type is INamedTypeSymbol {OriginalDefinition.SpecialType: SpecialType.System_Nullable_T};
         var underlying = isNullableValue ? ((INamedTypeSymbol) type).TypeArguments[0] : type;
         var isNullable = isNullableValue || type.NullableAnnotation == NullableAnnotation.Annotated;
-        var nonNullable = underlying.WithNullableAnnotation(NullableAnnotation.NotAnnotated).ToDisplayString(TypeFormat);
+        var nonNullable = underlying.WithNullableAnnotation(NullableAnnotation.NotAnnotated)
+            .ToDisplayString(TypeFormat);
 
         return new ContractProperty(
             name,
@@ -231,5 +178,60 @@ internal static class ContractLoader
         {
             yield return type;
         }
+    }
+
+    public static async Task<ResourceContract> LoadAsync(string resource, string contractProject,
+        string registrationProject, string? registrationName, CancellationToken cancellationToken)
+    {
+        using var workspace = MSBuildWorkspace.Create();
+        var contractCompilation = await CompileAsync(workspace, contractProject, cancellationToken);
+        var registrationCompilation = registrationProject == contractProject
+            ? contractCompilation
+            : await CompileAsync(workspace, registrationProject, cancellationToken);
+
+        var serviceName = $"I{resource}Service";
+        var service = FindType(contractCompilation.Assembly.GlobalNamespace, serviceName)
+                      ?? throw new OptionsException(
+                          $"'{contractProject}' does not declare {serviceName}. If the data store is source-generated, " +
+                          "build it first so the generator output is available.");
+
+        var getById = Method(service, "GetByIdAsync");
+        var delete = Method(service, "DeleteAsync");
+        var post = Method(service, "PostAsync");
+        var put = Method(service, "PutAsync");
+        var patch = Method(service, "PatchAsync");
+        var search = Method(service, "SearchAsync");
+
+        var dtoSymbol = (getById ?? post ?? put ?? patch) is { } dtoSource
+            ? UnwrapTask(dtoSource.ReturnType)
+            : throw new OptionsException($"{serviceName} has no GetByIdAsync, PostAsync, PutAsync, or PatchAsync.");
+
+        var keySymbol = (getById ?? delete)?.Parameters.FirstOrDefault()?.Type
+                        ?? throw new OptionsException(
+                            $"{serviceName} has no GetByIdAsync or DeleteAsync to give the key type.");
+
+        var putRequest = RequestType(put);
+        var patchRequest = RequestType(patch);
+        var keyName = (patchRequest ?? putRequest)?.Properties.FirstOrDefault()?.Name ?? "Id";
+
+        var registration = FindRegistration(registrationCompilation, registrationProject, registrationName);
+
+        return new ResourceContract
+        {
+            Service = ToType(service, false),
+            Dto = ToType(dtoSymbol, true),
+            Key = ToProperty(keyName, keySymbol),
+            HasGet = getById is not null,
+            HasDelete = delete is not null,
+            PostRequest = RequestType(post),
+            PutRequest = putRequest,
+            PatchRequest = patchRequest,
+            SearchRequest = RequestType(search),
+            SearchResponse = search is null ? null : ToType(UnwrapTask(search.ReturnType), true),
+            ContinuationTokenType = search?.Parameters.Skip(1).FirstOrDefault()?.Type.ToDisplayString(TypeFormat),
+            RegistrationMethod = registration.Name,
+            RegistrationNamespace = registration.ContainingNamespace.ToDisplayString(),
+            RegistrationTakesConfiguration = registration.Parameters.Length == 2
+        };
     }
 }

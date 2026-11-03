@@ -8,7 +8,9 @@ public class ScaffoldOptionsParserTests
     public void Parse_ReadsCreateOptions()
     {
         var options = ScaffoldOptionsParser.Parse(
-            ["create", "BeansWidget", "--scope", "customer", "--route", "widgets", "--manifest", "out.txt", "--dry-run"]);
+        [
+            "create", "BeansWidget", "--scope", "customer", "--route", "widgets", "--manifest", "out.txt", "--dry-run"
+        ]);
 
         Assert.Equal(ScaffoldMode.Create, options.Mode);
         Assert.Equal("BeansWidget", options.Resource);

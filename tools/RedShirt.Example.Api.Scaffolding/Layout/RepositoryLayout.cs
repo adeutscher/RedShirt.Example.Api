@@ -32,6 +32,11 @@ internal sealed class RepositoryLayout
 
     public string CoreTestsDirectory => Relative("test", $"{CoreNamespace}.UnitTests");
 
+    public string Absolute(string relativePath)
+    {
+        return Path.GetFullPath(relativePath, Root);
+    }
+
     public static RepositoryLayout Discover(string? root)
     {
         var start = Path.GetFullPath(root ?? Directory.GetCurrentDirectory());
@@ -55,24 +60,6 @@ internal sealed class RepositoryLayout
     }
 
     /// <summary>
-    ///     Repository-relative path with forward slashes.
-    /// </summary>
-    public string Relative(params string[] parts)
-    {
-        return string.Join('/', parts);
-    }
-
-    public string ToRelative(string path)
-    {
-        return Path.GetRelativePath(Root, Path.GetFullPath(path, Root)).Replace('\\', '/');
-    }
-
-    public string Absolute(string relativePath)
-    {
-        return Path.GetFullPath(relativePath, Root);
-    }
-
-    /// <summary>
     ///     Resolve the data store projects for a resource. Two shapes are recognised:
     ///     a single generated project (DataStores.Order) and a Core/Implementation pair (DataStores.Product.*).
     /// </summary>
@@ -88,7 +75,8 @@ internal sealed class RepositoryLayout
         var singlePath = Relative("src", single, $"{single}.csproj");
         if (File.Exists(Absolute(singlePath)))
         {
-            return (singlePath, options.RegistrationProject is null ? singlePath : ToRelative(options.RegistrationProject));
+            return (singlePath,
+                options.RegistrationProject is null ? singlePath : ToRelative(options.RegistrationProject));
         }
 
         var core = $"{single}.Core";
@@ -105,5 +93,18 @@ internal sealed class RepositoryLayout
         }
 
         return null;
+    }
+
+    /// <summary>
+    ///     Repository-relative path with forward slashes.
+    /// </summary>
+    public string Relative(params string[] parts)
+    {
+        return string.Join('/', parts);
+    }
+
+    public string ToRelative(string path)
+    {
+        return Path.GetRelativePath(Root, Path.GetFullPath(path, Root)).Replace('\\', '/');
     }
 }

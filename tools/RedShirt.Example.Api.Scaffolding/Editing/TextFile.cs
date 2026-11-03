@@ -17,13 +17,21 @@ internal sealed class TextFile
         UsesCrLf = usesCrLf;
     }
 
+    private bool HasBom { get; }
+    private bool UsesCrLf { get; }
+
     /// <summary>
     ///     Content with LF line endings.
     /// </summary>
     public string Text { get; set; }
 
-    private bool HasBom { get; }
-    private bool UsesCrLf { get; }
+    /// <summary>
+    ///     Compare file content with rendered output, ignoring BOM and line-ending differences.
+    /// </summary>
+    public static bool Matches(string path, string expected)
+    {
+        return Read(path).Text == expected.Replace("\r\n", "\n");
+    }
 
     public static TextFile Read(string path)
     {
@@ -38,13 +46,5 @@ internal sealed class TextFile
     {
         var text = UsesCrLf ? Text.Replace("\n", "\r\n") : Text;
         File.WriteAllText(path, text, HasBom ? WithBom : WithoutBom);
-    }
-
-    /// <summary>
-    ///     Compare file content with rendered output, ignoring BOM and line-ending differences.
-    /// </summary>
-    public static bool Matches(string path, string expected)
-    {
-        return Read(path).Text == expected.Replace("\r\n", "\n");
     }
 }
