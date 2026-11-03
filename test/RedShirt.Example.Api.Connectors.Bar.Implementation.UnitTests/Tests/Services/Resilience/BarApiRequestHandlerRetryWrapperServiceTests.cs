@@ -66,6 +66,40 @@ public class BarApiRequestHandlerRetryWrapperServiceTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_DoesNotHitHandler_WithExpiredToken()
+    {
+        var cache = new Mock<IOAuthTokenCache>(MockBehavior.Strict);
+        cache
+            .SetupSequence(c => c.GetAsync(
+                It.IsAny<OAuthClientCredentialsRequest>(),
+                false,
+                false,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Token("expired-token", TokenCacheState.FreshToken, DateTimeOffset.UtcNow.AddSeconds(-1)))
+            .ReturnsAsync(Token("new-token", TokenCacheState.FreshToken));
+
+        var sut = CreateSut(cache.Object);
+        await sut.GetAccessTokenAsync(TestContext.Current.CancellationToken);
+
+        var attempts = 0;
+        var result = await sut.ExecuteAsync(async ct =>
+        {
+            attempts++;
+            var token = await sut.GetAccessTokenAsync(ct);
+            if (token == "expired-token")
+            {
+                throw new BarUnauthorizedException();
+            }
+
+            return token;
+        }, TestContext.Current.CancellationToken);
+
+        // Replaced up front, so no unauthorized round trip and no forced refresh.
+        Assert.Equal("new-token", result);
+        Assert.Equal(1, attempts);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_RefreshesToken_OnBarUnauthorized_WhenOutsideCooldown()
     {
         var cache = new Mock<IOAuthTokenCache>(MockBehavior.Strict);
@@ -220,39 +254,5 @@ public class BarApiRequestHandlerRetryWrapperServiceTests
         cache.Verify(
             c => c.GetAsync(It.IsAny<OAuthClientCredentialsRequest>(), false, false, It.IsAny<CancellationToken>()),
             Times.Exactly(2));
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_DoesNotHitHandler_WithExpiredToken()
-    {
-        var cache = new Mock<IOAuthTokenCache>(MockBehavior.Strict);
-        cache
-            .SetupSequence(c => c.GetAsync(
-                It.IsAny<OAuthClientCredentialsRequest>(),
-                false,
-                false,
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Token("expired-token", TokenCacheState.FreshToken, DateTimeOffset.UtcNow.AddSeconds(-1)))
-            .ReturnsAsync(Token("new-token", TokenCacheState.FreshToken));
-
-        var sut = CreateSut(cache.Object);
-        await sut.GetAccessTokenAsync(TestContext.Current.CancellationToken);
-
-        var attempts = 0;
-        var result = await sut.ExecuteAsync(async ct =>
-        {
-            attempts++;
-            var token = await sut.GetAccessTokenAsync(ct);
-            if (token == "expired-token")
-            {
-                throw new BarUnauthorizedException();
-            }
-
-            return token;
-        }, TestContext.Current.CancellationToken);
-
-        // Replaced up front, so no unauthorized round trip and no forced refresh.
-        Assert.Equal("new-token", result);
-        Assert.Equal(1, attempts);
     }
 }
