@@ -19,7 +19,9 @@ public class FooApiClientFactoryTests
             Options.Create(new FooApiClientFactory.ConfigurationModel
             {
                 BaseUrl = "http://foo.example",
-                ClientPerRequest = clientPerRequest
+                ClientPerRequest = clientPerRequest,
+                HandlerLifetimeSeconds = null,
+                MaxConnectionsPerServer = null
             }));
     }
 

@@ -67,13 +67,19 @@ public class ConnectorHttpClientBuilderExtensionsTests
     }
 
     [Theory]
+    [InlineData(null)]
     [InlineData(0)]
     [InlineData(-1)]
-    public void CreatePooledPrimaryHandler_LeavesConnectionCapUnset_WhenNotPositive(int maxConnectionsPerServer)
+    public void CreatePooledPrimaryHandler_LeavesConnectionCapUnset_WhenNotPositive(int? maxConnectionsPerServer)
     {
         using var handler = Assert.IsType<HttpClientHandler>(
             ConnectorHttpClientBuilderExtensions.CreatePooledPrimaryHandler(
-                new TestConfiguration {MaxConnectionsPerServer = maxConnectionsPerServer}));
+                new TestConfiguration
+                {
+                    ClientPerRequest = false,
+                    HandlerLifetimeSeconds = null,
+                    MaxConnectionsPerServer = maxConnectionsPerServer
+                }));
 
         Assert.Equal(int.MaxValue, handler.MaxConnectionsPerServer);
     }
@@ -83,17 +89,22 @@ public class ConnectorHttpClientBuilderExtensionsTests
     {
         using var handler = Assert.IsType<HttpClientHandler>(
             ConnectorHttpClientBuilderExtensions.CreatePooledPrimaryHandler(
-                new TestConfiguration {MaxConnectionsPerServer = 4}));
+                new TestConfiguration
+                {
+                    ClientPerRequest = false,
+                    HandlerLifetimeSeconds = null,
+                    MaxConnectionsPerServer = 4
+                }));
 
         Assert.Equal(4, handler.MaxConnectionsPerServer);
     }
 
     private sealed class TestConfiguration : IConnectorConnectionConfiguration
     {
-        public bool ClientPerRequest { get; init; }
+        public required bool ClientPerRequest { get; init; }
 
-        public int HandlerLifetimeSeconds { get; } = 120;
+        public required int? HandlerLifetimeSeconds { get; init; }
 
-        public int MaxConnectionsPerServer { get; init; }
+        public required int? MaxConnectionsPerServer { get; init; }
     }
 }

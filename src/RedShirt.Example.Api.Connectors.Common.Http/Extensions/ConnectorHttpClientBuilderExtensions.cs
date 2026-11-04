@@ -7,6 +7,8 @@ namespace RedShirt.Example.Api.Connectors.Common.Http.Extensions;
 
 public static class ConnectorHttpClientBuilderExtensions
 {
+    public const int DefaultHandlerLifetimeSeconds = 120;
+
     /// <summary>
     ///     Applies <see cref="IConnectorConnectionConfiguration.HandlerLifetimeSeconds" /> and
     ///     <see cref="IConnectorConnectionConfiguration.MaxConnectionsPerServer" /> from
@@ -28,7 +30,7 @@ public static class ConnectorHttpClientBuilderExtensions
         builder.Services.AddOptions<HttpClientFactoryOptions>(builder.Name)
             .Configure<IOptions<TConfiguration>>((factoryOptions, connectorOptions) =>
             {
-                var seconds = connectorOptions.Value.HandlerLifetimeSeconds;
+                var seconds = connectorOptions.Value.HandlerLifetimeSeconds ?? DefaultHandlerLifetimeSeconds;
                 if (seconds < 1)
                 {
                     throw new InvalidOperationException(
@@ -48,9 +50,9 @@ public static class ConnectorHttpClientBuilderExtensions
     internal static HttpMessageHandler CreatePooledPrimaryHandler(IConnectorConnectionConfiguration configuration)
     {
         var handler = new HttpClientHandler();
-        if (configuration.MaxConnectionsPerServer > 0)
+        if (configuration.MaxConnectionsPerServer is > 0 and var maxConnectionsPerServer)
         {
-            handler.MaxConnectionsPerServer = configuration.MaxConnectionsPerServer;
+            handler.MaxConnectionsPerServer = maxConnectionsPerServer;
         }
 
         return handler;

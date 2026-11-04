@@ -35,10 +35,10 @@ internal sealed class FooApiClientFactory(
     {
         public required string BaseUrl { get; init; }
 
-        public bool ClientPerRequest { get; init; }
+        public required bool ClientPerRequest { get; init; }
 
-        public int HandlerLifetimeSeconds { get; init; } = 120;
+        public required int? HandlerLifetimeSeconds { get; init; }
 
-        public int MaxConnectionsPerServer { get; init; }
+        public required int? MaxConnectionsPerServer { get; init; }
     }
 }

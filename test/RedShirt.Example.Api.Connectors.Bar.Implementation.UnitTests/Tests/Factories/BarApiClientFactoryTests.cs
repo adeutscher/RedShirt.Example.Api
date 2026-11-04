@@ -19,7 +19,9 @@ public class BarApiClientFactoryTests
             Options.Create(new BarApiClientFactory.ConfigurationModel
             {
                 BaseUrl = "http://bar.example",
-                ClientPerRequest = clientPerRequest
+                ClientPerRequest = clientPerRequest,
+                HandlerLifetimeSeconds = null,
+                MaxConnectionsPerServer = null
             }));
     }
 
