@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 
 namespace RedShirt.Example.Api.DataStores.Order.Extensions;
 

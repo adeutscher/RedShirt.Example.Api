@@ -11,6 +11,7 @@ using RedShirt.Example.Api.Core.UseCases.Order.Commands.Update;
 using RedShirt.Example.Api.Core.UseCases.Order.Queries.GetRecord;
 using RedShirt.Example.Api.Core.UseCases.Order.Queries.SearchRecords;
 using RedShirt.Example.Api.DataStores.Order.Models;
+using RedShirt.Example.Api.DataStores.Order.Models.Generated;
 using RedShirt.Example.Api.Models.Order;
 
 namespace RedShirt.Example.Api.Controllers;
