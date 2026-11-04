@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RedShirt.Example.Api.Common.Extensions;
+using RedShirt.Example.Api.Connectors.Common.Http.Extensions;
 using RedShirt.Example.Api.Connectors.Foo.Core.Services;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Clients;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Factories;
@@ -32,7 +33,8 @@ public static class ServiceCollectionExtensions
 
         services
             .AddHttpClient(nameof(FooApiClient))
-            .AddHttpMessageHandler<FooApiClientHandler>();
+            .AddHttpMessageHandler<FooApiClientHandler>()
+            .ConfigureConnectorConnections<FooApiClientFactory.ConfigurationModel>(ConfigurationSectionName);
 
         return services;
     }

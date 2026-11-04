@@ -6,6 +6,7 @@ using RedShirt.Example.Api.Connectors.Bar.Implementation.Clients;
 using RedShirt.Example.Api.Connectors.Bar.Implementation.Factories;
 using RedShirt.Example.Api.Connectors.Bar.Implementation.Services;
 using RedShirt.Example.Api.Connectors.Bar.Implementation.Services.Resilience;
+using RedShirt.Example.Api.Connectors.Common.Http.Extensions;
 using RedShirt.Example.Api.Connectors.Common.Http.Services;
 
 namespace RedShirt.Example.Api.Connectors.Bar.Implementation.Extensions;
@@ -40,7 +41,8 @@ public static class ServiceCollectionExtensions
 
         services
             .AddHttpClient(nameof(BarApiClient))
-            .AddHttpMessageHandler<BarApiClientHandler>();
+            .AddHttpMessageHandler<BarApiClientHandler>()
+            .ConfigureConnectorConnections<BarApiClientFactory.ConfigurationModel>(ConfigurationSectionName);
 
         return services;
     }

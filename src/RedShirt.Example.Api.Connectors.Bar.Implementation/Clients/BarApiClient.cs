@@ -9,7 +9,7 @@ using System.Text.Json;
 
 namespace RedShirt.Example.Api.Connectors.Bar.Implementation.Clients;
 
-internal interface IBarApiClient
+internal interface IBarApiClient : IDisposable
 {
     Task<CreateBarConnectorResponse> CreateBarAsync(CreateBarConnectorRequest request,
         CancellationToken cancellationToken = default);
@@ -46,6 +46,11 @@ internal sealed class BarApiClient(HttpClient httpClient, string baseUrl) : IBar
             IsThrottled = response.StatusCode == HttpStatusCode.TooManyRequests,
             RetryAfter = response.GetRetryAfter(DateTimeOffset.UtcNow)
         };
+    }
+
+    public void Dispose()
+    {
+        httpClient.Dispose();
     }
 
     public async Task<CreateBarConnectorResponse> CreateBarAsync(CreateBarConnectorRequest request,

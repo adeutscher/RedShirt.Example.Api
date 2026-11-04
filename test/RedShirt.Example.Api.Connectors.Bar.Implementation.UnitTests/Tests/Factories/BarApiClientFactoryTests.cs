@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using RedShirt.Example.Api.Connectors.Bar.Implementation.Clients;
 using RedShirt.Example.Api.Connectors.Bar.Implementation.Factories;
+using RedShirt.Example.Api.Connectors.Bar.Implementation.Services.Resilience;
 
 namespace RedShirt.Example.Api.Connectors.Bar.Implementation.UnitTests.Tests.Factories;
 
@@ -10,6 +11,33 @@ namespace RedShirt.Example.Api.Connectors.Bar.Implementation.UnitTests.Tests.Fac
 /// </summary>
 public class BarApiClientFactoryTests
 {
+    private static BarApiClientFactory CreateSut(IHttpClientFactory httpClientFactory, bool clientPerRequest)
+    {
+        return new BarApiClientFactory(
+            httpClientFactory,
+            new Mock<IBarApiRequestHandlerRetryWrapperService>(MockBehavior.Strict).Object,
+            Options.Create(new BarApiClientFactory.ConfigurationModel
+            {
+                BaseUrl = "http://bar.example",
+                ClientPerRequest = clientPerRequest,
+                HandlerLifetimeSeconds = null,
+                MaxConnectionsPerServer = null
+            }));
+    }
+
+    [Fact]
+    public void CreateBarApiClient_SkipsNamedHttpClient_WhenClientPerRequest()
+    {
+        var httpClientFactory = new Mock<IHttpClientFactory>(MockBehavior.Strict);
+
+        var sut = CreateSut(httpClientFactory.Object, true);
+
+        using var client = sut.CreateBarApiClient();
+
+        Assert.IsType<BarApiClient>(client);
+        httpClientFactory.VerifyNoOtherCalls();
+    }
+
     [Fact]
     public void CreateBarApiClient_UsesNamedHttpClient_AndConfiguredBaseUrl()
     {
@@ -19,14 +47,9 @@ public class BarApiClientFactoryTests
             .Setup(f => f.CreateClient(nameof(BarApiClient)))
             .Returns(httpClient);
 
-        var sut = new BarApiClientFactory(
-            httpClientFactory.Object,
-            Options.Create(new BarApiClientFactory.ConfigurationModel
-            {
-                BaseUrl = "http://bar.example"
-            }));
+        var sut = CreateSut(httpClientFactory.Object, false);
 
-        var client = sut.CreateBarApiClient();
+        using var client = sut.CreateBarApiClient();
 
         Assert.IsType<BarApiClient>(client);
         httpClientFactory.Verify(f => f.CreateClient(nameof(BarApiClient)), Times.Once);

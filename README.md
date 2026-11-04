@@ -56,6 +56,15 @@ Repo features in more detail:
           accepts any hint.
         * `RetryThrottledPerpetually` (default false): Keep retrying a throttled call with a hint without using up
           `RetryCount`. Only the caller's cancellation token ends it.
+    * Connection settings per connector, on the same `Connectors__Bar__*` or `Connectors__Foo__*` keys:
+        * `ClientPerRequest` (default false): A new client and connection per attempt. False uses the connector's
+          pooled client from `IHttpClientFactory`, which reuses connections across calls.
+        * `HandlerLifetimeSeconds` (default 120): Seconds before the pooled handler is replaced, which picks up DNS
+          changes. At least 1. Pooled only.
+        * `MaxConnectionsPerServer` (default 0): Cap on open connections. Requests over the cap wait for a free
+          connection, and the wait counts against the request timeout. 0 or less is no cap. Pooled only.
+        * "Pooled only" settings are ignored when `ClientPerRequest` is true. The Bar token endpoint keeps its own
+          pooled client whatever `ClientPerRequest` says.
 * Configuration is based on environment variables.
 * File upload and tracking examples.
 * Server-sent events over MQTT.

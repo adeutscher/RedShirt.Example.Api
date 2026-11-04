@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using Moq;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Clients;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Factories;
+using RedShirt.Example.Api.Connectors.Foo.Implementation.Services.Resilience;
 
 namespace RedShirt.Example.Api.Connectors.Foo.Implementation.UnitTests.Tests.Factories;
 
@@ -10,6 +11,33 @@ namespace RedShirt.Example.Api.Connectors.Foo.Implementation.UnitTests.Tests.Fac
 /// </summary>
 public class FooApiClientFactoryTests
 {
+    private static FooApiClientFactory CreateSut(IHttpClientFactory httpClientFactory, bool clientPerRequest)
+    {
+        return new FooApiClientFactory(
+            httpClientFactory,
+            new Mock<IFooApiRequestHandlerRetryWrapperService>(MockBehavior.Strict).Object,
+            Options.Create(new FooApiClientFactory.ConfigurationModel
+            {
+                BaseUrl = "http://foo.example",
+                ClientPerRequest = clientPerRequest,
+                HandlerLifetimeSeconds = null,
+                MaxConnectionsPerServer = null
+            }));
+    }
+
+    [Fact]
+    public void CreateFooApiClient_SkipsNamedHttpClient_WhenClientPerRequest()
+    {
+        var httpClientFactory = new Mock<IHttpClientFactory>(MockBehavior.Strict);
+
+        var sut = CreateSut(httpClientFactory.Object, true);
+
+        using var client = sut.CreateFooApiClient();
+
+        Assert.IsType<FooApiClient>(client);
+        httpClientFactory.VerifyNoOtherCalls();
+    }
+
     [Fact]
     public void CreateFooApiClient_UsesNamedHttpClient_AndConfiguredBaseUrl()
     {
@@ -19,14 +47,9 @@ public class FooApiClientFactoryTests
             .Setup(f => f.CreateClient(nameof(FooApiClient)))
             .Returns(httpClient);
 
-        var sut = new FooApiClientFactory(
-            httpClientFactory.Object,
-            Options.Create(new FooApiClientFactory.ConfigurationModel
-            {
-                BaseUrl = "http://foo.example"
-            }));
+        var sut = CreateSut(httpClientFactory.Object, false);
 
-        var client = sut.CreateFooApiClient();
+        using var client = sut.CreateFooApiClient();
 
         Assert.IsType<FooApiClient>(client);
         httpClientFactory.Verify(f => f.CreateClient(nameof(FooApiClient)), Times.Once);

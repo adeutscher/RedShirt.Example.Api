@@ -19,17 +19,17 @@ internal sealed class BarConnector(
 
         return retryWrapperService.RunAsync(async token =>
         {
-            var client = barApiClientFactory.CreateBarApiClient();
+            using var client = barApiClientFactory.CreateBarApiClient();
             return await client.CreateBarAsync(request, token);
         }, cancellationToken);
     }
 
     public Task<GetBarConnectorResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return retryWrapperService.RunAsync(token =>
+        return retryWrapperService.RunAsync(async token =>
         {
-            var client = barApiClientFactory.CreateBarApiClient();
-            return client.GetBarByIdAsync(id, token);
+            using var client = barApiClientFactory.CreateBarApiClient();
+            return await client.GetBarByIdAsync(id, token);
         }, cancellationToken);
     }
 }
