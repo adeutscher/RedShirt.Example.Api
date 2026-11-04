@@ -22,6 +22,7 @@ public class FooConnectorTests
         client
             .Setup(c => c.CreateFooAsync(request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
+        client.Setup(c => c.Dispose());
 
         var factory = new Mock<IFooApiClientFactory>(MockBehavior.Strict);
         factory.Setup(f => f.CreateFooApiClient()).Returns(client.Object);
@@ -64,6 +65,7 @@ public class FooConnectorTests
         client
             .Setup(c => c.GetFooByIdAsync(3, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
+        client.Setup(c => c.Dispose());
 
         var factory = new Mock<IFooApiClientFactory>(MockBehavior.Strict);
         factory.Setup(f => f.CreateFooApiClient()).Returns(client.Object);

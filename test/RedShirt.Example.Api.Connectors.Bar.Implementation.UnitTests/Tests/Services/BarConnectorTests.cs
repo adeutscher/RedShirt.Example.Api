@@ -22,6 +22,7 @@ public class BarConnectorTests
         client
             .Setup(c => c.CreateBarAsync(request, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
+        client.Setup(c => c.Dispose());
 
         var factory = new Mock<IBarApiClientFactory>(MockBehavior.Strict);
         factory.Setup(f => f.CreateBarApiClient()).Returns(client.Object);
@@ -64,6 +65,7 @@ public class BarConnectorTests
         client
             .Setup(c => c.GetBarByIdAsync(3, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
+        client.Setup(c => c.Dispose());
 
         var factory = new Mock<IBarApiClientFactory>(MockBehavior.Strict);
         factory.Setup(f => f.CreateBarApiClient()).Returns(client.Object);
