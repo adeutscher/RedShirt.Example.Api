@@ -42,8 +42,11 @@ jobs:
       - name: Scan (program)
         run: ./scripts/cicd/scan.sh
 
+      # -p runs test apps in parallel. Haven't seen the rogue exit 135 coverage crashes
+      # (https://github.com/microsoft/codecoverage/issues/253) on the GitHub runner in recent memory.
+      # Remove `-p` if this starts to become a problem.
       - name: Build and test
-        run: ./scripts/cicd/build.sh
+        run: ./scripts/cicd/build.sh -p
 
       - name: Docker build
         run: ./scripts/cicd/docker-build.sh

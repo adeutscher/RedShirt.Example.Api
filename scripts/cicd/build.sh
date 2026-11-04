@@ -38,10 +38,46 @@
 #   * SLN_FILE: solution to build. Default: the single .sln or .slnx in the root.
 #   * BUILD_CONFIGURATION: build configuration. Default: Release.
 #
+# Options:
+#   * -p: run test apps in parallel. See the note above test_inner below.
+#   * -h: print usage and exit.
+#
 # Output (artifacts/ci/):
 #   * coverage.cobertura.xml: code coverage for the whole test run.
 #   * *.xunit.xml: one xUnit.net XML report per test project.
 set -euo pipefail
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [-p] [-h]
+
+Restore, build, and test the solution, and verify committed swagger.json files are current.
+
+Options:
+  -p  Run test apps in parallel. Use only where the coverage profiler crash
+      (https://github.com/microsoft/codecoverage/issues/253) has not been observed.
+  -h  Show this help and exit.
+
+Environment:
+  SLN_FILE             Solution to build. Default: the single .sln or .slnx in the root.
+  BUILD_CONFIGURATION  Build configuration. Default: Release.
+EOF
+}
+
+parallel_tests=false
+while getopts ":ph" opt; do
+  case "$opt" in
+    p) parallel_tests=true ;;
+    h) usage; exit 0 ;;
+    \?) echo "ERROR: unknown option -$OPTARG" >&2; usage >&2; exit 2 ;;
+  esac
+done
+shift $((OPTIND - 1))
+if [[ $# -gt 0 ]]; then
+  echo "ERROR: unexpected argument: $1" >&2
+  usage >&2
+  exit 2
+fi
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root"
@@ -142,10 +178,15 @@ for tool_sln in "${tool_solutions[@]}"; do
 done
 
 mkdir -p artifacts/ci
-# Run test apps one at a time. Test apps starting in parallel under one dotnet-coverage session
-# race in the coverage profiler and crash with SIGBUS (exit 135), usually hidden by a restart.
+# By default, run test apps one at a time. Test apps starting in parallel under one dotnet-coverage
+# session race in the coverage profiler and crash with SIGBUS (exit 135), usually hidden by a restart.
 # Workaround for https://github.com/microsoft/codecoverage/issues/253. Remove once that is fixed.
-test_inner="dotnet test $sln --no-build --configuration $configuration --max-parallel-test-modules 1 --report-xunit-xml --results-directory artifacts/ci"
+# -p skips the workaround, for environments where that issue does not seem to have been observed.
+test_parallel_args=" --max-parallel-test-modules 1"
+if [[ "$parallel_tests" == true ]]; then
+  test_parallel_args=""
+fi
+test_inner="dotnet test $sln --no-build --configuration $configuration${test_parallel_args} --report-xunit-xml --results-directory artifacts/ci"
 
 echo "==> $test_inner"
 coverage_cmd=""
