@@ -1,8 +1,11 @@
+using System.Text.Json.Serialization;
+
 namespace RedShirt.Example.Api.BackgroundJobs.Core.Models;
 
 public sealed class BackgroundJobServiceCreateRequest
 {
     public required BackgroundJobType Type { get; init; }
+    [JsonPropertyName("parameters")]
     public required string ParametersJson { get; init; }
 }
 

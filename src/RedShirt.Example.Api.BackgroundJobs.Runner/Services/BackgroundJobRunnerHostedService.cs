@@ -13,8 +13,8 @@ namespace RedShirt.Example.Api.BackgroundJobs.Runner.Services;
 ///     one at a time, acknowledge each, and back off while there is nothing to do.
 ///     <para>
 ///         Deliberately absent, compared to the JobWorker template: parallel handling, heartbeats (jobs are expected to
-///         finish well within their lease), idempotency tracking, and loader mode. When a workload outgrows this, move
-///         its job type to an applied JobWorker instead of growing this class.
+///         finish well within their lease), idempotency tracking, and loader mode. When a workload outgrows this,
+///         I would strongly advise moving its job type to be handled an applied JobWorker instead of growing this class.
 ///     </para>
 ///     <para>
 ///         A job that is interrupted by shutdown is not acknowledged. Its lease expires and it is run again later.
