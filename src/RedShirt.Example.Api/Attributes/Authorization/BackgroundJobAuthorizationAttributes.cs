@@ -20,12 +20,3 @@ public sealed class AuthorizeBackgroundJobWriteAttribute : AuthorizeAttribute
         Policy = BespokeAuthorizationPolicies.BackgroundJobWrite;
     }
 }
-
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public sealed class AuthorizeBackgroundJobWorkerAttribute : AuthorizeAttribute
-{
-    public AuthorizeBackgroundJobWorkerAttribute()
-    {
-        Policy = BespokeAuthorizationPolicies.BackgroundJobWorker;
-    }
-}

@@ -122,11 +122,5 @@ public static class BespokeAuthorizationPolicies
     /// </summary>
     public const string BackgroundJobWrite = "BackgroundJobWrite";
 
-    /// <summary>
-    ///     Background job worker access for lease and result endpoints: requires
-    ///     <see cref="BespokeAuthorizationPermissions.BackgroundJobWorker" />.
-    /// </summary>
-    public const string BackgroundJobWorker = "BackgroundJobWorker";
-
     // scaffold:policies
 }

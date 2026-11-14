@@ -52,10 +52,5 @@ public static class BespokeAuthorizationPermissions
     /// </summary>
     public const string BackgroundJobWrite = "background-job:write";
 
-    /// <summary>
-    ///     Lease background jobs and report their outcomes, as a worker outside the API would.
-    /// </summary>
-    public const string BackgroundJobWorker = "background-job:worker";
-
     // scaffold:permissions
 }

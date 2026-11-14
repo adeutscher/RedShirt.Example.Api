@@ -35,9 +35,4 @@ public static class BespokeAuthorizationRoles
     ///     Upload validation worker: GET upload by id, submit verdicts, and submit move reports.
     /// </summary>
     public const string UploadValidator = "upload-validator";
-
-    /// <summary>
-    ///     Background job worker outside the API: lease background jobs and report their outcomes.
-    /// </summary>
-    public const string BackgroundJobWorker = "background-job-worker";
 }

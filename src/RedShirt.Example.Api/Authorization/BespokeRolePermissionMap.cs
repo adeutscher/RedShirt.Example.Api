@@ -40,9 +40,6 @@ internal static class BespokeRolePermissionMap
             [BespokeAuthorizationRoles.UploadValidator] = FrozenSet.ToFrozenSet(
                 [BespokeAuthorizationPermissions.UploadValidator],
                 StringComparer.Ordinal),
-            [BespokeAuthorizationRoles.BackgroundJobWorker] = FrozenSet.ToFrozenSet(
-                [BespokeAuthorizationPermissions.BackgroundJobWorker],
-                StringComparer.Ordinal),
             [BespokeAuthorizationRoles.Developer] = FullAccessPermissions,
             [BespokeAuthorizationRoles.Admin] = FrozenSet.ToFrozenSet(
                 [.. FullAccessPermissions, BespokeAuthorizationPermissions.Unrestricted],

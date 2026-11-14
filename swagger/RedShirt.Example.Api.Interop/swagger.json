@@ -48,51 +48,6 @@
         }
       }
     },
-    "/background-jobs/leases": {
-      "post": {
-        "tags": [
-          "BackgroundJob"
-        ],
-        "operationId": "BackgroundJob_Lease",
-        "requestBody": {
-          "x-name": "request",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BackgroundJobLeaseRequest"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/BackgroundJobModel"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/background-jobs/{id}/retries": {
       "post": {
         "tags": [
@@ -206,80 +161,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackgroundJobSearchResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/background-jobs/{id}/results": {
-      "post": {
-        "tags": [
-          "BackgroundJob"
-        ],
-        "operationId": "BackgroundJob_SubmitResult",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "request",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BackgroundJobResultRequest"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BackgroundJobModel"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2768,25 +2649,6 @@
           }
         }
       },
-      "BackgroundJobLeaseRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "count",
-          "leaseOwner"
-        ],
-        "properties": {
-          "count": {
-            "type": "integer",
-            "description": "How many jobs to lease at most.\n            ",
-            "format": "int32"
-          },
-          "leaseOwner": {
-            "type": "string",
-            "description": "Identifies the worker. Outcomes must be reported with the same lease owner.\n            "
-          }
-        }
-      },
       "BackgroundJobSearchResponse": {
         "type": "object",
         "additionalProperties": false,
@@ -2801,46 +2663,6 @@
             }
           }
         }
-      },
-      "BackgroundJobResultRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "leaseOwner",
-          "attempt",
-          "result"
-        ],
-        "properties": {
-          "leaseOwner": {
-            "type": "string"
-          },
-          "attempt": {
-            "type": "integer",
-            "description": "The job's attempts value from the lease response. An outcome for any other attempt is refused with a\n409, since the lease it belonged to has expired and the job was leased again.\n            ",
-            "format": "int32"
-          },
-          "result": {
-            "$ref": "#/components/schemas/JobResult"
-          },
-          "detail": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "JobResult": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "Success",
-          "Failure",
-          "InvalidData"
-        ],
-        "enum": [
-          0,
-          1,
-          2
-        ]
       },
       "GetBarConnectorResponse": {
         "type": "object",

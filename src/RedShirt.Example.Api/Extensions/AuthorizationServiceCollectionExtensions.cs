@@ -139,11 +139,6 @@ internal static class AuthorizationServiceCollectionExtensions
                 .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
                     BespokeAuthorizationPermissions.BackgroundJobWrite));
 
-            authorization.AddPolicy(BespokeAuthorizationPolicies.BackgroundJobWorker, policy =>
-                ConfigureApiPolicy(policy)
-                    .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
-                        BespokeAuthorizationPermissions.BackgroundJobWorker));
-
             // scaffold:policy-registrations
 
             authorization.FallbackPolicy = authorization.GetPolicy(BespokeAuthorizationPolicies.Write);

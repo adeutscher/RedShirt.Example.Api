@@ -8,8 +8,8 @@ using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Commands.Lease;
 namespace RedShirt.Example.Api.Core.UseCases.BackgroundJob.Services;
 
 /// <summary>
-///     The in-API runner's job source. It reads and updates the BackgroundJob table through the same CQRS handlers as the
-///     background job endpoints, so a JobWorker that polls those endpoints through a connector behaves the same way.
+///     The in-API runner's job source. It leases jobs from the BackgroundJob table and records their outcomes through
+///     CQRS handlers. An applied JobWorker does not use this: it gets its jobs from a queue.
 /// </summary>
 internal sealed class CqrsBackgroundJobSource(
     ILeaseBackgroundJobsCommandHandler leaseBackgroundJobsCommandHandler,

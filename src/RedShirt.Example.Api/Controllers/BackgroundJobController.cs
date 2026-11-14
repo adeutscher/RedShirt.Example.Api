@@ -4,8 +4,6 @@ using RedShirt.Example.Api.Attributes;
 using RedShirt.Example.Api.Attributes.Authorization;
 using RedShirt.Example.Api.BackgroundJobs.Core.Models;
 using RedShirt.Example.Api.Constants;
-using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Commands.Acknowledge;
-using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Commands.Lease;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Commands.Retry;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Queries.GetRecord;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Queries.SearchRecords;
@@ -14,8 +12,9 @@ using RedShirt.Example.Api.Models.BackgroundJob;
 namespace RedShirt.Example.Api.Controllers;
 
 /// <summary>
-///     Background job status, plus lease and result endpoints for a worker outside the API. The in-API runner uses the
-///     same CQRS handlers as these endpoints, so a JobWorker can take over job types by polling here.
+///     Background job status, and retries of failed jobs. Jobs are only ever taken for execution by the in-API runner
+///     (through CQRS handlers) or, once job types move to an applied JobWorker, from that worker's queue. So there are
+///     deliberately no endpoints for leasing jobs or reporting their outcomes.
 /// </summary>
 [ApiController]
 [EnableRateLimiting(RateLimitingConstants.PolicyHeaderDefault)]
@@ -35,23 +34,6 @@ public class BackgroundJobController : ControllerBase
         CancellationToken cancellationToken)
     {
         var model = await getBackgroundJobRecordQueryHandler.Handle(new GetBackgroundJobRecordQuery(id),
-            cancellationToken);
-        return Ok(model);
-    }
-
-    [HttpPost("leases")]
-    [AuthorizeBackgroundJobWorker]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IReadOnlyList<BackgroundJobModel>))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Lease(
-        [FromBody]
-        BackgroundJobLeaseRequest request,
-        [FromServices]
-        ILeaseBackgroundJobsCommandHandler leaseBackgroundJobsCommandHandler,
-        CancellationToken cancellationToken)
-    {
-        var model = await leaseBackgroundJobsCommandHandler.Handle(
-            new LeaseBackgroundJobsCommand(request.Count, request.LeaseOwner),
             cancellationToken);
         return Ok(model);
     }
@@ -89,28 +71,6 @@ public class BackgroundJobController : ControllerBase
                 request.Type,
                 request.State,
                 request.CreatedBeforeUtc),
-            cancellationToken);
-        return Ok(model);
-    }
-
-    [HttpPost("{id:guid}/results")]
-    [AuthorizeBackgroundJobWorker]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(BackgroundJobModel))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> SubmitResult(
-        [FromRoute]
-        Guid id,
-        [FromBody]
-        BackgroundJobResultRequest request,
-        [FromServices]
-        IAcknowledgeBackgroundJobCommandHandler acknowledgeBackgroundJobCommandHandler,
-        CancellationToken cancellationToken)
-    {
-        var model = await acknowledgeBackgroundJobCommandHandler.Handle(
-            new AcknowledgeBackgroundJobCommand(id, request.LeaseOwner, request.Attempt, request.Result,
-                request.Detail),
             cancellationToken);
         return Ok(model);
     }
