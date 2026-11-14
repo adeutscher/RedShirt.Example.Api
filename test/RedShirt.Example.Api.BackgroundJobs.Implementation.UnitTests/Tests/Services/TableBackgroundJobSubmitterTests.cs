@@ -1,7 +1,9 @@
 using RedShirt.Example.Api.BackgroundJobs.Core.Models;
-using RedShirt.Example.Api.BackgroundJobs.Core.Models.Parameters;
 using RedShirt.Example.Api.BackgroundJobs.Core.Services;
 using RedShirt.Example.Api.BackgroundJobs.Implementation.Services;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Models;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Models.Parameters;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Services;
 using System.Text.Json;
 
 namespace RedShirt.Example.Api.BackgroundJobs.Implementation.UnitTests.Tests.Services;

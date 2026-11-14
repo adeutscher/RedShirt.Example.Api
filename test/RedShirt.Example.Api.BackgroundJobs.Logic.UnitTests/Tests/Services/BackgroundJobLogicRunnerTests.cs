@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using RedShirt.Example.Api.BackgroundJobs.Core.Models;
 using RedShirt.Example.Api.BackgroundJobs.Logic.Handlers;
 using RedShirt.Example.Api.BackgroundJobs.Logic.Services;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Models;
 
 namespace RedShirt.Example.Api.BackgroundJobs.Logic.UnitTests.Tests.Services;
 

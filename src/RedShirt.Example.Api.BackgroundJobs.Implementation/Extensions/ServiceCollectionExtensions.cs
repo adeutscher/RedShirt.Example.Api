@@ -5,6 +5,7 @@ using RedShirt.Example.Api.BackgroundJobs.Core.Extensions;
 using RedShirt.Example.Api.BackgroundJobs.Core.Services;
 using RedShirt.Example.Api.BackgroundJobs.Implementation.Factories;
 using RedShirt.Example.Api.BackgroundJobs.Implementation.Services;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Services;
 using RedShirt.Example.Api.DataStores.Common.Extensions;
 
 namespace RedShirt.Example.Api.BackgroundJobs.Implementation.Extensions;

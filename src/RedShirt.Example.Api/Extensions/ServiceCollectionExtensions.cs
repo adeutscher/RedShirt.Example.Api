@@ -1,6 +1,7 @@
 using RedShirt.Example.Api.BackgroundJobs.Implementation.Extensions;
 using RedShirt.Example.Api.BackgroundJobs.Logic.Extensions;
 using RedShirt.Example.Api.BackgroundJobs.Runner.Extensions;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Services;
 using RedShirt.Example.Api.ClientEvents.Domains.Example.Extensions;
 using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.Extensions;
 using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Extensions;

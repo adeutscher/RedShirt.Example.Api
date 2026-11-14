@@ -1,3 +1,5 @@
+using RedShirt.Example.Api.BackgroundJobs.Submission.Models;
+
 namespace RedShirt.Example.Api.BackgroundJobs.Core.Models;
 
 /*

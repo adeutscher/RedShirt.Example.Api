@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace RedShirt.Example.Api.BackgroundJobs.Core.Models;
+namespace RedShirt.Example.Api.BackgroundJobs.Submission.Models;
 
 /// <summary>
 ///     The kinds of background job. Picks the handler that runs a job.

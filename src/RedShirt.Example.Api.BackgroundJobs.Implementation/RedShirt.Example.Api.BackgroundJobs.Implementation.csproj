@@ -14,6 +14,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Core\RedShirt.Example.Api.BackgroundJobs.Core.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Submission\RedShirt.Example.Api.BackgroundJobs.Submission.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Exceptions\RedShirt.Example.Api.Common.Exceptions.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Common\RedShirt.Example.Api.DataStores.Common.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Constants\RedShirt.Example.Api.DataStores.Constants.csproj"/>

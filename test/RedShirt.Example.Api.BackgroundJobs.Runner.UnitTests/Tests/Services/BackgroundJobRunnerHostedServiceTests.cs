@@ -5,6 +5,7 @@ using RedShirt.Example.Api.BackgroundJobs.Core.Configuration;
 using RedShirt.Example.Api.BackgroundJobs.Core.Models;
 using RedShirt.Example.Api.BackgroundJobs.Core.Services;
 using RedShirt.Example.Api.BackgroundJobs.Runner.Services;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Models;
 
 namespace RedShirt.Example.Api.BackgroundJobs.Runner.UnitTests.Tests.Services;
 

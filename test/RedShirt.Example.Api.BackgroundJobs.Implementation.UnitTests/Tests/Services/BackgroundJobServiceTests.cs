@@ -1,5 +1,6 @@
 using RedShirt.Example.Api.BackgroundJobs.Core.Models;
 using RedShirt.Example.Api.BackgroundJobs.Implementation.UnitTests.Support;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Models;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 
 namespace RedShirt.Example.Api.BackgroundJobs.Implementation.UnitTests.Tests.Services;

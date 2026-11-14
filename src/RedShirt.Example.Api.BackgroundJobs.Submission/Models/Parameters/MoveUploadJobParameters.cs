@@ -1,4 +1,4 @@
-namespace RedShirt.Example.Api.BackgroundJobs.Core.Models.Parameters;
+namespace RedShirt.Example.Api.BackgroundJobs.Submission.Models.Parameters;
 
 public sealed class MoveUploadJobParameters : IBackgroundJobParameters
 {

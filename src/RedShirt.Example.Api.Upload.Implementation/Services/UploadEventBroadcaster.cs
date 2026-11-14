@@ -1,5 +1,5 @@
-using RedShirt.Example.Api.BackgroundJobs.Core.Models.Parameters;
-using RedShirt.Example.Api.BackgroundJobs.Core.Services;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Models.Parameters;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Services;
 using RedShirt.Example.Api.Upload.Core.Events;
 using RedShirt.Example.Api.Upload.Core.Models.Responses;
 using RedShirt.Example.Api.Upload.Core.Services;
