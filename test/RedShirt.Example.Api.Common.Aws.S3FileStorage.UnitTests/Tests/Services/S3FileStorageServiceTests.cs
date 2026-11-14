@@ -184,4 +184,19 @@ public class S3FileStorageServiceTests
 
         Assert.Equal("potato", await reader.ReadToEndAsync(TestContext.Current.CancellationToken));
     }
+
+    [Fact]
+    public async Task CopyAsync_CopiesBetweenBuckets()
+    {
+        var s3 = new Mock<IAmazonS3>(MockBehavior.Strict);
+        s3.Setup(x => x.CopyObjectAsync("source", "source-key", "destination", "destination-key",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CopyObjectResponse());
+
+        using var service = new S3FileStorageService(s3.Object);
+        await service.CopyAsync("source", "source-key", "destination", "destination-key",
+            TestContext.Current.CancellationToken);
+
+        s3.VerifyAll();
+    }
 }

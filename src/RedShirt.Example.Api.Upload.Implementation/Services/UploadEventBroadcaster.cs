@@ -8,7 +8,8 @@ namespace RedShirt.Example.Api.Upload.Implementation.Services;
 
 /// <summary>
 ///     Turns upload lifecycle events into background jobs. A completed upload gets a
-///     <see cref="ValidateUploadJobParameters" /> job. The other events need no background work in this template.
+///     <see cref="ValidateUploadJobParameters" /> job, and a validated upload gets a <see cref="MoveUploadJobParameters" />
+///     job. The other events need no background work in this template.
 ///     <para>
 ///         Jobs are sent through <see cref="IBackgroundJobSubmitter" />, so they go to the in-API BackgroundJob table or to
 ///         a JobWorker's queue depending on which submitter is registered. An applied project could also publish these
@@ -37,10 +38,15 @@ internal sealed class UploadEventBroadcaster(IBackgroundJobSubmitter backgroundJ
         }, cancellationToken);
     }
 
-    public Task BroadcastUploadValidatedAsync(UploadValidatedEvent uploadEvent, UploadSummaryModel summary,
+    public async Task BroadcastUploadValidatedAsync(UploadValidatedEvent uploadEvent, UploadSummaryModel summary,
         CancellationToken cancellationToken = default)
     {
-        return Task.CompletedTask;
+        // As with validation: if submission fails, the upload stays Verified, and a move can still be reported by hand
+        // through POST /uploads/{id}/move-reports.
+        await backgroundJobSubmitter.SubmitAsync(new MoveUploadJobParameters
+        {
+            UploadId = uploadEvent.UploadId
+        }, cancellationToken);
     }
 
     public Task BroadcastUploadRejectedAsync(UploadRejectedEvent uploadEvent, UploadSummaryModel summary,

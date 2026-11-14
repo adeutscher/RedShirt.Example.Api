@@ -12,7 +12,12 @@ public enum BackgroundJobType
     /// <summary>
     ///     Check a completed upload and submit a verdict on it.
     /// </summary>
-    ValidateUpload = 1
+    ValidateUpload = 1,
+
+    /// <summary>
+    ///     Move a verified upload into the verified bucket and record it as stored.
+    /// </summary>
+    MoveUpload = 2
 
     // When adding a type, also add its parameters model (IBackgroundJobParameters) and a handler.
 }

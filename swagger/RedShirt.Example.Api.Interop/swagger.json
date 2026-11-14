@@ -2715,10 +2715,12 @@
         "type": "string",
         "description": "",
         "x-enumNames": [
-          "ValidateUpload"
+          "ValidateUpload",
+          "MoveUpload"
         ],
         "enum": [
-          "ValidateUpload"
+          "ValidateUpload",
+          "MoveUpload"
         ]
       },
       "BackgroundJobState": {

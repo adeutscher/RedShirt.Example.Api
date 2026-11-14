@@ -45,6 +45,20 @@ public class UploadEventBroadcasterTests
     }
 
     [Fact]
+    public async Task BroadcastUploadValidatedAsync_SubmitsMoveJob()
+    {
+        MoveUploadJobParameters? captured = null;
+        _submitter.Setup(x => x.SubmitAsync(It.IsAny<MoveUploadJobParameters>(), It.IsAny<CancellationToken>()))
+            .Callback<MoveUploadJobParameters, CancellationToken>((parameters, _) => captured = parameters)
+            .ReturnsAsync(Guid.NewGuid());
+
+        await new UploadEventBroadcaster(_submitter.Object).BroadcastUploadValidatedAsync(
+            new UploadValidatedEvent {UploadId = UploadId}, Summary, TestContext.Current.CancellationToken);
+
+        Assert.Equal(UploadId, captured!.UploadId);
+    }
+
+    [Fact]
     public async Task OtherEvents_SubmitNoJobs()
     {
         var broadcaster = new UploadEventBroadcaster(_submitter.Object);
@@ -59,8 +73,6 @@ public class UploadEventBroadcasterTests
             FileName = "file.txt",
             IdempotencyKey = "key"
         }, Summary, token);
-        await broadcaster.BroadcastUploadValidatedAsync(new UploadValidatedEvent {UploadId = UploadId}, Summary,
-            token);
         await broadcaster.BroadcastUploadRejectedAsync(new UploadRejectedEvent {UploadId = UploadId}, Summary, token);
         await broadcaster.BroadcastUploadStoredAsync(
             new UploadStoredEvent {UploadId = UploadId, VerifiedStorageObjectKey = "key"}, Summary, token);

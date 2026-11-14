@@ -158,6 +158,54 @@ internal sealed class UploadService(
         return rejectedSummary;
     }
 
+    public async Task<string> CopyToVerifiedStorageAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
+        if (aggregate.Id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        if (aggregate.State != UploadState.Verified)
+        {
+            throw new BadRequestException("Upload is not awaiting a move.");
+        }
+
+        // The verified copy keeps the same object key, as the mock mover script did.
+        var options = uploadOptions.Value;
+        var objectKey = aggregate.StorageObjectKey;
+        await fileStorageService.CopyAsync(options.BucketUnverifiedItems, objectKey, options.BucketVerifiedItems,
+            objectKey, cancellationToken);
+        return objectKey;
+    }
+
+    public async Task RemoveUnverifiedCopyAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
+        if (aggregate.Id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        if (aggregate.State != UploadState.Stored)
+        {
+            throw new BadRequestException("Upload is not stored.");
+        }
+
+        var options = uploadOptions.Value;
+        if (string.IsNullOrWhiteSpace(aggregate.StorageObjectKey)
+            || (string.Equals(options.BucketUnverifiedItems, options.BucketVerifiedItems, StringComparison.Ordinal)
+                && string.Equals(aggregate.StorageObjectKey, aggregate.VerifiedStorageObjectKey,
+                    StringComparison.Ordinal)))
+        {
+            // Nothing separate to remove. With one bucket for both, this would delete the stored file itself.
+            return;
+        }
+
+        await fileStorageService.DeleteAsync(options.BucketUnverifiedItems, aggregate.StorageObjectKey,
+            cancellationToken);
+    }
+
     public async Task<UploadSummaryModel> SubmitMoveReportAsync(UploadServiceMoveReportRequest request,
         CancellationToken cancellationToken = default)
     {

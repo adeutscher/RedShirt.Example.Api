@@ -7,6 +7,12 @@ namespace RedShirt.Example.Api.Common.FileStorage.Services;
 public interface IFileStorageService
 {
     /// <summary>
+    ///     Copies an object within storage, possibly between buckets, without passing its bytes through the caller.
+    /// </summary>
+    Task CopyAsync(string sourceBucketName, string sourceObjectKey, string destinationBucketName,
+        string destinationObjectKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
     ///     Deletes the object at <paramref name="objectKey" /> from <paramref name="bucketName" />.
     /// </summary>
     Task DeleteAsync(string bucketName, string objectKey, CancellationToken cancellationToken = default);

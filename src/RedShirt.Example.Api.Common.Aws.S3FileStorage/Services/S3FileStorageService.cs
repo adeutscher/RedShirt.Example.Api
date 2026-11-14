@@ -77,6 +77,14 @@ internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService, 
         };
     }
 
+    public Task CopyAsync(string sourceBucketName, string sourceObjectKey, string destinationBucketName,
+        string destinationObjectKey, CancellationToken cancellationToken = default)
+    {
+        // A single CopyObject request handles objects up to 5 GB. Larger objects would need a multipart copy.
+        return s3.CopyObjectAsync(sourceBucketName, sourceObjectKey, destinationBucketName, destinationObjectKey,
+            cancellationToken);
+    }
+
     public Task DeleteAsync(string bucketName, string objectKey, CancellationToken cancellationToken = default)
     {
         return s3.DeleteObjectAsync(bucketName, objectKey, cancellationToken);

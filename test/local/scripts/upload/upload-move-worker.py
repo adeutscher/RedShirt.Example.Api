@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Mock mover worker: copy a specific Verified upload in S3 and submit a move report."""
+"""Mock mover worker: copy a specific Verified upload in S3 and submit a move report.
+
+The API now moves validated uploads itself with a MoveUpload background job. This script is only needed when the
+API's runner is switched off (BACKGROUND_JOBS__RUNNER_ENABLED=false), or to exercise the move-report endpoint the way
+an external worker would.
+"""
 
 from __future__ import annotations
 
