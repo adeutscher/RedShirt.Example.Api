@@ -1,0 +1,53 @@
+using Microsoft.Extensions.Options;
+using Moq;
+using RedShirt.Example.Api.BackgroundJobs.Core.Configuration;
+using RedShirt.Example.Api.BackgroundJobs.Core.Models;
+using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Commands.Acknowledge;
+using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Commands.Lease;
+using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Services;
+
+namespace RedShirt.Example.Api.Core.UnitTests.Tests.UseCases.BackgroundJob.Services;
+
+public class CqrsBackgroundJobSourceTests
+{
+    private readonly Mock<IAcknowledgeBackgroundJobCommandHandler> _acknowledgeHandler = new();
+    private readonly Mock<ILeaseBackgroundJobsCommandHandler> _leaseHandler = new();
+
+    private CqrsBackgroundJobSource CreateSource()
+    {
+        return new CqrsBackgroundJobSource(_leaseHandler.Object, _acknowledgeHandler.Object,
+            Options.Create(new BackgroundJobOptions {ProcessName = "api-1"}));
+    }
+
+    [Fact]
+    public async Task GetJobsAsync_LeasesAsThisProcess_AndConvertsToJobModels()
+    {
+        var model = BackgroundJobTestData.CreateModel(BackgroundJobState.Running);
+        _leaseHandler.Setup(x => x.Handle(new LeaseBackgroundJobsCommand(4, "api-1"), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([model]);
+
+        var jobs = await CreateSource().GetJobsAsync(4, TestContext.Current.CancellationToken);
+
+        var job = Assert.IsType<JobModel>(Assert.Single(jobs));
+        Assert.Equal(model.Id.ToString(), job.MessageId);
+        Assert.Equal(model.DateCreatedUtc, job.CreatedAtUtc);
+        Assert.Equal(model.Attempts, job.Attempts);
+        Assert.Equal(model.Type, job.Data.Type);
+        Assert.Equal(model.ParametersJson, job.Data.ParametersJson);
+    }
+
+    [Fact]
+    public async Task AcknowledgeAsync_ReportsResultAndDetailAsThisProcess()
+    {
+        var model = BackgroundJobTestData.CreateModel(BackgroundJobState.Running);
+        var job = CqrsBackgroundJobSource.ToJobModel(model);
+
+        await CreateSource().AcknowledgeAsync(job,
+            new JobLogicRunnerResponse {Result = JobResult.InvalidData, Detail = "bad"},
+            TestContext.Current.CancellationToken);
+
+        _acknowledgeHandler.Verify(x => x.Handle(
+            new AcknowledgeBackgroundJobCommand(model.Id, "api-1", JobResult.InvalidData, "bad"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+}

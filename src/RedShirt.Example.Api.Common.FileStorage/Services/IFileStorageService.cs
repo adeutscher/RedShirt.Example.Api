@@ -22,6 +22,12 @@ public interface IFileStorageService
         string? downloadFileName = null, CancellationToken cancellationToken = default);
 
     /// <summary>
+    ///     Opens the object at <paramref name="objectKey" /> in <paramref name="bucketName" /> for reading, without
+    ///     buffering the whole object in memory. The caller disposes the returned stream.
+    /// </summary>
+    Task<Stream> OpenReadAsync(string bucketName, string objectKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
     ///     Streams <paramref name="content" /> into <paramref name="bucketName" /> at
     ///     <paramref name="objectKey" /> without buffering the entire payload in memory.
     /// </summary>

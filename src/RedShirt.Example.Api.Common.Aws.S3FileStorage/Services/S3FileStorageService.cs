@@ -82,6 +82,14 @@ internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService, 
         return s3.DeleteObjectAsync(bucketName, objectKey, cancellationToken);
     }
 
+    public async Task<Stream> OpenReadAsync(string bucketName, string objectKey,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await s3.GetObjectAsync(bucketName, objectKey, cancellationToken).ConfigureAwait(false);
+        // Disposing the response stream releases the underlying HTTP response.
+        return response.ResponseStream;
+    }
+
     public async Task<string> GetPresignedDownloadUrlAsync(string bucketName, string objectKey, TimeSpan validity,
         string? downloadFileName = null, CancellationToken cancellationToken = default)
     {

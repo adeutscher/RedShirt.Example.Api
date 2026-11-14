@@ -1,3 +1,6 @@
+using RedShirt.Example.Api.BackgroundJobs.Implementation.Extensions;
+using RedShirt.Example.Api.BackgroundJobs.Logic.Extensions;
+using RedShirt.Example.Api.BackgroundJobs.Runner.Extensions;
 using RedShirt.Example.Api.ClientEvents.Domains.Example.Extensions;
 using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.Extensions;
 using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Extensions;
@@ -65,6 +68,15 @@ internal static class ServiceCollectionExtensions
             .AddProducts(configuration)
             .AddUploads(configuration)
             // scaffold:data-store-registrations
+            // Background jobs
+            ////
+            // Jobs are submitted to the BackgroundJob table. To hand them to an applied JobWorker instead, replace
+            // AddBackgroundJobTable's IBackgroundJobSubmitter with one that publishes to the worker's queue.
+            .AddBackgroundJobTable(configuration)
+            // Job logic, as an applied JobWorker's Core.Logic project would hold it.
+            .AddBackgroundJobLogic()
+            // The in-API runner. Switch it off with BACKGROUND_JOBS__RUNNER_ENABLED=false.
+            .AddBackgroundJobRunner(configuration)
             .AddMqttClientEvents(configuration)
             .AddAwsMqttClientEvents(configuration)
             .AddExampleClientEventsDomain();

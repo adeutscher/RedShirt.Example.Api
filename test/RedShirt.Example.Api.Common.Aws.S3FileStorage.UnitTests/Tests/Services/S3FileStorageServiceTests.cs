@@ -169,4 +169,19 @@ public class S3FileStorageServiceTests
 
         Assert.Contains("Content-Length declared", exception.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task OpenReadAsync_ReturnsObjectResponseStream()
+    {
+        var payload = Encoding.UTF8.GetBytes("potato");
+        var s3 = new Mock<IAmazonS3>(MockBehavior.Strict);
+        s3.Setup(x => x.GetObjectAsync("bucket", "key", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new GetObjectResponse {ResponseStream = new MemoryStream(payload)});
+
+        using var service = new S3FileStorageService(s3.Object);
+        await using var stream = await service.OpenReadAsync("bucket", "key", TestContext.Current.CancellationToken);
+        using var reader = new StreamReader(stream);
+
+        Assert.Equal("potato", await reader.ReadToEndAsync(TestContext.Current.CancellationToken));
+    }
 }

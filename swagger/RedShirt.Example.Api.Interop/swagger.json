@@ -6,6 +6,287 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/background-jobs/{id}": {
+      "get": {
+        "tags": [
+          "BackgroundJob"
+        ],
+        "operationId": "BackgroundJob_Get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundJobModel"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/background-jobs/leases": {
+      "post": {
+        "tags": [
+          "BackgroundJob"
+        ],
+        "operationId": "BackgroundJob_Lease",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundJobLeaseRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BackgroundJobModel"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/background-jobs/{id}/retries": {
+      "post": {
+        "tags": [
+          "BackgroundJob"
+        ],
+        "operationId": "BackgroundJob_Retry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundJobModel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/background-jobs": {
+      "get": {
+        "tags": [
+          "BackgroundJob"
+        ],
+        "operationId": "BackgroundJob_Search",
+        "parameters": [
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "Type",
+            "in": "query",
+            "schema": {
+              "nullable": true,
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/BackgroundJobType"
+                }
+              ]
+            },
+            "x-position": 2
+          },
+          {
+            "name": "State",
+            "in": "query",
+            "schema": {
+              "nullable": true,
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/BackgroundJobState"
+                }
+              ]
+            },
+            "x-position": 3
+          },
+          {
+            "name": "CreatedBeforeUtc",
+            "in": "query",
+            "description": "Only jobs created before this time. Pass the oldest dateCreatedUtc of the previous page to get the next\npage.\n            ",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 4
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundJobSearchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/background-jobs/{id}/results": {
+      "post": {
+        "tags": [
+          "BackgroundJob"
+        ],
+        "operationId": "BackgroundJob_SubmitResult",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackgroundJobResultRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackgroundJobModel"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/bar/{id}": {
       "get": {
         "tags": [
@@ -2367,22 +2648,94 @@
   },
   "components": {
     "schemas": {
-      "GetBarConnectorResponse": {
+      "BackgroundJobModel": {
         "type": "object",
         "additionalProperties": false,
         "required": [
           "id",
-          "name"
+          "type",
+          "state",
+          "parametersJson",
+          "attempts",
+          "dateCreatedUtc",
+          "dateUpdatedUtc",
+          "dueAtUtc"
         ],
         "properties": {
           "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "type": {
+            "$ref": "#/components/schemas/BackgroundJobType"
+          },
+          "state": {
+            "$ref": "#/components/schemas/BackgroundJobState"
+          },
+          "parametersJson": {
+            "type": "string"
+          },
+          "attempts": {
             "type": "integer",
             "format": "int32"
           },
-          "name": {
-            "type": "string"
+          "dateCreatedUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dateUpdatedUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dueAtUtc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "leaseOwner": {
+            "type": "string",
+            "nullable": true
+          },
+          "leaseExpiresAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "completedAtUtc": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
           }
         }
+      },
+      "BackgroundJobType": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "ValidateUpload"
+        ],
+        "enum": [
+          "ValidateUpload"
+        ]
+      },
+      "BackgroundJobState": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "Pending",
+          "Running",
+          "Succeeded",
+          "Failed"
+        ],
+        "enum": [
+          "Pending",
+          "Running",
+          "Succeeded",
+          "Failed"
+        ]
       },
       "ProblemDetails": {
         "type": "object",
@@ -2410,6 +2763,91 @@
           "instance": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "BackgroundJobLeaseRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "count",
+          "leaseOwner"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "description": "How many jobs to lease at most.\n            ",
+            "format": "int32"
+          },
+          "leaseOwner": {
+            "type": "string",
+            "description": "Identifies the worker. Outcomes must be reported with the same lease owner.\n            "
+          }
+        }
+      },
+      "BackgroundJobSearchResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "records"
+        ],
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackgroundJobModel"
+            }
+          }
+        }
+      },
+      "BackgroundJobResultRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "leaseOwner",
+          "result"
+        ],
+        "properties": {
+          "leaseOwner": {
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/JobResult"
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "JobResult": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Success",
+          "Failure",
+          "InvalidData"
+        ],
+        "enum": [
+          0,
+          1,
+          2
+        ]
+      },
+      "GetBarConnectorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
           }
         }
       },

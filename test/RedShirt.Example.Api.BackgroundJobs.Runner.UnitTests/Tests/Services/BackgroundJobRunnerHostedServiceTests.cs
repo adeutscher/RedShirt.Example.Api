@@ -1,0 +1,186 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using RedShirt.Example.Api.BackgroundJobs.Core.Configuration;
+using RedShirt.Example.Api.BackgroundJobs.Core.Models;
+using RedShirt.Example.Api.BackgroundJobs.Core.Services;
+using RedShirt.Example.Api.BackgroundJobs.Runner.Services;
+
+namespace RedShirt.Example.Api.BackgroundJobs.Runner.UnitTests.Tests.Services;
+
+public class BackgroundJobRunnerHostedServiceTests
+{
+    private readonly Mock<IJobLogicRunner> _jobLogicRunner = new();
+    private readonly Mock<IBackgroundJobSource> _jobSource = new();
+    private readonly Mock<IBackgroundJobWakeSignal> _wakeSignal = new();
+
+    private static JobModel CreateJob()
+    {
+        return new JobModel
+        {
+            MessageId = Guid.NewGuid().ToString(),
+            CreatedAtUtc = DateTime.UtcNow,
+            Data = new JobDataModel
+            {
+                Type = BackgroundJobType.ValidateUpload,
+                ParametersJson = "{}"
+            }
+        };
+    }
+
+    private BackgroundJobRunnerHostedService CreateService(BackgroundJobOptions? options = null)
+    {
+        var provider = new ServiceCollection()
+            .AddSingleton(_jobSource.Object)
+            .AddSingleton(_jobLogicRunner.Object)
+            .BuildServiceProvider();
+
+        return new BackgroundJobRunnerHostedService(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            _wakeSignal.Object,
+            Options.Create(options ?? new BackgroundJobOptions {FetchCount = 3, MaxIdleWaitSeconds = 30}),
+            NullLogger<BackgroundJobRunnerHostedService>.Instance);
+    }
+
+    [Fact]
+    public async Task RunBatchAsync_RunsEachJobInOrder_AndAcknowledgesItsResponse()
+    {
+        var first = CreateJob();
+        var second = CreateJob();
+        var order = new List<string>();
+        var failure = new JobLogicRunnerResponse {Result = JobResult.Failure, Detail = "nope"};
+        _jobSource.Setup(x => x.GetJobsAsync(3, It.IsAny<CancellationToken>())).ReturnsAsync([first, second]);
+        _jobLogicRunner.Setup(x => x.RunAsync(first, It.IsAny<CancellationToken>()))
+            .Callback(() => order.Add("run-1"))
+            .ReturnsAsync(JobLogicRunnerResponse.Success);
+        _jobLogicRunner.Setup(x => x.RunAsync(second, It.IsAny<CancellationToken>()))
+            .Callback(() => order.Add("run-2"))
+            .ReturnsAsync(failure);
+        _jobSource.Setup(x => x.AcknowledgeAsync(It.IsAny<IJobModel>(), It.IsAny<IJobLogicRunnerResponse>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<IJobModel, IJobLogicRunnerResponse, CancellationToken>((job, _, _) =>
+                order.Add(job == first ? "ack-1" : "ack-2"))
+            .Returns(Task.CompletedTask);
+
+        var count = await CreateService().RunBatchAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, count);
+        Assert.Equal(["run-1", "ack-1", "run-2", "ack-2"], order);
+        _jobSource.Verify(x => x.AcknowledgeAsync(first, JobLogicRunnerResponse.Success,
+            It.IsAny<CancellationToken>()), Times.Once);
+        _jobSource.Verify(x => x.AcknowledgeAsync(second, failure, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RunBatchAsync_WhenJobThrows_AcknowledgesFailureWithDetail()
+    {
+        var job = CreateJob();
+        IJobLogicRunnerResponse? acknowledged = null;
+        _jobSource.Setup(x => x.GetJobsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync([job]);
+        _jobLogicRunner.Setup(x => x.RunAsync(job, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("boom"));
+        _jobSource.Setup(x => x.AcknowledgeAsync(job, It.IsAny<IJobLogicRunnerResponse>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<IJobModel, IJobLogicRunnerResponse, CancellationToken>((_, response, _) =>
+                acknowledged = response)
+            .Returns(Task.CompletedTask);
+
+        await CreateService().RunBatchAsync(TestContext.Current.CancellationToken);
+
+        var response = Assert.IsType<JobLogicRunnerResponse>(acknowledged);
+        Assert.Equal(JobResult.Failure, response.Result);
+        Assert.Contains("boom", response.Detail);
+    }
+
+    [Fact]
+    public async Task RunBatchAsync_WhenAcknowledgementFails_ContinuesWithNextJob()
+    {
+        var first = CreateJob();
+        var second = CreateJob();
+        _jobSource.Setup(x => x.GetJobsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([first, second]);
+        _jobLogicRunner.Setup(x => x.RunAsync(It.IsAny<IJobModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(JobLogicRunnerResponse.Success);
+        _jobSource.Setup(x => x.AcknowledgeAsync(first, It.IsAny<IJobLogicRunnerResponse>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("database unavailable"));
+
+        var count = await CreateService().RunBatchAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, count);
+        _jobLogicRunner.Verify(x => x.RunAsync(second, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RunBatchAsync_WhenCancelledDuringJob_DoesNotAcknowledge()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var job = CreateJob();
+        _jobSource.Setup(x => x.GetJobsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync([job]);
+        _jobLogicRunner.Setup(x => x.RunAsync(job, It.IsAny<CancellationToken>()))
+            .Returns<IJobModel, CancellationToken>(async (_, token) =>
+            {
+                await cancellation.CancelAsync();
+                token.ThrowIfCancellationRequested();
+                return JobLogicRunnerResponse.Success;
+            });
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            CreateService().RunBatchAsync(cancellation.Token));
+
+        _jobSource.Verify(x => x.AcknowledgeAsync(It.IsAny<IJobModel>(), It.IsAny<IJobLogicRunnerResponse>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenRunnerDisabled_NeverFetches()
+    {
+        var service = CreateService(new BackgroundJobOptions {RunnerEnabled = false});
+
+        await service.StartAsync(TestContext.Current.CancellationToken);
+        await service.ExecuteTask!;
+        await service.StopAsync(TestContext.Current.CancellationToken);
+
+        _jobSource.Verify(x => x.GetJobsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenIdle_WaitsOnWakeSignal_AndKeepsPollingAfterSourceErrors()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var polls = 0;
+        _jobSource.Setup(x => x.GetJobsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Returns(() => ++polls == 1
+                ? Task.FromException<IReadOnlyList<IJobModel>>(new InvalidOperationException("database unavailable"))
+                : Task.FromResult<IReadOnlyList<IJobModel>>([]));
+        var waits = new List<TimeSpan>();
+        _wakeSignal.Setup(x => x.WaitAsync(It.IsAny<TimeSpan>(), It.IsAny<CancellationToken>()))
+            .Returns<TimeSpan, CancellationToken>(async (delay, _) =>
+            {
+                waits.Add(delay);
+                if (waits.Count == 3)
+                {
+                    await cancellation.CancelAsync();
+                }
+
+                return false;
+            });
+        var service = CreateService();
+
+        await service.StartAsync(cancellation.Token);
+        await service.ExecuteTask!.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        Assert.Equal(3, polls);
+        Assert.Equal([TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(8)], waits);
+    }
+
+    [Theory]
+    [InlineData(1, 2)]
+    [InlineData(3, 8)]
+    [InlineData(5, 30)]
+    [InlineData(100, 30)]
+    public void GetIdleDelay_DoublesUpToMaximum(int idleRounds, int expectedSeconds)
+    {
+        Assert.Equal(TimeSpan.FromSeconds(expectedSeconds), CreateService().GetIdleDelay(idleRounds));
+    }
+}

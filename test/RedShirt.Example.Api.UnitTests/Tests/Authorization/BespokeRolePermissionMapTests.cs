@@ -12,6 +12,8 @@ public class BespokeRolePermissionMapTests
     [
         BespokeAuthorizationPermissions.Read,
         BespokeAuthorizationPermissions.Write,
+        BespokeAuthorizationPermissions.BackgroundJobRead,
+        BespokeAuthorizationPermissions.BackgroundJobWrite,
         BespokeAuthorizationPermissions.CustomerRead,
         BespokeAuthorizationPermissions.CustomerWrite,
         BespokeAuthorizationPermissions.OrderRead,
@@ -29,6 +31,8 @@ public class BespokeRolePermissionMapTests
         BespokeAuthorizationPermissions.Read,
         BespokeAuthorizationPermissions.Unrestricted,
         BespokeAuthorizationPermissions.Write,
+        BespokeAuthorizationPermissions.BackgroundJobRead,
+        BespokeAuthorizationPermissions.BackgroundJobWrite,
         BespokeAuthorizationPermissions.CustomerRead,
         BespokeAuthorizationPermissions.CustomerWrite,
         BespokeAuthorizationPermissions.OrderRead,

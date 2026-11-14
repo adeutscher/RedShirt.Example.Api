@@ -112,5 +112,21 @@ public static class BespokeAuthorizationPolicies
     /// </summary>
     public const string CustomerScoped = "ApiCustomerScoped";
 
+    /// <summary>
+    ///     Approved background job read: <see cref="BespokeAuthorizationPermissions.BackgroundJobRead" /> on an HTTP GET.
+    /// </summary>
+    public const string BackgroundJobReadApproved = "BackgroundJobReadApproved";
+
+    /// <summary>
+    ///     Background job administration: requires <see cref="BespokeAuthorizationPermissions.BackgroundJobWrite" />.
+    /// </summary>
+    public const string BackgroundJobWrite = "BackgroundJobWrite";
+
+    /// <summary>
+    ///     Background job worker access for lease and result endpoints: requires
+    ///     <see cref="BespokeAuthorizationPermissions.BackgroundJobWorker" />.
+    /// </summary>
+    public const string BackgroundJobWorker = "BackgroundJobWorker";
+
     // scaffold:policies
 }

@@ -1,3 +1,5 @@
+using RedShirt.Example.Api.BackgroundJobs.Core.Models.Parameters;
+using RedShirt.Example.Api.BackgroundJobs.Core.Services;
 using RedShirt.Example.Api.Upload.Core.Events;
 using RedShirt.Example.Api.Upload.Core.Models.Responses;
 using RedShirt.Example.Api.Upload.Core.Services;
@@ -5,11 +7,15 @@ using RedShirt.Example.Api.Upload.Core.Services;
 namespace RedShirt.Example.Api.Upload.Implementation.Services;
 
 /// <summary>
-///     No-op broadcaster for the template. In production, publish lifecycle events to AWS EventBridge,
-///     Azure Event Grid, or a message queue so background workers can react without polling the API.
-///     In the general template, test scripts absolutely poll the API.
+///     Turns upload lifecycle events into background jobs. A completed upload gets a
+///     <see cref="ValidateUploadJobParameters" /> job. The other events need no background work in this template.
+///     <para>
+///         Jobs are sent through <see cref="IBackgroundJobSubmitter" />, so they go to the in-API BackgroundJob table or to
+///         a JobWorker's queue depending on which submitter is registered. An applied project could also publish these
+///         events to AWS EventBridge, Azure Event Grid, or similar for other consumers.
+///     </para>
 /// </summary>
-internal sealed class StubUploadEventBroadcaster : IUploadEventBroadcaster
+internal sealed class UploadEventBroadcaster(IBackgroundJobSubmitter backgroundJobSubmitter) : IUploadEventBroadcaster
 {
     public Task BroadcastUploadCreatedAsync(UploadCreatedEvent uploadEvent, UploadSummaryModel summary,
         CancellationToken cancellationToken = default)
@@ -17,10 +23,18 @@ internal sealed class StubUploadEventBroadcaster : IUploadEventBroadcaster
         return Task.CompletedTask;
     }
 
-    public Task BroadcastUploadCompletedAsync(UploadCompletedEvent uploadEvent, UploadSummaryModel summary,
+    public async Task BroadcastUploadCompletedAsync(UploadCompletedEvent uploadEvent, UploadSummaryModel summary,
         CancellationToken cancellationToken = default)
     {
-        return Task.CompletedTask;
+        /*
+         * The job is submitted after the Completed event has been saved, not in the same transaction. If submission
+         * fails, the upload stays NotValidated and the caller sees the error. A verdict can still be submitted by hand
+         * through POST /uploads/{id}/verdicts.
+         */
+        await backgroundJobSubmitter.SubmitAsync(new ValidateUploadJobParameters
+        {
+            UploadId = uploadEvent.UploadId
+        }, cancellationToken);
     }
 
     public Task BroadcastUploadValidatedAsync(UploadValidatedEvent uploadEvent, UploadSummaryModel summary,

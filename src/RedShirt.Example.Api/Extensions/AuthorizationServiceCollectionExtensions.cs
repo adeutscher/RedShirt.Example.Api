@@ -129,6 +129,21 @@ internal static class AuthorizationServiceCollectionExtensions
             authorization.AddPolicy(BespokeAuthorizationPolicies.CustomerScoped, policy => ConfigureApiPolicy(policy)
                 .AddRequirements(new CustomerScopedResourceRequirement()));
 
+            authorization.AddPolicy(BespokeAuthorizationPolicies.BackgroundJobReadApproved, policy =>
+                ConfigureApiPolicy(policy)
+                    .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
+                        BespokeAuthorizationPermissions.BackgroundJobRead)
+                    .AddRequirements(new HttpGetRequirement()));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.BackgroundJobWrite, policy => ConfigureApiPolicy(policy)
+                .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
+                    BespokeAuthorizationPermissions.BackgroundJobWrite));
+
+            authorization.AddPolicy(BespokeAuthorizationPolicies.BackgroundJobWorker, policy =>
+                ConfigureApiPolicy(policy)
+                    .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
+                        BespokeAuthorizationPermissions.BackgroundJobWorker));
+
             // scaffold:policy-registrations
 
             authorization.FallbackPolicy = authorization.GetPolicy(BespokeAuthorizationPolicies.Write);

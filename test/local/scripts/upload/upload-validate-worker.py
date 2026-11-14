@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Mock validator worker: validate a specific NotValidated upload and submit a verdict."""
+"""Mock validator worker: validate a specific NotValidated upload and submit a verdict.
+
+The API now validates uploads itself with a ValidateUpload background job. This script is only needed when the
+API's runner is switched off (BACKGROUND_JOBS__RUNNER_ENABLED=false), or to exercise the verdict endpoint the way an
+external worker would.
+"""
 
 from __future__ import annotations
 

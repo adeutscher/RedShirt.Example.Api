@@ -133,6 +133,17 @@ public class AuthorizationServiceCollectionExtensionsTests
         true)]
     [InlineData(BespokeAuthorizationRoles.Developer, BespokeAuthorizationPolicies.UploadInternalDetailsApproved, false)]
     [InlineData(BespokeAuthorizationRoles.Admin, BespokeAuthorizationPolicies.UploadInternalDetailsApproved, true)]
+    [InlineData(BespokeAuthorizationRoles.Developer, BespokeAuthorizationPolicies.BackgroundJobReadApproved, true)]
+    [InlineData(BespokeAuthorizationRoles.Developer, BespokeAuthorizationPolicies.BackgroundJobWrite, true)]
+    [InlineData(BespokeAuthorizationRoles.Developer, BespokeAuthorizationPolicies.BackgroundJobWorker, false)]
+    [InlineData(BespokeAuthorizationRoles.Admin, BespokeAuthorizationPolicies.BackgroundJobReadApproved, true)]
+    [InlineData(BespokeAuthorizationRoles.Admin, BespokeAuthorizationPolicies.BackgroundJobWorker, false)]
+    [InlineData(BespokeAuthorizationRoles.BackgroundJobWorker, BespokeAuthorizationPolicies.BackgroundJobWorker,
+        true)]
+    [InlineData(BespokeAuthorizationRoles.BackgroundJobWorker,
+        BespokeAuthorizationPolicies.BackgroundJobReadApproved, false)]
+    [InlineData(BespokeAuthorizationRoles.BackgroundJobWorker, BespokeAuthorizationPolicies.Write, false)]
+    [InlineData(BespokeAuthorizationRoles.UploadValidator, BespokeAuthorizationPolicies.BackgroundJobWorker, false)]
     public async Task AuthorizeAsync_RolePolicies(string role, string policy, bool expected)
     {
         var services = new ServiceCollection();

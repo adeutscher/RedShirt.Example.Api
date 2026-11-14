@@ -27,6 +27,13 @@
         <Project Path="src/RedShirt.Example.Api.Core/RedShirt.Example.Api.Core.csproj"/>
         <Project Path="src/RedShirt.Example.Api/RedShirt.Example.Api.csproj"/>
     </Folder>
+    <Folder Name="/src/background-jobs/">
+        <Project Path="src/RedShirt.Example.Api.BackgroundJobs.Core/RedShirt.Example.Api.BackgroundJobs.Core.csproj"/>
+        <Project
+                Path="src/RedShirt.Example.Api.BackgroundJobs.Implementation/RedShirt.Example.Api.BackgroundJobs.Implementation.csproj"/>
+        <Project Path="src/RedShirt.Example.Api.BackgroundJobs.Logic/RedShirt.Example.Api.BackgroundJobs.Logic.csproj"/>
+        <Project Path="src/RedShirt.Example.Api.BackgroundJobs.Runner/RedShirt.Example.Api.BackgroundJobs.Runner.csproj"/>
+    </Folder>
     <Folder Name="/src/common/">
         <Project Path="src/RedShirt.Example.Api.Common.Distributed/RedShirt.Example.Api.Common.Distributed.csproj"/>
         <Project
@@ -110,6 +117,14 @@
         <Project Path="test/RedShirt.Example.Api.Core.UnitTests/RedShirt.Example.Api.Core.UnitTests.csproj"/>
         <Project Path="test/RedShirt.Example.Api.IntegrationTests/RedShirt.Example.Api.IntegrationTests.csproj"/>
         <Project Path="test/RedShirt.Example.Api.UnitTests/RedShirt.Example.Api.UnitTests.csproj"/>
+    </Folder>
+    <Folder Name="/test/background-jobs/">
+        <Project
+                Path="test/RedShirt.Example.Api.BackgroundJobs.Implementation.UnitTests/RedShirt.Example.Api.BackgroundJobs.Implementation.UnitTests.csproj"/>
+        <Project
+                Path="test/RedShirt.Example.Api.BackgroundJobs.Logic.UnitTests/RedShirt.Example.Api.BackgroundJobs.Logic.UnitTests.csproj"/>
+        <Project
+                Path="test/RedShirt.Example.Api.BackgroundJobs.Runner.UnitTests/RedShirt.Example.Api.BackgroundJobs.Runner.UnitTests.csproj"/>
     </Folder>
     <Folder Name="/test/common/">
         <Project

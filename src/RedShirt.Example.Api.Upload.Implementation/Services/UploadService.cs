@@ -8,6 +8,7 @@ using RedShirt.Example.Api.Upload.Core.Models.Requests;
 using RedShirt.Example.Api.Upload.Core.Models.Responses;
 using RedShirt.Example.Api.Upload.Core.Services;
 using RedShirt.Example.Api.Upload.Core.Validation;
+using RedShirt.Example.Api.Upload.Implementation.Aggregates;
 using RedShirt.Example.Api.Upload.Implementation.Repositories;
 
 namespace RedShirt.Example.Api.Upload.Implementation.Services;
@@ -246,8 +247,7 @@ internal sealed class UploadService(
         await eventBroadcaster.BroadcastUploadPurgedAsync(purgedEvent, cancellationToken);
     }
 
-    public async Task<UploadDownloadLinkModel> GetDownloadLinkAsync(Guid id,
-        CancellationToken cancellationToken = default)
+    private async Task<UploadAggregate> GetDownloadableAggregateAsync(Guid id, CancellationToken cancellationToken)
     {
         var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
         if (aggregate.Id == Guid.Empty)
@@ -260,10 +260,31 @@ internal sealed class UploadService(
             throw new BadRequestException("Upload is not available for download.");
         }
 
+        return aggregate;
+    }
+
+    private string ResolveBucket(UploadAggregate aggregate)
+    {
         var options = uploadOptions.Value;
-        var bucket = aggregate.UsesVerifiedBucket()
+        return aggregate.UsesVerifiedBucket()
             ? options.BucketVerifiedItems
             : options.BucketUnverifiedItems;
+    }
+
+    public async Task<Stream> OpenContentAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var aggregate = await GetDownloadableAggregateAsync(id, cancellationToken);
+        return await fileStorageService.OpenReadAsync(ResolveBucket(aggregate), aggregate.ResolveDownloadObjectKey(),
+            cancellationToken);
+    }
+
+    public async Task<UploadDownloadLinkModel> GetDownloadLinkAsync(Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var aggregate = await GetDownloadableAggregateAsync(id, cancellationToken);
+
+        var options = uploadOptions.Value;
+        var bucket = ResolveBucket(aggregate);
         var objectKey = aggregate.ResolveDownloadObjectKey();
         var validity = TimeSpan.FromMinutes(options.PresignedUrlLifetimeMinutes);
         var url = await fileStorageService.GetPresignedDownloadUrlAsync(bucket, objectKey, validity,

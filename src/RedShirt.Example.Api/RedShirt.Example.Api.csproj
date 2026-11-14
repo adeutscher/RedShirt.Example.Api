@@ -20,6 +20,9 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Implementation\RedShirt.Example.Api.BackgroundJobs.Implementation.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Logic\RedShirt.Example.Api.BackgroundJobs.Logic.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Runner\RedShirt.Example.Api.BackgroundJobs.Runner.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Docker.SecretManager\RedShirt.Example.Api.Common.Docker.SecretManager.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Connectors.Bar.Implementation\RedShirt.Example.Api.Connectors.Bar.Implementation.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Connectors.Foo.Implementation\RedShirt.Example.Api.Connectors.Foo.Implementation.csproj"/>

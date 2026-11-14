@@ -21,7 +21,9 @@ internal static class BespokeRolePermissionMap
             BespokeAuthorizationPermissions.CustomerWrite,
             BespokeAuthorizationPermissions.UploadRead,
             BespokeAuthorizationPermissions.UploadWrite,
-            BespokeAuthorizationPermissions.UploadPurge
+            BespokeAuthorizationPermissions.UploadPurge,
+            BespokeAuthorizationPermissions.BackgroundJobRead,
+            BespokeAuthorizationPermissions.BackgroundJobWrite
             // scaffold:full-access-permissions
         ],
         StringComparer.Ordinal);
@@ -37,6 +39,9 @@ internal static class BespokeRolePermissionMap
                 StringComparer.Ordinal),
             [BespokeAuthorizationRoles.UploadValidator] = FrozenSet.ToFrozenSet(
                 [BespokeAuthorizationPermissions.UploadValidator],
+                StringComparer.Ordinal),
+            [BespokeAuthorizationRoles.BackgroundJobWorker] = FrozenSet.ToFrozenSet(
+                [BespokeAuthorizationPermissions.BackgroundJobWorker],
                 StringComparer.Ordinal),
             [BespokeAuthorizationRoles.Developer] = FullAccessPermissions,
             [BespokeAuthorizationRoles.Admin] = FrozenSet.ToFrozenSet(
