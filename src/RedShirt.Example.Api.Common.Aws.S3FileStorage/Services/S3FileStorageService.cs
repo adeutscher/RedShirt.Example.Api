@@ -37,7 +37,7 @@ internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService, 
     {
         /*
          * Upload flow:
-         *   Content ──ReadAsync──▶ HashingStream ──ReadAsync──▶ TransferUtility.UploadAsync
+         *   Content --ReadAsync--> HashingStream --ReadAsync--> TransferUtility.UploadAsync
          *
          * Kestrel's Request.Body forbids synchronous reads by default (AllowSynchronousIO = false).
          * PutObjectAsync sync-reads InputStream when marshalling the body; see
