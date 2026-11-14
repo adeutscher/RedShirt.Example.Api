@@ -1,4 +1,4 @@
-using RedShirt.Example.Api.BackgroundJobs.Core.Models;
+using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Models;
 
 namespace RedShirt.Example.Api.Core.UseCases.BackgroundJob.Commands.Acknowledge;
 
@@ -6,5 +6,5 @@ public sealed record AcknowledgeBackgroundJobCommand(
     Guid Id,
     string LeaseOwner,
     int Attempt,
-    JobResult Result,
+    BackgroundJobAttemptResult Result,
     string? Detail);

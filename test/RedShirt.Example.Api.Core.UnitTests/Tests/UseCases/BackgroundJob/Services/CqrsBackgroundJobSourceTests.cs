@@ -5,6 +5,7 @@ using RedShirt.Example.Api.BackgroundJobs.Core.Models;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Commands.Acknowledge;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Commands.Lease;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Services;
+using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Models;
 
 namespace RedShirt.Example.Api.Core.UnitTests.Tests.UseCases.BackgroundJob.Services;
 
@@ -16,7 +17,7 @@ public class CqrsBackgroundJobSourceTests
     private CqrsBackgroundJobSource CreateSource()
     {
         return new CqrsBackgroundJobSource(_leaseHandler.Object, _acknowledgeHandler.Object,
-            Options.Create(new BackgroundJobOptions {ProcessName = "api-1"}));
+            Options.Create(new BackgroundJobRunnerOptions {ProcessName = "api-1"}));
     }
 
     [Fact]
@@ -47,7 +48,8 @@ public class CqrsBackgroundJobSourceTests
             TestContext.Current.CancellationToken);
 
         _acknowledgeHandler.Verify(x => x.Handle(
-            new AcknowledgeBackgroundJobCommand(model.Id, "api-1", model.Attempts, JobResult.InvalidData, "bad"),
+            new AcknowledgeBackgroundJobCommand(model.Id, "api-1", model.Attempts,
+                BackgroundJobAttemptResult.InvalidData, "bad"),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -60,5 +62,20 @@ public class CqrsBackgroundJobSourceTests
         await Assert.ThrowsAsync<ArgumentException>(() => CreateSource().AcknowledgeAsync(job.Object,
             JobLogicRunnerResponse.Success, TestContext.Current.CancellationToken));
         _acknowledgeHandler.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(JobResult.Success, BackgroundJobAttemptResult.Success)]
+    [InlineData(JobResult.Failure, BackgroundJobAttemptResult.Failure)]
+    [InlineData(JobResult.InvalidData, BackgroundJobAttemptResult.InvalidData)]
+    public void ToAttemptResult_MapsEveryJobResult(JobResult result, BackgroundJobAttemptResult expected)
+    {
+        Assert.Equal(expected, CqrsBackgroundJobSource.ToAttemptResult(result));
+    }
+
+    [Fact]
+    public void ToAttemptResult_RejectsUnknownJobResult()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => CqrsBackgroundJobSource.ToAttemptResult((JobResult) 99));
     }
 }

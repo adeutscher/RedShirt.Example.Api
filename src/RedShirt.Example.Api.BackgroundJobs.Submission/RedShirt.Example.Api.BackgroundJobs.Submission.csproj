@@ -3,9 +3,10 @@
     <!--
         The submission contract: what features inside the API (such as Uploads) use to send background work, and the job
         types and parameters models they send. It depends on nothing else, so the projects that process jobs inside the
-        API (BackgroundJobs.Core, .Implementation, .Logic, and .Runner) can be deleted once their job types are handled by
-        an applied JobWorker, without changing the features that submit jobs. Only the registered
-        IBackgroundJobSubmitter changes.
+        API (BackgroundJobs.Core, .Logic, and .Runner) and the table submitter (BackgroundJobs.Submission.Table) can be
+        deleted once their job types are handled by an applied JobWorker, without changing the features that submit jobs.
+        Only the registered IBackgroundJobSubmitter changes. The BackgroundJob table itself (DataStores.BackgroundJob.*)
+        stays either way.
     -->
 
     <PropertyGroup>

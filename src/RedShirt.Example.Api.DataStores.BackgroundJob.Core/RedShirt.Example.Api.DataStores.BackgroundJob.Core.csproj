@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        The BackgroundJob table's contract. The table stays whether jobs are run inside the API or by an applied JobWorker,
+        so this project depends only on the submission contract, never on the projects that process jobs.
+    -->
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Submission\RedShirt.Example.Api.BackgroundJobs.Submission.csproj"/>
+    </ItemGroup>
+
+</Project>

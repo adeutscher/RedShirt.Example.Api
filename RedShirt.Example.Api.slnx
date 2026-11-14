@@ -29,12 +29,12 @@
     </Folder>
     <Folder Name="/src/background-jobs/">
         <Project Path="src/RedShirt.Example.Api.BackgroundJobs.Core/RedShirt.Example.Api.BackgroundJobs.Core.csproj"/>
-        <Project
-                Path="src/RedShirt.Example.Api.BackgroundJobs.Implementation/RedShirt.Example.Api.BackgroundJobs.Implementation.csproj"/>
         <Project Path="src/RedShirt.Example.Api.BackgroundJobs.Logic/RedShirt.Example.Api.BackgroundJobs.Logic.csproj"/>
         <Project Path="src/RedShirt.Example.Api.BackgroundJobs.Runner/RedShirt.Example.Api.BackgroundJobs.Runner.csproj"/>
         <Project
                 Path="src/RedShirt.Example.Api.BackgroundJobs.Submission/RedShirt.Example.Api.BackgroundJobs.Submission.csproj"/>
+        <Project
+                Path="src/RedShirt.Example.Api.BackgroundJobs.Submission.Table/RedShirt.Example.Api.BackgroundJobs.Submission.Table.csproj"/>
     </Folder>
     <Folder Name="/src/common/">
         <Project Path="src/RedShirt.Example.Api.Common.Distributed/RedShirt.Example.Api.Common.Distributed.csproj"/>
@@ -72,6 +72,10 @@
                 Path="src/RedShirt.Example.Api.Connectors.Common.Http/RedShirt.Example.Api.Connectors.Common.Http.csproj"/>
     </Folder>
     <Folder Name="/src/data-stores/">
+        <Project
+                Path="src/RedShirt.Example.Api.DataStores.BackgroundJob.Core/RedShirt.Example.Api.DataStores.BackgroundJob.Core.csproj"/>
+        <Project
+                Path="src/RedShirt.Example.Api.DataStores.BackgroundJob.Implementation/RedShirt.Example.Api.DataStores.BackgroundJob.Implementation.csproj"/>
         <Project Path="src\RedShirt.Example.Api.DataStores.Constants\RedShirt.Example.Api.DataStores.Constants.csproj"/>
         <Project
                 Path="src\RedShirt.Example.Api.DataStores.Customer.Core\RedShirt.Example.Api.DataStores.Customer.Core.csproj"/>
@@ -122,11 +126,11 @@
     </Folder>
     <Folder Name="/test/background-jobs/">
         <Project
-                Path="test/RedShirt.Example.Api.BackgroundJobs.Implementation.UnitTests/RedShirt.Example.Api.BackgroundJobs.Implementation.UnitTests.csproj"/>
-        <Project
                 Path="test/RedShirt.Example.Api.BackgroundJobs.Logic.UnitTests/RedShirt.Example.Api.BackgroundJobs.Logic.UnitTests.csproj"/>
         <Project
                 Path="test/RedShirt.Example.Api.BackgroundJobs.Runner.UnitTests/RedShirt.Example.Api.BackgroundJobs.Runner.UnitTests.csproj"/>
+        <Project
+                Path="test/RedShirt.Example.Api.BackgroundJobs.Submission.Table.UnitTests/RedShirt.Example.Api.BackgroundJobs.Submission.Table.UnitTests.csproj"/>
     </Folder>
     <Folder Name="/test/common/">
         <Project
@@ -166,6 +170,8 @@
                 Path="test/RedShirt.Example.Api.Connectors.Common.Http.UnitTests/RedShirt.Example.Api.Connectors.Common.Http.UnitTests.csproj"/>
     </Folder>
     <Folder Name="/test/data-stores/">
+        <Project
+                Path="test/RedShirt.Example.Api.DataStores.BackgroundJob.Implementation.UnitTests/RedShirt.Example.Api.DataStores.BackgroundJob.Implementation.UnitTests.csproj"/>
         <Project
                 Path="test\RedShirt.Example.Api.DataStores.Customer.Core.UnitTests\RedShirt.Example.Api.DataStores.Customer.Core.UnitTests.csproj"/>
         <Project

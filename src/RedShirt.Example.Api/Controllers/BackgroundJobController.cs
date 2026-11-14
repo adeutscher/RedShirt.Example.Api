@@ -2,11 +2,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
 using RedShirt.Example.Api.Attributes.Authorization;
-using RedShirt.Example.Api.BackgroundJobs.Core.Models;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Commands.Retry;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Queries.GetRecord;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Queries.SearchRecords;
+using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Models;
 using RedShirt.Example.Api.Models.BackgroundJob;
 
 namespace RedShirt.Example.Api.Controllers;

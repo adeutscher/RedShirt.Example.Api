@@ -1,9 +1,9 @@
 using Moq;
-using RedShirt.Example.Api.BackgroundJobs.Core.Models;
-using RedShirt.Example.Api.BackgroundJobs.Core.Services;
 using RedShirt.Example.Api.BackgroundJobs.Submission.Models;
 using RedShirt.Example.Api.Core.Cqrs;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Queries.SearchRecords;
+using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Models;
+using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Services;
 
 namespace RedShirt.Example.Api.Core.UnitTests.Tests.UseCases.BackgroundJob.Queries.SearchRecords;
 

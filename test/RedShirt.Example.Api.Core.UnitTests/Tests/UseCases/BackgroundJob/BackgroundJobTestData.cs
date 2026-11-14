@@ -1,5 +1,5 @@
-using RedShirt.Example.Api.BackgroundJobs.Core.Models;
 using RedShirt.Example.Api.BackgroundJobs.Submission.Models;
+using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Models;
 
 namespace RedShirt.Example.Api.Core.UnitTests.Tests.UseCases.BackgroundJob;
 

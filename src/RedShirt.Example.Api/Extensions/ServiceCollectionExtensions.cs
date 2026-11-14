@@ -1,7 +1,6 @@
-using RedShirt.Example.Api.BackgroundJobs.Implementation.Extensions;
 using RedShirt.Example.Api.BackgroundJobs.Logic.Extensions;
 using RedShirt.Example.Api.BackgroundJobs.Runner.Extensions;
-using RedShirt.Example.Api.BackgroundJobs.Submission.Services;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Table.Extensions;
 using RedShirt.Example.Api.ClientEvents.Domains.Example.Extensions;
 using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.Extensions;
 using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Extensions;
@@ -13,6 +12,7 @@ using RedShirt.Example.Api.Common.SecretManagers.Core.Extensions;
 using RedShirt.Example.Api.Connectors.Bar.Implementation.Extensions;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Extensions;
 using RedShirt.Example.Api.Core.Extensions;
+using RedShirt.Example.Api.DataStores.BackgroundJob.Implementation.Extensions;
 using RedShirt.Example.Api.DataStores.Common.DapperMySql.Extensions;
 using RedShirt.Example.Api.DataStores.Customer.Implementation.Extensions;
 using RedShirt.Example.Api.DataStores.ExampleItem.Extensions;
@@ -68,12 +68,14 @@ internal static class ServiceCollectionExtensions
             .AddOrders()
             .AddProducts(configuration)
             .AddUploads(configuration)
+            // BackgroundJob table via Entity Framework Core. Kept whether jobs run here or in an applied JobWorker.
+            .AddBackgroundJobs(configuration)
             // scaffold:data-store-registrations
             // Background jobs
             ////
-            // Jobs are submitted to the BackgroundJob table. To hand them to an applied JobWorker instead, replace
-            // AddBackgroundJobTable's IBackgroundJobSubmitter with one that publishes to the worker's queue.
-            .AddBackgroundJobTable(configuration)
+            // Jobs are submitted to the BackgroundJob table for the in-API runner. To hand them to an applied JobWorker
+            // instead, replace this with a submitter that publishes to the worker's queue, and remove the two lines below.
+            .AddTableBackgroundJobSubmitter(configuration)
             // Job logic, as an applied JobWorker's Core.Logic project would hold it.
             .AddBackgroundJobLogic()
             // The in-API runner. Switch it off with BACKGROUND_JOBS__RUNNER_ENABLED=false.

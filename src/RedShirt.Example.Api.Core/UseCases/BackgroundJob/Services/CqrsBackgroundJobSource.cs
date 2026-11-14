@@ -4,6 +4,7 @@ using RedShirt.Example.Api.BackgroundJobs.Core.Models;
 using RedShirt.Example.Api.BackgroundJobs.Core.Services;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Commands.Acknowledge;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Commands.Lease;
+using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Models;
 
 namespace RedShirt.Example.Api.Core.UseCases.BackgroundJob.Services;
 
@@ -14,8 +15,19 @@ namespace RedShirt.Example.Api.Core.UseCases.BackgroundJob.Services;
 internal sealed class CqrsBackgroundJobSource(
     ILeaseBackgroundJobsCommandHandler leaseBackgroundJobsCommandHandler,
     IAcknowledgeBackgroundJobCommandHandler acknowledgeBackgroundJobCommandHandler,
-    IOptions<BackgroundJobOptions> options) : IBackgroundJobSource
+    IOptions<BackgroundJobRunnerOptions> options) : IBackgroundJobSource
 {
+    internal static BackgroundJobAttemptResult ToAttemptResult(JobResult result)
+    {
+        return result switch
+        {
+            JobResult.Success => BackgroundJobAttemptResult.Success,
+            JobResult.Failure => BackgroundJobAttemptResult.Failure,
+            JobResult.InvalidData => BackgroundJobAttemptResult.InvalidData,
+            _ => throw new ArgumentOutOfRangeException(nameof(result), result, "Unknown job result.")
+        };
+    }
+
     internal static JobModel ToJobModel(BackgroundJobModel model)
     {
         return new JobModel
@@ -55,7 +67,7 @@ internal sealed class CqrsBackgroundJobSource(
                 Guid.Parse(job.MessageId),
                 options.Value.EffectiveProcessName,
                 attempt,
-                response.Result,
+                ToAttemptResult(response.Result),
                 (response as JobLogicRunnerResponse)?.Detail),
             cancellationToken);
     }

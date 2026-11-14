@@ -1,8 +1,8 @@
 using Moq;
-using RedShirt.Example.Api.BackgroundJobs.Core.Models;
-using RedShirt.Example.Api.BackgroundJobs.Core.Services;
 using RedShirt.Example.Api.Core.Cqrs;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Commands.Lease;
+using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Models;
+using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Services;
 
 namespace RedShirt.Example.Api.Core.UnitTests.Tests.UseCases.BackgroundJob.Commands.Lease;
 

@@ -9,13 +9,14 @@ namespace RedShirt.Example.Api.BackgroundJobs.Core.Extensions;
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    ///     Services shared by every part of the background job system. Safe to call more than once.
+    ///     Services shared by the projects that process background jobs inside the API. Safe to call more than once.
     /// </summary>
     public static IServiceCollection AddBackgroundJobsCore(this IServiceCollection services,
         IConfiguration configuration)
     {
         services.TryAddSingleton<IBackgroundJobWakeSignal, BackgroundJobWakeSignal>();
         return services
-            .Configure<BackgroundJobOptions>(configuration.GetSection(BackgroundJobOptions.ConfigurationSectionName));
+            .Configure<BackgroundJobRunnerOptions>(
+                configuration.GetSection(BackgroundJobRunnerOptions.ConfigurationSectionName));
     }
 }

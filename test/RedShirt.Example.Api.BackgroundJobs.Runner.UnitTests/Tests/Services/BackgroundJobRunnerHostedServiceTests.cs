@@ -29,7 +29,7 @@ public class BackgroundJobRunnerHostedServiceTests
         };
     }
 
-    private BackgroundJobRunnerHostedService CreateService(BackgroundJobOptions? options = null)
+    private BackgroundJobRunnerHostedService CreateService(BackgroundJobRunnerOptions? options = null)
     {
         var provider = new ServiceCollection()
             .AddSingleton(_jobSource.Object)
@@ -39,7 +39,7 @@ public class BackgroundJobRunnerHostedServiceTests
         return new BackgroundJobRunnerHostedService(
             provider.GetRequiredService<IServiceScopeFactory>(),
             _wakeSignal.Object,
-            Options.Create(options ?? new BackgroundJobOptions {FetchCount = 3, MaxIdleWaitSeconds = 30}),
+            Options.Create(options ?? new BackgroundJobRunnerOptions {FetchCount = 3, MaxIdleWaitSeconds = 30}),
             NullLogger<BackgroundJobRunnerHostedService>.Instance);
     }
 
@@ -136,7 +136,7 @@ public class BackgroundJobRunnerHostedServiceTests
     [Fact]
     public async Task ExecuteAsync_WhenRunnerDisabled_NeverFetches()
     {
-        var service = CreateService(new BackgroundJobOptions {RunnerEnabled = false});
+        var service = CreateService(new BackgroundJobRunnerOptions {RunnerEnabled = false});
 
         await service.StartAsync(TestContext.Current.CancellationToken);
         await service.ExecuteTask!;

@@ -23,7 +23,7 @@ namespace RedShirt.Example.Api.BackgroundJobs.Runner.Services;
 internal sealed class BackgroundJobRunnerHostedService(
     IServiceScopeFactory serviceScopeFactory,
     IBackgroundJobWakeSignal wakeSignal,
-    IOptions<BackgroundJobOptions> options,
+    IOptions<BackgroundJobRunnerOptions> options,
     ILogger<BackgroundJobRunnerHostedService> logger) : BackgroundService
 {
     internal TimeSpan GetIdleDelay(int idleRounds)
