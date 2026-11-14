@@ -1,4 +1,4 @@
-namespace RedShirt.Example.Api.BackgroundJobs.Submission.Models.Parameters;
+namespace RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models.Parameters;
 
 /// <summary>
 ///     A background job's parameters model. Each job type has one, and the type is declared on the model, so a submitter

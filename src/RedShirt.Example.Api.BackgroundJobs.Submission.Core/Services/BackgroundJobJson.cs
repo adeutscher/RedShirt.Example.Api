@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace RedShirt.Example.Api.BackgroundJobs.Submission.Services;
+namespace RedShirt.Example.Api.BackgroundJobs.Submission.Core.Services;
 
 /// <summary>
 ///     Shared serializer settings for job parameters, so submitters and handlers agree on the format.

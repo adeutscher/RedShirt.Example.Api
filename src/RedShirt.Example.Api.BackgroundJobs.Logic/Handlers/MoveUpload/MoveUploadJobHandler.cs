@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 using RedShirt.Example.Api.BackgroundJobs.Core.Models;
-using RedShirt.Example.Api.BackgroundJobs.Submission.Models.Parameters;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models.Parameters;
 
 namespace RedShirt.Example.Api.BackgroundJobs.Logic.Handlers.MoveUpload;
 

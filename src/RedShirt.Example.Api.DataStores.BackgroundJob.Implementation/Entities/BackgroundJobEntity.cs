@@ -1,4 +1,4 @@
-using RedShirt.Example.Api.BackgroundJobs.Submission.Models;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models;
 using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 

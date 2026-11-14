@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using RedShirt.Example.Api.BackgroundJobs.Core.Models;
 using RedShirt.Example.Api.BackgroundJobs.Logic.Handlers.ValidateUpload;
-using RedShirt.Example.Api.BackgroundJobs.Submission.Models;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models;
 using System.Text;
 
 namespace RedShirt.Example.Api.BackgroundJobs.Logic.UnitTests.Tests.Handlers.ValidateUpload;

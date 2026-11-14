@@ -1,15 +1,15 @@
 using RedShirt.Example.Api.BackgroundJobs.Core.Services;
-using RedShirt.Example.Api.BackgroundJobs.Submission.Models;
-using RedShirt.Example.Api.BackgroundJobs.Submission.Models.Parameters;
-using RedShirt.Example.Api.BackgroundJobs.Submission.Services;
-using RedShirt.Example.Api.BackgroundJobs.Submission.Table.Services;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models.Parameters;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Services;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Implementation.Services;
 using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Models;
 using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Services;
 using System.Text.Json;
 
-namespace RedShirt.Example.Api.BackgroundJobs.Submission.Table.UnitTests.Tests.Services;
+namespace RedShirt.Example.Api.BackgroundJobs.Submission.Implementation.UnitTests.Tests.Services;
 
-public class TableBackgroundJobSubmitterTests
+public class BackgroundJobSubmitterTests
 {
     [Fact]
     public async Task SubmitAsync_CreatesJobOfParametersType_WithSerializedParameters_AndWakesRunner()
@@ -33,7 +33,7 @@ public class TableBackgroundJobSubmitterTests
                 DueAtUtc = DateTime.UtcNow
             });
         var wakeSignal = new Mock<IBackgroundJobWakeSignal>();
-        var submitter = new TableBackgroundJobSubmitter(service.Object, wakeSignal.Object);
+        var submitter = new BackgroundJobSubmitter(service.Object, wakeSignal.Object);
 
         var result = await submitter.SubmitAsync(new ValidateUploadJobParameters {UploadId = uploadId},
             TestContext.Current.CancellationToken);
@@ -54,7 +54,7 @@ public class TableBackgroundJobSubmitterTests
             .Setup(x => x.CreateAsync(It.IsAny<BackgroundJobServiceCreateRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("database unavailable"));
         var wakeSignal = new Mock<IBackgroundJobWakeSignal>();
-        var submitter = new TableBackgroundJobSubmitter(service.Object, wakeSignal.Object);
+        var submitter = new BackgroundJobSubmitter(service.Object, wakeSignal.Object);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => submitter.SubmitAsync(
             new ValidateUploadJobParameters {UploadId = Guid.NewGuid()}, TestContext.Current.CancellationToken));

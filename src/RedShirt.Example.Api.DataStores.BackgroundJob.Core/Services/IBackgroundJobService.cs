@@ -3,7 +3,7 @@ using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Models;
 namespace RedShirt.Example.Api.DataStores.BackgroundJob.Core.Services;
 
 /// <summary>
-///     Storage operations on the BackgroundJob table. Used by the background job CQRS handlers and by the table submitter.
+///     Storage operations on the BackgroundJob table. Used by the background job CQRS handlers and by the job submitter.
 ///     Leasing and acknowledging serve the in-API runner. Creating, reading, and searching serve every setup, including
 ///     one where an applied JobWorker runs the jobs.
 /// </summary>

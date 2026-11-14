@@ -1,4 +1,4 @@
-using RedShirt.Example.Api.BackgroundJobs.Submission.Models;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models;
 using System.Text.Json.Serialization;
 
 namespace RedShirt.Example.Api.DataStores.BackgroundJob.Core.Models;

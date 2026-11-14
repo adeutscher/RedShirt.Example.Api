@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <!--
-        The IBackgroundJobSubmitter that writes jobs to the BackgroundJob table for the in-API runner. To hand jobs to an
-        applied JobWorker instead, register a submitter that publishes to its queue (for example from a sibling
-        BackgroundJobs.Submission.<Queue> project) in place of this one.
+        The IBackgroundJobSubmitter. It records every job in the BackgroundJob table, then hands it to the in-API runner.
+        To hand jobs to an applied JobWorker instead, publish to the worker's queue at the enqueue point marked in
+        BackgroundJobSubmitter, and drop the BackgroundJobs.Core reference along with the runner's wake.
     -->
 
     <PropertyGroup>
@@ -18,7 +18,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Core\RedShirt.Example.Api.BackgroundJobs.Core.csproj"/>
-        <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Submission\RedShirt.Example.Api.BackgroundJobs.Submission.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Submission.Core\RedShirt.Example.Api.BackgroundJobs.Submission.Core.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.BackgroundJob.Core\RedShirt.Example.Api.DataStores.BackgroundJob.Core.csproj"/>
     </ItemGroup>
 

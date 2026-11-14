@@ -1,5 +1,5 @@
 using Moq;
-using RedShirt.Example.Api.BackgroundJobs.Submission.Models;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models;
 using RedShirt.Example.Api.Core.Cqrs;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Queries.SearchRecords;
 using RedShirt.Example.Api.DataStores.BackgroundJob.Core.Models;

@@ -29,7 +29,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\RedShirt.Example.Api.BackgroundJobs.Submission.Table\RedShirt.Example.Api.BackgroundJobs.Submission.Table.csproj"/>
+        <ProjectReference Include="..\..\src\RedShirt.Example.Api.BackgroundJobs.Submission.Implementation\RedShirt.Example.Api.BackgroundJobs.Submission.Implementation.csproj"/>
     </ItemGroup>
 
 </Project>

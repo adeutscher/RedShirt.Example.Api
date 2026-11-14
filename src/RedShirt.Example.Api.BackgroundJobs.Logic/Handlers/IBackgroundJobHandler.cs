@@ -1,7 +1,7 @@
 using RedShirt.Example.Api.BackgroundJobs.Core.Models;
-using RedShirt.Example.Api.BackgroundJobs.Submission.Models;
-using RedShirt.Example.Api.BackgroundJobs.Submission.Models.Parameters;
-using RedShirt.Example.Api.BackgroundJobs.Submission.Services;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models.Parameters;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Services;
 using System.Text.Json;
 
 namespace RedShirt.Example.Api.BackgroundJobs.Logic.Handlers;

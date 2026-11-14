@@ -19,7 +19,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Core\RedShirt.Example.Api.BackgroundJobs.Core.csproj"/>
-        <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Submission\RedShirt.Example.Api.BackgroundJobs.Submission.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Submission.Core\RedShirt.Example.Api.BackgroundJobs.Submission.Core.csproj"/>
     </ItemGroup>
 
 </Project>

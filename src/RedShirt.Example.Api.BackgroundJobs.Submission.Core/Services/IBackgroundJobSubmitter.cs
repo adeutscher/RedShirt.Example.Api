@@ -1,6 +1,6 @@
-using RedShirt.Example.Api.BackgroundJobs.Submission.Models.Parameters;
+using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models.Parameters;
 
-namespace RedShirt.Example.Api.BackgroundJobs.Submission.Services;
+namespace RedShirt.Example.Api.BackgroundJobs.Submission.Core.Services;
 
 /// <summary>
 ///     The one way that features inside the API send background work. Callers know nothing about where the job goes.
