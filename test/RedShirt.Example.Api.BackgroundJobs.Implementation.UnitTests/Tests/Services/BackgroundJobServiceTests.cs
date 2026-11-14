@@ -31,16 +31,34 @@ public class BackgroundJobServiceTests
         }, Token);
     }
 
-    private static Task<BackgroundJobModel> AcknowledgeAsync(BackgroundJobServiceFixture fixture, Guid id,
-        JobResult result, string owner = Owner, string? detail = null)
+    /// <summary>
+    ///     Acknowledges with <paramref name="attempt" />, or by default with the job's current attempt number (the attempt
+    ///     of the latest lease, when there is one).
+    /// </summary>
+    private static async Task<BackgroundJobModel> AcknowledgeAsync(BackgroundJobServiceFixture fixture, Guid id,
+        JobResult result, string owner = Owner, string? detail = null, int? attempt = null)
     {
-        return fixture.Service.AcknowledgeAsync(new BackgroundJobServiceAcknowledgeRequest
+        var resolvedAttempt = attempt ?? await GetCurrentAttemptAsync(fixture, id);
+        return await fixture.Service.AcknowledgeAsync(new BackgroundJobServiceAcknowledgeRequest
         {
             Id = id,
             LeaseOwner = owner,
+            Attempt = resolvedAttempt,
             Result = result,
             Detail = detail
         }, Token);
+    }
+
+    private static async Task<int> GetCurrentAttemptAsync(BackgroundJobServiceFixture fixture, Guid id)
+    {
+        try
+        {
+            return (await fixture.Service.GetAsync(id, Token)).Attempts;
+        }
+        catch (ResourceNotFoundException)
+        {
+            return 1;
+        }
     }
 
     [Fact]
@@ -248,6 +266,27 @@ public class BackgroundJobServiceTests
 
         await Assert.ThrowsAsync<ConflictException>(() =>
             AcknowledgeAsync(fixture, job.Id, JobResult.Success, "runner-b"));
+    }
+
+    [Fact]
+    public async Task AcknowledgeAsync_FromExpiredLease_WithSameOwnerName_ThrowsConflict()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+        var firstLease = Assert.Single(await LeaseAsync(fixture));
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(61));
+        // Another process with the same lease owner name takes the job after the first lease expires.
+        var secondLease = Assert.Single(await LeaseAsync(fixture));
+
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            AcknowledgeAsync(fixture, job.Id, JobResult.Success, attempt: firstLease.Attempts));
+
+        var stillRunning = await fixture.Service.GetAsync(job.Id, Token);
+        Assert.Equal(BackgroundJobState.Running, stillRunning.State);
+
+        var acknowledged = await AcknowledgeAsync(fixture, job.Id, JobResult.Success,
+            attempt: secondLease.Attempts);
+        Assert.Equal(BackgroundJobState.Succeeded, acknowledged.State);
     }
 
     [Fact]

@@ -2807,11 +2807,17 @@
         "additionalProperties": false,
         "required": [
           "leaseOwner",
+          "attempt",
           "result"
         ],
         "properties": {
           "leaseOwner": {
             "type": "string"
+          },
+          "attempt": {
+            "type": "integer",
+            "description": "The job's attempts value from the lease response. An outcome for any other attempt is refused with a\n409, since the lease it belonged to has expired and the job was leased again.\n            ",
+            "format": "int32"
           },
           "result": {
             "$ref": "#/components/schemas/JobResult"

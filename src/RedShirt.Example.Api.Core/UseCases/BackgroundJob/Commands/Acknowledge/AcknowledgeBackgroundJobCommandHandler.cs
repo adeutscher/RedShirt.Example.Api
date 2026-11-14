@@ -19,6 +19,7 @@ internal sealed class AcknowledgeBackgroundJobCommandHandler(
         {
             Id = command.Id,
             LeaseOwner = command.LeaseOwner,
+            Attempt = command.Attempt,
             Result = command.Result,
             Detail = command.Detail
         }, cancellationToken);

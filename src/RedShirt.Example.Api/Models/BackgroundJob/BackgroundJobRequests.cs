@@ -32,6 +32,13 @@ public sealed class BackgroundJobLeaseRequest
 public sealed class BackgroundJobResultRequest
 {
     public required string LeaseOwner { get; init; }
+
+    /// <summary>
+    ///     The job's <c>attempts</c> value from the lease response. An outcome for any other attempt is refused with a
+    ///     409, since the lease it belonged to has expired and the job was leased again.
+    /// </summary>
+    public required int Attempt { get; init; }
+
     public required JobResult Result { get; init; }
     public string? Detail { get; init; }
 }

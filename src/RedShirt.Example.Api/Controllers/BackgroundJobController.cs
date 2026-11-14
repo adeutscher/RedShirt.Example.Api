@@ -109,7 +109,8 @@ public class BackgroundJobController : ControllerBase
         CancellationToken cancellationToken)
     {
         var model = await acknowledgeBackgroundJobCommandHandler.Handle(
-            new AcknowledgeBackgroundJobCommand(id, request.LeaseOwner, request.Result, request.Detail),
+            new AcknowledgeBackgroundJobCommand(id, request.LeaseOwner, request.Attempt, request.Result,
+                request.Detail),
             cancellationToken);
         return Ok(model);
     }

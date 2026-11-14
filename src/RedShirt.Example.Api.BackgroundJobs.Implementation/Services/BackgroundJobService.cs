@@ -249,9 +249,10 @@ internal sealed class BackgroundJobService(
 
         var existing = await GetRequiredAsync(context, request.Id, cancellationToken);
         if (existing.State != BackgroundJobState.Running
-            || !string.Equals(existing.LeaseOwner, request.LeaseOwner, StringComparison.Ordinal))
+            || !string.Equals(existing.LeaseOwner, request.LeaseOwner, StringComparison.Ordinal)
+            || existing.Attempts != request.Attempt)
         {
-            throw new ConflictException("Background job is not leased by this lease owner.");
+            throw new ConflictException("Background job is not leased by this lease owner for this attempt.");
         }
 
         var nextState = request.Result switch
@@ -266,12 +267,16 @@ internal sealed class BackgroundJobService(
             ? now.Add(settings.GetRetryDelay(existing.Attempts))
             : existing.DueAtUtc;
 
-        // Conditional on the lease that was just checked, in case the lease expired and was taken in the meantime.
+        /*
+         * Conditional on the lease that was just checked, in case the lease expired and was taken in the meantime. The
+         * attempt number is the fence: every lease increments it, so it identifies one lease even if two lease owners
+         * share a name.
+         */
         var updated = await context.BackgroundJobs
             .Where(e => e.Id == request.Id
                         && e.State == BackgroundJobState.Running
                         && e.LeaseOwner == request.LeaseOwner
-                        && e.Attempts == existing.Attempts)
+                        && e.Attempts == request.Attempt)
             .ExecuteUpdateAsync(setters => setters
                     .SetProperty(e => e.State, nextState)
                     .SetProperty(e => e.DueAtUtc, dueAtUtc)
@@ -284,7 +289,7 @@ internal sealed class BackgroundJobService(
 
         if (updated != 1)
         {
-            throw new ConflictException("Background job is not leased by this lease owner.");
+            throw new ConflictException("Background job is not leased by this lease owner for this attempt.");
         }
 
         return await GetRequiredAsync(context, request.Id, cancellationToken);

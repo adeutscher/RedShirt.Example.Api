@@ -44,10 +44,17 @@ internal sealed class CqrsBackgroundJobSource(
     public async Task AcknowledgeAsync(IJobModel job, IJobLogicRunnerResponse response,
         CancellationToken cancellationToken = default)
     {
+        // Jobs from this source are always JobModel (see GetJobsAsync), which carries the attempt number of the lease.
+        if (job is not JobModel {Attempts: var attempt})
+        {
+            throw new ArgumentException($"Expected a {nameof(JobModel)} leased by this source.", nameof(job));
+        }
+
         await acknowledgeBackgroundJobCommandHandler.Handle(
             new AcknowledgeBackgroundJobCommand(
                 Guid.Parse(job.MessageId),
                 options.Value.EffectiveProcessName,
+                attempt,
                 response.Result,
                 (response as JobLogicRunnerResponse)?.Detail),
             cancellationToken);

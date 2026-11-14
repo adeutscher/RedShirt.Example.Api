@@ -33,6 +33,14 @@ public sealed class BackgroundJobServiceAcknowledgeRequest
 {
     public required Guid Id { get; init; }
     public required string LeaseOwner { get; init; }
+
+    /// <summary>
+    ///     The job's <see cref="BackgroundJobModel.Attempts" /> as it was leased. Each lease increments it, so it fences
+    ///     the outcome to that one lease: an outcome from a lease that expired and was taken again is refused, even when
+    ///     both leases had the same lease owner name.
+    /// </summary>
+    public required int Attempt { get; init; }
+
     public required JobResult Result { get; init; }
     public string? Detail { get; init; }
 }

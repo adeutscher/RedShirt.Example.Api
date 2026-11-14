@@ -19,7 +19,7 @@ public class AcknowledgeBackgroundJobCommandTests
             .Callback<BackgroundJobServiceAcknowledgeRequest, CancellationToken>((request, _) => captured = request)
             .ReturnsAsync(model);
         var validator = new Mock<ICoreRequestValidator>();
-        var command = new AcknowledgeBackgroundJobCommand(model.Id, "owner", JobResult.Success, "done");
+        var command = new AcknowledgeBackgroundJobCommand(model.Id, "owner", 2, JobResult.Success, "done");
 
         var result = await new AcknowledgeBackgroundJobCommandHandler(service.Object, validator.Object)
             .Handle(command, TestContext.Current.CancellationToken);
@@ -28,19 +28,23 @@ public class AcknowledgeBackgroundJobCommandTests
         validator.Verify(x => x.ValidateAsync(command, It.IsAny<CancellationToken>()), Times.Once);
         Assert.Equal(model.Id, captured!.Id);
         Assert.Equal("owner", captured.LeaseOwner);
+        Assert.Equal(2, captured.Attempt);
         Assert.Equal(JobResult.Success, captured.Result);
         Assert.Equal("done", captured.Detail);
     }
 
     [Theory]
-    [InlineData(false, "owner", JobResult.Success, true)]
-    [InlineData(true, "owner", JobResult.Success, false)]
-    [InlineData(false, "", JobResult.Success, false)]
-    [InlineData(false, "owner", (JobResult) 99, false)]
-    public async Task Validator_ChecksFields(bool emptyId, string leaseOwner, JobResult result, bool expected)
+    [InlineData(false, "owner", 1, JobResult.Success, true)]
+    [InlineData(true, "owner", 1, JobResult.Success, false)]
+    [InlineData(false, "", 1, JobResult.Success, false)]
+    [InlineData(false, "owner", 0, JobResult.Success, false)]
+    [InlineData(false, "owner", 1, (JobResult) 99, false)]
+    public async Task Validator_ChecksFields(bool emptyId, string leaseOwner, int attempt, JobResult result,
+        bool expected)
     {
         var validation = await new AcknowledgeBackgroundJobCommandValidator().ValidateAsync(
-            new AcknowledgeBackgroundJobCommand(emptyId ? Guid.Empty : Guid.NewGuid(), leaseOwner, result, null),
+            new AcknowledgeBackgroundJobCommand(emptyId ? Guid.Empty : Guid.NewGuid(), leaseOwner, attempt, result,
+                null),
             TestContext.Current.CancellationToken);
 
         Assert.Equal(expected, validation.IsValid);
@@ -50,7 +54,7 @@ public class AcknowledgeBackgroundJobCommandTests
     public async Task Validator_RejectsLongLeaseOwner()
     {
         var validation = await new AcknowledgeBackgroundJobCommandValidator().ValidateAsync(
-            new AcknowledgeBackgroundJobCommand(Guid.NewGuid(), new string('o', 129), JobResult.Success, null),
+            new AcknowledgeBackgroundJobCommand(Guid.NewGuid(), new string('o', 129), 1, JobResult.Success, null),
             TestContext.Current.CancellationToken);
 
         Assert.False(validation.IsValid);

@@ -25,8 +25,7 @@ public enum UploadMoveStage
 ///     What the upload move job needs from the upload system. Inside the API, this is implemented with the upload CQRS
 ///     handlers. In an applied JobWorker, the stage and the move report would go through a connector to the API's upload
 ///     endpoints (GET <c>/uploads/{id}</c>, GET <c>/uploads/{id}/details/internal</c>,
-///     POST <c>/uploads/{id}/move-reports</c>), and the copy and delete would use storage APIs directly, as
-///     <c>upload-move-worker.py</c> does.
+///     POST <c>/uploads/{id}/move-reports</c>), and the copy and delete would use storage APIs directly.
 /// </summary>
 public interface IUploadStorageService
 {

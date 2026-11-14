@@ -37,7 +37,7 @@ public class CqrsBackgroundJobSourceTests
     }
 
     [Fact]
-    public async Task AcknowledgeAsync_ReportsResultAndDetailAsThisProcess()
+    public async Task AcknowledgeAsync_ReportsResultDetailAndLeasedAttemptAsThisProcess()
     {
         var model = BackgroundJobTestData.CreateModel(BackgroundJobState.Running);
         var job = CqrsBackgroundJobSource.ToJobModel(model);
@@ -47,7 +47,18 @@ public class CqrsBackgroundJobSourceTests
             TestContext.Current.CancellationToken);
 
         _acknowledgeHandler.Verify(x => x.Handle(
-            new AcknowledgeBackgroundJobCommand(model.Id, "api-1", JobResult.InvalidData, "bad"),
+            new AcknowledgeBackgroundJobCommand(model.Id, "api-1", model.Attempts, JobResult.InvalidData, "bad"),
             It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task AcknowledgeAsync_ForJobNotLeasedBySource_Throws()
+    {
+        var job = new Mock<IJobModel>();
+        job.SetupGet(x => x.MessageId).Returns(Guid.NewGuid().ToString());
+
+        await Assert.ThrowsAsync<ArgumentException>(() => CreateSource().AcknowledgeAsync(job.Object,
+            JobLogicRunnerResponse.Success, TestContext.Current.CancellationToken));
+        _acknowledgeHandler.VerifyNoOtherCalls();
     }
 }

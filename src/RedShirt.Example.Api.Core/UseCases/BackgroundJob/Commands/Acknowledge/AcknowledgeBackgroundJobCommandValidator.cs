@@ -8,6 +8,7 @@ public class AcknowledgeBackgroundJobCommandValidator : AbstractValidator<Acknow
     {
         RuleFor(x => x.Id).NotEmpty();
         RuleFor(x => x.LeaseOwner).NotEmpty().MaximumLength(BackgroundJobValidationLimits.LeaseOwnerMaxLength);
+        RuleFor(x => x.Attempt).GreaterThanOrEqualTo(1);
         RuleFor(x => x.Result).IsInEnum();
     }
 }

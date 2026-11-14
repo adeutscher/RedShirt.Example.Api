@@ -5,12 +5,13 @@ using RedShirt.Example.Api.BackgroundJobs.Submission.Models.Parameters;
 namespace RedShirt.Example.Api.BackgroundJobs.Logic.Handlers.MoveUpload;
 
 /// <summary>
-///     Moves a verified upload into the verified bucket. Replaces the mock <c>upload-move-worker.py</c> script.
+///     Moves a verified upload into the verified bucket. A worker outside the API does the same with GET
+///     <c>/uploads/{id}</c>, GET <c>/uploads/{id}/details/internal</c> (for the object key), storage APIs for the copy
+///     and delete, and POST <c>/uploads/{id}/move-reports</c>.
 ///     <para>
 ///         The order is copy, report, then delete, so every step can be repeated: a failure before the report leaves the
 ///         upload verified and the copy is simply made again, and a failure after the report leaves the upload stored,
-///         where a retry only finishes the cleanup. Deleting before reporting (as the mock script does) would leave a
-///         retry with nothing to copy.
+///         where a retry only finishes the cleanup. Deleting before reporting would leave a retry with nothing to copy.
 ///     </para>
 /// </summary>
 internal sealed class MoveUploadJobHandler(

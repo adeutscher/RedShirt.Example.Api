@@ -5,7 +5,8 @@ using RedShirt.Example.Api.BackgroundJobs.Submission.Models.Parameters;
 namespace RedShirt.Example.Api.BackgroundJobs.Logic.Handlers.ValidateUpload;
 
 /// <summary>
-///     Checks a completed upload and submits a verdict. Replaces the mock <c>upload-validate-worker.py</c> script.
+///     Checks a completed upload and submits a verdict. A worker outside the API does the same through
+///     GET <c>/uploads/{id}</c>, GET <c>/uploads/{id}/download-link</c>, and POST <c>/uploads/{id}/verdicts</c>.
 /// </summary>
 internal sealed class ValidateUploadJobHandler(
     IUploadValidationService uploadValidationService,
