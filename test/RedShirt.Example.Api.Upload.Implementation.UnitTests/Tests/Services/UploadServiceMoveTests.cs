@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.Common.FileStorage.Services;
 using RedShirt.Example.Api.Upload.Core.Configuration;
+using RedShirt.Example.Api.Upload.Core.Events;
 using RedShirt.Example.Api.Upload.Core.Services;
 using RedShirt.Example.Api.Upload.Implementation.Aggregates;
 using RedShirt.Example.Api.Upload.Implementation.Repositories;
@@ -52,15 +53,8 @@ public class UploadServiceMoveTests
         Assert.Equal(Key, result);
         _fileStorage.Verify(x => x.CopyAsync("unverified-uploads", Key, "verified-uploads", Key,
             It.IsAny<CancellationToken>()), Times.Once);
-        _repository.Verify(x => x.AppendEventAsync(It.IsAny<Guid>(), It.IsAny<Core.Events.UploadEventType>(),
+        _repository.Verify(x => x.AppendEventAsync(It.IsAny<Guid>(), It.IsAny<UploadEventType>(),
             It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task CopyToVerifiedStorageAsync_WhenNotVerified_ThrowsBadRequest()
-    {
-        await Assert.ThrowsAsync<BadRequestException>(() =>
-            CreateService(Stored).CopyToVerifiedStorageAsync(UploadId, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -69,6 +63,13 @@ public class UploadServiceMoveTests
         await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
             CreateService(UploadAggregateTestSupport.Rehydrate(UploadId))
                 .CopyToVerifiedStorageAsync(UploadId, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task CopyToVerifiedStorageAsync_WhenNotVerified_ThrowsBadRequest()
+    {
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            CreateService(Stored).CopyToVerifiedStorageAsync(UploadId, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -81,20 +82,20 @@ public class UploadServiceMoveTests
     }
 
     [Fact]
-    public async Task RemoveUnverifiedCopyAsync_WithOneBucketForBoth_KeepsTheStoredFile()
+    public async Task RemoveUnverifiedCopyAsync_WhenNotStored_ThrowsBadRequest()
     {
-        await CreateService(Stored, "unverified-uploads")
-            .RemoveUnverifiedCopyAsync(UploadId, TestContext.Current.CancellationToken);
-
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            CreateService(Verified).RemoveUnverifiedCopyAsync(UploadId, TestContext.Current.CancellationToken));
         _fileStorage.Verify(x => x.DeleteAsync(It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task RemoveUnverifiedCopyAsync_WhenNotStored_ThrowsBadRequest()
+    public async Task RemoveUnverifiedCopyAsync_WithOneBucketForBoth_KeepsTheStoredFile()
     {
-        await Assert.ThrowsAsync<BadRequestException>(() =>
-            CreateService(Verified).RemoveUnverifiedCopyAsync(UploadId, TestContext.Current.CancellationToken));
+        await CreateService(Stored, "unverified-uploads")
+            .RemoveUnverifiedCopyAsync(UploadId, TestContext.Current.CancellationToken);
+
         _fileStorage.Verify(x => x.DeleteAsync(It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }

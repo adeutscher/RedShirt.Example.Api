@@ -8,10 +8,12 @@ namespace RedShirt.Example.Api.Upload.Implementation.Services;
 
 /// <summary>
 ///     Turns upload lifecycle events into background jobs. A completed upload gets a
-///     <see cref="ValidateUploadJobParameters" /> job, and a validated upload gets a <see cref="MoveUploadJobParameters" />
+///     <see cref="ValidateUploadJobParameters" /> job, and a validated upload gets a
+///     <see cref="MoveUploadJobParameters" />
 ///     job. The other events need no background work in this template.
 ///     <para>
-///         Jobs are sent through <see cref="IBackgroundJobSubmitter" />, so they go to the in-API BackgroundJob table or to
+///         Jobs are sent through <see cref="IBackgroundJobSubmitter" />, so they go to the in-API BackgroundJob table or
+///         to
 ///         a JobWorker's queue depending on which submitter is registered. An applied project could also publish these
 ///         events to AWS EventBridge, Azure Event Grid, or similar for other consumers.
 ///     </para>

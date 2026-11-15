@@ -31,12 +31,6 @@ public class ValidateUploadJobHandlerTests
         return service;
     }
 
-    [Fact]
-    public void Type_IsValidateUpload()
-    {
-        Assert.Equal(BackgroundJobType.ValidateUpload, CreateHandler(CreateService(false)).Type);
-    }
-
     [Theory]
     [InlineData("A potato document.", true)]
     [InlineData("Not that kind of document.", false)]
@@ -65,6 +59,17 @@ public class ValidateUploadJobHandlerTests
             Times.Never);
     }
 
+    [Fact]
+    public async Task HandleAsync_WhenServiceThrows_LetsExceptionBubbleUp()
+    {
+        var service = CreateService(true);
+        service.Setup(x => x.OpenContentAsync(UploadId, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new IOException("storage unavailable"));
+
+        await Assert.ThrowsAsync<IOException>(() =>
+            CreateHandler(service).HandleAsync(CreateJob(), TestContext.Current.CancellationToken));
+    }
+
     [Theory]
     [InlineData("not json")]
     [InlineData("null")]
@@ -84,13 +89,8 @@ public class ValidateUploadJobHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenServiceThrows_LetsExceptionBubbleUp()
+    public void Type_IsValidateUpload()
     {
-        var service = CreateService(true);
-        service.Setup(x => x.OpenContentAsync(UploadId, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new IOException("storage unavailable"));
-
-        await Assert.ThrowsAsync<IOException>(() =>
-            CreateHandler(service).HandleAsync(CreateJob(), TestContext.Current.CancellationToken));
+        Assert.Equal(BackgroundJobType.ValidateUpload, CreateHandler(CreateService(false)).Type);
     }
 }

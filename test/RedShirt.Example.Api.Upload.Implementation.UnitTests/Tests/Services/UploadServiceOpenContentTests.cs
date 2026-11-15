@@ -64,6 +64,15 @@ public class UploadServiceOpenContentTests
     }
 
     [Fact]
+    public async Task OpenContentAsync_WhenMissing_ThrowsResourceNotFound()
+    {
+        var service = CreateService(UploadAggregateTestSupport.Rehydrate(UploadId));
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
+            service.OpenContentAsync(UploadId, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task OpenContentAsync_WhileUploading_ThrowsBadRequest()
     {
         var service = CreateService(UploadAggregateTestSupport.Rehydrate(UploadId,
@@ -73,14 +82,5 @@ public class UploadServiceOpenContentTests
             service.OpenContentAsync(UploadId, TestContext.Current.CancellationToken));
         _fileStorage.Verify(x => x.OpenReadAsync(It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task OpenContentAsync_WhenMissing_ThrowsResourceNotFound()
-    {
-        var service = CreateService(UploadAggregateTestSupport.Rehydrate(UploadId));
-
-        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
-            service.OpenContentAsync(UploadId, TestContext.Current.CancellationToken));
     }
 }

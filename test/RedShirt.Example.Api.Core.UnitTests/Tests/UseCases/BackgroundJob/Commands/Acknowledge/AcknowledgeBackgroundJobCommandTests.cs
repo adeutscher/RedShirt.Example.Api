@@ -19,7 +19,8 @@ public class AcknowledgeBackgroundJobCommandTests
             .Callback<BackgroundJobServiceAcknowledgeRequest, CancellationToken>((request, _) => captured = request)
             .ReturnsAsync(model);
         var validator = new Mock<ICoreRequestValidator>();
-        var command = new AcknowledgeBackgroundJobCommand(model.Id, "owner", 2, BackgroundJobAttemptResult.Success, "done");
+        var command =
+            new AcknowledgeBackgroundJobCommand(model.Id, "owner", 2, BackgroundJobAttemptResult.Success, "done");
 
         var result = await new AcknowledgeBackgroundJobCommandHandler(service.Object, validator.Object)
             .Handle(command, TestContext.Current.CancellationToken);
@@ -39,7 +40,8 @@ public class AcknowledgeBackgroundJobCommandTests
     [InlineData(false, "", 1, BackgroundJobAttemptResult.Success, false)]
     [InlineData(false, "owner", 0, BackgroundJobAttemptResult.Success, false)]
     [InlineData(false, "owner", 1, (BackgroundJobAttemptResult) 99, false)]
-    public async Task Validator_ChecksFields(bool emptyId, string leaseOwner, int attempt, BackgroundJobAttemptResult result,
+    public async Task Validator_ChecksFields(bool emptyId, string leaseOwner, int attempt,
+        BackgroundJobAttemptResult result,
         bool expected)
     {
         var validation = await new AcknowledgeBackgroundJobCommandValidator().ValidateAsync(
@@ -54,7 +56,8 @@ public class AcknowledgeBackgroundJobCommandTests
     public async Task Validator_RejectsLongLeaseOwner()
     {
         var validation = await new AcknowledgeBackgroundJobCommandValidator().ValidateAsync(
-            new AcknowledgeBackgroundJobCommand(Guid.NewGuid(), new string('o', 129), 1, BackgroundJobAttemptResult.Success, null),
+            new AcknowledgeBackgroundJobCommand(Guid.NewGuid(), new string('o', 129), 1,
+                BackgroundJobAttemptResult.Success, null),
             TestContext.Current.CancellationToken);
 
         Assert.False(validation.IsValid);

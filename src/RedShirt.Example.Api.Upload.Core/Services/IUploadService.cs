@@ -21,24 +21,24 @@ public interface IUploadService
 
     Task<UploadDownloadLinkModel> GetDownloadLinkAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<UploadSummaryModel> GetSummaryAsync(Guid id, CancellationToken cancellationToken = default);
+
     /// <summary>
     ///     Opens the uploaded file's content for reading, from whichever bucket currently holds it. The caller disposes
     ///     the returned stream.
     /// </summary>
     Task<Stream> OpenContentAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<UploadSummaryModel> GetSummaryAsync(Guid id, CancellationToken cancellationToken = default);
-
     Task PurgeAsync(Guid id, CancellationToken cancellationToken = default);
-
-    Task<UploadSearchResponse> SearchAsync(UploadServiceSearchRequest parameters, Guid? continuationToken,
-        CancellationToken cancellationToken = default);
 
     /// <summary>
     ///     Removes the unverified copy of a <see cref="Models.UploadState.Stored" /> upload's file, once the verified copy
     ///     is in place. Safe to repeat.
     /// </summary>
     Task RemoveUnverifiedCopyAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<UploadSearchResponse> SearchAsync(UploadServiceSearchRequest parameters, Guid? continuationToken,
+        CancellationToken cancellationToken = default);
 
     Task<UploadSummaryModel> SubmitMoveReportAsync(UploadServiceMoveReportRequest request,
         CancellationToken cancellationToken = default);

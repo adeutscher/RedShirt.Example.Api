@@ -21,20 +21,14 @@ public class CqrsBackgroundJobSourceTests
     }
 
     [Fact]
-    public async Task GetJobsAsync_LeasesAsThisProcess_AndConvertsToJobModels()
+    public async Task AcknowledgeAsync_ForJobNotLeasedBySource_Throws()
     {
-        var model = BackgroundJobTestData.CreateModel(BackgroundJobState.Running);
-        _leaseHandler.Setup(x => x.Handle(new LeaseBackgroundJobsCommand(4, "api-1"), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([model]);
+        var job = new Mock<IJobModel>();
+        job.SetupGet(x => x.MessageId).Returns(Guid.NewGuid().ToString());
 
-        var jobs = await CreateSource().GetJobsAsync(4, TestContext.Current.CancellationToken);
-
-        var job = Assert.IsType<JobModel>(Assert.Single(jobs));
-        Assert.Equal(model.Id.ToString(), job.MessageId);
-        Assert.Equal(model.DateCreatedUtc, job.CreatedAtUtc);
-        Assert.Equal(model.Attempts, job.Attempts);
-        Assert.Equal(model.Type, job.Data.Type);
-        Assert.Equal(model.ParametersJson, job.Data.ParametersJson);
+        await Assert.ThrowsAsync<ArgumentException>(() => CreateSource().AcknowledgeAsync(job.Object,
+            JobLogicRunnerResponse.Success, TestContext.Current.CancellationToken));
+        _acknowledgeHandler.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -54,14 +48,20 @@ public class CqrsBackgroundJobSourceTests
     }
 
     [Fact]
-    public async Task AcknowledgeAsync_ForJobNotLeasedBySource_Throws()
+    public async Task GetJobsAsync_LeasesAsThisProcess_AndConvertsToJobModels()
     {
-        var job = new Mock<IJobModel>();
-        job.SetupGet(x => x.MessageId).Returns(Guid.NewGuid().ToString());
+        var model = BackgroundJobTestData.CreateModel(BackgroundJobState.Running);
+        _leaseHandler.Setup(x => x.Handle(new LeaseBackgroundJobsCommand(4, "api-1"), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([model]);
 
-        await Assert.ThrowsAsync<ArgumentException>(() => CreateSource().AcknowledgeAsync(job.Object,
-            JobLogicRunnerResponse.Success, TestContext.Current.CancellationToken));
-        _acknowledgeHandler.VerifyNoOtherCalls();
+        var jobs = await CreateSource().GetJobsAsync(4, TestContext.Current.CancellationToken);
+
+        var job = Assert.IsType<JobModel>(Assert.Single(jobs));
+        Assert.Equal(model.Id.ToString(), job.MessageId);
+        Assert.Equal(model.DateCreatedUtc, job.CreatedAtUtc);
+        Assert.Equal(model.Attempts, job.Attempts);
+        Assert.Equal(model.Type, job.Data.Type);
+        Assert.Equal(model.ParametersJson, job.Data.ParametersJson);
     }
 
     [Theory]

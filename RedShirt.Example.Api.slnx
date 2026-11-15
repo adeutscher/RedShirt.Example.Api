@@ -30,7 +30,8 @@
     <Folder Name="/src/background-jobs/">
         <Project Path="src/RedShirt.Example.Api.BackgroundJobs.Core/RedShirt.Example.Api.BackgroundJobs.Core.csproj"/>
         <Project Path="src/RedShirt.Example.Api.BackgroundJobs.Logic/RedShirt.Example.Api.BackgroundJobs.Logic.csproj"/>
-        <Project Path="src/RedShirt.Example.Api.BackgroundJobs.Runner/RedShirt.Example.Api.BackgroundJobs.Runner.csproj"/>
+        <Project
+                Path="src/RedShirt.Example.Api.BackgroundJobs.Runner/RedShirt.Example.Api.BackgroundJobs.Runner.csproj"/>
         <Project
                 Path="src/RedShirt.Example.Api.BackgroundJobs.Submission.Core/RedShirt.Example.Api.BackgroundJobs.Submission.Core.csproj"/>
         <Project

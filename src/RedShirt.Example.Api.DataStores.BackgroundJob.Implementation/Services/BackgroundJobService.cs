@@ -256,7 +256,8 @@ internal sealed class BackgroundJobService(
         var nextState = request.Result switch
         {
             BackgroundJobAttemptResult.Success => BackgroundJobState.Succeeded,
-            BackgroundJobAttemptResult.Failure when existing.Attempts < settings.EffectiveMaxAttempts => BackgroundJobState.Pending,
+            BackgroundJobAttemptResult.Failure when existing.Attempts < settings.EffectiveMaxAttempts =>
+                BackgroundJobState.Pending,
             _ => BackgroundJobState.Failed
         };
 

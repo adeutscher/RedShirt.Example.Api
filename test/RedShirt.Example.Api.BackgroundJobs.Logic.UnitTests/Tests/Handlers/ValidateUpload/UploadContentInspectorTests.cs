@@ -12,17 +12,6 @@ public class UploadContentInspectorTests
     }
 
     [Theory]
-    [InlineData("I like potato soup.", true)]
-    [InlineData("POTATO", true)]
-    [InlineData("I like tomato soup.", false)]
-    [InlineData("pota to", false)]
-    [InlineData("", false)]
-    public async Task IsValidAsync_LooksForTheRequiredWord(string content, bool expected)
-    {
-        Assert.Equal(expected, await InspectAsync(content));
-    }
-
-    [Theory]
     [InlineData(8189)]
     [InlineData(8190)]
     [InlineData(8191)]
@@ -41,5 +30,16 @@ public class UploadContentInspectorTests
         await UploadContentInspector.IsValidAsync(stream, TestContext.Current.CancellationToken);
 
         Assert.True(stream.CanRead);
+    }
+
+    [Theory]
+    [InlineData("I like potato soup.", true)]
+    [InlineData("POTATO", true)]
+    [InlineData("I like tomato soup.", false)]
+    [InlineData("pota to", false)]
+    [InlineData("", false)]
+    public async Task IsValidAsync_LooksForTheRequiredWord(string content, bool expected)
+    {
+        Assert.Equal(expected, await InspectAsync(content));
     }
 }

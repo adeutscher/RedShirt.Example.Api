@@ -45,7 +45,8 @@ public class CqrsUploadStorageServiceTests
                 IsRejected = false
             });
 
-        Assert.Equal(expected, await CreateService().GetMoveStageAsync(UploadId, TestContext.Current.CancellationToken));
+        Assert.Equal(expected,
+            await CreateService().GetMoveStageAsync(UploadId, TestContext.Current.CancellationToken));
     }
 
     [Fact]

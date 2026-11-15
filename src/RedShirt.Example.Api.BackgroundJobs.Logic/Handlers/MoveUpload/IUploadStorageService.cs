@@ -29,19 +29,19 @@ public enum UploadMoveStage
 /// </summary>
 public interface IUploadStorageService
 {
-    Task<UploadMoveStage> GetMoveStageAsync(Guid uploadId, CancellationToken cancellationToken = default);
-
     /// <summary>
     ///     Copies the upload's file to the verified bucket. Safe to repeat.
     /// </summary>
     /// <returns>The object key in the verified bucket.</returns>
     Task<string> CopyToVerifiedStorageAsync(Guid uploadId, CancellationToken cancellationToken = default);
 
-    Task SubmitMoveReportAsync(Guid uploadId, string verifiedStorageObjectKey,
-        CancellationToken cancellationToken = default);
+    Task<UploadMoveStage> GetMoveStageAsync(Guid uploadId, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///     Removes the unverified copy of a stored upload. Safe to repeat.
     /// </summary>
     Task RemoveUnverifiedCopyAsync(Guid uploadId, CancellationToken cancellationToken = default);
+
+    Task SubmitMoveReportAsync(Guid uploadId, string verifiedStorageObjectKey,
+        CancellationToken cancellationToken = default);
 }

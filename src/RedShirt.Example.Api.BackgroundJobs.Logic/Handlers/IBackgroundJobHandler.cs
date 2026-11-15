@@ -17,7 +17,8 @@ public interface IBackgroundJobHandler
 }
 
 /// <summary>
-///     Reads the job's parameters model before handing over to <see cref="HandleAsync(TParameters, IJobModel, CancellationToken)" />.
+///     Reads the job's parameters model before handing over to
+///     <see cref="HandleAsync(TParameters, IJobModel, CancellationToken)" />.
 ///     Parameters that do not read are <see cref="JobResult.InvalidData" />, since no retry can fix them.
 /// </summary>
 public abstract class BackgroundJobHandler<TParameters> : IBackgroundJobHandler

@@ -135,9 +135,10 @@ internal static class AuthorizationServiceCollectionExtensions
                         BespokeAuthorizationPermissions.BackgroundJobRead)
                     .AddRequirements(new HttpGetRequirement()));
 
-            authorization.AddPolicy(BespokeAuthorizationPolicies.BackgroundJobWrite, policy => ConfigureApiPolicy(policy)
-                .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
-                    BespokeAuthorizationPermissions.BackgroundJobWrite));
+            authorization.AddPolicy(BespokeAuthorizationPolicies.BackgroundJobWrite, policy =>
+                ConfigureApiPolicy(policy)
+                    .RequireClaim(BespokeAuthorizationPermissions.ClaimType,
+                        BespokeAuthorizationPermissions.BackgroundJobWrite));
 
             // scaffold:policy-registrations
 

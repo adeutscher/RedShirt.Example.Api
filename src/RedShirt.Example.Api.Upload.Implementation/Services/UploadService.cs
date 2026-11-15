@@ -24,6 +24,30 @@ internal sealed class UploadService(
         return $"{uploadedByUserId}/{uploadId:N}";
     }
 
+    private async Task<UploadAggregate> GetDownloadableAggregateAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
+        if (aggregate.Id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        if (aggregate.State is UploadState.Uploading or UploadState.Deleted)
+        {
+            throw new BadRequestException("Upload is not available for download.");
+        }
+
+        return aggregate;
+    }
+
+    private string ResolveBucket(UploadAggregate aggregate)
+    {
+        var options = uploadOptions.Value;
+        return aggregate.UsesVerifiedBucket()
+            ? options.BucketVerifiedItems
+            : options.BucketUnverifiedItems;
+    }
+
     public async Task<UploadSummaryModel> CreateAsync(UploadServiceCreateRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -293,30 +317,6 @@ internal sealed class UploadService(
 
         var purgedEvent = new UploadPurgedEvent {UploadId = id};
         await eventBroadcaster.BroadcastUploadPurgedAsync(purgedEvent, cancellationToken);
-    }
-
-    private async Task<UploadAggregate> GetDownloadableAggregateAsync(Guid id, CancellationToken cancellationToken)
-    {
-        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
-        if (aggregate.Id == Guid.Empty)
-        {
-            throw new ResourceNotFoundException();
-        }
-
-        if (aggregate.State is UploadState.Uploading or UploadState.Deleted)
-        {
-            throw new BadRequestException("Upload is not available for download.");
-        }
-
-        return aggregate;
-    }
-
-    private string ResolveBucket(UploadAggregate aggregate)
-    {
-        var options = uploadOptions.Value;
-        return aggregate.UsesVerifiedBucket()
-            ? options.BucketVerifiedItems
-            : options.BucketUnverifiedItems;
     }
 
     public async Task<Stream> OpenContentAsync(Guid id, CancellationToken cancellationToken = default)

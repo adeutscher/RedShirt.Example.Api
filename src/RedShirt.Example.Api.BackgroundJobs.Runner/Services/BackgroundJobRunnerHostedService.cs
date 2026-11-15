@@ -26,10 +26,25 @@ internal sealed class BackgroundJobRunnerHostedService(
     IOptions<BackgroundJobRunnerOptions> options,
     ILogger<BackgroundJobRunnerHostedService> logger) : BackgroundService
 {
-    internal TimeSpan GetIdleDelay(int idleRounds)
+    private async Task<IJobLogicRunnerResponse> RunJobAsync(IJobLogicRunner jobLogicRunner, IJobModel job,
+        CancellationToken cancellationToken)
     {
-        var seconds = Math.Min(options.Value.EffectiveMaxIdleWaitSeconds, Math.Pow(2, Math.Clamp(idleRounds, 1, 30)));
-        return TimeSpan.FromSeconds(seconds);
+        try
+        {
+            var response = await jobLogicRunner.RunAsync(job, cancellationToken);
+            logger.LogInformation("{JobType} job {MessageId} finished as {Result}", job.Data.Type, job.MessageId,
+                response.Result);
+            return response;
+        }
+        catch (Exception e) when (e is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            logger.LogError(e, "{JobType} job {MessageId} threw an exception", job.Data.Type, job.MessageId);
+            return new JobLogicRunnerResponse
+            {
+                Result = JobResult.Failure,
+                Detail = $"{e.GetType().Name}: {e.Message}"
+            };
+        }
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -87,6 +102,12 @@ internal sealed class BackgroundJobRunnerHostedService(
         logger.LogInformation("Background job runner stopped");
     }
 
+    internal TimeSpan GetIdleDelay(int idleRounds)
+    {
+        var seconds = Math.Min(options.Value.EffectiveMaxIdleWaitSeconds, Math.Pow(2, Math.Clamp(idleRounds, 1, 30)));
+        return TimeSpan.FromSeconds(seconds);
+    }
+
     /// <summary>
     ///     Fetches one batch and runs it in sequence.
     /// </summary>
@@ -115,26 +136,5 @@ internal sealed class BackgroundJobRunnerHostedService(
         }
 
         return jobs.Count;
-    }
-
-    private async Task<IJobLogicRunnerResponse> RunJobAsync(IJobLogicRunner jobLogicRunner, IJobModel job,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var response = await jobLogicRunner.RunAsync(job, cancellationToken);
-            logger.LogInformation("{JobType} job {MessageId} finished as {Result}", job.Data.Type, job.MessageId,
-                response.Result);
-            return response;
-        }
-        catch (Exception e) when (e is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
-        {
-            logger.LogError(e, "{JobType} job {MessageId} threw an exception", job.Data.Type, job.MessageId);
-            return new JobLogicRunnerResponse
-            {
-                Result = JobResult.Failure,
-                Detail = $"{e.GetType().Name}: {e.Message}"
-            };
-        }
     }
 }

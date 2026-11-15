@@ -28,10 +28,16 @@ public class MoveUploadJobHandlerTests
     }
 
     [Fact]
-    public void Type_IsMoveUpload()
+    public async Task HandleAsync_WhenAlreadyStored_OnlyRemovesUnverifiedCopy()
     {
-        Assert.Equal(BackgroundJobType.MoveUpload,
-            new MoveUploadJobHandler(_service.Object, NullLogger<MoveUploadJobHandler>.Instance).Type);
+        SetupStage(UploadMoveStage.Stored);
+        _service.Setup(x => x.RemoveUnverifiedCopyAsync(UploadId, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var response = await HandleAsync();
+
+        Assert.Equal(JobResult.Success, response.Result);
+        _service.Verify(x => x.RemoveUnverifiedCopyAsync(UploadId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -56,6 +62,16 @@ public class MoveUploadJobHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_WhenNotApplicable_SucceedsWithoutChanges()
+    {
+        SetupStage(UploadMoveStage.NotApplicable);
+
+        var response = await HandleAsync();
+
+        Assert.Equal(JobResult.Success, response.Result);
+    }
+
+    [Fact]
     public async Task HandleAsync_WhenReportFails_DoesNotRemoveUnverifiedCopy()
     {
         SetupStage(UploadMoveStage.AwaitingMove);
@@ -68,29 +84,6 @@ public class MoveUploadJobHandlerTests
         // Strict mock: a RemoveUnverifiedCopyAsync call would have thrown a MockException instead.
     }
 
-    [Fact]
-    public async Task HandleAsync_WhenAlreadyStored_OnlyRemovesUnverifiedCopy()
-    {
-        SetupStage(UploadMoveStage.Stored);
-        _service.Setup(x => x.RemoveUnverifiedCopyAsync(UploadId, It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-
-        var response = await HandleAsync();
-
-        Assert.Equal(JobResult.Success, response.Result);
-        _service.Verify(x => x.RemoveUnverifiedCopyAsync(UploadId, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task HandleAsync_WhenNotApplicable_SucceedsWithoutChanges()
-    {
-        SetupStage(UploadMoveStage.NotApplicable);
-
-        var response = await HandleAsync();
-
-        Assert.Equal(JobResult.Success, response.Result);
-    }
-
     [Theory]
     [InlineData("not json")]
     [InlineData("{}")]
@@ -100,5 +93,12 @@ public class MoveUploadJobHandlerTests
         var response = await HandleAsync(CreateJob(parametersJson));
 
         Assert.Equal(JobResult.InvalidData, response.Result);
+    }
+
+    [Fact]
+    public void Type_IsMoveUpload()
+    {
+        Assert.Equal(BackgroundJobType.MoveUpload,
+            new MoveUploadJobHandler(_service.Object, NullLogger<MoveUploadJobHandler>.Instance).Type);
     }
 }

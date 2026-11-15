@@ -47,7 +47,9 @@ internal sealed class ValidateUploadJobHandler(
         return new JobLogicRunnerResponse
         {
             Result = JobResult.Success,
-            Detail = approved ? "Approved." : $"Rejected: the document does not contain \"{UploadContentInspector.RequiredWord}\"."
+            Detail = approved
+                ? "Approved."
+                : $"Rejected: the document does not contain \"{UploadContentInspector.RequiredWord}\"."
         };
     }
 }

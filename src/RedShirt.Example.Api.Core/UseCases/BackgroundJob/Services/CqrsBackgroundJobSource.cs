@@ -17,33 +17,6 @@ internal sealed class CqrsBackgroundJobSource(
     IAcknowledgeBackgroundJobCommandHandler acknowledgeBackgroundJobCommandHandler,
     IOptions<BackgroundJobRunnerOptions> options) : IBackgroundJobSource
 {
-    internal static BackgroundJobAttemptResult ToAttemptResult(JobResult result)
-    {
-        return result switch
-        {
-            JobResult.Success => BackgroundJobAttemptResult.Success,
-            JobResult.Failure => BackgroundJobAttemptResult.Failure,
-            JobResult.InvalidData => BackgroundJobAttemptResult.InvalidData,
-            _ => throw new ArgumentOutOfRangeException(nameof(result), result, "Unknown job result.")
-        };
-    }
-
-    internal static JobModel ToJobModel(BackgroundJobModel model)
-    {
-        return new JobModel
-        {
-            MessageId = model.Id.ToString(),
-            IdempotencyId = model.Id.ToString(),
-            CreatedAtUtc = model.DateCreatedUtc,
-            Attempts = model.Attempts,
-            Data = new JobDataModel
-            {
-                Type = model.Type,
-                ParametersJson = model.ParametersJson
-            }
-        };
-    }
-
     public async Task<IReadOnlyList<IJobModel>> GetJobsAsync(int batchSize,
         CancellationToken cancellationToken = default)
     {
@@ -70,5 +43,32 @@ internal sealed class CqrsBackgroundJobSource(
                 ToAttemptResult(response.Result),
                 (response as JobLogicRunnerResponse)?.Detail),
             cancellationToken);
+    }
+
+    internal static BackgroundJobAttemptResult ToAttemptResult(JobResult result)
+    {
+        return result switch
+        {
+            JobResult.Success => BackgroundJobAttemptResult.Success,
+            JobResult.Failure => BackgroundJobAttemptResult.Failure,
+            JobResult.InvalidData => BackgroundJobAttemptResult.InvalidData,
+            _ => throw new ArgumentOutOfRangeException(nameof(result), result, "Unknown job result.")
+        };
+    }
+
+    internal static JobModel ToJobModel(BackgroundJobModel model)
+    {
+        return new JobModel
+        {
+            MessageId = model.Id.ToString(),
+            IdempotencyId = model.Id.ToString(),
+            CreatedAtUtc = model.DateCreatedUtc,
+            Attempts = model.Attempts,
+            Data = new JobDataModel
+            {
+                Type = model.Type,
+                ParametersJson = model.ParametersJson
+            }
+        };
     }
 }
