@@ -183,7 +183,9 @@ Other notes:
 
 ## Background Services
 
-In addition to acting as an API, this application can also run background services by making an implementation of `BackgroundService` and referencing it during setup. That said, I would advise considering an external process for background tasks at scale.
+In addition to acting as an API, this application can also run background services by making an implementation of
+`BackgroundService` and referencing it during setup. That said, I would advise considering an external process for
+background tasks at scale.
 
 See [Background Events](./docs/patterns/background-events.md) for more details.
 

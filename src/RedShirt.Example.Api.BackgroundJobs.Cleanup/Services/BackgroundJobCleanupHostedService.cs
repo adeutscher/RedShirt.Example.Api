@@ -30,44 +30,20 @@ internal sealed class BackgroundJobCleanupHostedService(
     private static readonly BackgroundJobState[] FinishedStates =
         [BackgroundJobState.Succeeded, BackgroundJobState.Failed];
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    private async Task<bool> TryDeleteAsync(IDeleteBackgroundJobCommandHandler deleteHandler, Guid id,
+        CancellationToken cancellationToken)
     {
-        if (!options.Value.CleanupEnabled)
+        try
         {
-            logger.LogInformation("Background job cleanup is disabled");
-            return;
+            await deleteHandler.Handle(new DeleteBackgroundJobCommand(id), cancellationToken);
+            return true;
         }
-
-        logger.LogInformation("Background job cleanup started, keeping finished jobs for {RetentionDays} days",
-            options.Value.CleanupRetentionDays);
-
-        while (!stoppingToken.IsCancellationRequested)
+        catch (Exception e) when (e is ResourceNotFoundException or BadRequestException or ConflictException)
         {
-            try
-            {
-                await CleanUpAsync(stoppingToken);
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                break;
-            }
-            catch (Exception e)
-            {
-                // Typically the database being unavailable. The next run tries again.
-                logger.LogError(e, "Unexpected error cleaning up background jobs");
-            }
-
-            try
-            {
-                await Task.Delay(Interval, timeProvider, stoppingToken);
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                break;
-            }
+            // Deleted by another instance, or retried since the search. Either way it is not ours to delete now.
+            logger.LogDebug("Skipped deleting background job {Id}: {Reason}", id, e.GetType().Name);
+            return false;
         }
-
-        logger.LogInformation("Background job cleanup stopped");
     }
 
     /// <summary>
@@ -129,19 +105,43 @@ internal sealed class BackgroundJobCleanupHostedService(
         return total;
     }
 
-    private async Task<bool> TryDeleteAsync(IDeleteBackgroundJobCommandHandler deleteHandler, Guid id,
-        CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        try
+        if (!options.Value.CleanupEnabled)
         {
-            await deleteHandler.Handle(new DeleteBackgroundJobCommand(id), cancellationToken);
-            return true;
+            logger.LogInformation("Background job cleanup is disabled");
+            return;
         }
-        catch (Exception e) when (e is ResourceNotFoundException or BadRequestException or ConflictException)
+
+        logger.LogInformation("Background job cleanup started, keeping finished jobs for {RetentionDays} days",
+            options.Value.CleanupRetentionDays);
+
+        while (!stoppingToken.IsCancellationRequested)
         {
-            // Deleted by another instance, or retried since the search. Either way it is not ours to delete now.
-            logger.LogDebug("Skipped deleting background job {Id}: {Reason}", id, e.GetType().Name);
-            return false;
+            try
+            {
+                await CleanUpAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception e)
+            {
+                // Typically the database being unavailable. The next run tries again.
+                logger.LogError(e, "Unexpected error cleaning up background jobs");
+            }
+
+            try
+            {
+                await Task.Delay(Interval, timeProvider, stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
         }
+
+        logger.LogInformation("Background job cleanup stopped");
     }
 }

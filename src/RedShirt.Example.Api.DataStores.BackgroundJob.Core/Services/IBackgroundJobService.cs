@@ -18,7 +18,8 @@ public interface IBackgroundJobService
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///     Reports that a running attempt failed. With attempts left and <see cref="BackgroundJobServiceFailRequest.CanRetry" />,
+    ///     Reports that a running attempt failed. With attempts left and
+    ///     <see cref="BackgroundJobServiceFailRequest.CanRetry" />,
     ///     the job is pending again after a back-off. Otherwise it is failed.
     /// </summary>
     Task<BackgroundJobModel> FailAsync(BackgroundJobServiceFailRequest request,

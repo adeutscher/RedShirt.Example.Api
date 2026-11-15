@@ -20,7 +20,8 @@ public class MoveUploadJobHandlerTests
 
     private Task<IJobLogicRunnerResponse> HandleAsync(JobModel? job = null)
     {
-        return new MoveUploadJobHandler(_service.Object, _statusService.Object, NullLogger<MoveUploadJobHandler>.Instance)
+        return new MoveUploadJobHandler(_service.Object, _statusService.Object,
+                NullLogger<MoveUploadJobHandler>.Instance)
             .HandleAsync(job ?? CreateJob(), TestContext.Current.CancellationToken);
     }
 
@@ -87,7 +88,7 @@ public class MoveUploadJobHandlerTests
         // Strict mock: a RemoveUnverifiedCopyAsync call would have thrown a MockException instead.
         Assert.Equal(JobResult.Failure, response.Result);
         _statusService.Verify(x => x.ReportFailedAsync(It.IsAny<IJobModel>(), true,
-            It.Is<string?>(detail => detail!.Contains("database unavailable")), It.IsAny<CancellationToken>()),
+                It.Is<string?>(detail => detail!.Contains("database unavailable")), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -106,6 +107,7 @@ public class MoveUploadJobHandlerTests
     public void Type_IsMoveUpload()
     {
         Assert.Equal(BackgroundJobType.MoveUpload,
-            new MoveUploadJobHandler(_service.Object, _statusService.Object, NullLogger<MoveUploadJobHandler>.Instance).Type);
+            new MoveUploadJobHandler(_service.Object, _statusService.Object, NullLogger<MoveUploadJobHandler>.Instance)
+                .Type);
     }
 }

@@ -15,15 +15,6 @@ namespace RedShirt.Example.Api.BackgroundJobs.Logic.Services;
 public interface IBackgroundJobStatusService
 {
     /// <summary>
-    ///     Reports that the job has started.
-    /// </summary>
-    /// <returns>
-    ///     False when the job is no longer at this attempt (its lease expired and it was taken again) or is no longer
-    ///     waiting to start. The job must then not be run.
-    /// </returns>
-    Task<bool> ReportStartedAsync(IJobModel job, CancellationToken cancellationToken = default);
-
-    /// <summary>
     ///     Reports that the job failed. With <paramref name="canRetry" /> false, the job is not tried again.
     /// </summary>
     /// <returns>False when another attempt has taken the job over. That attempt reports the outcome instead.</returns>
@@ -35,4 +26,13 @@ public interface IBackgroundJobStatusService
     /// </summary>
     /// <returns>False when another attempt has taken the job over. That attempt reports the outcome instead.</returns>
     Task<bool> ReportFinishedAsync(IJobModel job, string? detail, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Reports that the job has started.
+    /// </summary>
+    /// <returns>
+    ///     False when the job is no longer at this attempt (its lease expired and it was taken again) or is no longer
+    ///     waiting to start. The job must then not be run.
+    /// </returns>
+    Task<bool> ReportStartedAsync(IJobModel job, CancellationToken cancellationToken = default);
 }

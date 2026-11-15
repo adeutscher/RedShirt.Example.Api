@@ -31,6 +31,34 @@ public abstract class BackgroundJobHandler<TParameters>(IBackgroundJobStatusServ
     : IBackgroundJobHandler
     where TParameters : class, IBackgroundJobParameters
 {
+    private async Task<IJobLogicRunnerResponse> RunAsync(IJobModel job, CancellationToken cancellationToken)
+    {
+        TParameters? parameters;
+        try
+        {
+            parameters = JsonSerializer.Deserialize<TParameters>(job.Data.ParametersJson, BackgroundJobJson.Options);
+        }
+        catch (JsonException e)
+        {
+            return new JobLogicRunnerResponse
+            {
+                Result = JobResult.InvalidData,
+                Detail = $"The {Type} parameters could not be read: {e.Message}"
+            };
+        }
+
+        if (parameters is null)
+        {
+            return new JobLogicRunnerResponse
+            {
+                Result = JobResult.InvalidData,
+                Detail = $"The {Type} parameters are empty."
+            };
+        }
+
+        return await HandleAsync(parameters, job, cancellationToken);
+    }
+
     public BackgroundJobType Type => TParameters.JobType;
 
     public async Task<IJobLogicRunnerResponse> HandleAsync(IJobModel job,
@@ -81,34 +109,6 @@ public abstract class BackgroundJobHandler<TParameters>(IBackgroundJobStatusServ
         };
 
         return response;
-    }
-
-    private async Task<IJobLogicRunnerResponse> RunAsync(IJobModel job, CancellationToken cancellationToken)
-    {
-        TParameters? parameters;
-        try
-        {
-            parameters = JsonSerializer.Deserialize<TParameters>(job.Data.ParametersJson, BackgroundJobJson.Options);
-        }
-        catch (JsonException e)
-        {
-            return new JobLogicRunnerResponse
-            {
-                Result = JobResult.InvalidData,
-                Detail = $"The {Type} parameters could not be read: {e.Message}"
-            };
-        }
-
-        if (parameters is null)
-        {
-            return new JobLogicRunnerResponse
-            {
-                Result = JobResult.InvalidData,
-                Detail = $"The {Type} parameters are empty."
-            };
-        }
-
-        return await HandleAsync(parameters, job, cancellationToken);
     }
 
     protected abstract Task<IJobLogicRunnerResponse> HandleAsync(TParameters parameters, IJobModel job,

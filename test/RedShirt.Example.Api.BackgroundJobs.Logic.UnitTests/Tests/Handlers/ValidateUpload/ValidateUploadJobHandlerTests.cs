@@ -11,13 +11,13 @@ public class ValidateUploadJobHandlerTests
 {
     private static readonly Guid UploadId = Guid.NewGuid();
 
+    private readonly Mock<IBackgroundJobStatusService> _statusService = StatusServiceFactory.CreateAccepting();
+
     private static JobModel CreateJob(string? parametersJson = null)
     {
         return JobFactory.Create(BackgroundJobType.ValidateUpload,
             parametersJson ?? $"{{\"uploadId\":\"{UploadId}\"}}");
     }
-
-    private readonly Mock<IBackgroundJobStatusService> _statusService = StatusServiceFactory.CreateAccepting();
 
     private ValidateUploadJobHandler CreateHandler(Mock<IUploadValidationService> service)
     {
@@ -74,7 +74,7 @@ public class ValidateUploadJobHandlerTests
 
         Assert.Equal(JobResult.Failure, response.Result);
         _statusService.Verify(x => x.ReportFailedAsync(It.IsAny<IJobModel>(), true,
-            It.Is<string?>(detail => detail!.Contains("storage unavailable")), It.IsAny<CancellationToken>()),
+                It.Is<string?>(detail => detail!.Contains("storage unavailable")), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 

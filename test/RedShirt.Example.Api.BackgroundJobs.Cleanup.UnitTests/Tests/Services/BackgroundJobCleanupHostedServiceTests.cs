@@ -72,8 +72,10 @@ public class BackgroundJobCleanupHostedServiceTests
         Assert.Equal(3, deleted);
         var cutoff = Now.UtcDateTime.AddDays(-30);
         Assert.Equal(
-            [BackgroundJobState.Succeeded, BackgroundJobState.Succeeded, BackgroundJobState.Failed,
-                BackgroundJobState.Failed],
+            [
+                BackgroundJobState.Succeeded, BackgroundJobState.Succeeded, BackgroundJobState.Failed,
+                BackgroundJobState.Failed
+            ],
             queries.Select(x => x.State!.Value));
         Assert.All(queries, query =>
         {
