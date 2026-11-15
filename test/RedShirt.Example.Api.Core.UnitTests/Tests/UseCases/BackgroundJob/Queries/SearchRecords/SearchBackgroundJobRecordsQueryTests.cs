@@ -14,6 +14,7 @@ public class SearchBackgroundJobRecordsQueryTests
     {
         var response = new BackgroundJobSearchResponse {Records = [BackgroundJobTestData.CreateModel()]};
         var createdBefore = DateTime.UtcNow;
+        var completedBefore = createdBefore.AddDays(-1);
         BackgroundJobServiceSearchRequest? captured = null;
         var service = new Mock<IBackgroundJobService>();
         service.Setup(x => x.SearchAsync(It.IsAny<BackgroundJobServiceSearchRequest>(),
@@ -22,7 +23,7 @@ public class SearchBackgroundJobRecordsQueryTests
             .ReturnsAsync(response);
         var validator = new Mock<ICoreRequestValidator>();
         var query = new SearchBackgroundJobRecordsQuery(10, BackgroundJobType.ValidateUpload,
-            BackgroundJobState.Failed, createdBefore);
+            BackgroundJobState.Failed, createdBefore, completedBefore);
 
         var result = await new SearchBackgroundJobRecordsQueryHandler(service.Object, validator.Object)
             .Handle(query, TestContext.Current.CancellationToken);
@@ -33,6 +34,7 @@ public class SearchBackgroundJobRecordsQueryTests
         Assert.Equal(BackgroundJobType.ValidateUpload, captured.Type);
         Assert.Equal(BackgroundJobState.Failed, captured.State);
         Assert.Equal(createdBefore, captured.CreatedBeforeUtc);
+        Assert.Equal(completedBefore, captured.CompletedBeforeUtc);
     }
 
     [Theory]

@@ -7,4 +7,5 @@ public sealed record SearchBackgroundJobRecordsQuery(
     int PageSize,
     BackgroundJobType? Type,
     BackgroundJobState? State,
-    DateTime? CreatedBeforeUtc);
+    DateTime? CreatedBeforeUtc,
+    DateTime? CompletedBeforeUtc = null);

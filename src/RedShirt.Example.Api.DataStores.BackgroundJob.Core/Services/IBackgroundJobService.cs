@@ -4,8 +4,8 @@ namespace RedShirt.Example.Api.DataStores.BackgroundJob.Core.Services;
 
 /// <summary>
 ///     Storage operations on the BackgroundJob table. Used by the background job CQRS handlers and by the job submitter.
-///     Leasing and acknowledging serve the in-API runner. Creating, reading, and searching serve every setup, including
-///     one where an applied JobWorker runs the jobs.
+///     Leasing and acknowledging serve the in-API runner. Creating, reading, searching, and deleting serve every setup,
+///     including one where an applied JobWorker runs the jobs.
 /// </summary>
 public interface IBackgroundJobService
 {
@@ -21,6 +21,11 @@ public interface IBackgroundJobService
 
     Task<BackgroundJobModel> CreateAsync(BackgroundJobServiceCreateRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Deletes a finished (succeeded or failed) job. A job that is pending or running cannot be deleted.
+    /// </summary>
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<BackgroundJobModel> GetAsync(Guid id, CancellationToken cancellationToken = default);
 

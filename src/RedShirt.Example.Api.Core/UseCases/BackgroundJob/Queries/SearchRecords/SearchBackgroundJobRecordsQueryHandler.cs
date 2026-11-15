@@ -20,7 +20,8 @@ internal sealed class SearchBackgroundJobRecordsQueryHandler(
             PageSize = query.PageSize,
             Type = query.Type,
             State = query.State,
-            CreatedBeforeUtc = query.CreatedBeforeUtc
+            CreatedBeforeUtc = query.CreatedBeforeUtc,
+            CompletedBeforeUtc = query.CompletedBeforeUtc
         }, cancellationToken);
     }
 }

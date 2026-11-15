@@ -17,6 +17,7 @@ internal sealed class BackgroundJobDbContext(DbContextOptions<BackgroundJobDbCon
             entity.Property(e => e.ParametersJson).IsRequired();
             entity.Property(e => e.LeaseOwner).HasMaxLength(BackgroundJobLimits.LeaseOwnerMaxLength);
             entity.HasIndex(e => new {e.State, e.DueAtUtc});
+            entity.HasIndex(e => new {e.State, e.CompletedAtUtc});
             entity.HasIndex(e => e.Type);
         });
     }

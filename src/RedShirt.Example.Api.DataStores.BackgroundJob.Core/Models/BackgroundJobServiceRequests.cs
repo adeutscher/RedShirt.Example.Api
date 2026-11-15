@@ -22,6 +22,11 @@ public sealed class BackgroundJobServiceSearchRequest
     ///     previous page to get the next page.
     /// </summary>
     public DateTime? CreatedBeforeUtc { get; init; }
+
+    /// <summary>
+    ///     Only jobs that finished (succeeded or failed) before this time. Jobs that have not finished are left out.
+    /// </summary>
+    public DateTime? CompletedBeforeUtc { get; init; }
 }
 
 public sealed class BackgroundJobServiceLeaseRequest

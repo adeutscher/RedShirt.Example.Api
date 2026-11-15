@@ -20,6 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Cleanup\RedShirt.Example.Api.BackgroundJobs.Cleanup.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Logic\RedShirt.Example.Api.BackgroundJobs.Logic.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Runner\RedShirt.Example.Api.BackgroundJobs.Runner.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Submission.Implementation\RedShirt.Example.Api.BackgroundJobs.Submission.Implementation.csproj"/>

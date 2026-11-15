@@ -28,6 +28,8 @@
         <Project Path="src/RedShirt.Example.Api/RedShirt.Example.Api.csproj"/>
     </Folder>
     <Folder Name="/src/background-jobs/">
+        <Project
+                Path="src/RedShirt.Example.Api.BackgroundJobs.Cleanup/RedShirt.Example.Api.BackgroundJobs.Cleanup.csproj"/>
         <Project Path="src/RedShirt.Example.Api.BackgroundJobs.Core/RedShirt.Example.Api.BackgroundJobs.Core.csproj"/>
         <Project Path="src/RedShirt.Example.Api.BackgroundJobs.Logic/RedShirt.Example.Api.BackgroundJobs.Logic.csproj"/>
         <Project
@@ -126,6 +128,8 @@
         <Project Path="test/RedShirt.Example.Api.UnitTests/RedShirt.Example.Api.UnitTests.csproj"/>
     </Folder>
     <Folder Name="/test/background-jobs/">
+        <Project
+                Path="test/RedShirt.Example.Api.BackgroundJobs.Cleanup.UnitTests/RedShirt.Example.Api.BackgroundJobs.Cleanup.UnitTests.csproj"/>
         <Project
                 Path="test/RedShirt.Example.Api.BackgroundJobs.Logic.UnitTests/RedShirt.Example.Api.BackgroundJobs.Logic.UnitTests.csproj"/>
         <Project

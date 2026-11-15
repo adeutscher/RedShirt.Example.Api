@@ -96,6 +96,28 @@ internal sealed class BackgroundJobService(
         return ToModel(entity);
     }
 
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        await using var context = await dbContextFactory.CreateDbContextAsync(ConnectionStringName, cancellationToken);
+
+        var existing = await GetRequiredAsync(context, id, cancellationToken);
+        if (existing.State is not (BackgroundJobState.Succeeded or BackgroundJobState.Failed))
+        {
+            throw new BadRequestException("Only finished background jobs can be deleted.");
+        }
+
+        // Conditional on the job still being finished, in case it was retried in the meantime.
+        var deleted = await context.BackgroundJobs
+            .Where(e => e.Id == id
+                        && (e.State == BackgroundJobState.Succeeded || e.State == BackgroundJobState.Failed))
+            .ExecuteDeleteAsync(cancellationToken);
+
+        if (deleted != 1)
+        {
+            throw new ConflictException("Background job changed while it was being deleted.");
+        }
+    }
+
     public async Task<BackgroundJobModel> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync(ConnectionStringName, cancellationToken);
@@ -125,6 +147,13 @@ internal sealed class BackgroundJobService(
         {
             var createdBefore = request.CreatedBeforeUtc.Value;
             query = query.Where(e => e.DateCreatedUtc < createdBefore);
+        }
+
+        if (request.CompletedBeforeUtc.HasValue)
+        {
+            // CompletedAtUtc is only set on finished jobs, so pending and running jobs never match.
+            var completedBefore = request.CompletedBeforeUtc.Value;
+            query = query.Where(e => e.CompletedAtUtc != null && e.CompletedAtUtc < completedBefore);
         }
 
         var pageSize = request.PageSize <= 0 ? MaxPageSize : Math.Min(MaxPageSize, request.PageSize);

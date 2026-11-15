@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        Deletes old finished jobs from the BackgroundJob table through the API's CQRS handlers. The table stays when jobs
+        move to an applied JobWorker, so this project stays too: it does not use the in-API processing projects
+        (BackgroundJobs.Core, .Logic, .Runner).
+    -->
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.13"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13"/>
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.13"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.Core\RedShirt.Example.Api.Core.csproj"/>
+    </ItemGroup>
+
+</Project>

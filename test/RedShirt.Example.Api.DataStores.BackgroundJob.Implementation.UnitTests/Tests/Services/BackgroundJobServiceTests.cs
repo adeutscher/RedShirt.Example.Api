@@ -237,6 +237,44 @@ public class BackgroundJobServiceTests
             }, Token));
     }
 
+    [Theory]
+    [InlineData(BackgroundJobAttemptResult.Success)]
+    [InlineData(BackgroundJobAttemptResult.InvalidData)]
+    public async Task DeleteAsync_DeletesFinishedJob(BackgroundJobAttemptResult result)
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+        await LeaseAsync(fixture);
+        await AcknowledgeAsync(fixture, job.Id, result);
+
+        await fixture.Service.DeleteAsync(job.Id, Token);
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() => fixture.Service.GetAsync(job.Id, Token));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenMissing_ThrowsResourceNotFound()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() => fixture.Service.DeleteAsync(Guid.NewGuid(), Token));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenNotFinished_ThrowsBadRequest_AndKeepsJob()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var pending = await CreateJobAsync(fixture);
+        var running = await CreateJobAsync(fixture);
+        await LeaseAsync(fixture, 1);
+
+        foreach (var job in new[] {pending, running})
+        {
+            await Assert.ThrowsAsync<BadRequestException>(() => fixture.Service.DeleteAsync(job.Id, Token));
+            await fixture.Service.GetAsync(job.Id, Token);
+        }
+    }
+
     [Fact]
     public async Task GetAsync_WhenMissing_ThrowsResourceNotFound()
     {
@@ -345,6 +383,38 @@ public class BackgroundJobServiceTests
         var job = await CreateJobAsync(fixture);
 
         await Assert.ThrowsAsync<BadRequestException>(() => fixture.Service.RetryAsync(job.Id, Token));
+    }
+
+    [Fact]
+    public async Task SearchAsync_CompletedBefore_ReturnsOnlyJobsThatFinishedBeforeThatTime()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var oldSucceeded = await CreateJobAsync(fixture);
+        var oldFailed = await CreateJobAsync(fixture);
+        await LeaseAsync(fixture);
+        await AcknowledgeAsync(fixture, oldSucceeded.Id, BackgroundJobAttemptResult.Success);
+        await AcknowledgeAsync(fixture, oldFailed.Id, BackgroundJobAttemptResult.InvalidData);
+        fixture.TimeProvider.Advance(TimeSpan.FromDays(1));
+        var cutoff = fixture.TimeProvider.UtcNow.UtcDateTime;
+        var recent = await CreateJobAsync(fixture);
+        await LeaseAsync(fixture);
+        await AcknowledgeAsync(fixture, recent.Id, BackgroundJobAttemptResult.Success);
+        // Created before the cutoff, but never finished.
+        await CreateJobAsync(fixture);
+        fixture.TimeProvider.Advance(TimeSpan.FromDays(1));
+
+        var found = await fixture.Service.SearchAsync(new BackgroundJobServiceSearchRequest
+        {
+            CompletedBeforeUtc = cutoff
+        }, Token);
+        Assert.Equal(new[] {oldSucceeded.Id, oldFailed.Id}.Order(), found.Records.Select(x => x.Id).Order());
+
+        var failedOnly = await fixture.Service.SearchAsync(new BackgroundJobServiceSearchRequest
+        {
+            State = BackgroundJobState.Failed,
+            CompletedBeforeUtc = cutoff
+        }, Token);
+        Assert.Equal([oldFailed.Id], failedOnly.Records.Select(x => x.Id));
     }
 
     [Fact]

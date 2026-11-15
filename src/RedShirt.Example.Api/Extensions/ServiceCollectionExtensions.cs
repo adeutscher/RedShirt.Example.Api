@@ -1,3 +1,4 @@
+using RedShirt.Example.Api.BackgroundJobs.Cleanup.Extensions;
 using RedShirt.Example.Api.BackgroundJobs.Logic.Extensions;
 using RedShirt.Example.Api.BackgroundJobs.Runner.Extensions;
 using RedShirt.Example.Api.BackgroundJobs.Submission.Implementation.Extensions;
@@ -70,6 +71,9 @@ internal static class ServiceCollectionExtensions
             .AddUploads(configuration)
             // BackgroundJob table via Entity Framework Core. Kept whether jobs run here or in an applied JobWorker.
             .AddBackgroundJobs(configuration)
+            // Deletes old finished jobs from that table, also kept with a JobWorker.
+            // Off unless BACKGROUND_JOBS__CLEANUP_ENABLED=true.
+            .AddBackgroundJobCleanup(configuration)
             // scaffold:data-store-registrations
             // Background jobs
             ////
