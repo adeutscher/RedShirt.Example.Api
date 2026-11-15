@@ -92,9 +92,12 @@ If you wish to migrate, then I would advise the following steps:
     * As a deliberate choice, this API template does not support polling/claiming jobs from outside sources to avoid making it a message broker in its own right. If you feel that this is something that you would want to do, then the only missing step should be the API endpoints pointing at established CQRS handlers.
 2. Edit the `BackgroundJobSubmitter` class in the API to submit to the queue after writing record to the chosen messaging service with the existing `backgroundJobService.CreateAsync` call.
     * I would strongly advise doing the submitting through a simplified abstraction to maintain a good structure.
-4. The job handlers in this API template access the background jobs datastore using CQRS handlers. You will need to add endpoints that access handlers for marking a started job, a failed job, and a finished job.
-    * Remember to also define appropriate permissions and roles.
-5. Publish the updated Interop project as a NuGet or otherwise export the Swagger/OpenAPI document for use by the JobWorker.
-3. Create an applied version of the JobWorker template according to its documentation.
-4. In your applied JobWorker project:
+3. The job handlers in this API template access the background jobs datastore using CQRS handlers. You will need to add endpoints that access handlers for marking a started job, a failed job, and a finished job. The CQRS handlers already exist, they just need the last-mile connection.
+    * Remember to add appropriate required permissions for a worker.
+4. Publish the updated Interop project as a NuGet or otherwise export the Swagger/OpenAPI document for use by the JobWorker.
+5. Create an applied version of the JobWorker template according to its documentation.
+6. In your applied JobWorker project:
     * Copy the content of the API's `BackgroundJobLogicRunner` projects into `Core.Logic` projects in the applied JobWorker.
+    * Copy handlers.
+    * Update dependency injection.
+    * Replace the API version's CQRS calls with calls to an API connector. I strongly encourage using the pattern set out by the BarConnector.
