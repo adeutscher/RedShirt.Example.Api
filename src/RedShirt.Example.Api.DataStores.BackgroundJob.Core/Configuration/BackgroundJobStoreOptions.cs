@@ -9,8 +9,9 @@ public sealed class BackgroundJobStoreOptions
     public const string ConfigurationSectionName = "BackgroundJobs";
 
     /// <summary>
-    ///     How long a leased job belongs to its lease owner. A job whose lease expires without an acknowledgement goes back
-    ///     to being available. Environment variable: <c>BACKGROUND_JOBS__LEASE_SECONDS</c>.
+    ///     How long a leased job belongs to its lease owner, counted from the lease and again from the start report. A job
+    ///     whose lease expires without an outcome report goes back to being available. Environment variable:
+    ///     <c>BACKGROUND_JOBS__LEASE_SECONDS</c>.
     /// </summary>
     public int LeaseSeconds { get; init; } = 300;
 

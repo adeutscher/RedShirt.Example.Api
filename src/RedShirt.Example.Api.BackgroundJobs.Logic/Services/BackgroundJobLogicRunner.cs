@@ -12,23 +12,38 @@ namespace RedShirt.Example.Api.BackgroundJobs.Logic.Services;
 /// </summary>
 internal sealed class BackgroundJobLogicRunner(
     IEnumerable<IBackgroundJobHandler> handlers,
+    IBackgroundJobStatusService statusService,
     ILogger<BackgroundJobLogicRunner> logger) : IJobLogicRunner
 {
     private readonly Dictionary<BackgroundJobType, IBackgroundJobHandler> _handlers =
         handlers.ToDictionary(handler => handler.Type);
 
-    public Task<IJobLogicRunnerResponse> RunAsync(IJobModel job, CancellationToken cancellationToken = default)
+    public async Task<IJobLogicRunnerResponse> RunAsync(IJobModel job, CancellationToken cancellationToken = default)
     {
-        if (!_handlers.TryGetValue(job.Data.Type, out var handler))
+        if (_handlers.TryGetValue(job.Data.Type, out var handler))
         {
-            return Task.FromResult<IJobLogicRunnerResponse>(new JobLogicRunnerResponse
-            {
-                Result = JobResult.InvalidData,
-                Detail = $"No handler is registered for job type {job.Data.Type}."
-            });
+            logger.LogDebug("Running {JobType} job {MessageId}", job.Data.Type, job.MessageId);
+            // The handler reports the job's status itself.
+            return await handler.HandleAsync(job, cancellationToken);
         }
 
-        logger.LogDebug("Running {JobType} job {MessageId}", job.Data.Type, job.MessageId);
-        return handler.HandleAsync(job, cancellationToken);
+        var response = new JobLogicRunnerResponse
+        {
+            Result = JobResult.InvalidData,
+            Detail = $"No handler is registered for job type {job.Data.Type}."
+        };
+
+        /*
+         * With no handler to report the job's status, it is reported here, so the job fails instead of waiting out its
+         * attempts. These reports go to the background job CQRS handlers inside the API. If this logic runner is
+         * migrated to an applied JobWorker, they need to be replaced with API connector methods (see
+         * IBackgroundJobStatusService).
+         */
+        if (await statusService.ReportStartedAsync(job, cancellationToken))
+        {
+            await statusService.ReportFailedAsync(job, false, response.Detail, cancellationToken);
+        }
+
+        return response;
     }
 }

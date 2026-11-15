@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using RedShirt.Example.Api.BackgroundJobs.Core.Models;
 using RedShirt.Example.Api.BackgroundJobs.Logic.Handlers.ValidateUpload;
+using RedShirt.Example.Api.BackgroundJobs.Logic.Services;
 using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models;
 using System.Text;
 
@@ -16,9 +17,12 @@ public class ValidateUploadJobHandlerTests
             parametersJson ?? $"{{\"uploadId\":\"{UploadId}\"}}");
     }
 
-    private static ValidateUploadJobHandler CreateHandler(Mock<IUploadValidationService> service)
+    private readonly Mock<IBackgroundJobStatusService> _statusService = StatusServiceFactory.CreateAccepting();
+
+    private ValidateUploadJobHandler CreateHandler(Mock<IUploadValidationService> service)
     {
-        return new ValidateUploadJobHandler(service.Object, NullLogger<ValidateUploadJobHandler>.Instance);
+        return new ValidateUploadJobHandler(service.Object, _statusService.Object,
+            NullLogger<ValidateUploadJobHandler>.Instance);
     }
 
     private static Mock<IUploadValidationService> CreateService(bool awaiting, string content = "")
@@ -60,14 +64,18 @@ public class ValidateUploadJobHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenServiceThrows_LetsExceptionBubbleUp()
+    public async Task HandleAsync_WhenServiceThrows_ReportsRetryableFailure()
     {
         var service = CreateService(true);
         service.Setup(x => x.OpenContentAsync(UploadId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new IOException("storage unavailable"));
 
-        await Assert.ThrowsAsync<IOException>(() =>
-            CreateHandler(service).HandleAsync(CreateJob(), TestContext.Current.CancellationToken));
+        var response = await CreateHandler(service).HandleAsync(CreateJob(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(JobResult.Failure, response.Result);
+        _statusService.Verify(x => x.ReportFailedAsync(It.IsAny<IJobModel>(), true,
+            It.Is<string?>(detail => detail!.Contains("storage unavailable")), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Theory]

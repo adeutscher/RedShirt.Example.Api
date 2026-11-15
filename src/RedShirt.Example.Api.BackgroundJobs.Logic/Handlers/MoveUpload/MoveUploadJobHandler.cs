@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using RedShirt.Example.Api.BackgroundJobs.Core.Models;
+using RedShirt.Example.Api.BackgroundJobs.Logic.Services;
 using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models.Parameters;
 
 namespace RedShirt.Example.Api.BackgroundJobs.Logic.Handlers.MoveUpload;
@@ -16,7 +17,8 @@ namespace RedShirt.Example.Api.BackgroundJobs.Logic.Handlers.MoveUpload;
 /// </summary>
 internal sealed class MoveUploadJobHandler(
     IUploadStorageService uploadStorageService,
-    ILogger<MoveUploadJobHandler> logger) : BackgroundJobHandler<MoveUploadJobParameters>
+    IBackgroundJobStatusService statusService,
+    ILogger<MoveUploadJobHandler> logger) : BackgroundJobHandler<MoveUploadJobParameters>(statusService)
 {
     protected override async Task<IJobLogicRunnerResponse> HandleAsync(MoveUploadJobParameters parameters,
         IJobModel job, CancellationToken cancellationToken)

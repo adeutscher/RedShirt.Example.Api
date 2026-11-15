@@ -11,7 +11,8 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>
     ///     Adds the job logic runner and the job handlers. The host must also register the services that the handlers
-    ///     call back into (<see cref="IUploadValidationService" /> and <see cref="IUploadStorageService" />).
+    ///     call back into (<see cref="IBackgroundJobStatusService" />, <see cref="IUploadValidationService" />, and
+    ///     <see cref="IUploadStorageService" />).
     /// </summary>
     public static IServiceCollection AddBackgroundJobLogic(this IServiceCollection services)
     {

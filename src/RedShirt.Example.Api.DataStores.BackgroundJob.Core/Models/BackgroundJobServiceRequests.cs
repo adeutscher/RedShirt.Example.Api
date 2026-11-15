@@ -35,18 +35,47 @@ public sealed class BackgroundJobServiceLeaseRequest
     public required string LeaseOwner { get; init; }
 }
 
-public sealed class BackgroundJobServiceAcknowledgeRequest
+/// <summary>
+///     Reports that the job's leased attempt has started running.
+/// </summary>
+public sealed class BackgroundJobServiceStartRequest
 {
     public required Guid Id { get; init; }
-    public required string LeaseOwner { get; init; }
 
     /// <summary>
     ///     The job's <see cref="BackgroundJobModel.Attempts" /> as it was leased. Each lease increments it, so it fences
-    ///     the outcome to that one lease: an outcome from a lease that expired and was taken again is refused, even when
-    ///     both leases had the same lease owner name.
+    ///     every status report to one lease: a report from a lease that expired and was taken again is refused.
     /// </summary>
     public required int Attempt { get; init; }
+}
 
-    public required BackgroundJobAttemptResult Result { get; init; }
+/// <summary>
+///     Reports that the job's running attempt succeeded.
+/// </summary>
+public sealed class BackgroundJobServiceFinishRequest
+{
+    public required Guid Id { get; init; }
+
+    /// <inheritdoc cref="BackgroundJobServiceStartRequest.Attempt" />
+    public required int Attempt { get; init; }
+
+    public string? Detail { get; init; }
+}
+
+/// <summary>
+///     Reports that the job's running attempt failed.
+/// </summary>
+public sealed class BackgroundJobServiceFailRequest
+{
+    public required Guid Id { get; init; }
+
+    /// <inheritdoc cref="BackgroundJobServiceStartRequest.Attempt" />
+    public required int Attempt { get; init; }
+
+    /// <summary>
+    ///     False when no retry can fix the failure (such as unusable parameters), so the job fails right away.
+    /// </summary>
+    public required bool CanRetry { get; init; }
+
     public string? Detail { get; init; }
 }

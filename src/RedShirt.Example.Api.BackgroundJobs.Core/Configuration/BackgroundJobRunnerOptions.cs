@@ -20,9 +20,10 @@ public sealed class BackgroundJobRunnerOptions
     ///     treated as 1. Environment variable: <c>BACKGROUND_JOBS__FETCH_COUNT</c>.
     ///     <para>
     ///         Every job in a batch is leased when the batch is fetched, and the jobs then run one after another, so a
-    ///         later job's lease is already running down while it waits. When more than one instance runs jobs, set this
-    ///         to 1, so that each job is leased just before it runs and a waiting job cannot have its lease expire and be
-    ///         taken (and run a second time) by another instance.
+    ///         later job's lease is already running down while it waits. If it expires, another instance can lease the
+    ///         job, and this instance's start report is then refused, so the job is not run twice. It does mean the job
+    ///         waits for the other instance instead. When more than one instance runs jobs, set this to 1, so that each
+    ///         job is leased just before it runs.
     ///     </para>
     /// </summary>
     public int FetchCount { get; init; } = 5;

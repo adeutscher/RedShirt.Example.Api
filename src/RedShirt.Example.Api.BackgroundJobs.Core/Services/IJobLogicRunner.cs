@@ -8,8 +8,11 @@ namespace RedShirt.Example.Api.BackgroundJobs.Core.Services;
 public interface IJobLogicRunner
 {
     /// <summary>
-    ///     Runs the job. Returns <see cref="JobResult.Success" />, <see cref="JobResult.Failure" /> (tried again later, as
-    ///     an exception is), or <see cref="JobResult.InvalidData" /> (never retried).
+    ///     Runs the job and reports its status to its BackgroundJob record. Returns <see cref="JobResult.Success" />,
+    ///     <see cref="JobResult.Failure" /> (tried again later, as an exception is), or
+    ///     <see cref="JobResult.InvalidData" /> (never retried). The returned value is only for handling the job's message
+    ///     in the messaging service, as in an applied JobWorker. The in-API runner has no message to handle, so it only
+    ///     logs it.
     /// </summary>
     Task<IJobLogicRunnerResponse> RunAsync(IJobModel job, CancellationToken cancellationToken = default);
 }

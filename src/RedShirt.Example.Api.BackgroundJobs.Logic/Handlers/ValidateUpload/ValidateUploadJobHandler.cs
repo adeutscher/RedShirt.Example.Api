@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using RedShirt.Example.Api.BackgroundJobs.Core.Models;
+using RedShirt.Example.Api.BackgroundJobs.Logic.Services;
 using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models.Parameters;
 
 namespace RedShirt.Example.Api.BackgroundJobs.Logic.Handlers.ValidateUpload;
@@ -10,7 +11,8 @@ namespace RedShirt.Example.Api.BackgroundJobs.Logic.Handlers.ValidateUpload;
 /// </summary>
 internal sealed class ValidateUploadJobHandler(
     IUploadValidationService uploadValidationService,
-    ILogger<ValidateUploadJobHandler> logger) : BackgroundJobHandler<ValidateUploadJobParameters>
+    IBackgroundJobStatusService statusService,
+    ILogger<ValidateUploadJobHandler> logger) : BackgroundJobHandler<ValidateUploadJobParameters>(statusService)
 {
     protected override async Task<IJobLogicRunnerResponse> HandleAsync(ValidateUploadJobParameters parameters,
         IJobModel job, CancellationToken cancellationToken)

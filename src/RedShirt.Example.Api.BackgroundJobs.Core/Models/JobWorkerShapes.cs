@@ -83,7 +83,8 @@ public sealed class JobDataModel : IJobDataModel
 public sealed class JobModel : IJobModel
 {
     /// <summary>
-    ///     How many times the job has been leased, this time included. Not part of the JobWorker template's shape.
+    ///     How many times the job has been leased, this time included. Every status report carries it, so a report from
+    ///     an expired lease is refused. Not part of the JobWorker template's shape.
     /// </summary>
     public int Attempts { get; init; }
 

@@ -96,60 +96,37 @@ public class BackgroundJobRunnerHostedServiceTests
     }
 
     [Fact]
-    public async Task RunBatchAsync_RunsEachJobInOrder_AndAcknowledgesItsResponse()
+    public async Task RunBatchAsync_RunsEachJobInOrder_AndDiscardsTheResponses()
     {
         var first = CreateJob();
         var second = CreateJob();
         var order = new List<string>();
-        var failure = new JobLogicRunnerResponse {Result = JobResult.Failure, Detail = "nope"};
         _jobSource.Setup(x => x.GetJobsAsync(3, It.IsAny<CancellationToken>())).ReturnsAsync([first, second]);
         _jobLogicRunner.Setup(x => x.RunAsync(first, It.IsAny<CancellationToken>()))
             .Callback(() => order.Add("run-1"))
             .ReturnsAsync(JobLogicRunnerResponse.Success);
         _jobLogicRunner.Setup(x => x.RunAsync(second, It.IsAny<CancellationToken>()))
             .Callback(() => order.Add("run-2"))
-            .ReturnsAsync(failure);
-        _jobSource.Setup(x => x.AcknowledgeAsync(It.IsAny<IJobModel>(), It.IsAny<IJobLogicRunnerResponse>(),
-                It.IsAny<CancellationToken>()))
-            .Callback<IJobModel, IJobLogicRunnerResponse, CancellationToken>((job, _, _) =>
-                order.Add(job == first ? "ack-1" : "ack-2"))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(new JobLogicRunnerResponse {Result = JobResult.Failure, Detail = "nope"});
 
         var count = await CreateService().RunBatchAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(2, count);
-        Assert.Equal(["run-1", "ack-1", "run-2", "ack-2"], order);
-        _jobSource.Verify(x => x.AcknowledgeAsync(first, JobLogicRunnerResponse.Success,
-            It.IsAny<CancellationToken>()), Times.Once);
-        _jobSource.Verify(x => x.AcknowledgeAsync(second, failure, It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(["run-1", "run-2"], order);
+        // The job source is only asked for jobs: the job logic reports each job's status itself.
+        _jobSource.Verify(x => x.GetJobsAsync(3, It.IsAny<CancellationToken>()), Times.Once);
+        _jobSource.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task RunBatchAsync_WhenAcknowledgementFails_ContinuesWithNextJob()
+    public async Task RunBatchAsync_WhenCancelledDuringJob_StopsTheBatch()
     {
+        using var cancellation = new CancellationTokenSource();
         var first = CreateJob();
         var second = CreateJob();
         _jobSource.Setup(x => x.GetJobsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([first, second]);
-        _jobLogicRunner.Setup(x => x.RunAsync(It.IsAny<IJobModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(JobLogicRunnerResponse.Success);
-        _jobSource.Setup(x => x.AcknowledgeAsync(first, It.IsAny<IJobLogicRunnerResponse>(),
-                It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("database unavailable"));
-
-        var count = await CreateService().RunBatchAsync(TestContext.Current.CancellationToken);
-
-        Assert.Equal(2, count);
-        _jobLogicRunner.Verify(x => x.RunAsync(second, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task RunBatchAsync_WhenCancelledDuringJob_DoesNotAcknowledge()
-    {
-        using var cancellation = new CancellationTokenSource();
-        var job = CreateJob();
-        _jobSource.Setup(x => x.GetJobsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync([job]);
-        _jobLogicRunner.Setup(x => x.RunAsync(job, It.IsAny<CancellationToken>()))
+        _jobLogicRunner.Setup(x => x.RunAsync(first, It.IsAny<CancellationToken>()))
             .Returns<IJobModel, CancellationToken>(async (_, token) =>
             {
                 await cancellation.CancelAsync();
@@ -160,28 +137,24 @@ public class BackgroundJobRunnerHostedServiceTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             CreateService().RunBatchAsync(cancellation.Token));
 
-        _jobSource.Verify(x => x.AcknowledgeAsync(It.IsAny<IJobModel>(), It.IsAny<IJobLogicRunnerResponse>(),
-            It.IsAny<CancellationToken>()), Times.Never);
+        _jobLogicRunner.Verify(x => x.RunAsync(second, It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task RunBatchAsync_WhenJobThrows_AcknowledgesFailureWithDetail()
+    public async Task RunBatchAsync_WhenJobThrows_ContinuesWithNextJob()
     {
-        var job = CreateJob();
-        IJobLogicRunnerResponse? acknowledged = null;
-        _jobSource.Setup(x => x.GetJobsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync([job]);
-        _jobLogicRunner.Setup(x => x.RunAsync(job, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("boom"));
-        _jobSource.Setup(x => x.AcknowledgeAsync(job, It.IsAny<IJobLogicRunnerResponse>(),
-                It.IsAny<CancellationToken>()))
-            .Callback<IJobModel, IJobLogicRunnerResponse, CancellationToken>((_, response, _) =>
-                acknowledged = response)
-            .Returns(Task.CompletedTask);
+        var first = CreateJob();
+        var second = CreateJob();
+        _jobSource.Setup(x => x.GetJobsAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([first, second]);
+        _jobLogicRunner.Setup(x => x.RunAsync(first, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("status report failed"));
+        _jobLogicRunner.Setup(x => x.RunAsync(second, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(JobLogicRunnerResponse.Success);
 
-        await CreateService().RunBatchAsync(TestContext.Current.CancellationToken);
+        var count = await CreateService().RunBatchAsync(TestContext.Current.CancellationToken);
 
-        var response = Assert.IsType<JobLogicRunnerResponse>(acknowledged);
-        Assert.Equal(JobResult.Failure, response.Result);
-        Assert.Contains("boom", response.Detail);
+        Assert.Equal(2, count);
+        _jobLogicRunner.Verify(x => x.RunAsync(second, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

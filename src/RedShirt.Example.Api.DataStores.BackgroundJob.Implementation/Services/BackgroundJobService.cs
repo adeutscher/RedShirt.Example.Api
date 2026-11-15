@@ -52,6 +52,30 @@ internal sealed class BackgroundJobService(
         };
     }
 
+    /// <summary>
+    ///     The job, if it is running at <paramref name="attempt" />. The attempt number fences a report to one lease:
+    ///     every lease increments it, so a report from a lease that expired and was taken again matches nothing.
+    /// </summary>
+    private static IQueryable<BackgroundJobEntity> RunningAttempt(BackgroundJobDbContext context, Guid id, int attempt)
+    {
+        return context.BackgroundJobs
+            .Where(e => e.Id == id && e.State == BackgroundJobState.Running && e.Attempts == attempt);
+    }
+
+    /// <summary>
+    ///     Returns the job after a conditional status report, or explains why the report matched nothing.
+    /// </summary>
+    private static async Task<BackgroundJobModel> GetReportedAsync(BackgroundJobDbContext context, Guid id,
+        int updated, string report, CancellationToken cancellationToken)
+    {
+        // Throws ResourceNotFoundException when the job does not exist.
+        var model = await GetRequiredAsync(context, id, cancellationToken);
+        return updated == 1
+            ? model
+            : throw new ConflictException(
+                $"Background job cannot be {report}: it is not at that attempt, or not in a state for this report.");
+    }
+
     private static async Task<BackgroundJobModel> GetRequiredAsync(BackgroundJobDbContext context, Guid id,
         CancellationToken cancellationToken)
     {
@@ -116,6 +140,66 @@ internal sealed class BackgroundJobService(
         {
             throw new ConflictException("Background job changed while it was being deleted.");
         }
+    }
+
+    public async Task<BackgroundJobModel> FailAsync(BackgroundJobServiceFailRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var settings = options.Value;
+        var now = UtcNow;
+        var retry = request.CanRetry && request.Attempt < settings.EffectiveMaxAttempts;
+
+        await using var context = await dbContextFactory.CreateDbContextAsync(ConnectionStringName, cancellationToken);
+
+        var attempt = RunningAttempt(context, request.Id, request.Attempt);
+        var detail = TrimDetail(request.Detail);
+        int updated;
+        if (retry)
+        {
+            var dueAtUtc = now.Add(settings.GetRetryDelay(request.Attempt));
+            updated = await attempt.ExecuteUpdateAsync(setters => setters
+                    .SetProperty(e => e.State, BackgroundJobState.Pending)
+                    .SetProperty(e => e.DueAtUtc, dueAtUtc)
+                    .SetProperty(e => e.CompletedAtUtc, (DateTime?) null)
+                    .SetProperty(e => e.LeaseOwner, (string?) null)
+                    .SetProperty(e => e.LeaseExpiresAtUtc, (DateTime?) null)
+                    .SetProperty(e => e.Detail, detail)
+                    .SetProperty(e => e.DateUpdatedUtc, now),
+                cancellationToken);
+        }
+        else
+        {
+            updated = await attempt.ExecuteUpdateAsync(setters => setters
+                    .SetProperty(e => e.State, BackgroundJobState.Failed)
+                    .SetProperty(e => e.CompletedAtUtc, now)
+                    .SetProperty(e => e.LeaseOwner, (string?) null)
+                    .SetProperty(e => e.LeaseExpiresAtUtc, (DateTime?) null)
+                    .SetProperty(e => e.Detail, detail)
+                    .SetProperty(e => e.DateUpdatedUtc, now),
+                cancellationToken);
+        }
+
+        return await GetReportedAsync(context, request.Id, updated, "failed", cancellationToken);
+    }
+
+    public async Task<BackgroundJobModel> FinishAsync(BackgroundJobServiceFinishRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var now = UtcNow;
+
+        await using var context = await dbContextFactory.CreateDbContextAsync(ConnectionStringName, cancellationToken);
+
+        var updated = await RunningAttempt(context, request.Id, request.Attempt)
+            .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(e => e.State, BackgroundJobState.Succeeded)
+                    .SetProperty(e => e.CompletedAtUtc, now)
+                    .SetProperty(e => e.LeaseOwner, (string?) null)
+                    .SetProperty(e => e.LeaseExpiresAtUtc, (DateTime?) null)
+                    .SetProperty(e => e.Detail, TrimDetail(request.Detail))
+                    .SetProperty(e => e.DateUpdatedUtc, now),
+                cancellationToken);
+
+        return await GetReportedAsync(context, request.Id, updated, "finished", cancellationToken);
     }
 
     public async Task<BackgroundJobModel> GetAsync(Guid id, CancellationToken cancellationToken = default)
@@ -195,13 +279,16 @@ internal sealed class BackgroundJobService(
 
         await using var context = await dbContextFactory.CreateDbContextAsync(ConnectionStringName, cancellationToken);
 
+        // A leased job stays pending until the job logic reports its start, so a pending job can already be leased.
         var candidates = await context.BackgroundJobs.AsNoTracking()
-            .Where(e => (e.State == BackgroundJobState.Pending && e.DueAtUtc <= now)
+            .Where(e => (e.State == BackgroundJobState.Pending
+                         && e.DueAtUtc <= now
+                         && (e.LeaseExpiresAtUtc == null || e.LeaseExpiresAtUtc < now))
                         || (e.State == BackgroundJobState.Running && e.LeaseExpiresAtUtc < now))
             .OrderBy(e => e.DueAtUtc)
             .ThenBy(e => e.Id)
             .Take(request.Count)
-            .Select(e => new {e.Id, e.State, e.Attempts})
+            .Select(e => new {e.Id, e.State, e.Attempts, e.Detail})
             .ToListAsync(cancellationToken);
 
         var leasedIds = new List<Guid>();
@@ -217,9 +304,9 @@ internal sealed class BackgroundJobService(
                             && e.State == candidate.State
                             && e.Attempts == candidate.Attempts);
 
-            if (candidate.State == BackgroundJobState.Running && candidate.Attempts >= maxAttempts)
+            if (candidate.Attempts >= maxAttempts)
             {
-                // The process holding the final attempt never acknowledged it (for example, it crashed mid-job).
+                // The final attempt was leased and never reported an outcome (for example, the process crashed).
                 await claim.ExecuteUpdateAsync(setters => setters
                         .SetProperty(e => e.State, BackgroundJobState.Failed)
                         .SetProperty(e => e.CompletedAtUtc, now)
@@ -231,11 +318,18 @@ internal sealed class BackgroundJobService(
                 continue;
             }
 
+            // A running job whose lease expired is made pending again: the new attempt has not started yet.
+            var detail = candidate.State == BackgroundJobState.Running
+                ? "The previous attempt's lease expired without an outcome."
+                : candidate.Detail;
+
+            // Not set to running here. The job logic reports the start (StartAsync) once it begins.
             var claimed = await claim.ExecuteUpdateAsync(setters => setters
-                    .SetProperty(e => e.State, BackgroundJobState.Running)
+                    .SetProperty(e => e.State, BackgroundJobState.Pending)
                     .SetProperty(e => e.Attempts, candidate.Attempts + 1)
                     .SetProperty(e => e.LeaseOwner, request.LeaseOwner)
                     .SetProperty(e => e.LeaseExpiresAtUtc, leaseExpiresAtUtc)
+                    .SetProperty(e => e.Detail, detail)
                     .SetProperty(e => e.DateUpdatedUtc, now),
                 cancellationToken);
 
@@ -260,69 +354,6 @@ internal sealed class BackgroundJobService(
             .ToList();
     }
 
-    public async Task<BackgroundJobModel> AcknowledgeAsync(BackgroundJobServiceAcknowledgeRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        if (!Enum.IsDefined(request.Result))
-        {
-            throw new BadRequestException("Unknown job result.");
-        }
-
-        var settings = options.Value;
-        var now = UtcNow;
-        var detail = TrimDetail(request.Detail);
-
-        await using var context = await dbContextFactory.CreateDbContextAsync(ConnectionStringName, cancellationToken);
-
-        var existing = await GetRequiredAsync(context, request.Id, cancellationToken);
-        if (existing.State != BackgroundJobState.Running
-            || !string.Equals(existing.LeaseOwner, request.LeaseOwner, StringComparison.Ordinal)
-            || existing.Attempts != request.Attempt)
-        {
-            throw new ConflictException("Background job is not leased by this lease owner for this attempt.");
-        }
-
-        var nextState = request.Result switch
-        {
-            BackgroundJobAttemptResult.Success => BackgroundJobState.Succeeded,
-            BackgroundJobAttemptResult.Failure when existing.Attempts < settings.EffectiveMaxAttempts =>
-                BackgroundJobState.Pending,
-            _ => BackgroundJobState.Failed
-        };
-
-        var completedAtUtc = nextState == BackgroundJobState.Pending ? (DateTime?) null : now;
-        var dueAtUtc = nextState == BackgroundJobState.Pending
-            ? now.Add(settings.GetRetryDelay(existing.Attempts))
-            : existing.DueAtUtc;
-
-        /*
-         * Conditional on the lease that was just checked, in case the lease expired and was taken in the meantime. The
-         * attempt number is the fence: every lease increments it, so it identifies one lease even if two lease owners
-         * share a name.
-         */
-        var updated = await context.BackgroundJobs
-            .Where(e => e.Id == request.Id
-                        && e.State == BackgroundJobState.Running
-                        && e.LeaseOwner == request.LeaseOwner
-                        && e.Attempts == request.Attempt)
-            .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(e => e.State, nextState)
-                    .SetProperty(e => e.DueAtUtc, dueAtUtc)
-                    .SetProperty(e => e.CompletedAtUtc, completedAtUtc)
-                    .SetProperty(e => e.LeaseOwner, (string?) null)
-                    .SetProperty(e => e.LeaseExpiresAtUtc, (DateTime?) null)
-                    .SetProperty(e => e.Detail, detail)
-                    .SetProperty(e => e.DateUpdatedUtc, now),
-                cancellationToken);
-
-        if (updated != 1)
-        {
-            throw new ConflictException("Background job is not leased by this lease owner for this attempt.");
-        }
-
-        return await GetRequiredAsync(context, request.Id, cancellationToken);
-    }
-
     public async Task<BackgroundJobModel> RetryAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var now = UtcNow;
@@ -343,6 +374,8 @@ internal sealed class BackgroundJobService(
                         .SetProperty(e => e.Attempts, 0)
                         .SetProperty(e => e.DueAtUtc, now)
                         .SetProperty(e => e.CompletedAtUtc, (DateTime?) null)
+                        .SetProperty(e => e.LeaseOwner, (string?) null)
+                        .SetProperty(e => e.LeaseExpiresAtUtc, (DateTime?) null)
                         .SetProperty(e => e.DateUpdatedUtc, now),
                     cancellationToken);
 
@@ -353,5 +386,32 @@ internal sealed class BackgroundJobService(
         }
 
         return await GetAsync(id, cancellationToken);
+    }
+
+    public async Task<BackgroundJobModel> StartAsync(BackgroundJobServiceStartRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var now = UtcNow;
+        var leaseExpiresAtUtc = now.AddSeconds(options.Value.EffectiveLeaseSeconds);
+
+        await using var context = await dbContextFactory.CreateDbContextAsync(ConnectionStringName, cancellationToken);
+
+        /*
+         * Conditional on the job still being pending at the leased attempt. If the lease expired and the job was leased
+         * again, the attempt no longer matches and the start is refused, so the earlier lease never runs the job. The
+         * lease is renewed from now, so it measures the run rather than the wait since the lease.
+         */
+        var updated = await context.BackgroundJobs
+            .Where(e => e.Id == request.Id
+                        && e.State == BackgroundJobState.Pending
+                        && e.Attempts == request.Attempt
+                        && e.LeaseExpiresAtUtc != null)
+            .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(e => e.State, BackgroundJobState.Running)
+                    .SetProperty(e => e.LeaseExpiresAtUtc, leaseExpiresAtUtc)
+                    .SetProperty(e => e.DateUpdatedUtc, now),
+                cancellationToken);
+
+        return await GetReportedAsync(context, request.Id, updated, "started", cancellationToken);
     }
 }

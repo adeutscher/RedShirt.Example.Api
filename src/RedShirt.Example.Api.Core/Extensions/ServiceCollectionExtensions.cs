@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using RedShirt.Example.Api.BackgroundJobs.Core.Services;
 using RedShirt.Example.Api.BackgroundJobs.Logic.Handlers.MoveUpload;
 using RedShirt.Example.Api.BackgroundJobs.Logic.Handlers.ValidateUpload;
+using RedShirt.Example.Api.BackgroundJobs.Logic.Services;
 using RedShirt.Example.Api.Core.Cqrs;
 using RedShirt.Example.Api.Core.Services;
 using RedShirt.Example.Api.Core.UseCases.BackgroundJob.Services;
@@ -22,6 +23,7 @@ public static class ServiceCollectionExtensions
             .AddSingleton<ICoreRequestValidator, CoreRequestValidator>()
             // Background jobs run inside the API reach the job table and the upload system through CQRS handlers
             .AddTransient<IBackgroundJobSource, CqrsBackgroundJobSource>()
+            .AddTransient<IBackgroundJobStatusService, CqrsBackgroundJobStatusService>()
             .AddTransient<IUploadValidationService, CqrsUploadValidationService>()
             .AddTransient<IUploadStorageService, CqrsUploadStorageService>()
             .AddCqrsHandlers(typeof(ServiceCollectionExtensions).Assembly);

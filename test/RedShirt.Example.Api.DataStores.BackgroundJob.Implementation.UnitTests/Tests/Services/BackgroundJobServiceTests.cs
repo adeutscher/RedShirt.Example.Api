@@ -31,24 +31,6 @@ public class BackgroundJobServiceTests
         }, Token);
     }
 
-    /// <summary>
-    ///     Acknowledges with <paramref name="attempt" />, or by default with the job's current attempt number (the attempt
-    ///     of the latest lease, when there is one).
-    /// </summary>
-    private static async Task<BackgroundJobModel> AcknowledgeAsync(BackgroundJobServiceFixture fixture, Guid id,
-        BackgroundJobAttemptResult result, string owner = Owner, string? detail = null, int? attempt = null)
-    {
-        var resolvedAttempt = attempt ?? await GetCurrentAttemptAsync(fixture, id);
-        return await fixture.Service.AcknowledgeAsync(new BackgroundJobServiceAcknowledgeRequest
-        {
-            Id = id,
-            LeaseOwner = owner,
-            Attempt = resolvedAttempt,
-            Result = result,
-            Detail = detail
-        }, Token);
-    }
-
     private static async Task<int> GetCurrentAttemptAsync(BackgroundJobServiceFixture fixture, Guid id)
     {
         try
@@ -61,144 +43,52 @@ public class BackgroundJobServiceTests
         }
     }
 
-    [Fact]
-    public async Task AcknowledgeAsync_Failure_OnFinalAttempt_MarksFailed()
+    /// <summary>
+    ///     Reports the start with <paramref name="attempt" />, or by default with the job's current attempt number (the
+    ///     attempt of the latest lease).
+    /// </summary>
+    private static async Task<BackgroundJobModel> StartAsync(BackgroundJobServiceFixture fixture, Guid id,
+        int? attempt = null)
     {
-        using var fixture = new BackgroundJobServiceFixture();
-        var job = await CreateJobAsync(fixture);
-
-        BackgroundJobModel? last = null;
-        for (var attempt = 0; attempt < fixture.Options.MaxAttempts; attempt++)
+        return await fixture.Service.StartAsync(new BackgroundJobServiceStartRequest
         {
-            fixture.TimeProvider.Advance(TimeSpan.FromMinutes(5));
-            Assert.Single(await LeaseAsync(fixture));
-            last = await AcknowledgeAsync(fixture, job.Id, BackgroundJobAttemptResult.Failure);
-        }
-
-        Assert.Equal(BackgroundJobState.Failed, last!.State);
-        Assert.Equal(fixture.Options.MaxAttempts, last.Attempts);
+            Id = id,
+            Attempt = attempt ?? await GetCurrentAttemptAsync(fixture, id)
+        }, Token);
     }
 
-    [Fact]
-    public async Task AcknowledgeAsync_Failure_WithAttemptsLeft_SchedulesRetryWithBackoff()
+    private static async Task<BackgroundJobModel> FinishAsync(BackgroundJobServiceFixture fixture, Guid id,
+        string? detail = null, int? attempt = null)
     {
-        using var fixture = new BackgroundJobServiceFixture();
-        var job = await CreateJobAsync(fixture);
-        await LeaseAsync(fixture);
-
-        var first = await AcknowledgeAsync(fixture, job.Id, BackgroundJobAttemptResult.Failure, detail: "boom");
-
-        Assert.Equal(BackgroundJobState.Pending, first.State);
-        Assert.Null(first.CompletedAtUtc);
-        Assert.Null(first.LeaseOwner);
-        Assert.Equal("boom", first.Detail);
-        Assert.Equal(fixture.TimeProvider.UtcNow.UtcDateTime.AddSeconds(10), first.DueAtUtc);
-
-        // Not due yet.
-        Assert.Empty(await LeaseAsync(fixture));
-
-        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(10));
-        Assert.Single(await LeaseAsync(fixture));
-        var second = await AcknowledgeAsync(fixture, job.Id, BackgroundJobAttemptResult.Failure);
-
-        // 10 s doubled, within the 25 s cap.
-        Assert.Equal(fixture.TimeProvider.UtcNow.UtcDateTime.AddSeconds(20), second.DueAtUtc);
+        return await fixture.Service.FinishAsync(new BackgroundJobServiceFinishRequest
+        {
+            Id = id,
+            Attempt = attempt ?? await GetCurrentAttemptAsync(fixture, id),
+            Detail = detail
+        }, Token);
     }
 
-    [Fact]
-    public async Task AcknowledgeAsync_FromDifferentOwner_ThrowsConflict()
+    private static async Task<BackgroundJobModel> FailAsync(BackgroundJobServiceFixture fixture, Guid id,
+        bool canRetry = true, string? detail = null, int? attempt = null)
     {
-        using var fixture = new BackgroundJobServiceFixture();
-        var job = await CreateJobAsync(fixture);
-        await LeaseAsync(fixture);
-
-        await Assert.ThrowsAsync<ConflictException>(() =>
-            AcknowledgeAsync(fixture, job.Id, BackgroundJobAttemptResult.Success, "runner-b"));
+        return await fixture.Service.FailAsync(new BackgroundJobServiceFailRequest
+        {
+            Id = id,
+            Attempt = attempt ?? await GetCurrentAttemptAsync(fixture, id),
+            CanRetry = canRetry,
+            Detail = detail
+        }, Token);
     }
 
-    [Fact]
-    public async Task AcknowledgeAsync_FromExpiredLease_WithSameOwnerName_ThrowsConflict()
+    /// <summary>
+    ///     Leases the job, reports its start, and reports it succeeded (or failed without retry).
+    /// </summary>
+    private static async Task<BackgroundJobModel> RunToEndAsync(BackgroundJobServiceFixture fixture, Guid id,
+        bool succeed)
     {
-        using var fixture = new BackgroundJobServiceFixture();
-        var job = await CreateJobAsync(fixture);
-        var firstLease = Assert.Single(await LeaseAsync(fixture));
-        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(61));
-        // Another process with the same lease owner name takes the job after the first lease expires.
-        var secondLease = Assert.Single(await LeaseAsync(fixture));
-
-        await Assert.ThrowsAsync<ConflictException>(() =>
-            AcknowledgeAsync(fixture, job.Id, BackgroundJobAttemptResult.Success, attempt: firstLease.Attempts));
-
-        var stillRunning = await fixture.Service.GetAsync(job.Id, Token);
-        Assert.Equal(BackgroundJobState.Running, stillRunning.State);
-
-        var acknowledged = await AcknowledgeAsync(fixture, job.Id, BackgroundJobAttemptResult.Success,
-            attempt: secondLease.Attempts);
-        Assert.Equal(BackgroundJobState.Succeeded, acknowledged.State);
-    }
-
-    [Fact]
-    public async Task AcknowledgeAsync_InvalidData_MarksFailed_WithoutRetry()
-    {
-        using var fixture = new BackgroundJobServiceFixture();
-        var job = await CreateJobAsync(fixture);
-        await LeaseAsync(fixture);
-
-        var acknowledged =
-            await AcknowledgeAsync(fixture, job.Id, BackgroundJobAttemptResult.InvalidData, detail: "bad");
-
-        Assert.Equal(BackgroundJobState.Failed, acknowledged.State);
-        Assert.NotNull(acknowledged.CompletedAtUtc);
-        Assert.Equal("bad", acknowledged.Detail);
-    }
-
-    [Fact]
-    public async Task AcknowledgeAsync_Success_MarksSucceeded()
-    {
-        using var fixture = new BackgroundJobServiceFixture();
-        var job = await CreateJobAsync(fixture);
-        await LeaseAsync(fixture);
-
-        var acknowledged =
-            await AcknowledgeAsync(fixture, job.Id, BackgroundJobAttemptResult.Success, detail: "Approved.");
-
-        Assert.Equal(BackgroundJobState.Succeeded, acknowledged.State);
-        Assert.Equal(fixture.TimeProvider.UtcNow.UtcDateTime, acknowledged.CompletedAtUtc);
-        Assert.Null(acknowledged.LeaseOwner);
-        Assert.Null(acknowledged.LeaseExpiresAtUtc);
-        Assert.Equal("Approved.", acknowledged.Detail);
-    }
-
-    [Fact]
-    public async Task AcknowledgeAsync_TrimsLongDetail()
-    {
-        using var fixture = new BackgroundJobServiceFixture();
-        var job = await CreateJobAsync(fixture);
-        await LeaseAsync(fixture);
-
-        var acknowledged = await AcknowledgeAsync(fixture, job.Id, BackgroundJobAttemptResult.InvalidData,
-            detail: new string('x', 5000));
-
-        Assert.Equal(4000, acknowledged.Detail!.Length);
-    }
-
-    [Fact]
-    public async Task AcknowledgeAsync_WhenMissing_ThrowsResourceNotFound()
-    {
-        using var fixture = new BackgroundJobServiceFixture();
-
-        await Assert.ThrowsAsync<ResourceNotFoundException>(() =>
-            AcknowledgeAsync(fixture, Guid.NewGuid(), BackgroundJobAttemptResult.Success));
-    }
-
-    [Fact]
-    public async Task AcknowledgeAsync_WhenNotLeased_ThrowsConflict()
-    {
-        using var fixture = new BackgroundJobServiceFixture();
-        var job = await CreateJobAsync(fixture);
-
-        await Assert.ThrowsAsync<ConflictException>(() =>
-            AcknowledgeAsync(fixture, job.Id, BackgroundJobAttemptResult.Success));
+        Assert.Contains(await LeaseAsync(fixture), job => job.Id == id);
+        await StartAsync(fixture, id);
+        return succeed ? await FinishAsync(fixture, id) : await FailAsync(fixture, id, false);
     }
 
     [Fact]
@@ -238,14 +128,13 @@ public class BackgroundJobServiceTests
     }
 
     [Theory]
-    [InlineData(BackgroundJobAttemptResult.Success)]
-    [InlineData(BackgroundJobAttemptResult.InvalidData)]
-    public async Task DeleteAsync_DeletesFinishedJob(BackgroundJobAttemptResult result)
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task DeleteAsync_DeletesFinishedJob(bool succeeded)
     {
         using var fixture = new BackgroundJobServiceFixture();
         var job = await CreateJobAsync(fixture);
-        await LeaseAsync(fixture);
-        await AcknowledgeAsync(fixture, job.Id, result);
+        await RunToEndAsync(fixture, job.Id, succeeded);
 
         await fixture.Service.DeleteAsync(job.Id, Token);
 
@@ -266,13 +155,157 @@ public class BackgroundJobServiceTests
         using var fixture = new BackgroundJobServiceFixture();
         var pending = await CreateJobAsync(fixture);
         var running = await CreateJobAsync(fixture);
-        await LeaseAsync(fixture, 1);
+        await LeaseAsync(fixture);
+        await StartAsync(fixture, running.Id);
 
         foreach (var job in new[] {pending, running})
         {
             await Assert.ThrowsAsync<BadRequestException>(() => fixture.Service.DeleteAsync(job.Id, Token));
             await fixture.Service.GetAsync(job.Id, Token);
         }
+    }
+
+    [Fact]
+    public async Task FailAsync_CanRetry_OnFinalAttempt_MarksFailed()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+
+        BackgroundJobModel? last = null;
+        for (var attempt = 0; attempt < fixture.Options.MaxAttempts; attempt++)
+        {
+            fixture.TimeProvider.Advance(TimeSpan.FromMinutes(5));
+            Assert.Single(await LeaseAsync(fixture));
+            await StartAsync(fixture, job.Id);
+            last = await FailAsync(fixture, job.Id);
+        }
+
+        Assert.Equal(BackgroundJobState.Failed, last!.State);
+        Assert.Equal(fixture.Options.MaxAttempts, last.Attempts);
+        Assert.NotNull(last.CompletedAtUtc);
+    }
+
+    [Fact]
+    public async Task FailAsync_CanRetry_WithAttemptsLeft_SchedulesRetryWithBackoff()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+        await LeaseAsync(fixture);
+        await StartAsync(fixture, job.Id);
+
+        var first = await FailAsync(fixture, job.Id, detail: "boom");
+
+        Assert.Equal(BackgroundJobState.Pending, first.State);
+        Assert.Null(first.CompletedAtUtc);
+        Assert.Null(first.LeaseOwner);
+        Assert.Null(first.LeaseExpiresAtUtc);
+        Assert.Equal("boom", first.Detail);
+        Assert.Equal(fixture.TimeProvider.UtcNow.UtcDateTime.AddSeconds(10), first.DueAtUtc);
+
+        // Not due yet.
+        Assert.Empty(await LeaseAsync(fixture));
+
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(10));
+        Assert.Single(await LeaseAsync(fixture));
+        await StartAsync(fixture, job.Id);
+        var second = await FailAsync(fixture, job.Id);
+
+        // 10 s doubled, within the 25 s cap.
+        Assert.Equal(fixture.TimeProvider.UtcNow.UtcDateTime.AddSeconds(20), second.DueAtUtc);
+    }
+
+    [Fact]
+    public async Task FailAsync_CannotRetry_MarksFailed_WithoutRetry()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+        await LeaseAsync(fixture);
+        await StartAsync(fixture, job.Id);
+
+        var failed = await FailAsync(fixture, job.Id, false, "bad");
+
+        Assert.Equal(BackgroundJobState.Failed, failed.State);
+        Assert.Equal(1, failed.Attempts);
+        Assert.NotNull(failed.CompletedAtUtc);
+        Assert.Null(failed.LeaseOwner);
+        Assert.Equal("bad", failed.Detail);
+    }
+
+    [Fact]
+    public async Task FailAsync_TrimsLongDetail()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+        await LeaseAsync(fixture);
+        await StartAsync(fixture, job.Id);
+
+        var failed = await FailAsync(fixture, job.Id, false, new string('x', 5000));
+
+        Assert.Equal(4000, failed.Detail!.Length);
+    }
+
+    [Fact]
+    public async Task FailAsync_WhenMissing_ThrowsResourceNotFound()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() => FailAsync(fixture, Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task FailAsync_WhenNotStarted_ThrowsConflict()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+        await LeaseAsync(fixture);
+
+        await Assert.ThrowsAsync<ConflictException>(() => FailAsync(fixture, job.Id));
+    }
+
+    [Fact]
+    public async Task FinishAsync_FromExpiredLease_ThrowsConflict()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+        var firstLease = Assert.Single(await LeaseAsync(fixture));
+        await StartAsync(fixture, job.Id);
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(61));
+        // Another process with the same lease owner name takes the job after the first lease expires.
+        var secondLease = Assert.Single(await LeaseAsync(fixture));
+
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            FinishAsync(fixture, job.Id, attempt: firstLease.Attempts));
+
+        await StartAsync(fixture, job.Id, secondLease.Attempts);
+        var finished = await FinishAsync(fixture, job.Id, attempt: secondLease.Attempts);
+        Assert.Equal(BackgroundJobState.Succeeded, finished.State);
+    }
+
+    [Fact]
+    public async Task FinishAsync_MarksSucceeded()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+        await LeaseAsync(fixture);
+        await StartAsync(fixture, job.Id);
+
+        var finished = await FinishAsync(fixture, job.Id, "Approved.");
+
+        Assert.Equal(BackgroundJobState.Succeeded, finished.State);
+        Assert.Equal(fixture.TimeProvider.UtcNow.UtcDateTime, finished.CompletedAtUtc);
+        Assert.Null(finished.LeaseOwner);
+        Assert.Null(finished.LeaseExpiresAtUtc);
+        Assert.Equal("Approved.", finished.Detail);
+    }
+
+    [Fact]
+    public async Task FinishAsync_WhenNotStarted_ThrowsConflict()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+        await LeaseAsync(fixture);
+
+        await Assert.ThrowsAsync<ConflictException>(() => FinishAsync(fixture, job.Id));
     }
 
     [Fact]
@@ -316,7 +349,8 @@ public class BackgroundJobServiceTests
         Assert.Equal([first.Id, second.Id], leased.Select(x => x.Id));
         Assert.All(leased, job =>
         {
-            Assert.Equal(BackgroundJobState.Running, job.State);
+            // Leasing leaves the job pending. The job logic reports the start.
+            Assert.Equal(BackgroundJobState.Pending, job.State);
             Assert.Equal(1, job.Attempts);
             Assert.Equal(Owner, job.LeaseOwner);
             Assert.Equal(fixture.TimeProvider.UtcNow.UtcDateTime.AddSeconds(60), job.LeaseExpiresAtUtc);
@@ -344,6 +378,27 @@ public class BackgroundJobServiceTests
     }
 
     [Fact]
+    public async Task LeaseAsync_WhenRunningJobsLeaseExpires_MakesItPendingAgain()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+        await LeaseAsync(fixture);
+        await StartAsync(fixture, job.Id);
+
+        Assert.Empty(await LeaseAsync(fixture, owner: "runner-b"));
+
+        // The lease runs from the start report.
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(61));
+        var released = Assert.Single(await LeaseAsync(fixture, owner: "runner-b"));
+
+        Assert.Equal(job.Id, released.Id);
+        Assert.Equal(BackgroundJobState.Pending, released.State);
+        Assert.Equal(2, released.Attempts);
+        Assert.Equal("runner-b", released.LeaseOwner);
+        Assert.NotNull(released.Detail);
+    }
+
+    [Fact]
     public async Task LeaseAsync_WithEmptyOwner_ThrowsBadRequest()
     {
         using var fixture = new BackgroundJobServiceFixture();
@@ -365,8 +420,7 @@ public class BackgroundJobServiceTests
     {
         using var fixture = new BackgroundJobServiceFixture();
         var job = await CreateJobAsync(fixture);
-        await LeaseAsync(fixture);
-        await AcknowledgeAsync(fixture, job.Id, BackgroundJobAttemptResult.InvalidData);
+        await RunToEndAsync(fixture, job.Id, false);
 
         var retried = await fixture.Service.RetryAsync(job.Id, Token);
 
@@ -392,13 +446,14 @@ public class BackgroundJobServiceTests
         var oldSucceeded = await CreateJobAsync(fixture);
         var oldFailed = await CreateJobAsync(fixture);
         await LeaseAsync(fixture);
-        await AcknowledgeAsync(fixture, oldSucceeded.Id, BackgroundJobAttemptResult.Success);
-        await AcknowledgeAsync(fixture, oldFailed.Id, BackgroundJobAttemptResult.InvalidData);
+        await StartAsync(fixture, oldSucceeded.Id);
+        await FinishAsync(fixture, oldSucceeded.Id);
+        await StartAsync(fixture, oldFailed.Id);
+        await FailAsync(fixture, oldFailed.Id, false);
         fixture.TimeProvider.Advance(TimeSpan.FromDays(1));
         var cutoff = fixture.TimeProvider.UtcNow.UtcDateTime;
         var recent = await CreateJobAsync(fixture);
-        await LeaseAsync(fixture);
-        await AcknowledgeAsync(fixture, recent.Id, BackgroundJobAttemptResult.Success);
+        await RunToEndAsync(fixture, recent.Id, true);
         // Created before the cutoff, but never finished.
         await CreateJobAsync(fixture);
         fixture.TimeProvider.Advance(TimeSpan.FromDays(1));
@@ -427,6 +482,8 @@ public class BackgroundJobServiceTests
         fixture.TimeProvider.Advance(TimeSpan.FromSeconds(1));
         var third = await CreateJobAsync(fixture);
         await LeaseAsync(fixture, 1);
+        // A leased job is still pending until it starts.
+        await StartAsync(fixture, first.Id);
 
         var pending = await fixture.Service.SearchAsync(new BackgroundJobServiceSearchRequest
         {
@@ -447,5 +504,65 @@ public class BackgroundJobServiceTests
             CreatedBeforeUtc = firstPage.Records[^1].DateCreatedUtc
         }, Token);
         Assert.Equal([first.Id], secondPage.Records.Select(x => x.Id));
+    }
+
+    [Fact]
+    public async Task StartAsync_AfterLeaseExpiredAndJobWasLeasedAgain_ThrowsConflict()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+        var firstLease = Assert.Single(await LeaseAsync(fixture));
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(61));
+        var secondLease = Assert.Single(await LeaseAsync(fixture, owner: "runner-b"));
+
+        // The first lease waited too long (for example, behind other jobs in its batch). It must not run the job.
+        await Assert.ThrowsAsync<ConflictException>(() => StartAsync(fixture, job.Id, firstLease.Attempts));
+
+        var started = await StartAsync(fixture, job.Id, secondLease.Attempts);
+        Assert.Equal(BackgroundJobState.Running, started.State);
+    }
+
+    [Fact]
+    public async Task StartAsync_MarksRunning_AndRenewsLeaseFromNow()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+        await LeaseAsync(fixture);
+        fixture.TimeProvider.Advance(TimeSpan.FromSeconds(30));
+
+        var started = await StartAsync(fixture, job.Id);
+
+        Assert.Equal(BackgroundJobState.Running, started.State);
+        Assert.Equal(1, started.Attempts);
+        Assert.Equal(Owner, started.LeaseOwner);
+        Assert.Equal(fixture.TimeProvider.UtcNow.UtcDateTime.AddSeconds(60), started.LeaseExpiresAtUtc);
+    }
+
+    [Fact]
+    public async Task StartAsync_WhenAlreadyStarted_ThrowsConflict()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+        await LeaseAsync(fixture);
+        await StartAsync(fixture, job.Id);
+
+        await Assert.ThrowsAsync<ConflictException>(() => StartAsync(fixture, job.Id));
+    }
+
+    [Fact]
+    public async Task StartAsync_WhenMissing_ThrowsResourceNotFound()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() => StartAsync(fixture, Guid.NewGuid(), 1));
+    }
+
+    [Fact]
+    public async Task StartAsync_WhenNotLeased_ThrowsConflict()
+    {
+        using var fixture = new BackgroundJobServiceFixture();
+        var job = await CreateJobAsync(fixture);
+
+        await Assert.ThrowsAsync<ConflictException>(() => StartAsync(fixture, job.Id, 0));
     }
 }

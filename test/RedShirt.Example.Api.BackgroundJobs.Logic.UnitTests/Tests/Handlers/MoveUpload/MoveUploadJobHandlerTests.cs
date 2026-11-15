@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using RedShirt.Example.Api.BackgroundJobs.Core.Models;
 using RedShirt.Example.Api.BackgroundJobs.Logic.Handlers.MoveUpload;
+using RedShirt.Example.Api.BackgroundJobs.Logic.Services;
 using RedShirt.Example.Api.BackgroundJobs.Submission.Core.Models;
 
 namespace RedShirt.Example.Api.BackgroundJobs.Logic.UnitTests.Tests.Handlers.MoveUpload;
@@ -10,6 +11,7 @@ public class MoveUploadJobHandlerTests
     private const string VerifiedKey = "user-id/key";
     private static readonly Guid UploadId = Guid.NewGuid();
     private readonly Mock<IUploadStorageService> _service = new(MockBehavior.Strict);
+    private readonly Mock<IBackgroundJobStatusService> _statusService = StatusServiceFactory.CreateAccepting();
 
     private static JobModel CreateJob(string? parametersJson = null)
     {
@@ -18,7 +20,7 @@ public class MoveUploadJobHandlerTests
 
     private Task<IJobLogicRunnerResponse> HandleAsync(JobModel? job = null)
     {
-        return new MoveUploadJobHandler(_service.Object, NullLogger<MoveUploadJobHandler>.Instance)
+        return new MoveUploadJobHandler(_service.Object, _statusService.Object, NullLogger<MoveUploadJobHandler>.Instance)
             .HandleAsync(job ?? CreateJob(), TestContext.Current.CancellationToken);
     }
 
@@ -72,7 +74,7 @@ public class MoveUploadJobHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenReportFails_DoesNotRemoveUnverifiedCopy()
+    public async Task HandleAsync_WhenReportFails_ReportsRetryableFailure_WithoutRemovingUnverifiedCopy()
     {
         SetupStage(UploadMoveStage.AwaitingMove);
         _service.Setup(x => x.CopyToVerifiedStorageAsync(UploadId, It.IsAny<CancellationToken>()))
@@ -80,8 +82,13 @@ public class MoveUploadJobHandlerTests
         _service.Setup(x => x.SubmitMoveReportAsync(UploadId, VerifiedKey, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("database unavailable"));
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => HandleAsync());
+        var response = await HandleAsync();
+
         // Strict mock: a RemoveUnverifiedCopyAsync call would have thrown a MockException instead.
+        Assert.Equal(JobResult.Failure, response.Result);
+        _statusService.Verify(x => x.ReportFailedAsync(It.IsAny<IJobModel>(), true,
+            It.Is<string?>(detail => detail!.Contains("database unavailable")), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Theory]
@@ -99,6 +106,6 @@ public class MoveUploadJobHandlerTests
     public void Type_IsMoveUpload()
     {
         Assert.Equal(BackgroundJobType.MoveUpload,
-            new MoveUploadJobHandler(_service.Object, NullLogger<MoveUploadJobHandler>.Instance).Type);
+            new MoveUploadJobHandler(_service.Object, _statusService.Object, NullLogger<MoveUploadJobHandler>.Instance).Type);
     }
 }
