@@ -81,15 +81,19 @@ Cleanup runs once every hardcoded hour.
 
 The implementation of background jobs included in this general template is meant for low-impact minor jobs. It was implemented in this general template to be a light version of the short-polling behaviour found in the [JobWorker template](https://github.com/adeutscher/RedShirt.Example.JobWorker). Being the author of both, I would strongly advise pivoting to use an applied version of the JobWorker template.
 
+#### Reasons to Migrate
+
 You may wish to switch to an applied version of the JobWorker template if:
 
 * You are running into problems with multiple instances of the API handling the background job table polling for tasks.
-* Job lengths and/or workload sizes are beyond what the API can offer.
+* Job lengths and/or workload sizes are beyond what the API can offer in a reasonable timeframe.
+
+#### Migration Actions
 
 If you wish to migrate, then I would advise the following steps:
 
 1. Select a queue technology that the JobWorker template supports.
-    * As a deliberate choice, this API template does not support polling/claiming jobs from outside sources to avoid making it a message broker in its own right. If you feel that this is something that you would want to do, then the only missing step should be the API endpoints pointing at established CQRS handlers.
+    * As a deliberate choice, this API template does not support polling/claiming jobs from outside sources to avoid making it a message broker in its own right. If you feel that this is something that you would want to do, then the only missing step should be the API endpoints pointing at the established CQRS handler. That said, the CQRS handler was not made with remote access in mind and should be thoroughly tested.
 2. Edit the `BackgroundJobSubmitter` class in the API to submit to the queue after writing record to the chosen messaging service with the existing `backgroundJobService.CreateAsync` call.
     * I would strongly advise doing the submitting through a simplified abstraction to maintain a good structure.
 3. The job handlers in this API template access the background jobs datastore using CQRS handlers. You will need to add endpoints that access handlers for marking a started job, a failed job, and a finished job. The CQRS handlers already exist, they just need the last-mile connection.
@@ -100,4 +104,5 @@ If you wish to migrate, then I would advise the following steps:
     * Copy the content of the API's `BackgroundJobLogicRunner` projects into `Core.Logic` projects in the applied JobWorker.
     * Copy handlers.
     * Update dependency injection.
-    * Replace the API version's CQRS calls with calls to an API connector. I strongly encourage using the pattern set out by the BarConnector.
+    * Replace the CQRS calls from the API version of job handler with calls to an API connector. I strongly encourage using the pattern set out by the API template's BarConnector.
+7. Clean up copied content from the API.
