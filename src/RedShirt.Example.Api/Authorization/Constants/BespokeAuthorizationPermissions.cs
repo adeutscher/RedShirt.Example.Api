@@ -45,5 +45,12 @@ public static class BespokeAuthorizationPermissions
     /// </summary>
     public const string UploadPurge = "upload:purge";
 
+    public const string BackgroundJobRead = "background-job:read";
+
+    /// <summary>
+    ///     Administrative changes to background jobs, such as retrying a failed job.
+    /// </summary>
+    public const string BackgroundJobWrite = "background-job:write";
+
     // scaffold:permissions
 }

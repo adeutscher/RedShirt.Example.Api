@@ -73,6 +73,8 @@ public class BespokeRolePermissionClaimsTransformationTests
         [
             BespokeAuthorizationPermissions.Read,
             BespokeAuthorizationPermissions.Write,
+            BespokeAuthorizationPermissions.BackgroundJobRead,
+            BespokeAuthorizationPermissions.BackgroundJobWrite,
             BespokeAuthorizationPermissions.CustomerRead,
             BespokeAuthorizationPermissions.CustomerWrite,
             BespokeAuthorizationPermissions.OrderRead,

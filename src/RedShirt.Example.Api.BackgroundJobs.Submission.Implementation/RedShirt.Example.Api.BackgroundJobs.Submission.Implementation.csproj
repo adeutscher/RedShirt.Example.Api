@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        The IBackgroundJobSubmitter. It records every job in the BackgroundJob table, then hands it to the in-API runner.
+        To hand jobs to an applied JobWorker instead, publish to the worker's queue at the enqueue point marked in
+        BackgroundJobSubmitter, and drop the BackgroundJobs.Core reference along with the runner's wake.
+    -->
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.13"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Core\RedShirt.Example.Api.BackgroundJobs.Core.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Submission.Core\RedShirt.Example.Api.BackgroundJobs.Submission.Core.csproj"/>
+        <ProjectReference Include="..\RedShirt.Example.Api.DataStores.BackgroundJob.Core\RedShirt.Example.Api.DataStores.BackgroundJob.Core.csproj"/>
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        The submission contract: what features inside the API (such as Uploads) use to send background work, and the job
+        types and parameters models they send. It depends on nothing else, so the projects that process jobs inside the
+        API (BackgroundJobs.Core, .Logic, and .Runner) can be deleted once their job types are handled by an applied
+        JobWorker, without changing the features that submit jobs. Only the IBackgroundJobSubmitter implementation
+        (BackgroundJobs.Submission.Implementation) changes, to enqueue for the worker instead of waking the in-API runner.
+        The BackgroundJob table itself (DataStores.BackgroundJob.*) stays either way.
+    -->
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+</Project>

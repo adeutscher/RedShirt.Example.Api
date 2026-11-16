@@ -8,6 +8,7 @@ using RedShirt.Example.Api.Upload.Core.Models.Requests;
 using RedShirt.Example.Api.Upload.Core.Models.Responses;
 using RedShirt.Example.Api.Upload.Core.Services;
 using RedShirt.Example.Api.Upload.Core.Validation;
+using RedShirt.Example.Api.Upload.Implementation.Aggregates;
 using RedShirt.Example.Api.Upload.Implementation.Repositories;
 
 namespace RedShirt.Example.Api.Upload.Implementation.Services;
@@ -21,6 +22,30 @@ internal sealed class UploadService(
     private static string BuildObjectKey(Guid uploadId, string uploadedByUserId)
     {
         return $"{uploadedByUserId}/{uploadId:N}";
+    }
+
+    private async Task<UploadAggregate> GetDownloadableAggregateAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
+        if (aggregate.Id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        if (aggregate.State is UploadState.Uploading or UploadState.Deleted)
+        {
+            throw new BadRequestException("Upload is not available for download.");
+        }
+
+        return aggregate;
+    }
+
+    private string ResolveBucket(UploadAggregate aggregate)
+    {
+        var options = uploadOptions.Value;
+        return aggregate.UsesVerifiedBucket()
+            ? options.BucketVerifiedItems
+            : options.BucketUnverifiedItems;
     }
 
     public async Task<UploadSummaryModel> CreateAsync(UploadServiceCreateRequest request,
@@ -157,6 +182,54 @@ internal sealed class UploadService(
         return rejectedSummary;
     }
 
+    public async Task<string> CopyToVerifiedStorageAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
+        if (aggregate.Id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        if (aggregate.State != UploadState.Verified)
+        {
+            throw new BadRequestException("Upload is not awaiting a move.");
+        }
+
+        // The verified copy keeps the same object key, as the mock mover script did.
+        var options = uploadOptions.Value;
+        var objectKey = aggregate.StorageObjectKey;
+        await fileStorageService.CopyAsync(options.BucketUnverifiedItems, objectKey, options.BucketVerifiedItems,
+            objectKey, cancellationToken);
+        return objectKey;
+    }
+
+    public async Task RemoveUnverifiedCopyAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
+        if (aggregate.Id == Guid.Empty)
+        {
+            throw new ResourceNotFoundException();
+        }
+
+        if (aggregate.State != UploadState.Stored)
+        {
+            throw new BadRequestException("Upload is not stored.");
+        }
+
+        var options = uploadOptions.Value;
+        if (string.IsNullOrWhiteSpace(aggregate.StorageObjectKey)
+            || (string.Equals(options.BucketUnverifiedItems, options.BucketVerifiedItems, StringComparison.Ordinal)
+                && string.Equals(aggregate.StorageObjectKey, aggregate.VerifiedStorageObjectKey,
+                    StringComparison.Ordinal)))
+        {
+            // Nothing separate to remove. With one bucket for both, this would delete the stored file itself.
+            return;
+        }
+
+        await fileStorageService.DeleteAsync(options.BucketUnverifiedItems, aggregate.StorageObjectKey,
+            cancellationToken);
+    }
+
     public async Task<UploadSummaryModel> SubmitMoveReportAsync(UploadServiceMoveReportRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -246,24 +319,20 @@ internal sealed class UploadService(
         await eventBroadcaster.BroadcastUploadPurgedAsync(purgedEvent, cancellationToken);
     }
 
+    public async Task<Stream> OpenContentAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var aggregate = await GetDownloadableAggregateAsync(id, cancellationToken);
+        return await fileStorageService.OpenReadAsync(ResolveBucket(aggregate), aggregate.ResolveDownloadObjectKey(),
+            cancellationToken);
+    }
+
     public async Task<UploadDownloadLinkModel> GetDownloadLinkAsync(Guid id,
         CancellationToken cancellationToken = default)
     {
-        var aggregate = await repository.GetAggregateFromEventsAsync(id, cancellationToken);
-        if (aggregate.Id == Guid.Empty)
-        {
-            throw new ResourceNotFoundException();
-        }
-
-        if (aggregate.State is UploadState.Uploading or UploadState.Deleted)
-        {
-            throw new BadRequestException("Upload is not available for download.");
-        }
+        var aggregate = await GetDownloadableAggregateAsync(id, cancellationToken);
 
         var options = uploadOptions.Value;
-        var bucket = aggregate.UsesVerifiedBucket()
-            ? options.BucketVerifiedItems
-            : options.BucketUnverifiedItems;
+        var bucket = ResolveBucket(aggregate);
         var objectKey = aggregate.ResolveDownloadObjectKey();
         var validity = TimeSpan.FromMinutes(options.PresignedUrlLifetimeMinutes);
         var url = await fileStorageService.GetPresignedDownloadUrlAsync(bucket, objectKey, validity,

@@ -37,7 +37,7 @@ internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService, 
     {
         /*
          * Upload flow:
-         *   Content ──ReadAsync──▶ HashingStream ──ReadAsync──▶ TransferUtility.UploadAsync
+         *   Content --ReadAsync--> HashingStream --ReadAsync--> TransferUtility.UploadAsync
          *
          * Kestrel's Request.Body forbids synchronous reads by default (AllowSynchronousIO = false).
          * PutObjectAsync sync-reads InputStream when marshalling the body; see
@@ -77,9 +77,25 @@ internal sealed class S3FileStorageService(IAmazonS3 s3) : IFileStorageService, 
         };
     }
 
+    public Task CopyAsync(string sourceBucketName, string sourceObjectKey, string destinationBucketName,
+        string destinationObjectKey, CancellationToken cancellationToken = default)
+    {
+        // A single CopyObject request handles objects up to 5 GB. Larger objects would need a multipart copy.
+        return s3.CopyObjectAsync(sourceBucketName, sourceObjectKey, destinationBucketName, destinationObjectKey,
+            cancellationToken);
+    }
+
     public Task DeleteAsync(string bucketName, string objectKey, CancellationToken cancellationToken = default)
     {
         return s3.DeleteObjectAsync(bucketName, objectKey, cancellationToken);
+    }
+
+    public async Task<Stream> OpenReadAsync(string bucketName, string objectKey,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await s3.GetObjectAsync(bucketName, objectKey, cancellationToken).ConfigureAwait(false);
+        // Disposing the response stream releases the underlying HTTP response.
+        return response.ResponseStream;
     }
 
     public async Task<string> GetPresignedDownloadUrlAsync(string bucketName, string objectKey, TimeSpan validity,

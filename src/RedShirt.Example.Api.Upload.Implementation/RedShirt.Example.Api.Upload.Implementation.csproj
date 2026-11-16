@@ -13,6 +13,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\RedShirt.Example.Api.BackgroundJobs.Submission.Core\RedShirt.Example.Api.BackgroundJobs.Submission.Core.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Aws.S3FileStorage\RedShirt.Example.Api.Common.Aws.S3FileStorage.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.DataStores.Common\RedShirt.Example.Api.DataStores.Common.csproj"/>
         <ProjectReference Include="..\RedShirt.Example.Api.Common.Distributed\RedShirt.Example.Api.Common.Distributed.csproj"/>

@@ -21,6 +21,6 @@ public static class ServiceCollectionExtensions
             .AddSingleton<IUploadDbContextFactory, UploadDbContextFactory>()
             .AddSingleton<IUploadRepository, UploadRepository>()
             .AddSingleton<IUploadService, UploadService>()
-            .AddSingleton<IUploadEventBroadcaster, StubUploadEventBroadcaster>();
+            .AddSingleton<IUploadEventBroadcaster, UploadEventBroadcaster>();
     }
 }

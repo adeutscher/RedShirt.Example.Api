@@ -7,6 +7,12 @@ namespace RedShirt.Example.Api.Common.FileStorage.Services;
 public interface IFileStorageService
 {
     /// <summary>
+    ///     Copies an object within storage, possibly between buckets, without passing its bytes through the caller.
+    /// </summary>
+    Task CopyAsync(string sourceBucketName, string sourceObjectKey, string destinationBucketName,
+        string destinationObjectKey, CancellationToken cancellationToken = default);
+
+    /// <summary>
     ///     Deletes the object at <paramref name="objectKey" /> from <paramref name="bucketName" />.
     /// </summary>
     Task DeleteAsync(string bucketName, string objectKey, CancellationToken cancellationToken = default);
@@ -20,6 +26,12 @@ public interface IFileStorageService
     /// </param>
     Task<string> GetPresignedDownloadUrlAsync(string bucketName, string objectKey, TimeSpan validity,
         string? downloadFileName = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Opens the object at <paramref name="objectKey" /> in <paramref name="bucketName" /> for reading, without
+    ///     buffering the whole object in memory. The caller disposes the returned stream.
+    /// </summary>
+    Task<Stream> OpenReadAsync(string bucketName, string objectKey, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///     Streams <paramref name="content" /> into <paramref name="bucketName" /> at
