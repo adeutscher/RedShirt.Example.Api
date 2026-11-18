@@ -106,11 +106,11 @@ Configuration environment variables for the upload system.
 Database DDL for this API lives in a separate repository:
 [RedShirt.Example.Schema](https://github.com/adeutscher/RedShirt.Example.Schema).
 
-That project owns MariaDB/MySQL schema versioning (using the DbUp library to apply incremental SQL scripts). This API
-assumes those tables already exist and does not create or migrate them. The intent of this dedicated schema was to
-enforce separation of concerns and prevent the API from having the power to affect the schema on a fundamental level.
-When developing against the local Compose stack, apply schema updates from the Schema repo before starting the API (see
-`test/local/`).
+The schema project owns MariaDB/MySQL schema versioning (using the DbUp library to apply incremental SQL scripts). This
+API assumes those tables already exist and does not create or migrate them. The intent of having a dedicated schema
+project is to enforce separation of concerns. The database credentials used by the API should not have the power to
+affect the schema on a fundamental level. When developing against the local Compose stack, apply schema updates from the
+Schema repo before starting the API (see `test/local/`).
 
 # Initialisation
 
@@ -140,6 +140,10 @@ Below are the recommended steps for using this as a template:
           `nswag.json` to generate them again.
 5. Consider revising/pruning the Markdown files such as this README or those located in the `docs/` directory. They
    heavily assume that they are speaking for a general template and not for an applied application.
+6. Consider carving off some common project into separate NuGets, especially if you are planning to use this template
+   multiple times. This template doesn't any of my NuGet packages because it's meant to be a transparent public
+   template, but in an applied project that thinking doesn't apply.
+    * I've put more of my thoughts on NuGet packaging here in [nuget-packaging.md](docs/patterns/nuget-packaging.md)
 
 ## Secret Manager
 
@@ -147,39 +151,7 @@ Many components of this template rely on an implementation of the `ISecretManage
 a secret manager is highly encouraged for values that could have sensitive information such as credentials to external
 services.
 
-Currently, the template provides 3 possible implementations:
-
-* [AWS SSM Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html)
-* [Azure Key Vault](https://azure.microsoft.com/en-us/products/key-vault)
-* [Docker Secrets](https://docs.docker.com/reference/compose-file/secrets/)
-  ([Secondary Link](https://docs.docker.com/engine/swarm/secrets/))
-
-### Docker Secrets
-
-While the other secret managers are more straightforward with their plans, Docker Secrets has some caveats and
-assumptions that should be documented.
-
-In general, I would encourage the use of a secret manager other than Docker Secrets. Compared to other options it lacks
-flexibility. However, it may be exactly what is needed for a small-scale environment.
-
-Other notes:
-
-* Unlike other secret managers, a container instance's secrets cannot be rotated without restarting the
-* Secrets are assumed to be files in `/run/secrets`
-    * This directory can be overridden by setting a new path in `COMMON__SECRETS__DOCKER__DIRECTORY`
-* Secret keys are assumed to be roughly equal to the underlying file specified in the Docker stack configuration. If the
-  file does not meet these guidelines and because the compose file specifies another target path within the container,
-  then the secret manager has nothing with which to resolve a key to a file containing a value. After checking the exact
-  name of the key under the secret directory, the secret manager will attempt the path with a few file extensions
-  (though realistically, only the flat key match will probably be useful).
-    * For example, with no overriding directory the key `foo-password` will be searched for under the following absolute
-      paths:
-        * `/run/secrets/foo-password`
-        * `/run/secrets/foo-password.txt`
-        * `/run/secrets/foo-password.json`
-    * In general, it's advised not to meddle with secret targets within the container at all if you plan to use them
-      with this template's Docker secret manager.
-* The implementation has not been tested under Docker Swarm, and as such hasn't been tested with external secrets.
+See [Secret Manager](./docs/patterns/secret-manager.md) for more information.
 
 ## Background Services
 
