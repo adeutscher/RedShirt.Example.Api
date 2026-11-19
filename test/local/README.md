@@ -20,6 +20,13 @@ If you added it to `~/.bashrc`, reload:
 . ~/.bashrc
 ```
 
+## Host ports
+
+Every published port in `docker-compose.yaml` is bound to `127.0.0.1`, so the stack (Redis without auth, MariaDB,
+Keycloak with `admin`/`admin`, WireMock admin UIs, MiniStack, and the API) is reachable only from this machine. To
+reach a service from another machine, change its mapping to `"0.0.0.0:<host>:<container>"` locally and do not commit
+it. Containers still reach each other by service name on the Compose network.
+
 ## Steps
 
 1. Bring up supporting containers (everything except the `api` service):
