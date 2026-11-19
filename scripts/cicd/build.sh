@@ -23,8 +23,9 @@
 #   * Every test project in the solution uses xunit.v3 4.x or later. Earlier versions
 #     do not have --report-xunit-xml, and any test app that rejects an option exits
 #     with code 5 and runs zero tests.
-#   * The API reads AUTHENTICATION__DISABLE_AUTHENTICATION (Authentication:DisableAuthentication)
-#     so NSwag can generate the document without a live token issuer.
+#   * NSwag runs with authentication enabled and a placeholder authority (set in the API project's
+#     post-build Exec). JwtBearer only fetches issuer metadata on the first request, so no live
+#     token issuer is needed, and the document includes the bearer scheme.
 #
 # Tools:
 #   * dotnet-coverage, as "dotnet coverage", on PATH, or in ~/.dotnet/tools.
@@ -108,9 +109,6 @@ resolve_sln_file() {
 
 sln="$(resolve_sln_file)" || exit 1
 configuration="${BUILD_CONFIGURATION:-Release}"
-
-# Post-build NSwag must not need a live issuer. The committed document omits the bearer scheme.
-export AUTHENTICATION__DISABLE_AUTHENTICATION=true
 
 swagger_sha256() {
   local path="$1"
