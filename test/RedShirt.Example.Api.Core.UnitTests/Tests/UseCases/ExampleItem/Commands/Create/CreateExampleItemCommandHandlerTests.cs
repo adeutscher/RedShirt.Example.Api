@@ -28,10 +28,10 @@ public class CreateExampleItemCommandHandlerTests
         var wrapper = new Mock<ICacheBasedIdempotencyWrapperService>();
         wrapper
             .Setup(w => w.RunIdempotentlyAsync(
-                It.IsAny<string>(),
+                It.IsAny<IdempotencyScope>(),
                 It.IsAny<Func<Task<ExampleItemModel>>>(),
                 It.IsAny<CancellationToken>()))
-            .Returns((string _, Func<Task<ExampleItemModel>> callback, CancellationToken _) => callback());
+            .Returns((IdempotencyScope _, Func<Task<ExampleItemModel>> callback, CancellationToken _) => callback());
         return wrapper;
     }
 
@@ -43,14 +43,14 @@ public class CreateExampleItemCommandHandlerTests
         var wrapper = new Mock<ICacheBasedIdempotencyWrapperService>();
         wrapper
             .Setup(w => w.RunIdempotentlyAsync(
-                "idem-1",
+                new IdempotencyScope(nameof(CreateExampleItemCommand), "caller-1", "idem-1"),
                 It.IsAny<Func<Task<ExampleItemModel>>>(),
                 TestContext.Current.CancellationToken))
             .ReturnsAsync(cached);
         var handler = CreateHandler(repository.Object, wrapper.Object);
 
         var result = await handler.Handle(
-            new CreateExampleItemCommand(new ExampleItemModel {Name = "fresh"}, "idem-1"),
+            new CreateExampleItemCommand(new ExampleItemModel {Name = "fresh"}, "caller-1", "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.Same(cached, result);
@@ -71,13 +71,13 @@ public class CreateExampleItemCommandHandlerTests
         var model = new ExampleItemModel {Name = "widget"};
 
         var result = await handler.Handle(
-            new CreateExampleItemCommand(model, "idem-1"),
+            new CreateExampleItemCommand(model, "caller-1", "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.Same(model, result);
         repository.Verify(r => r.Put(model, TestContext.Current.CancellationToken), Times.Once);
         wrapper.Verify(w => w.RunIdempotentlyAsync(
-            "idem-1",
+            new IdempotencyScope(nameof(CreateExampleItemCommand), "caller-1", "idem-1"),
             It.IsAny<Func<Task<ExampleItemModel>>>(),
             TestContext.Current.CancellationToken), Times.Once);
     }

@@ -10,9 +10,9 @@ namespace RedShirt.Example.Api.Core.Services;
 /// </summary>
 public interface ICacheBasedIdempotencyService
 {
-    Task<IAbstractedLock> GetLockAsync(string key, CancellationToken cancellationToken = default);
-    Task<T?> GetRecordAsync<T>(string key, CancellationToken cancellationToken = default);
-    Task SetRecordAsync<T>(string key, T value, CancellationToken cancellationToken = default);
+    Task<IAbstractedLock> GetLockAsync(IdempotencyScope scope, CancellationToken cancellationToken = default);
+    Task<T?> GetRecordAsync<T>(IdempotencyScope scope, CancellationToken cancellationToken = default);
+    Task SetRecordAsync<T>(IdempotencyScope scope, T value, CancellationToken cancellationToken = default);
 }
 
 public class CacheBasedIdempotencyService(
@@ -20,14 +20,18 @@ public class CacheBasedIdempotencyService(
     IAbstractedLockService lockService,
     IOptions<CacheBasedIdempotencyService.ConfigurationModel> config) : ICacheBasedIdempotencyService
 {
-    public Task<IAbstractedLock> GetLockAsync(string key, CancellationToken cancellationToken = default)
+    internal const string LockKeyPrefix = "idempotent-concurrency:";
+    internal const string RecordKeyPrefix = "idempotent-record:";
+
+    public Task<IAbstractedLock> GetLockAsync(IdempotencyScope scope, CancellationToken cancellationToken = default)
     {
-        return lockService.GetLockAsync($"idempotent-concurrency:{key}", cancellationToken);
+        return lockService.GetLockAsync(LockKeyPrefix + scope.ToCacheKeyFragment(), cancellationToken);
     }
 
-    public async Task<T?> GetRecordAsync<T>(string key, CancellationToken cancellationToken = default)
+    public async Task<T?> GetRecordAsync<T>(IdempotencyScope scope, CancellationToken cancellationToken = default)
     {
-        if (await dataCacheService.GetStringAsync(key, cancellationToken) is not { } dataString)
+        if (await dataCacheService.GetStringAsync(RecordKeyPrefix + scope.ToCacheKeyFragment(), cancellationToken)
+            is not { } dataString)
         {
             return default;
         }
@@ -42,9 +46,10 @@ public class CacheBasedIdempotencyService(
         }
     }
 
-    public Task SetRecordAsync<T>(string key, T value, CancellationToken cancellationToken = default)
+    public Task SetRecordAsync<T>(IdempotencyScope scope, T value, CancellationToken cancellationToken = default)
     {
-        return dataCacheService.SetStringAsync(key, JsonSerializer.Serialize(value),
+        return dataCacheService.SetStringAsync(RecordKeyPrefix + scope.ToCacheKeyFragment(),
+            JsonSerializer.Serialize(value),
             TimeSpan.FromMinutes(config.Value.EffectiveIdempotencyTimeMinutes), cancellationToken);
     }
 

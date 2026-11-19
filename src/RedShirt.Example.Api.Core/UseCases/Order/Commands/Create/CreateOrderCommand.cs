@@ -5,4 +5,5 @@ public record CreateOrderCommand(
     string Status,
     decimal TotalAmount,
     decimal? TotalPrice,
+    string CallerId,
     string IdempotencyKey);

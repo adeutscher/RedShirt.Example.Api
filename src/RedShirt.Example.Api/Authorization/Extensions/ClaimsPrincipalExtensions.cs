@@ -1,4 +1,5 @@
 using RedShirt.Example.Api.Authorization.Constants;
+using RedShirt.Example.Api.Constants;
 using System.Security.Claims;
 
 namespace RedShirt.Example.Api.Authorization.Extensions;
@@ -14,5 +15,15 @@ internal static class ClaimsPrincipalExtensions
                  ?? user.FindFirstValue(BespokeAuthorizationClaims.Sub)
                  ?? string.Empty;
         return !string.IsNullOrWhiteSpace(userId);
+    }
+
+    /// <summary>
+    ///     Caller identity for scoping per-caller state such as idempotency records.
+    ///     Falls back to <see cref="CallerConstants.Anonymous" /> when there is no subject
+    ///     (only reachable when authentication is disabled).
+    /// </summary>
+    public static string GetCallerIdOrAnonymous(this ClaimsPrincipal user)
+    {
+        return user.TryGetUserId(out var userId) ? userId : CallerConstants.Anonymous;
     }
 }

@@ -18,7 +18,8 @@ internal class CreateExampleItemCommandHandler(
     {
         await coreRequestValidator.ValidateAsync(command, cancellationToken);
 
-        return await idempotencyWrapperService.RunIdempotentlyAsync(command.IdempotencyKey, async () =>
+        return await idempotencyWrapperService.RunIdempotentlyAsync(
+            new IdempotencyScope(nameof(CreateExampleItemCommand), command.CallerId, command.IdempotencyKey), async () =>
         {
             await repository.Put(command.Model, cancellationToken);
             return command.Model;

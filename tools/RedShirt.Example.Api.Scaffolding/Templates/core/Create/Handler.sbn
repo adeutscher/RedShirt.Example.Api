@@ -14,7 +14,8 @@ internal class Create{{ n }}CommandHandler(
     {
         await coreRequestValidator.ValidateAsync(command, cancellationToken);
 
-        return await idempotencyWrapperService.RunIdempotentlyAsync(command.IdempotencyKey, async () =>
+        return await idempotencyWrapperService.RunIdempotentlyAsync(
+            new IdempotencyScope(nameof(Create{{ n }}Command), command.CallerId, command.IdempotencyKey), async () =>
             await {{ sv }}.PostAsync(new {{ model.post_request.name }}
             {
 {{~ for p in model.post_properties ~}}

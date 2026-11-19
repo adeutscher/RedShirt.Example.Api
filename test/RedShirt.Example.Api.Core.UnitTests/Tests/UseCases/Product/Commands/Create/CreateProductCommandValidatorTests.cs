@@ -13,7 +13,7 @@ public class CreateProductCommandValidatorTests
     public async Task Validate_Fails_WhenSkuIsEmpty()
     {
         var result = await _validator.ValidateAsync(
-            new CreateProductCommand("", "Widget", 9.99m, "idem-1"),
+            new CreateProductCommand("", "Widget", 9.99m, "caller-1", "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.False(result.IsValid);
@@ -23,7 +23,7 @@ public class CreateProductCommandValidatorTests
     public async Task Validate_Succeeds_WhenRequiredFieldsArePresent()
     {
         var result = await _validator.ValidateAsync(
-            new CreateProductCommand("SKU-1", "Widget", 9.99m, "idem-1"),
+            new CreateProductCommand("SKU-1", "Widget", 9.99m, "caller-1", "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsValid);

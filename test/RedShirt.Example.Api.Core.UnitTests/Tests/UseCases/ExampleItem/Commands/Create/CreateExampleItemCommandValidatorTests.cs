@@ -17,7 +17,7 @@ public class CreateExampleItemCommandValidatorTests
     public async Task Validate_Fails_WhenNameIsMissing(string? name)
     {
         var result = await _validator.ValidateAsync(
-            new CreateExampleItemCommand(new ExampleItemModel {Name = name!}, "idem-1"),
+            new CreateExampleItemCommand(new ExampleItemModel {Name = name!}, "caller-1", "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.False(result.IsValid);
@@ -28,7 +28,7 @@ public class CreateExampleItemCommandValidatorTests
     public async Task Validate_Succeeds_WhenNameIsPresent()
     {
         var result = await _validator.ValidateAsync(
-            new CreateExampleItemCommand(new ExampleItemModel {Name = "widget"}, "idem-1"),
+            new CreateExampleItemCommand(new ExampleItemModel {Name = "widget"}, "caller-1", "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsValid);

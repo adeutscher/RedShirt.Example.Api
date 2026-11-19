@@ -18,7 +18,8 @@ internal class CreateFooCommandHandler(
     {
         await coreRequestValidator.ValidateAsync(command, cancellationToken);
 
-        return await idempotencyWrapperService.RunIdempotentlyAsync(command.IdempotencyKey, async () =>
+        return await idempotencyWrapperService.RunIdempotentlyAsync(
+            new IdempotencyScope(nameof(CreateFooCommand), command.CallerId, command.IdempotencyKey), async () =>
             await fooConnector.CreateAsync(new CreateFooConnectorRequest
             {
                 Name = command.Name

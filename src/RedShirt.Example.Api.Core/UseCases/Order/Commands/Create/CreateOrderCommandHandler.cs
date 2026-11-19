@@ -18,7 +18,8 @@ internal class CreateOrderCommandHandler(
     {
         await coreRequestValidator.ValidateAsync(command, cancellationToken);
 
-        return await idempotencyWrapperService.RunIdempotentlyAsync(command.IdempotencyKey, async () =>
+        return await idempotencyWrapperService.RunIdempotentlyAsync(
+            new IdempotencyScope(nameof(CreateOrderCommand), command.CallerId, command.IdempotencyKey), async () =>
             await orderService.PostAsync(new OrderServicePostRequest
             {
                 CustomerId = command.CustomerId,

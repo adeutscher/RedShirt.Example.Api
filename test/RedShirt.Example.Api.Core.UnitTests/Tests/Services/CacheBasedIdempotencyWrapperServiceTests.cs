@@ -10,6 +10,8 @@ namespace RedShirt.Example.Api.Core.UnitTests.Tests.Services;
 /// </summary>
 public class CacheBasedIdempotencyWrapperServiceTests
 {
+    private static readonly IdempotencyScope Scope = new("CreateThingCommand", "user-1", "idem-1");
+
     private static Mock<IAbstractedLock> CreateLock(bool isAcquired)
     {
         var lockHandle = new Mock<IAbstractedLock>();
@@ -23,20 +25,20 @@ public class CacheBasedIdempotencyWrapperServiceTests
         var lockHandle = CreateLock(true);
         var idempotency = new Mock<ICacheBasedIdempotencyService>();
         idempotency
-            .Setup(s => s.GetRecordAsync<SampleResult>("idem-1", TestContext.Current.CancellationToken))
+            .Setup(s => s.GetRecordAsync<SampleResult>(Scope, TestContext.Current.CancellationToken))
             .ReturnsAsync((SampleResult?) null);
         idempotency
-            .Setup(s => s.GetLockAsync("idem-1", TestContext.Current.CancellationToken))
+            .Setup(s => s.GetLockAsync(Scope, TestContext.Current.CancellationToken))
             .ReturnsAsync(lockHandle.Object);
         var service = new CacheBasedIdempotencyWrapperService(idempotency.Object);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            service.RunIdempotentlyAsync<SampleResult>("idem-1", () =>
+            service.RunIdempotentlyAsync<SampleResult>(Scope, () =>
                     throw new InvalidOperationException("callback failed"),
                 TestContext.Current.CancellationToken));
 
         idempotency.Verify(
-            s => s.SetRecordAsync(It.IsAny<string>(), It.IsAny<SampleResult>(), It.IsAny<CancellationToken>()),
+            s => s.SetRecordAsync(It.IsAny<IdempotencyScope>(), It.IsAny<SampleResult>(), It.IsAny<CancellationToken>()),
             Times.Never);
         lockHandle.Verify(l => l.UnlockAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -48,18 +50,18 @@ public class CacheBasedIdempotencyWrapperServiceTests
         var lockHandle = CreateLock(true);
         var idempotency = new Mock<ICacheBasedIdempotencyService>();
         idempotency
-            .Setup(s => s.GetRecordAsync<SampleResult>("idem-1", TestContext.Current.CancellationToken))
+            .Setup(s => s.GetRecordAsync<SampleResult>(Scope, TestContext.Current.CancellationToken))
             .ReturnsAsync((SampleResult?) null);
         idempotency
-            .Setup(s => s.GetLockAsync("idem-1", TestContext.Current.CancellationToken))
+            .Setup(s => s.GetLockAsync(Scope, TestContext.Current.CancellationToken))
             .ReturnsAsync(lockHandle.Object);
         idempotency
-            .Setup(s => s.SetRecordAsync("idem-1", produced, TestContext.Current.CancellationToken))
+            .Setup(s => s.SetRecordAsync(Scope, produced, TestContext.Current.CancellationToken))
             .Returns(Task.CompletedTask);
         var callbackInvoked = false;
         var service = new CacheBasedIdempotencyWrapperService(idempotency.Object);
 
-        var result = await service.RunIdempotentlyAsync("idem-1", () =>
+        var result = await service.RunIdempotentlyAsync(Scope, () =>
         {
             callbackInvoked = true;
             return Task.FromResult(produced);
@@ -68,7 +70,7 @@ public class CacheBasedIdempotencyWrapperServiceTests
         Assert.True(callbackInvoked);
         Assert.Same(produced, result);
         idempotency.Verify(
-            s => s.SetRecordAsync("idem-1", produced, TestContext.Current.CancellationToken),
+            s => s.SetRecordAsync(Scope, produced, TestContext.Current.CancellationToken),
             Times.Once);
         lockHandle.Verify(l => l.UnlockAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -80,15 +82,15 @@ public class CacheBasedIdempotencyWrapperServiceTests
         var cached = new SampleResult("cached");
         var idempotency = new Mock<ICacheBasedIdempotencyService>();
         idempotency
-            .Setup(s => s.GetRecordAsync<SampleResult>("idem-1", TestContext.Current.CancellationToken))
+            .Setup(s => s.GetRecordAsync<SampleResult>(Scope, TestContext.Current.CancellationToken))
             .ReturnsAsync(cached);
         idempotency
-            .Setup(s => s.GetLockAsync("idem-1", TestContext.Current.CancellationToken))
+            .Setup(s => s.GetLockAsync(Scope, TestContext.Current.CancellationToken))
             .ReturnsAsync(lockHandle.Object);
         var callbackInvoked = false;
         var service = new CacheBasedIdempotencyWrapperService(idempotency.Object);
 
-        var result = await service.RunIdempotentlyAsync("idem-1", () =>
+        var result = await service.RunIdempotentlyAsync(Scope, () =>
         {
             callbackInvoked = true;
             return Task.FromResult(new SampleResult("fresh"));
@@ -96,9 +98,9 @@ public class CacheBasedIdempotencyWrapperServiceTests
 
         Assert.Same(cached, result);
         Assert.False(callbackInvoked);
-        idempotency.Verify(s => s.GetLockAsync("idem-1", TestContext.Current.CancellationToken), Times.Once);
+        idempotency.Verify(s => s.GetLockAsync(Scope, TestContext.Current.CancellationToken), Times.Once);
         idempotency.Verify(
-            s => s.SetRecordAsync(It.IsAny<string>(), It.IsAny<SampleResult>(), It.IsAny<CancellationToken>()),
+            s => s.SetRecordAsync(It.IsAny<IdempotencyScope>(), It.IsAny<SampleResult>(), It.IsAny<CancellationToken>()),
             Times.Never);
         lockHandle.Verify(l => l.UnlockAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -109,27 +111,45 @@ public class CacheBasedIdempotencyWrapperServiceTests
         var lockHandle = CreateLock(false);
         var idempotency = new Mock<ICacheBasedIdempotencyService>();
         idempotency
-            .Setup(s => s.GetRecordAsync<SampleResult>("idem-1", TestContext.Current.CancellationToken))
+            .Setup(s => s.GetRecordAsync<SampleResult>(Scope, TestContext.Current.CancellationToken))
             .ReturnsAsync((SampleResult?) null);
         idempotency
-            .Setup(s => s.GetLockAsync("idem-1", TestContext.Current.CancellationToken))
+            .Setup(s => s.GetLockAsync(Scope, TestContext.Current.CancellationToken))
             .ReturnsAsync(lockHandle.Object);
         var callbackInvoked = false;
         var service = new CacheBasedIdempotencyWrapperService(idempotency.Object);
 
         await Assert.ThrowsAsync<ConflictException>(() =>
-            service.RunIdempotentlyAsync("idem-1", () =>
+            service.RunIdempotentlyAsync(Scope, () =>
             {
                 callbackInvoked = true;
                 return Task.FromResult(new SampleResult("fresh"));
             }, TestContext.Current.CancellationToken));
 
         Assert.False(callbackInvoked);
-        idempotency.Verify(s => s.GetLockAsync("idem-1", TestContext.Current.CancellationToken), Times.Once);
+        idempotency.Verify(s => s.GetLockAsync(Scope, TestContext.Current.CancellationToken), Times.Once);
         idempotency.Verify(
-            s => s.SetRecordAsync(It.IsAny<string>(), It.IsAny<SampleResult>(), It.IsAny<CancellationToken>()),
+            s => s.SetRecordAsync(It.IsAny<IdempotencyScope>(), It.IsAny<SampleResult>(), It.IsAny<CancellationToken>()),
             Times.Never);
         lockHandle.Verify(l => l.UnlockAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("", "user-1", "idem-1")]
+    [InlineData("CreateThingCommand", "", "idem-1")]
+    [InlineData("CreateThingCommand", "user-1", " ")]
+    public async Task RunIdempotentlyAsync_Throws_WhenAnyScopePartIsBlank(string operation, string callerId,
+        string key)
+    {
+        var idempotency = new Mock<ICacheBasedIdempotencyService>(MockBehavior.Strict);
+        var service = new CacheBasedIdempotencyWrapperService(idempotency.Object);
+
+        await Assert.ThrowsAnyAsync<ArgumentException>(() =>
+            service.RunIdempotentlyAsync(new IdempotencyScope(operation, callerId, key),
+                () => Task.FromResult(new SampleResult("fresh")),
+                TestContext.Current.CancellationToken));
+
+        idempotency.VerifyNoOtherCalls();
     }
 
     private sealed class SampleResult(string value)
