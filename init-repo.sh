@@ -8,9 +8,11 @@
 #
 # Usage: ./init-repo.sh New.Namespace
 
+set -euo pipefail
+
 cd "$(dirname "${0}")" || exit 1
 
-NAMESPACE_NEW="${1}"
+NAMESPACE_NEW="${1:-}"
 
 namespace_to_docker_image_name() {
   tr '[:upper:]' '[:lower:]' <<< "${1}" | tr '.' '-'
