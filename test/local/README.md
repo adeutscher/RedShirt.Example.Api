@@ -454,6 +454,57 @@ Notes:
 * Events are scoped to the authenticated user's id (`sub` / name identifier claim).
 * If MQTT connectivity fails, the API returns **502 Bad Gateway** with a problem-details body.
 
+## Pivoting to Azure Key Vault
+
+The local stack uses SSM (through MiniStack) as its secret manager. If the template is pivoted to Azure Key Vault, local
+testing needs a Key Vault emulator, and the API's local testing mode only trusts that emulator's own certificate (see
+`docs/patterns/secret-manager.md`). The API fails at startup until the certificate is in place. Steps to be aware of:
+
+1. Swap the secret manager in `src/RedShirt.Example.Api/Extensions/ServiceCollectionExtensions.cs`: use
+   `.AddSecretManagerAzureKeyVault(configuration)` instead of `.AddSecretManagerSsm(configuration)`.
+
+2. Generate the emulator certificate:
+
+    ```bash
+    ./scripts/azure/generate-azure-key-vault-cert.sh
+    ```
+
+    This writes the emulator's key material to `config/azure-key-vault/` and copies only the public certificate to
+    `config/azure-key-vault-ca/`. Both are git-ignored. The certificate covers
+    `azure-key-vault-emulator.vault.azure.net`, `localhost` and `127.0.0.1`, and expires after 365 days, so re-run the
+    script when it expires or when the emulator's host name changes.
+
+3. Add an emulator service to `docker-compose.yaml`, reachable as `azure-key-vault-emulator.vault.azure.net` so the
+   host name matches the certificate. The JobWorker template uses this one:
+
+    ```yaml
+    azure-key-vault-emulator:
+      image: jamesgoulddev/azure-keyvault-emulator:latest
+      container_name: azure-key-vault-emulator.vault.azure.net
+      ports:
+        - "127.0.0.1:4997:4997"
+      volumes:
+        - ./config/azure-key-vault:/https:ro
+      environment:
+        - ASPNETCORE_URLS=https://+:4997
+        - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/emulator.local.pfx
+        - ASPNETCORE_Kestrel__Certificates__Default__Password=YourSecurePassword
+        - AZURE_TENANT_ID=00000000-0000-0000-0000-000000000000
+    ```
+
+4. Give the `api` service the public certificate only (never `config/azure-key-vault/`), and point it at the emulator:
+
+    ```yaml
+    volumes:
+      - ./config/azure-key-vault-ca:/run/azure-key-vault-ca:ro
+    environment:
+      COMMON__SECRETS__AZURE_KEY_VAULT__KEY_VAULT_URL: https://azure-key-vault-emulator.vault.azure.net:4997
+      COMMON__SECRETS__AZURE_KEY_VAULT__LOCAL_TESTING_CA_CERTIFICATE_PATH: /run/azure-key-vault-ca/emulator.local.crt
+    ```
+
+5. Load the secrets into the emulator, and point every secret path setting at a Key Vault name. SSM paths such as
+   `/mysql/connection-string` are not valid Key Vault secret names (only letters, digits and dashes are allowed).
+
 ## CRUD integration test
 
 `scripts/test/test-crud-controllers.py` exercises the basic RESTful CRUD controllers of the running `api`

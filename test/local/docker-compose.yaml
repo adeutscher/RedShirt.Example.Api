@@ -163,7 +163,7 @@ services:
       COMMON__SECRETS__AZURE_KEY_VAULT__KEY_VAULT_URL: "${COMMON__SECRETS__AZURE_KEY_VAULT__KEY_VAULT_URL-https://localhost:8443/}"
       COMMON__SECRETS__AZURE_KEY_VAULT__GENERATE_LOCAL_TESTING_TOKEN: true
       # Required with GENERATE_LOCAL_TESTING_TOKEN once Key Vault is the secret manager: the emulator's CA certificate
-      # (public part only), mounted read-only. See docs/patterns/secret-manager.md.
+      # (public part only), mounted read-only. See "Pivoting to Azure Key Vault" in README.md.
       COMMON__SECRETS__AZURE_KEY_VAULT__LOCAL_TESTING_CA_CERTIFICATE_PATH: "${COMMON__SECRETS__AZURE_KEY_VAULT__LOCAL_TESTING_CA_CERTIFICATE_PATH-}"
       # Docker Secrets
       # Set alternate secret path (default on null: /run/secrets)

@@ -54,6 +54,7 @@ Never enable this mode outside of local testing. Pinning the certificate means a
 still refuses servers that cannot present a certificate issued by the pinned CA. But the bogus token cannot
 authenticate against a real Key Vault, so secret lookups would fail.
 
-This template's local stack does not include a Key Vault emulator (it uses SSM through MiniStack). To use one, issue
-its certificate from a CA you control, mount the public CA certificate into the `api` container read-only, and point
-`COMMON__SECRETS__AZURE_KEY_VAULT__LOCAL_TESTING_CA_CERTIFICATE_PATH` at it. Do not mount the private key.
+This template's local stack does not include a Key Vault emulator (it uses SSM through MiniStack).
+`test/local/scripts/azure/generate-azure-key-vault-cert.sh` creates an emulator certificate and copies its public part
+to `test/local/config/azure-key-vault-ca/`. "Pivoting to Azure Key Vault" in `test/local/README.md` lists the steps for
+wiring an emulator into the local stack.
