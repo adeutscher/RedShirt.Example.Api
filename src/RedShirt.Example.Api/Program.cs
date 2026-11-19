@@ -46,6 +46,7 @@ builder.Services
 
 var app = builder.Build();
 app.WarnIfAuthenticationDisabled();
+app.WarnAboutExceptionMessageExposure();
 
 app
     .ConsiderUsingForwardedHeaders()

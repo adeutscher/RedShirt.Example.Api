@@ -255,6 +255,14 @@ In Swagger UI, use **Authorize**, choose **Bearer**, and paste the access token 
 
 To run the API without JWT checks locally, set `AUTHENTICATION__DISABLE_AUTHENTICATION=true`. This only works with `ASPNETCORE_ENVIRONMENT=Development` (the compose default): in any other environment the API refuses to start, and when it does start it logs a warning. OpenAPI generation does not use this switch. The API project's post-build `Exec` runs NSwag with authentication enabled and a placeholder authority, which is never contacted.
 
+## Upstream error details
+
+When a connector (Foo, Bar) or the MQTT broker fails, the API answers 502 with a generic detail and logs the real
+exception. To see the exception message in the response while debugging locally, set
+`EXCEPTION_HANDLING__EXPOSE_UPSTREAM_EXCEPTION_MESSAGES=true` before starting the API. It only takes effect with
+`ASPNETCORE_ENVIRONMENT=Development` (the compose default). In any other environment it is ignored, and the API logs a
+warning at startup either way.
+
 ## Uploads
 
 Mock Python scripts under `scripts/upload/` are used to test the upload system locally.

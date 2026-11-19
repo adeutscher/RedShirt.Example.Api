@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Exceptions;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
+using RedShirt.Example.Api.Configuration;
 using RedShirt.Example.Api.Connectors.Bar.Core.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
 using RedShirt.Example.Api.ExceptionHandlers;
@@ -18,7 +21,9 @@ public class ApiExceptionHandlerTests
 {
     private static async Task<(bool Handled, int StatusCode, ProblemDetails? ProblemDetails)> HandleAsync(
         Exception exception,
-        ILogger<ApiExceptionHandler>? logger = null)
+        ILogger<ApiExceptionHandler>? logger = null,
+        bool exposeUpstreamExceptionMessages = false,
+        string environmentName = "Production")
     {
         ProblemDetails? captured = null;
         var problemDetailsService = new Mock<IProblemDetailsService>();
@@ -28,6 +33,11 @@ public class ApiExceptionHandlerTests
             .ReturnsAsync(true);
 
         var handler = new ApiExceptionHandler(problemDetailsService.Object,
+            Options.Create(new ExceptionHandlingOptions
+            {
+                ExposeUpstreamExceptionMessages = exposeUpstreamExceptionMessages
+            }),
+            Environment(environmentName),
             logger ?? NullLogger<ApiExceptionHandler>.Instance);
         var httpContext = new DefaultHttpContext();
 
@@ -46,7 +56,9 @@ public class ApiExceptionHandlerTests
             .Callback<ProblemDetailsContext>(context => captured = context.ProblemDetails)
             .ReturnsAsync(true);
 
-        var handler = new ApiExceptionHandler(problemDetailsService.Object, NullLogger<ApiExceptionHandler>.Instance);
+        var handler = new ApiExceptionHandler(problemDetailsService.Object,
+            Options.Create(new ExceptionHandlingOptions()), Environment("Production"),
+            NullLogger<ApiExceptionHandler>.Instance);
         var httpContext = new DefaultHttpContext();
 
         var handled = await handler.TryHandleAsync(httpContext, new InvalidOperationException("boom"),
@@ -116,6 +128,48 @@ public class ApiExceptionHandlerTests
         Assert.Equal("Not Found", written.ProblemDetails?.Title);
         Assert.Null(written.ProblemDetails?.Detail);
         Assert.Equal(StatusCodes.Status404NotFound, written.ProblemDetails?.Status);
+    }
+
+    private static IHostEnvironment Environment(string name)
+    {
+        var environment = new Mock<IHostEnvironment>();
+        environment.SetupGet(e => e.EnvironmentName).Returns(name);
+        return environment.Object;
+    }
+
+    [Theory]
+    [MemberData(nameof(UpstreamFailures))]
+    public async Task TryHandleAsync_UpstreamFailure_ExposesMessage_WhenEnabledInDevelopment(Exception exception)
+    {
+        var logger = new CapturingLogger();
+
+        var written = await HandleAsync(exception, logger, exposeUpstreamExceptionMessages: true,
+            environmentName: Environments.Development);
+
+        Assert.Equal(StatusCodes.Status502BadGateway, written.StatusCode);
+        Assert.Equal(InternalDetail, written.ProblemDetails?.Detail);
+        // Still logged server-side.
+        Assert.Single(logger.Entries);
+    }
+
+    [Theory]
+    [InlineData(true, "Production")]
+    [InlineData(true, "Staging")]
+    [InlineData(false, "Development")]
+    public async Task TryHandleAsync_UpstreamFailure_HidesMessage_UnlessEnabledInDevelopment(bool expose,
+        string environmentName)
+    {
+        var written = await HandleAsync(
+            new FooConnectorException(new HttpRequestException(InternalDetail))
+            {
+                IsHandled = true,
+                CouldBeTransient = true,
+                CouldBeExternallySolvable = true
+            },
+            exposeUpstreamExceptionMessages: expose,
+            environmentName: environmentName);
+
+        Assert.Equal(ApiExceptionHandler.UpstreamFailureDetail, written.ProblemDetails?.Detail);
     }
 
     private const string InternalDetail = "Connection refused (internal-bar.svc.cluster.local:8443)";

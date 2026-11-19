@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Exceptions;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
+using RedShirt.Example.Api.Configuration;
 using RedShirt.Example.Api.Connectors.Bar.Core.Exceptions;
 using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
 
@@ -13,13 +15,19 @@ namespace RedShirt.Example.Api.ExceptionHandlers;
 ///         Only exceptions written for clients (the <c>Common.Exceptions.Responses</c> types and the connectors'
 ///         record-not-found exceptions) put their message in the response. Upstream failures get a fixed detail: their
 ///         messages can carry internal host names, ports, or upstream response text, so they are logged server-side
-///         instead.
+///         instead. For local debugging, <see cref="ExceptionHandlingOptions.ExposeUpstreamExceptionMessages" />
+///         puts them back in the response, in the Development environment only.
 ///     </para>
 /// </summary>
 internal sealed class ApiExceptionHandler(
     IProblemDetailsService problemDetailsService,
+    IOptions<ExceptionHandlingOptions> options,
+    IHostEnvironment environment,
     ILogger<ApiExceptionHandler> logger) : IExceptionHandler
 {
+    private readonly bool _exposeUpstreamExceptionMessages =
+        options.Value.EffectiveExposeUpstreamExceptionMessages(environment);
+
     internal const string UpstreamFailureDetail =
         "A service this API depends on failed or is unavailable. Try again later.";
 
@@ -94,7 +102,7 @@ internal sealed class ApiExceptionHandler(
             {
                 Status = statusCode,
                 Title = title,
-                Detail = isUpstreamFailure
+                Detail = isUpstreamFailure && !_exposeUpstreamExceptionMessages
                     ? UpstreamFailureDetail
                     : string.IsNullOrWhiteSpace(exception.Message)
                         ? null

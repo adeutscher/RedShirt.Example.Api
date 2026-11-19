@@ -35,6 +35,7 @@ internal static class ServiceCollectionExtensions
             .AddLogging()
             .AddSingleton(configuration)
             .AddProblemDetails()
+            .AddApiExceptionHandlingOptions(configuration)
             .AddExceptionHandler<ApiExceptionHandler>()
             // Host
             ////
