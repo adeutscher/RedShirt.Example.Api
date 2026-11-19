@@ -87,8 +87,8 @@ internal sealed class MariaDbProductRepository(
         if (!string.IsNullOrWhiteSpace(parameters.SkuContains))
         {
             builder = builder.Where(
-                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Sku))} LIKE @sku",
-                new {sku = parameters.SkuContains});
+                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Sku))} LIKE @sku {SqlQueryHelper.LikeEscapeClause}",
+                new {sku = SqlQueryHelper.EncodeTermForLike(parameters.SkuContains)});
         }
 
         if (!string.IsNullOrWhiteSpace(parameters.Name))
@@ -101,8 +101,8 @@ internal sealed class MariaDbProductRepository(
         if (!string.IsNullOrWhiteSpace(parameters.NameContains))
         {
             builder = builder.Where(
-                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Name))} LIKE @name",
-                new {name = parameters.NameContains});
+                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Name))} LIKE @name {SqlQueryHelper.LikeEscapeClause}",
+                new {name = SqlQueryHelper.EncodeTermForLike(parameters.NameContains)});
         }
 
         if (parameters.Price.HasValue)

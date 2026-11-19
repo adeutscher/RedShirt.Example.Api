@@ -1,3 +1,4 @@
+using Dapper;
 using Microsoft.Data.Sqlite;
 using Moq;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
@@ -37,7 +38,8 @@ public class MariaDbProductRepositoryTests
 
     private static ProductEntity CreateEntity(
         Guid? id = null,
-        DateTime? updatedAtUtc = null)
+        DateTime? updatedAtUtc = null,
+        string? sku = null)
     {
         var dto = CreateDto(id, updatedAtUtc);
         return new ProductEntity
@@ -45,7 +47,7 @@ public class MariaDbProductRepositoryTests
             Id = dto.Id,
             CreatedAtUtc = dto.CreatedAtUtc,
             UpdatedAtUtc = dto.UpdatedAtUtc,
-            Sku = dto.Sku,
+            Sku = sku ?? dto.Sku,
             Name = dto.Name,
             Price = dto.Price
         };
@@ -55,7 +57,8 @@ public class MariaDbProductRepositoryTests
         int pageSize = 10,
         string? sku = null,
         string? name = null,
-        decimal? price = null)
+        decimal? price = null,
+        string? skuContains = null)
     {
         return new ProductServiceSearchRequest
         {
@@ -65,7 +68,7 @@ public class MariaDbProductRepositoryTests
             UpdatedBeforeUtc = null,
             UpdatedAfterUtc = null,
             Sku = sku,
-            SkuContains = null,
+            SkuContains = skuContains,
             Name = name,
             NameContains = null,
             Price = price,
@@ -242,37 +245,34 @@ public class MariaDbProductRepositoryTests
             TestContext.Current.CancellationToken), Times.Once);
     }
 
-    [Fact]
-    public async Task SearchAsync_IgnoresSqlInCachedContinuationParameters()
+    /// <summary>
+    ///     A repository whose searches run against a shared in-memory SQLite database seeded with
+    ///     <paramref name="rows" />. SQLite accepts the backtick-quoted SQL the repository builds.
+    /// </summary>
+    private static async Task<SqliteSearch> CreateSqliteRepositoryAsync(
+        IRemoteCacheService? cacheService = null,
+        params ProductEntity[] rows)
     {
-        // A cache entry written by an older version, or by anyone with write access to Redis, can carry extra fields.
-        // The sort order must come from code, so this payload would drop the table if it reached the query.
-        // The repository disposes its connection, so it gets its own connection to a shared in-memory database. This
-        // one keeps the database alive and checks it afterwards.
+        var cancellationToken = TestContext.Current.CancellationToken;
+        SqlMapper.AddTypeHandler(SqliteGuidHandler.Instance);
+
+        // The repository disposes its connection, so it gets its own connection to a shared in-memory database. The
+        // keeper connection keeps the database alive for the test.
         var connectionString = $"Data Source={Guid.NewGuid():N};Mode=Memory;Cache=Shared";
-        await using var connection = new SqliteConnection(connectionString);
-        await connection.OpenAsync(TestContext.Current.CancellationToken);
-        var columns = string.Join(", ", typeof(ProductEntity).GetProperties()
-            .Select(p => DatabaseUtility.QuoteResource(DapperDtoSqlHelper.GetColumnName(p))));
-        await using (var create = connection.CreateCommand())
+        var keeper = new SqliteConnection(connectionString);
+        await keeper.OpenAsync(cancellationToken);
+
+        var properties = typeof(ProductEntity).GetProperties();
+        var columns = string.Join(", ",
+            properties.Select(p => DatabaseUtility.QuoteResource(DapperDtoSqlHelper.GetColumnName(p))));
+        await keeper.ExecuteAsync($"CREATE TABLE `Product` ({columns})");
+        if (rows.Length > 0)
         {
-            create.CommandText = $"CREATE TABLE `Product` ({columns})";
-            await create.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+            await keeper.ExecuteAsync(
+                $"INSERT INTO `Product` ({columns}) VALUES ({string.Join(", ", properties.Select(p => "@" + p.Name))})",
+                rows);
         }
 
-        var continuationToken = Guid.NewGuid();
-        var searchRequest = CreateSearchRequest();
-        var cachedJson = JsonSerializer.Serialize(new
-        {
-            OrderBys = new List<string> {"`Id` DESC LIMIT 1; DROP TABLE `Product`; /*"},
-            SearchParameters = searchRequest,
-            LastId = Guid.NewGuid(),
-            LastUpdatedAtUtc = DateTime.UtcNow
-        });
-        var cache = new Mock<IRemoteCacheService>();
-        cache
-            .Setup(c => c.GetStringAsync($"continuation:product:{continuationToken}", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(cachedJson);
         var factory = new Mock<ISqlConnectionFactory>();
         factory
             .Setup(f => f.GetMySqlConnectionAsync(
@@ -291,16 +291,85 @@ public class MariaDbProductRepositoryTests
                 It.IsAny<CancellationToken>()))
             .Returns<Func<CancellationToken, Task<IEnumerable<ProductEntity>>>, CancellationToken>((run, token) =>
                 run(token));
-        var repository = CreateRepository(cache.Object, sqlConnectionFactory: factory.Object,
-            retryWrapperService: retry.Object);
 
-        var result = await repository.SearchAsync(searchRequest, continuationToken,
+        return new SqliteSearch(keeper,
+            CreateRepository(cacheService, sqlConnectionFactory: factory.Object, retryWrapperService: retry.Object));
+    }
+
+    /// <summary>
+    ///     SQLite stores <see cref="Guid" /> parameters as text, which Dapper does not map back to <see cref="Guid" />.
+    ///     Handlers are process-wide. That is fine here: nothing in this test project talks to a real MariaDB.
+    /// </summary>
+    private sealed class SqliteGuidHandler : SqlMapper.TypeHandler<Guid>
+    {
+        public static readonly SqliteGuidHandler Instance = new();
+
+        public override void SetValue(IDbDataParameter parameter, Guid value)
+        {
+            parameter.Value = value.ToString();
+        }
+
+        public override Guid Parse(object value)
+        {
+            return Guid.Parse((string) value);
+        }
+    }
+
+    private sealed record SqliteSearch(SqliteConnection Keeper, MariaDbProductRepository Repository) : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync()
+        {
+            return Keeper.DisposeAsync();
+        }
+    }
+
+    [Fact]
+    public async Task SearchAsync_IgnoresSqlInCachedContinuationParameters()
+    {
+        // A cache entry written by an older version, or by anyone with write access to Redis, can carry extra fields.
+        // The sort order must come from code, so this payload would drop the table if it reached the query.
+        var continuationToken = Guid.NewGuid();
+        var searchRequest = CreateSearchRequest();
+        var cachedJson = JsonSerializer.Serialize(new
+        {
+            OrderBys = new List<string> {"`Id` DESC LIMIT 1; DROP TABLE `Product`; /*"},
+            SearchParameters = searchRequest,
+            LastId = Guid.NewGuid(),
+            LastUpdatedAtUtc = DateTime.UtcNow
+        });
+        var cache = new Mock<IRemoteCacheService>();
+        cache
+            .Setup(c => c.GetStringAsync($"continuation:product:{continuationToken}", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cachedJson);
+        await using var sqlite = await CreateSqliteRepositoryAsync(cache.Object);
+
+        var result = await sqlite.Repository.SearchAsync(searchRequest, continuationToken,
             TestContext.Current.CancellationToken);
 
         Assert.Empty(result.Records);
-        await using var check = connection.CreateCommand();
-        check.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'Product'";
-        Assert.Equal(1L, await check.ExecuteScalarAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(1L, await sqlite.Keeper.ExecuteScalarAsync<long>(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'Product'"));
+    }
+
+    [Theory]
+    [InlineData("%", new[] {"AB%100"})]
+    [InlineData("_", new[] {"AB_100"})]
+    [InlineData("!", new[] {"XAB!1"})]
+    [InlineData("B-1", new[] {"AB-100"})]
+    [InlineData("AB", new[] {"AB%100", "AB-100", "AB_100", "XAB!1"})]
+    public async Task SearchAsync_SkuContainsMatchesSubstringLiterally(string term, string[] expected)
+    {
+        // The caller's % and _ must not act as wildcards, and a plain term matches anywhere in the value.
+        await using var sqlite = await CreateSqliteRepositoryAsync(null,
+            CreateEntity(sku: "AB-100"),
+            CreateEntity(sku: "AB%100"),
+            CreateEntity(sku: "AB_100"),
+            CreateEntity(sku: "XAB!1"));
+
+        var result = await sqlite.Repository.SearchAsync(CreateSearchRequest(skuContains: term), null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(expected, result.Records.Select(r => r.Sku).Order(StringComparer.Ordinal));
     }
 
     [Fact]
