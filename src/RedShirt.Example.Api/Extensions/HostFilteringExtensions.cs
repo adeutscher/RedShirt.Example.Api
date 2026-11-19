@@ -7,8 +7,8 @@ internal static class HostFilteringExtensions
 {
     internal const string AllHostsAllowedWarning =
         "AllowedHosts is unset or '*', so requests are accepted for any Host header. Set AllowedHosts (environment " +
-        "variable ALLOWEDHOSTS, ';'-separated) to the host names this API is served under, so links and redirects " +
-        "built from the Host header cannot point at an attacker-chosen host.";
+        "variable ALLOWED_HOSTS, ';'-separated) to the host names this API is served under, so links and redirects " +
+        "built from the Host header cannot point at an attacker-chosen host. See docs/patterns/hosting.md.";
 
     /// <summary>
     ///     Logs a warning at startup when host filtering accepts any host outside the Development environment.
