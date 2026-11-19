@@ -47,6 +47,7 @@ builder.Services
 var app = builder.Build();
 app.WarnIfAuthenticationDisabled();
 app.WarnAboutExceptionMessageExposure();
+app.WarnIfAllHostsAllowed();
 
 // First, so every response (including exception handler and status code page responses) gets the headers.
 app.UseSecurityHeaders();
