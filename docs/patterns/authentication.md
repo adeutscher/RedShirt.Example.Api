@@ -71,3 +71,12 @@ I could have fallback copies of policies that are defined if authentication is d
 irresponsible duplication to give such a critical security feature such a clear off switch. The off switch is much too
 powerful just for the sake of local testing. For the moment, logging this message in documentation is good enough. 
 
+Guard rails on the switch:
+
+* The API refuses to start when `Authentication:DisableAuthentication` is `true` and the environment is not
+  `Development`. One stray environment variable cannot open a deployed API.
+* When the switch is on, the API logs a warning at startup.
+* Disabled mode only partly fails closed. Endpoints with a policy attribute fail (the policies are never registered).
+  Endpoints without one become anonymous, because the fallback policy is not registered either, and the
+  resource-scoping enforcers are replaced with stubs that allow everything.
+

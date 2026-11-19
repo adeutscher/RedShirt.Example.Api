@@ -17,6 +17,9 @@ builder.Configuration
         .Build()
     );
 
+// Fail fast if authentication is disabled anywhere but Development.
+builder.EnsureDisabledAuthenticationIsAllowed();
+
 if (builder.Configuration.GetSection(UploadOptions.ConfigurationSectionName).Get<UploadOptions>() is
     {
         MaxUploadSizeBytes: > 0
@@ -42,6 +45,7 @@ builder.Services
     .AddControllersWithViews();
 
 var app = builder.Build();
+app.WarnIfAuthenticationDisabled();
 
 app
     .ConsiderUsingForwardedHeaders()

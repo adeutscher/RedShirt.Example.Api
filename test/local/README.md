@@ -253,7 +253,7 @@ Search as `billinguser` or `developeruser` is forced to that customer id (other 
 
 In Swagger UI, use **Authorize**, choose **Bearer**, and paste the access token only (no `Bearer ` prefix).
 
-To run the API without JWT checks locally, set `AUTHENTICATION__DISABLE_AUTHENTICATION=true`. NSwag generation sets that variable in the API project’s post-build `Exec` so OpenAPI generation does not require an identity provider.
+To run the API without JWT checks locally, set `AUTHENTICATION__DISABLE_AUTHENTICATION=true`. This only works with `ASPNETCORE_ENVIRONMENT=Development` (the compose default): in any other environment the API refuses to start, and when it does start it logs a warning. NSwag generation sets that variable in the API project's post-build `Exec`, and `nswag.json` runs it as Development, so OpenAPI generation does not require an identity provider.
 
 ## Uploads
 
