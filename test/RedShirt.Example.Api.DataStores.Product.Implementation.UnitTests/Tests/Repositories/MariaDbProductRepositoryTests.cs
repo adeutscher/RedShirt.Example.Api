@@ -1,8 +1,10 @@
+using Microsoft.Data.Sqlite;
 using Moq;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
 using RedShirt.Example.Api.DataStores.Common.DapperMySql.Factories;
 using RedShirt.Example.Api.DataStores.Common.DapperMySql.Services;
 using RedShirt.Example.Api.DataStores.Common.DapperMySql.Services.Resilience;
+using RedShirt.Example.Api.DataStores.Common.DapperMySql.Utility;
 using RedShirt.Example.Api.DataStores.Constants;
 using RedShirt.Example.Api.DataStores.Product.Core.Models;
 using RedShirt.Example.Api.DataStores.Product.Implementation.Entities;
@@ -238,6 +240,67 @@ public class MariaDbProductRepositoryTests
         cache.Verify(c => c.GetStringAsync(
             $"continuation:product:{continuationToken}",
             TestContext.Current.CancellationToken), Times.Once);
+    }
+
+    [Fact]
+    public async Task SearchAsync_IgnoresSqlInCachedContinuationParameters()
+    {
+        // A cache entry written by an older version, or by anyone with write access to Redis, can carry extra fields.
+        // The sort order must come from code, so this payload would drop the table if it reached the query.
+        // The repository disposes its connection, so it gets its own connection to a shared in-memory database. This
+        // one keeps the database alive and checks it afterwards.
+        var connectionString = $"Data Source={Guid.NewGuid():N};Mode=Memory;Cache=Shared";
+        await using var connection = new SqliteConnection(connectionString);
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
+        var columns = string.Join(", ", typeof(ProductEntity).GetProperties()
+            .Select(p => DatabaseUtility.QuoteResource(DapperDtoSqlHelper.GetColumnName(p))));
+        await using (var create = connection.CreateCommand())
+        {
+            create.CommandText = $"CREATE TABLE `Product` ({columns})";
+            await create.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+        }
+
+        var continuationToken = Guid.NewGuid();
+        var searchRequest = CreateSearchRequest();
+        var cachedJson = JsonSerializer.Serialize(new
+        {
+            OrderBys = new List<string> {"`Id` DESC LIMIT 1; DROP TABLE `Product`; /*"},
+            SearchParameters = searchRequest,
+            LastId = Guid.NewGuid(),
+            LastUpdatedAtUtc = DateTime.UtcNow
+        });
+        var cache = new Mock<IRemoteCacheService>();
+        cache
+            .Setup(c => c.GetStringAsync($"continuation:product:{continuationToken}", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cachedJson);
+        var factory = new Mock<ISqlConnectionFactory>();
+        factory
+            .Setup(f => f.GetMySqlConnectionAsync(
+                DatabaseConstants.PrimaryDatabaseConnectionStringName,
+                It.IsAny<CancellationToken>()))
+            .Returns(async (string _, CancellationToken token) =>
+            {
+                var repositoryConnection = new SqliteConnection(connectionString);
+                await repositoryConnection.OpenAsync(token);
+                return (IDbConnection) repositoryConnection;
+            });
+        var retry = new Mock<IMySqlRetryWrapperService>();
+        retry
+            .Setup(r => r.RunAsync(
+                It.IsAny<Func<CancellationToken, Task<IEnumerable<ProductEntity>>>>(),
+                It.IsAny<CancellationToken>()))
+            .Returns<Func<CancellationToken, Task<IEnumerable<ProductEntity>>>, CancellationToken>((run, token) =>
+                run(token));
+        var repository = CreateRepository(cache.Object, sqlConnectionFactory: factory.Object,
+            retryWrapperService: retry.Object);
+
+        var result = await repository.SearchAsync(searchRequest, continuationToken,
+            TestContext.Current.CancellationToken);
+
+        Assert.Empty(result.Records);
+        await using var check = connection.CreateCommand();
+        check.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'Product'";
+        Assert.Equal(1L, await check.ExecuteScalarAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]

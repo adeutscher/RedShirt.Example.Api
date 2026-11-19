@@ -176,20 +176,15 @@ internal sealed class MariaDbProductRepository(
             parameters = continuationParameters.SearchParameters;
         }
 
-        var orderBys = continuationParameters?.OrderBys ??
-        [
-            $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.UpdatedAtUtc))} DESC",
-            // The key breaks ties between records updated at the same instant, so pages have a total order.
-            $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Id))} DESC"
-        ];
-
         var queryBuilder = new SqlBuilder();
         queryBuilder = SetupQueryBuilder(queryBuilder, parameters);
 
-        foreach (var orderBy in orderBys)
-        {
-            queryBuilder = queryBuilder.OrderBy(orderBy);
-        }
+        // Always built here, never read from the cache: the keyset condition below depends on this exact order, and
+        // SQL text read back from Redis would let anyone who can write to the cache inject SQL.
+        queryBuilder = queryBuilder
+            .OrderBy($"{DatabaseUtility.QuoteResource(nameof(ProductEntity.UpdatedAtUtc))} DESC")
+            // The key breaks ties between records updated at the same instant, so pages have a total order.
+            .OrderBy($"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Id))} DESC");
 
         if (continuationParameters is not null)
         {
@@ -233,7 +228,6 @@ internal sealed class MariaDbProductRepository(
                 ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value),
                 new ContinuationParameters
                 {
-                    OrderBys = orderBys,
                     SearchParameters = parameters,
                     LastId = lastRecord.Id,
                     LastUpdatedAtUtc = lastRecord.UpdatedAtUtc
@@ -253,7 +247,6 @@ internal sealed class MariaDbProductRepository(
 
     private sealed class ContinuationParameters
     {
-        public required List<string> OrderBys { get; init; }
         public required ProductServiceSearchRequest SearchParameters { get; init; }
         public required Guid LastId { get; init; }
         public required DateTime LastUpdatedAtUtc { get; init; }
