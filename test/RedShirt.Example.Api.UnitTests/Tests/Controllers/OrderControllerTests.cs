@@ -1,9 +1,13 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
 using RedShirt.Example.Api.Controllers;
+using RedShirt.Example.Api.Core.UseCases.Order.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.Order.Commands.Delete;
+using RedShirt.Example.Api.Core.UseCases.Order.Commands.Patch;
+using RedShirt.Example.Api.Core.UseCases.Order.Commands.Update;
 using RedShirt.Example.Api.Core.UseCases.Order.Queries.GetRecord;
 using RedShirt.Example.Api.Core.UseCases.Order.Queries.SearchRecords;
 using RedShirt.Example.Api.DataStores.Order.Models;
@@ -21,7 +25,19 @@ public class OrderControllerTests
     private static readonly Guid OrderId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static readonly Guid CustomerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
-    private readonly OrderController _controller = new();
+    private static readonly Guid OwnCustomerId = Guid.NewGuid();
+    private static readonly Guid OtherCustomerId = Guid.NewGuid();
+
+    private readonly OrderController _controller = new()
+    {
+        ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("sub", "user-1")], "test"))
+            }
+        }
+    };
 
     private static OrderDto Order(Guid customerId)
     {
@@ -124,5 +140,135 @@ public class OrderControllerTests
 
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Same(expected, ok.Value);
+    }
+
+    // Write actions must check the customer named in the request, not only the existing order's customer.
+    // Otherwise a customer-scoped caller could create orders for, or move orders to, another customer.
+
+    /// <summary>
+    ///     Enforcer for a caller scoped to <see cref="OwnCustomerId" />: any other customer is "not found".
+    /// </summary>
+    private static Mock<ICustomerScopedResourceEnforcer> CreateScopedEnforcer()
+    {
+        var enforcer = new Mock<ICustomerScopedResourceEnforcer>(MockBehavior.Strict);
+        enforcer
+            .Setup(e => e.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(), OwnCustomerId))
+            .Returns(Task.CompletedTask);
+        enforcer
+            .Setup(e => e.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(),
+                It.Is<Guid>(id => id != OwnCustomerId)))
+            .ThrowsAsync(new ResourceNotFoundException());
+        return enforcer;
+    }
+
+    private static OrderDto CreateDto(Guid id, Guid customerId)
+    {
+        return new OrderDto
+        {
+            Id = id,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+            CustomerId = customerId,
+            Status = "Pending",
+            TotalAmount = 1m,
+            TotalPrice = null
+        };
+    }
+
+    private static Mock<IGetOrderRecordQueryHandler> CreateGetHandlerReturning(OrderDto existing)
+    {
+        var getHandler = new Mock<IGetOrderRecordQueryHandler>();
+        getHandler
+            .Setup(h => h.Handle(It.Is<GetOrderRecordQuery>(q => q.Id == existing.Id),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        return getHandler;
+    }
+
+    [Fact]
+    public async Task Post_Throws_AndCreatesNothing_WhenCustomerIsOutsideCallerScope()
+    {
+        var createHandler = new Mock<ICreateOrderCommandHandler>(MockBehavior.Strict);
+        var request = new OrderPostRequest {CustomerId = OtherCustomerId, Status = "Pending", TotalAmount = 1m};
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() => _controller.Post(request, "idem-1",
+            CreateScopedEnforcer().Object, createHandler.Object, TestContext.Current.CancellationToken));
+
+        createHandler.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Post_Creates_WhenCustomerIsInCallerScope()
+    {
+        var createHandler = new Mock<ICreateOrderCommandHandler>();
+        createHandler
+            .Setup(h => h.Handle(It.Is<CreateOrderCommand>(c => c.CustomerId == OwnCustomerId),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateDto(Guid.NewGuid(), OwnCustomerId));
+        var request = new OrderPostRequest {CustomerId = OwnCustomerId, Status = "Pending", TotalAmount = 1m};
+
+        var result = await _controller.Post(request, "idem-1", CreateScopedEnforcer().Object,
+            createHandler.Object, TestContext.Current.CancellationToken);
+
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Patch_Throws_AndUpdatesNothing_WhenMovingOrderToCustomerOutsideCallerScope()
+    {
+        var existing = CreateDto(Guid.NewGuid(), OwnCustomerId);
+        var patchHandler = new Mock<IPatchOrderCommandHandler>(MockBehavior.Strict);
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() => _controller.Patch(existing.Id,
+            new OrderPatchRequest {CustomerId = OtherCustomerId}, CreateGetHandlerReturning(existing).Object,
+            CreateScopedEnforcer().Object, patchHandler.Object, TestContext.Current.CancellationToken));
+
+        patchHandler.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Patch_Updates_WhenCustomerIsNotChanged()
+    {
+        var existing = CreateDto(Guid.NewGuid(), OwnCustomerId);
+        var patchHandler = new Mock<IPatchOrderCommandHandler>();
+        patchHandler
+            .Setup(h => h.Handle(It.IsAny<PatchOrderCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+
+        var result = await _controller.Patch(existing.Id, new OrderPatchRequest {Status = "Shipped"},
+            CreateGetHandlerReturning(existing).Object, CreateScopedEnforcer().Object, patchHandler.Object,
+            TestContext.Current.CancellationToken);
+
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Put_Throws_AndUpdatesNothing_WhenReplacementNamesCustomerOutsideCallerScope()
+    {
+        var existing = CreateDto(Guid.NewGuid(), OwnCustomerId);
+        var updateHandler = new Mock<IUpdateOrderCommandHandler>(MockBehavior.Strict);
+        var request = new OrderPutRequest {CustomerId = OtherCustomerId, Status = "Pending", TotalAmount = 1m};
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() => _controller.Put(existing.Id, request,
+            CreateGetHandlerReturning(existing).Object, CreateScopedEnforcer().Object, updateHandler.Object,
+            TestContext.Current.CancellationToken));
+
+        updateHandler.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Put_Updates_WhenReplacementKeepsCustomerInCallerScope()
+    {
+        var existing = CreateDto(Guid.NewGuid(), OwnCustomerId);
+        var updateHandler = new Mock<IUpdateOrderCommandHandler>();
+        updateHandler
+            .Setup(h => h.Handle(It.IsAny<UpdateOrderCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        var request = new OrderPutRequest {CustomerId = OwnCustomerId, Status = "Shipped", TotalAmount = 2m};
+
+        var result = await _controller.Put(existing.Id, request, CreateGetHandlerReturning(existing).Object,
+            CreateScopedEnforcer().Object, updateHandler.Object, TestContext.Current.CancellationToken);
+
+        Assert.IsType<OkObjectResult>(result);
     }
 }

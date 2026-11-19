@@ -89,6 +89,12 @@ public class OrderController : ControllerBase
             await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id),
                 cancellationToken);
         await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
+        if (request.CustomerId is { } newCustomerId)
+        {
+            // Moving the record: the caller must also be allowed to act for the target customer.
+            await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, newCustomerId);
+        }
+
         var model = await patchOrderCommandHandler.Handle(
             new PatchOrderCommand(
                 id,
@@ -112,9 +118,12 @@ public class OrderController : ControllerBase
         [FromHeader(Name = EndpointConstants.IdempotencyKeyHeader)]
         string idempotencyKey,
         [FromServices]
+        ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
+        [FromServices]
         ICreateOrderCommandHandler createOrderCommandHandler,
         CancellationToken cancellationToken)
     {
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, request.CustomerId);
         var model = await createOrderCommandHandler.Handle(
             new CreateOrderCommand(
                 request.CustomerId,
@@ -150,6 +159,8 @@ public class OrderController : ControllerBase
             await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id),
                 cancellationToken);
         await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
+        // The replacement may name another customer: the caller must also be allowed to act for it.
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, request.CustomerId);
         var model = await updateOrderCommandHandler.Handle(
             new UpdateOrderCommand(
                 id,
