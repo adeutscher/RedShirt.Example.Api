@@ -37,8 +37,10 @@ namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Aws.Services;
 ///         locally but not in AWS.
 ///     </para>
 ///     <para>
-///         Production AWS WebSocket clients also require <c>wss://</c> and SigV4 signing on the upgrade; this resolver
-///         covers endpoint discovery and URL assembly only.
+///         <b>Known gap:</b> the resolver always builds a plaintext <c>ws://</c> URL. Real AWS IoT Core requires
+///         <c>wss://</c> with a SigV4 signed upgrade (or MQTT over TLS with an X.509 client certificate), and neither is
+///         implemented, so this resolver only works against MiniStack today. See "Broker Transport Security" in
+///         <c>docs/patterns/server-sent-events.md</c>.
 ///     </para>
 /// </remarks>
 internal sealed class AwsIotMqttBrokerUrlResolver(

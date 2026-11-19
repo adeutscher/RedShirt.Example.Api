@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MQTTnet;
@@ -6,6 +7,7 @@ using RedShirt.Example.Api.ClientEvents.Library.Core.Exceptions;
 using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Models;
 using RedShirt.Example.Api.ClientEvents.Library.Mqtt.Services;
 using RedShirt.Example.Api.Common.SecretManagers.Core.Services;
+using System.Collections.Concurrent;
 using System.Net.Sockets;
 
 namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Factories;
@@ -19,12 +21,20 @@ internal sealed class ApiMqttClientFactory(
     IOptions<ApiMqttClientFactory.ConfigurationModel> configuration,
     ISecretManagerService secretManagerService,
     IMqttBrokerUrlResolver mqttBrokerUrlResolver,
+    IHostEnvironment hostEnvironment,
     ILogger<ApiMqttClientFactory> logger) : IMqttClientFactory
 {
     private const string DefaultClientIdPrefix = "RedShirt.Example.Api";
     private const string DefaultWebSocketPath = "/mqtt";
     private const string MqttWebSocketSubProtocol = "mqtt";
     private const int DefaultMqttTcpPort = 1883;
+    private const int DefaultMqttTlsPort = 8883;
+
+    /// <summary>
+    ///     Broker URLs already warned about for plaintext transport, so the warning appears once per broker, not once
+    ///     per connection.
+    /// </summary>
+    private readonly ConcurrentDictionary<string, byte> _plaintextWarnedBrokerUrls = new(StringComparer.Ordinal);
 
     private static readonly string ServerHostname =
         string.IsNullOrWhiteSpace(Environment.MachineName) ? "unknown" : Environment.MachineName;
@@ -120,9 +130,16 @@ internal sealed class ApiMqttClientFactory(
             }
         }
 
+        // Transport security by scheme:
+        //   * mqtts:// is MQTT over TLS (default port 8883), with certificate and host name validation.
+        //   * wss:// is MQTT over WebSocket over TLS (ClientWebSocket negotiates TLS from the scheme).
+        //   * mqtt://, tcp://, ws:// and a bare host[:port] are PLAINTEXT. Credentials and messages are readable on
+        //     the network, so outside Development a warning is logged (see WarnIfPlaintext).
+        bool isEncrypted;
         if (!Uri.TryCreate(brokerTarget.BrokerUrl!, UriKind.Absolute, out var uri))
         {
             optionsBuilder.WithTcpServer(brokerTarget.BrokerUrl!);
+            isEncrypted = false;
         }
         else if (uri.Scheme.Equals("ws", StringComparison.OrdinalIgnoreCase)
                  || uri.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase))
@@ -142,12 +159,22 @@ internal sealed class ApiMqttClientFactory(
                     });
                 }
             });
+            isEncrypted = uri.Scheme.Equals("wss", StringComparison.OrdinalIgnoreCase);
+        }
+        else if (uri.Scheme.Equals("mqtts", StringComparison.OrdinalIgnoreCase))
+        {
+            // TLS with the platform's default certificate and host name validation. There is deliberately no option
+            // to skip validation.
+            optionsBuilder
+                .WithTcpServer(uri.Host, uri.IsDefaultPort ? DefaultMqttTlsPort : uri.Port)
+                .WithTlsOptions(tls => tls.UseTls());
+            isEncrypted = true;
         }
         else if (uri.Scheme.Equals("tcp", StringComparison.OrdinalIgnoreCase)
-                 || uri.Scheme.Equals("mqtt", StringComparison.OrdinalIgnoreCase)
-                 || uri.Scheme.Equals("mqtts", StringComparison.OrdinalIgnoreCase))
+                 || uri.Scheme.Equals("mqtt", StringComparison.OrdinalIgnoreCase))
         {
             optionsBuilder.WithTcpServer(uri.Host, uri.IsDefaultPort ? DefaultMqttTcpPort : uri.Port);
+            isEncrypted = false;
         }
         else
         {
@@ -158,9 +185,15 @@ internal sealed class ApiMqttClientFactory(
             };
         }
 
-        if (await TryResolveCredentialsAsync(config, cancellationToken) is { } credentials)
+        var credentials = await TryResolveCredentialsAsync(config, cancellationToken);
+        if (credentials is not null)
         {
             optionsBuilder.WithCredentials(credentials.Username, credentials.Password);
+        }
+
+        if (!isEncrypted)
+        {
+            WarnIfPlaintext(brokerTarget.BrokerUrl!, credentials is not null);
         }
 
         return new MqttClientOptionsBuildResult
@@ -168,6 +201,23 @@ internal sealed class ApiMqttClientFactory(
             OptionsBuilder = optionsBuilder,
             BrokerUrl = brokerTarget.BrokerUrl!
         };
+    }
+
+    /// <summary>
+    ///     Outside Development, logs once per broker URL that the connection is not encrypted.
+    /// </summary>
+    private void WarnIfPlaintext(string brokerUrl, bool sendsCredentials)
+    {
+        if (hostEnvironment.IsDevelopment() || !_plaintextWarnedBrokerUrls.TryAdd(brokerUrl, 0))
+        {
+            return;
+        }
+
+        logger.LogWarning(
+            "MQTT broker connection to {BrokerUrl} is not encrypted (use mqtts:// or wss://). Messages{CredentialsNote} " +
+            "can be read on the network.",
+            brokerUrl,
+            sendsCredentials ? " and broker credentials" : string.Empty);
     }
 
     private static string BuildWebSocketUri(Uri uri)
