@@ -39,7 +39,8 @@ public class MariaDbOrderRepositoryTests
     private static OrderEntity CreateEntity(
         Guid? id = null,
         DateTime? updatedAtUtc = null,
-        string? status = null)
+        string? status = null,
+        decimal? totalAmount = null)
     {
         var dto = CreateDto(id, updatedAtUtc);
         return new OrderEntity
@@ -49,7 +50,7 @@ public class MariaDbOrderRepositoryTests
             UpdatedAtUtc = dto.UpdatedAtUtc,
             CustomerId = dto.CustomerId,
             Status = status ?? dto.Status,
-            TotalAmount = dto.TotalAmount,
+            TotalAmount = totalAmount ?? dto.TotalAmount,
             TotalPrice = dto.TotalPrice
         };
     }
@@ -59,7 +60,8 @@ public class MariaDbOrderRepositoryTests
         Guid? customerId = null,
         string? status = null,
         decimal? totalAmount = null,
-        string? statusContains = null)
+        string? statusContains = null,
+        decimal? totalAmountGreaterThan = null)
     {
         return new OrderServiceSearchRequest
         {
@@ -72,7 +74,7 @@ public class MariaDbOrderRepositoryTests
             Status = status,
             StatusContains = statusContains,
             TotalAmount = totalAmount,
-            TotalAmountGreaterThan = null,
+            TotalAmountGreaterThan = totalAmountGreaterThan,
             TotalAmountLessThan = null,
             TotalPrice = null,
             TotalPriceGreaterThan = null,
@@ -372,6 +374,38 @@ public class MariaDbOrderRepositoryTests
             TestContext.Current.CancellationToken);
 
         Assert.Equal(expected, result.Records.Select(r => r.Status).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task SearchAsync_StatusEqualsAndContainsBothApply()
+    {
+        // Each filter binds its own parameter. When two shared one, the last value bound was used for both.
+        await using var sqlite = await CreateSqliteRepositoryAsync(null,
+            CreateEntity(status: "AB-100"),
+            CreateEntity(status: "AB-200"));
+
+        var result = await sqlite.Repository.SearchAsync(
+            CreateSearchRequest(status: "AB-100", statusContains: "B-1"),
+            null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal("AB-100", Assert.Single(result.Records).Status);
+    }
+
+    [Fact]
+    public async Task SearchAsync_TotalAmountEqualsAndGreaterThanBothApply()
+    {
+        // Same scale throughout: SQLite compares these decimals as text.
+        await using var sqlite = await CreateSqliteRepositoryAsync(null,
+            CreateEntity(totalAmount: 10.00m),
+            CreateEntity(totalAmount: 20.00m));
+
+        var result = await sqlite.Repository.SearchAsync(
+            CreateSearchRequest(totalAmount: 20.00m, totalAmountGreaterThan: 15.00m),
+            null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(20.00m, Assert.Single(result.Records).TotalAmount);
     }
 
     [Fact]

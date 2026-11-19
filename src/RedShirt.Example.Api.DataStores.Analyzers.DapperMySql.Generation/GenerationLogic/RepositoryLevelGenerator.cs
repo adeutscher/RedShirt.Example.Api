@@ -333,9 +333,9 @@ public static class RepositoryLevelGenerator
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
-                                dtoProperty.Name, $"> @{paramName}") + ",")
+                                dtoProperty.Name, $"> @{paramName}GreaterThan") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            "new {" + paramName + $" = parameters.{dtoProperty.Name}GreaterThan.Value" + "}")
+                            "new {" + paramName + $"GreaterThan = parameters.{dtoProperty.Name}GreaterThan.Value" + "}")
                         .AppendLineWithIndent(baseIndentLevel + 1, ");")
                         .CloseBracket(baseIndentLevel);
 
@@ -418,11 +418,11 @@ public static class RepositoryLevelGenerator
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
-                                dtoProperty.Name, $"LIKE @{paramName} {{{baseNamespace}.DataStores.Common.DapperMySql.Utility.SqlQueryHelper.LikeEscapeClause}}") + ",")
+                                dtoProperty.Name, $"LIKE @{paramName}Contains {{{baseNamespace}.DataStores.Common.DapperMySql.Utility.SqlQueryHelper.LikeEscapeClause}}") + ",")
                         // Escape the caller's wildcards so Contains means a literal substring match.
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName +
-                            $" = {baseNamespace}.DataStores.Common.DapperMySql.Utility.SqlQueryHelper.EncodeTermForLike(parameters.{dtoProperty.Name}Contains)" +
+                            $"Contains = {baseNamespace}.DataStores.Common.DapperMySql.Utility.SqlQueryHelper.EncodeTermForLike(parameters.{dtoProperty.Name}Contains)" +
                             "}")
                         .AppendLineWithIndent(baseIndentLevel + 1, ");")
                         .CloseBracket(baseIndentLevel);

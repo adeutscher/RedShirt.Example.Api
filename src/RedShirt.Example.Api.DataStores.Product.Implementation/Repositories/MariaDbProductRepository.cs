@@ -87,8 +87,8 @@ internal sealed class MariaDbProductRepository(
         if (!string.IsNullOrWhiteSpace(parameters.SkuContains))
         {
             builder = builder.Where(
-                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Sku))} LIKE @sku {SqlQueryHelper.LikeEscapeClause}",
-                new {sku = SqlQueryHelper.EncodeTermForLike(parameters.SkuContains)});
+                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Sku))} LIKE @skuContains {SqlQueryHelper.LikeEscapeClause}",
+                new {skuContains = SqlQueryHelper.EncodeTermForLike(parameters.SkuContains)});
         }
 
         if (!string.IsNullOrWhiteSpace(parameters.Name))
@@ -101,8 +101,8 @@ internal sealed class MariaDbProductRepository(
         if (!string.IsNullOrWhiteSpace(parameters.NameContains))
         {
             builder = builder.Where(
-                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Name))} LIKE @name {SqlQueryHelper.LikeEscapeClause}",
-                new {name = SqlQueryHelper.EncodeTermForLike(parameters.NameContains)});
+                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Name))} LIKE @nameContains {SqlQueryHelper.LikeEscapeClause}",
+                new {nameContains = SqlQueryHelper.EncodeTermForLike(parameters.NameContains)});
         }
 
         if (parameters.Price.HasValue)
@@ -115,8 +115,8 @@ internal sealed class MariaDbProductRepository(
         if (parameters.PriceGreaterThan.HasValue)
         {
             builder = builder.Where(
-                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Price))} > @price",
-                new {price = parameters.PriceGreaterThan.Value});
+                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Price))} > @priceGreaterThan",
+                new {priceGreaterThan = parameters.PriceGreaterThan.Value});
         }
 
         if (parameters.PriceLessThan.HasValue)

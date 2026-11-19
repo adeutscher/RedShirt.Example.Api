@@ -39,7 +39,8 @@ public class MariaDbProductRepositoryTests
     private static ProductEntity CreateEntity(
         Guid? id = null,
         DateTime? updatedAtUtc = null,
-        string? sku = null)
+        string? sku = null,
+        decimal? price = null)
     {
         var dto = CreateDto(id, updatedAtUtc);
         return new ProductEntity
@@ -49,7 +50,7 @@ public class MariaDbProductRepositoryTests
             UpdatedAtUtc = dto.UpdatedAtUtc,
             Sku = sku ?? dto.Sku,
             Name = dto.Name,
-            Price = dto.Price
+            Price = price ?? dto.Price
         };
     }
 
@@ -58,7 +59,8 @@ public class MariaDbProductRepositoryTests
         string? sku = null,
         string? name = null,
         decimal? price = null,
-        string? skuContains = null)
+        string? skuContains = null,
+        decimal? priceGreaterThan = null)
     {
         return new ProductServiceSearchRequest
         {
@@ -72,7 +74,7 @@ public class MariaDbProductRepositoryTests
             Name = name,
             NameContains = null,
             Price = price,
-            PriceGreaterThan = null,
+            PriceGreaterThan = priceGreaterThan,
             PriceLessThan = null
         };
     }
@@ -370,6 +372,38 @@ public class MariaDbProductRepositoryTests
             TestContext.Current.CancellationToken);
 
         Assert.Equal(expected, result.Records.Select(r => r.Sku).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task SearchAsync_SkuEqualsAndContainsBothApply()
+    {
+        // Each filter binds its own parameter. When two shared one, the last value bound was used for both.
+        await using var sqlite = await CreateSqliteRepositoryAsync(null,
+            CreateEntity(sku: "AB-100"),
+            CreateEntity(sku: "AB-200"));
+
+        var result = await sqlite.Repository.SearchAsync(
+            CreateSearchRequest(sku: "AB-100", skuContains: "B-1"),
+            null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal("AB-100", Assert.Single(result.Records).Sku);
+    }
+
+    [Fact]
+    public async Task SearchAsync_PriceEqualsAndGreaterThanBothApply()
+    {
+        // Same scale throughout: SQLite compares these decimals as text.
+        await using var sqlite = await CreateSqliteRepositoryAsync(null,
+            CreateEntity(price: 10.00m),
+            CreateEntity(price: 20.00m));
+
+        var result = await sqlite.Repository.SearchAsync(
+            CreateSearchRequest(price: 20.00m, priceGreaterThan: 15.00m),
+            null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(20.00m, Assert.Single(result.Records).Price);
     }
 
     [Fact]
