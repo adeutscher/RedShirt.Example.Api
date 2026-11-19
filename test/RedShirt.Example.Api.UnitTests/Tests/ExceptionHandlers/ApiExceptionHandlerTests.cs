@@ -1,7 +1,12 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using RedShirt.Example.Api.ClientEvents.Library.Core.Exceptions;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
+using RedShirt.Example.Api.Connectors.Bar.Core.Exceptions;
+using RedShirt.Example.Api.Connectors.Foo.Core.Exceptions;
 using RedShirt.Example.Api.ExceptionHandlers;
 
 namespace RedShirt.Example.Api.UnitTests.Tests.ExceptionHandlers;
@@ -12,7 +17,8 @@ namespace RedShirt.Example.Api.UnitTests.Tests.ExceptionHandlers;
 public class ApiExceptionHandlerTests
 {
     private static async Task<(bool Handled, int StatusCode, ProblemDetails? ProblemDetails)> HandleAsync(
-        Exception exception)
+        Exception exception,
+        ILogger<ApiExceptionHandler>? logger = null)
     {
         ProblemDetails? captured = null;
         var problemDetailsService = new Mock<IProblemDetailsService>();
@@ -21,7 +27,8 @@ public class ApiExceptionHandlerTests
             .Callback<ProblemDetailsContext>(context => captured = context.ProblemDetails)
             .ReturnsAsync(true);
 
-        var handler = new ApiExceptionHandler(problemDetailsService.Object);
+        var handler = new ApiExceptionHandler(problemDetailsService.Object,
+            logger ?? NullLogger<ApiExceptionHandler>.Instance);
         var httpContext = new DefaultHttpContext();
 
         var handled = await handler.TryHandleAsync(httpContext, exception, TestContext.Current.CancellationToken);
@@ -39,7 +46,7 @@ public class ApiExceptionHandlerTests
             .Callback<ProblemDetailsContext>(context => captured = context.ProblemDetails)
             .ReturnsAsync(true);
 
-        var handler = new ApiExceptionHandler(problemDetailsService.Object);
+        var handler = new ApiExceptionHandler(problemDetailsService.Object, NullLogger<ApiExceptionHandler>.Instance);
         var httpContext = new DefaultHttpContext();
 
         var handled = await handler.TryHandleAsync(httpContext, new InvalidOperationException("boom"),
@@ -109,5 +116,94 @@ public class ApiExceptionHandlerTests
         Assert.Equal("Not Found", written.ProblemDetails?.Title);
         Assert.Null(written.ProblemDetails?.Detail);
         Assert.Equal(StatusCodes.Status404NotFound, written.ProblemDetails?.Status);
+    }
+
+    private const string InternalDetail = "Connection refused (internal-bar.svc.cluster.local:8443)";
+
+    public static TheoryData<Exception> UpstreamFailures => new()
+    {
+        new FooConnectorException(new HttpRequestException(InternalDetail))
+        {
+            IsHandled = true,
+            CouldBeTransient = true,
+            CouldBeExternallySolvable = true
+        },
+        new BarConnectorException(new HttpRequestException(InternalDetail))
+        {
+            IsHandled = true,
+            CouldBeTransient = true,
+            CouldBeExternallySolvable = true
+        },
+        new ApiClientEventsException(new InvalidOperationException(InternalDetail))
+        {
+            IsHandled = false,
+            CouldBeTransient = true
+        }
+    };
+
+    [Theory]
+    [MemberData(nameof(UpstreamFailures))]
+    public async Task TryHandleAsync_UpstreamFailure_Returns502WithoutTheExceptionMessage(Exception exception)
+    {
+        var written = await HandleAsync(exception);
+
+        Assert.True(written.Handled);
+        Assert.Equal(StatusCodes.Status502BadGateway, written.StatusCode);
+        Assert.Equal("Bad Gateway", written.ProblemDetails?.Title);
+        Assert.Equal(ApiExceptionHandler.UpstreamFailureDetail, written.ProblemDetails?.Detail);
+        Assert.DoesNotContain("internal-bar", written.ProblemDetails?.Detail ?? string.Empty);
+    }
+
+    [Theory]
+    [MemberData(nameof(UpstreamFailures))]
+    public async Task TryHandleAsync_UpstreamFailure_LogsTheExceptionServerSide(Exception exception)
+    {
+        var logger = new CapturingLogger();
+
+        await HandleAsync(exception, logger);
+
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Error, entry.Level);
+        Assert.Same(exception, entry.Exception);
+    }
+
+    [Fact]
+    public async Task TryHandleAsync_ClientFacingException_IsNotLoggedAsUpstreamFailure()
+    {
+        var logger = new CapturingLogger();
+
+        await HandleAsync(new BadRequestException("Name is required"), logger);
+
+        Assert.Empty(logger.Entries);
+    }
+
+    [Fact]
+    public async Task TryHandleAsync_RecordNotFound_KeepsItsClientFacingMessage()
+    {
+        var written = await HandleAsync(new FooRecordNotFoundException(42));
+
+        Assert.Equal(StatusCodes.Status404NotFound, written.StatusCode);
+        Assert.Equal("Foo record 42 was not found.", written.ProblemDetails?.Detail);
+    }
+
+    private sealed class CapturingLogger : ILogger<ApiExceptionHandler>
+    {
+        public List<(LogLevel Level, Exception? Exception)> Entries { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+        {
+            return null;
+        }
+
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return true;
+        }
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            Entries.Add((logLevel, exception));
+        }
     }
 }
