@@ -37,7 +37,8 @@ public static class ServiceCollectionExtensions
             .AddSingleton<IBarConnector, BarConnector>();
 
         services
-            .AddHttpClient(nameof(OAuthTokenSource));
+            .AddHttpClient(nameof(OAuthTokenSource))
+            .ConfigureConnectorPrimaryHandler();
 
         services
             .AddHttpClient(nameof(BarApiClient))
