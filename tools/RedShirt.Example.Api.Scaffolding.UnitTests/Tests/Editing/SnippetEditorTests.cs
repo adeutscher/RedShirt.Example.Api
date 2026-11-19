@@ -92,6 +92,97 @@ public class SnippetEditorTests
     }
 
     [Fact]
+    public void Insert_AddsCommaToLastListItem_WhenItHasNone()
+    {
+        const string text = """
+                            [
+                                Permissions.Read,
+                                Permissions.UploadWrite
+                                // scaffold:full-access
+                            ]
+                            """;
+
+        var result = SnippetEditor.Insert(text, "full-access", "Permissions.WidgetRead,\nPermissions.WidgetWrite,\n");
+
+        Assert.Equal("""
+                     [
+                         Permissions.Read,
+                         Permissions.UploadWrite,
+                         Permissions.WidgetRead,
+                         Permissions.WidgetWrite,
+                         // scaffold:full-access
+                     ]
+                     """, result);
+    }
+
+    [Fact]
+    public void Insert_PutsAddedCommaBeforeTrailingComment_AndSkipsBlankAndCommentLines()
+    {
+        const string text = """
+                            [
+                                Permissions.UploadWrite // uploads
+
+                                // hand-written note
+                                // scaffold:full-access
+                            ]
+                            """;
+
+        var result = SnippetEditor.Insert(text, "full-access", "Permissions.WidgetRead,\n");
+
+        Assert.Equal("""
+                     [
+                         Permissions.UploadWrite, // uploads
+
+                         // hand-written note
+                         Permissions.WidgetRead,
+                         // scaffold:full-access
+                     ]
+                     """, result);
+    }
+
+    [Theory]
+    [InlineData("[\n    Permissions.Read,\n    // scaffold:a\n]")]
+    [InlineData("[\n    // scaffold:a\n]")]
+    [InlineData("new[] {\n    // scaffold:a\n}")]
+    public void Insert_DoesNotAddComma_WhenPreviousLineAlreadyAllowsAnotherItem(string text)
+    {
+        var result = SnippetEditor.Insert(text, "a", "Permissions.WidgetRead,\n");
+
+        Assert.Equal(text.Replace("    // scaffold:a", "    Permissions.WidgetRead,\n    // scaffold:a"), result);
+    }
+
+    [Fact]
+    public void Insert_DoesNotAddComma_ForSnippetThatIsNotListItems()
+    {
+        const string text = """
+                            services
+                                .AddCustomers(configuration)
+                                // scaffold:registrations
+                                ;
+                            """;
+
+        var result = SnippetEditor.Insert(text, "registrations", ".AddWidgets(configuration)\n");
+
+        Assert.Equal("""
+                     services
+                         .AddCustomers(configuration)
+                         .AddWidgets(configuration)
+                         // scaffold:registrations
+                         ;
+                     """, result);
+    }
+
+    [Fact]
+    public void Remove_AfterCommaWasAdded_KeepsTheCommaSoTheListStaysValid()
+    {
+        const string text = "[\n    A\n    // scaffold:a\n]";
+
+        var inserted = SnippetEditor.Insert(text, "a", "Widget,\n");
+
+        Assert.Equal("[\n    A,\n    // scaffold:a\n]", SnippetEditor.Remove(inserted, "a", "Widget,\n"));
+    }
+
+    [Fact]
     public void Insert_Throws_WhenAnchorIsMissing()
     {
         var exception =

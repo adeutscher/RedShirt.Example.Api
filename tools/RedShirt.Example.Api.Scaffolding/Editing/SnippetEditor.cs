@@ -157,7 +157,47 @@ internal static partial class SnippetEditor
     public static string Insert(string text, string anchor, string snippet)
     {
         var (_, anchorStart, indent) = Locate(text, anchor);
-        return text.Insert(anchorStart, Indent(snippet, indent));
+        var result = text.Insert(anchorStart, Indent(snippet, indent));
+
+        // The comma goes before anchorStart, so inserting it after the snippet leaves the snippet's offset intact.
+        return IsListItemSnippet(snippet) && FindCommaInsertionPoint(text, anchorStart) is { } commaAt
+            ? result.Insert(commaAt, ",")
+            : result;
+    }
+
+    /// <summary>
+    ///     A snippet of list or initializer items (each ending in <c>,</c>), such as permission entries.
+    /// </summary>
+    private static bool IsListItemSnippet(string snippet)
+    {
+        var last = SplitLines(snippet).Select(Normalize).LastOrDefault(line => line.Length > 0);
+        return last is not null && last.EndsWith(',');
+    }
+
+    /// <summary>
+    ///     When the closest code line above the anchor is a list item without a trailing comma (the list's last
+    ///     entry, often added by hand), return where to put that comma: after the code and before any trailing
+    ///     comment. Returns null when the line already ends the way a following item needs (<c>,</c>) or opens the
+    ///     list (<c>[</c>, <c>{</c>, <c>(</c>), or is not an item at all.
+    /// </summary>
+    private static int? FindCommaInsertionPoint(string text, int anchorStart)
+    {
+        foreach (var (lineStart, lineEnd) in Lines(text[..anchorStart]).Reverse())
+        {
+            var line = text[lineStart..lineEnd];
+            var trimmed = line.Trim();
+            if (trimmed.Length == 0 || trimmed.StartsWith("//", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var code = Normalize(line);
+            var lastChar = code[^1];
+            var endsItem = char.IsLetterOrDigit(lastChar) || lastChar is '_' or ')' or ']' or '}' or '"' or '\'';
+            return endsItem ? lineStart + code.Length : null;
+        }
+
+        return null;
     }
 
     /// <summary>
