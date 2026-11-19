@@ -1,4 +1,5 @@
 using Dapper;
+using RedShirt.Example.Api.Common.Distributed.Continuation;
 using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
 using RedShirt.Example.Api.DataStores.Common.DapperMySql.Factories;
@@ -155,10 +156,19 @@ internal sealed class MariaDbProductRepository(
         ContinuationParameters? continuationParameters = null;
         if (continuationToken is not null)
         {
-            var continuationParametersKey = $"continuation:{continuationToken.Value}";
+            var continuationParametersKey = ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value);
             continuationParameters =
                 await cacheService.GetObjectAsync<ContinuationParameters>(continuationParametersKey,
                     cancellationToken);
+        }
+
+        if (continuationParameters is not null
+            && !ContinuationTokenScope.IsCompatible(parameters, continuationParameters.SearchParameters,
+                nameof(ProductServiceSearchRequest.PageSize)))
+        {
+            // Contradicts the caller-scoped request (another caller's token, or changed filters).
+            // Treat it like an expired token and start from the first page.
+            continuationParameters = null;
         }
 
         if (continuationParameters is not null)
@@ -220,7 +230,7 @@ internal sealed class MariaDbProductRepository(
         {
             var lastRecord = records[^1];
             await cacheService.SetObjectAsync(
-                $"continuation:{continuationToken.Value}",
+                ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value),
                 new ContinuationParameters
                 {
                     OrderBys = orderBys,
@@ -238,6 +248,8 @@ internal sealed class MariaDbProductRepository(
             ContinuationToken = continuationToken
         };
     }
+
+    private const string ContinuationEntity = "product";
 
     private sealed class ContinuationParameters
     {

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RedShirt.Example.Api.Common.Distributed.Continuation;
 using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
@@ -290,8 +291,17 @@ internal sealed class UploadRepository(
         if (continuationToken is not null)
         {
             continuationParameters =
-                await cacheService.GetObjectAsync<ContinuationParameters>($"continuation:{continuationToken.Value}",
+                await cacheService.GetObjectAsync<ContinuationParameters>(ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value),
                     cancellationToken);
+        }
+
+        if (continuationParameters is not null
+            && !ContinuationTokenScope.IsCompatible(parameters, continuationParameters.SearchParameters,
+                nameof(UploadServiceSearchRequest.PageSize)))
+        {
+            // Contradicts the caller-scoped request (another caller's token, or changed filters).
+            // Treat it like an expired token and start from the first page.
+            continuationParameters = null;
         }
 
         if (continuationParameters is not null)
@@ -328,7 +338,7 @@ internal sealed class UploadRepository(
         {
             var lastRecord = records[^1];
             await cacheService.SetObjectAsync(
-                $"continuation:{continuationToken.Value}",
+                ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value),
                 new ContinuationParameters
                 {
                     SearchParameters = parameters,
@@ -373,6 +383,8 @@ internal sealed class UploadRepository(
 
         await transaction.CommitAsync(cancellationToken);
     }
+
+    private const string ContinuationEntity = "upload";
 
     private sealed class ContinuationParameters
     {

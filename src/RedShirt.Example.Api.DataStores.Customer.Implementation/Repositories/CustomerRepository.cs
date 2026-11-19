@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RedShirt.Example.Api.Common.Distributed.Continuation;
 using RedShirt.Example.Api.Common.Distributed.Extensions;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
 using RedShirt.Example.Api.DataStores.Constants;
@@ -145,9 +146,18 @@ internal sealed class CustomerRepository(
         ContinuationParameters? continuationParameters = null;
         if (continuationToken is not null)
         {
-            var continuationParametersKey = $"continuation:{continuationToken.Value}";
+            var continuationParametersKey = ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value);
             continuationParameters =
                 await cacheService.GetObjectAsync<ContinuationParameters>(continuationParametersKey, cancellationToken);
+        }
+
+        if (continuationParameters is not null
+            && !ContinuationTokenScope.IsCompatible(parameters, continuationParameters.SearchParameters,
+                nameof(CustomerServiceSearchRequest.PageSize)))
+        {
+            // Contradicts the caller-scoped request (another caller's token, or changed filters).
+            // Treat it like an expired token and start from the first page.
+            continuationParameters = null;
         }
 
         if (continuationParameters is not null)
@@ -191,7 +201,7 @@ internal sealed class CustomerRepository(
         {
             var lastRecord = records[^1];
             await cacheService.SetObjectAsync(
-                $"continuation:{continuationToken.Value}",
+                ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value),
                 new ContinuationParameters
                 {
                     SearchParameters = parameters,
@@ -208,6 +218,8 @@ internal sealed class CustomerRepository(
             ContinuationToken = continuationToken
         };
     }
+
+    private const string ContinuationEntity = "customer";
 
     private sealed class ContinuationParameters
     {

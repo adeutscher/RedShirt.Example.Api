@@ -35,9 +35,17 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(2, "ContinuationParameters? continuationParameters = null;")
             .AppendLineWithIndent(2, "if (continuationToken is not null)")
             .OpenBracket(2)
-            .AppendLineWithIndent(3, "var continuationParametersKey = $\"continuation:{continuationToken.Value}\";")
+            .AppendLineWithIndent(3,
+                $"var continuationParametersKey = {ContinuationScope(classSummaryModel)}.CacheKey(ContinuationEntity, continuationToken.Value);")
             .AppendLineWithIndent(3,
                 $"continuationParameters = await {classSummaryModel.BaseNamespace}.Common.Distributed.Extensions.RemoteCacheExtensions.GetObjectAsync<ContinuationParameters>(cacheService, continuationParametersKey, cancellationToken);")
+            .CloseBracket(2)
+            .AppendLineWithIndent(2,
+                $"if (continuationParameters is not null && !{ContinuationScope(classSummaryModel)}.IsCompatible(parameters, continuationParameters.SearchParameters, nameof({classSummaryModel.RequestClassSearch}.PageSize)))")
+            .OpenBracket(2)
+            .AppendLineWithIndent(3,
+                "// Contradicts the caller-scoped request (another caller's token, or changed filters). Start from the first page.")
+            .AppendLineWithIndent(3, "continuationParameters = null;")
             .CloseBracket(2)
             .AppendLineWithIndent(2, "if (continuationParameters is not null)")
             .OpenBracket(2)
@@ -122,7 +130,7 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(3, "// Reason to suspect that there's more to get")
             .AppendLineWithIndent(3, "var lastRecord = records[^1]; // Last element")
             .AppendLineWithIndent(3,
-                $"await {classSummaryModel.BaseNamespace}.Common.Distributed.Extensions.RemoteCacheExtensions.SetObjectAsync(cacheService, $\"continuation:{{continuationToken.Value}}\", new ContinuationParameters")
+                $"await {classSummaryModel.BaseNamespace}.Common.Distributed.Extensions.RemoteCacheExtensions.SetObjectAsync(cacheService, {ContinuationScope(classSummaryModel)}.CacheKey(ContinuationEntity, continuationToken.Value), new ContinuationParameters")
             .OpenBracket(3)
             .AppendLineWithIndent(4, "OrderBys = orderBys,")
             .AppendLineWithIndent(4, "SearchParameters = parameters,")
@@ -139,6 +147,11 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(3, "ContinuationToken = continuationToken")
             .AppendLineWithIndent(2, "};")
             .CloseBracket();
+    }
+
+    private static string ContinuationScope(ClassSummaryModel classSummaryModel)
+    {
+        return $"{classSummaryModel.BaseNamespace}.Common.Distributed.Continuation.ContinuationTokenScope";
     }
 
     private static StringBuilder AddContinuationParametersClass(this StringBuilder sb,
@@ -484,6 +497,8 @@ public static class RepositoryLevelGenerator
                 $") : {classSummaryModel.RepositoryInterfaceName}")
             .OpenBracket(0)
             .AppendLineWithIndent($"private const int MaxPageSize = {classSummaryModel.MaxSearchPageSize};")
+            .AppendLineWithIndent(
+                $"private const string ContinuationEntity = \"{classSummaryModel.BaseName.ToLowerInvariant()}\";")
             .AppendLineWithIndent(
                 $"private const string ConnectionStringName = {FormatConnectionStringNameConstant(classSummaryModel)};");
 
