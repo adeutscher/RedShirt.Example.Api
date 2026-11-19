@@ -29,6 +29,9 @@ services:
     entrypoint: ["/bin/bash", "/make-local-aws-resources.sh"]
     environment:
       MINISTACK_ENDPOINT: http://ministack:4566
+      # Same placeholder credentials as the api service. MiniStack does not validate them.
+      AWS_ACCESS_KEY_ID: foo
+      AWS_SECRET_ACCESS_KEY: bar
     restart: "no"
     volumes:
       - type: bind
