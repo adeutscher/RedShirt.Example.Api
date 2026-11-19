@@ -55,6 +55,18 @@ Recapped in reverse:
 3. The request's identity information may be enriched by a transformer. An example of this in this template would be
    resolving roles defined in the original identity to permissions in the enriched identity.
 
+## Token Validation
+
+With authentication enabled, the API checks each bearer token against `Authentication:*` settings
+(`AUTHENTICATION__*` environment variables):
+
+* **Issuer:** `iss` must equal `Authentication:Authority`. Startup fails when it is unset.
+* **Audience:** `aud` must contain `Authentication:Audience`. Startup fails when it is unset. Without this check, any
+  token the authority issues would be accepted, including tokens meant for other clients or APIs in the same realm.
+  With Keycloak, add an audience mapper to the client so its tokens carry the API's audience.
+* **Lifetime and signature:** tokens must be unexpired and signed by a key from the authority's metadata
+  (`Authentication:MetadataAddress` when the authority URL is not reachable from the API).
+
 ## On Disabling Authentication
 
 As described above, authentication is a separate concept from authorization and authorization can have requirements can

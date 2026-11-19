@@ -66,6 +66,15 @@ internal static class AuthenticationServiceCollectionExtensions
                 "Authentication is enabled but Authentication:Authority is missing.");
         }
 
+        // Without an expected audience, any token the authority issues (for any client or API in the realm) would be
+        // accepted here, so a missing value fails at startup instead of switching the check off.
+        if (string.IsNullOrWhiteSpace(options.Audience))
+        {
+            throw new InvalidOperationException(
+                "Authentication is enabled but Authentication:Audience is missing. Set it to the aud claim that " +
+                "tokens for this API carry.");
+        }
+
         services
             .Configure<AuthenticationOptions>(
                 configuration.GetSection(AuthenticationOptions.ConfigurationSectionName))
@@ -86,7 +95,7 @@ internal static class AuthenticationServiceCollectionExtensions
                 {
                     ValidateIssuer = true,
                     ValidIssuer = options.Authority,
-                    ValidateAudience = !string.IsNullOrWhiteSpace(options.Audience),
+                    ValidateAudience = true,
                     ValidAudience = options.Audience,
                     ValidateLifetime = true,
                     // Keycloak realm-role mapper emits multivalued "role" claims (see realm-example.json).

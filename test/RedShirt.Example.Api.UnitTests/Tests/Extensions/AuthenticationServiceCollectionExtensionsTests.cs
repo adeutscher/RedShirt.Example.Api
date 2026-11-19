@@ -136,6 +136,36 @@ public class AuthenticationServiceCollectionExtensionsTests
         Assert.Contains("Authority", exception.Message, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ConsiderAddingAuthentication_WhenEnabledWithoutAudience_Throws(string? audience)
+    {
+        var configuration = EnabledAuthenticationConfiguration(audience: audience);
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            services.ConsiderAddingAuthentication(configuration));
+
+        Assert.Contains("Audience", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ConsiderAddingAuthentication_WhenEnabled_AlwaysValidatesAudience()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.ConsiderAddingAuthentication(EnabledAuthenticationConfiguration());
+
+        using var provider = services.BuildServiceProvider();
+        var jwtOptions = provider.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>()
+            .Get(JwtBearerDefaults.AuthenticationScheme);
+
+        Assert.True(jwtOptions.TokenValidationParameters.ValidateAudience);
+        Assert.Equal("example-api", jwtOptions.TokenValidationParameters.ValidAudience);
+    }
+
     [Fact]
     public async Task ConsiderAddingAuthentication_WhenEnabled_RegistersJwtBearerAndAuthorizationPolicies()
     {

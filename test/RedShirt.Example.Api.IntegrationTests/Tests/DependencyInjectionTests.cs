@@ -39,7 +39,8 @@ public class DependencyInjectionTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string>
             {
-                ["Authentication:Authority"] = "foo"
+                ["Authentication:Authority"] = "foo",
+                ["Authentication:Audience"] = "foo"
             }!)
             .Build();
 
@@ -190,7 +191,8 @@ public class DependencyInjectionTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string>
             {
-                ["Authentication:Authority"] = "foo"
+                ["Authentication:Authority"] = "foo",
+                ["Authentication:Audience"] = "foo"
             }!)
             .Build();
 

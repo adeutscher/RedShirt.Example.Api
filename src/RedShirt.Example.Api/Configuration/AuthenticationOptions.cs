@@ -25,7 +25,8 @@ public sealed class AuthenticationOptions
     public required string? MetadataAddress { get; init; }
 
     /// <summary>
-    ///     Expected JWT <c>aud</c> claim (for example <c>example-api</c>).
+    ///     Expected JWT <c>aud</c> claim (for example <c>example-api</c>). Required when authentication is enabled:
+    ///     startup fails without it, because tokens the authority issues for other clients would otherwise be accepted.
     /// </summary>
     public required string? Audience { get; init; }
 
