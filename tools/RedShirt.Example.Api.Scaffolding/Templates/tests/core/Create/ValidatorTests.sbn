@@ -17,6 +17,7 @@ public class Create{{ n }}CommandValidatorTests
 {{~ for p in model.post_properties ~}}
                 {{ if p.name == s.name }}"   "{{ else }}{{ p.sample_value }}{{ end }},
 {{~ end ~}}
+                "caller-1",
                 "idempotency-key"),
             TestContext.Current.CancellationToken);
 
@@ -32,6 +33,7 @@ public class Create{{ n }}CommandValidatorTests
 {{~ for p in model.post_properties ~}}
                 {{ p.sample_value }},
 {{~ end ~}}
+                "caller-1",
                 "idempotency-key"),
             TestContext.Current.CancellationToken);
 

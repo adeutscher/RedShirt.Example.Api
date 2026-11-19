@@ -1,4 +1,3 @@
-using Amazon.Runtime;
 using Amazon.S3;
 using Microsoft.Extensions.DependencyInjection;
 using RedShirt.Example.Api.Common.Aws.S3FileStorage.Services;
@@ -27,11 +26,10 @@ public static class ServiceCollectionExtensions
             AuthenticationRegion = Environment.GetEnvironmentVariable("AWS_REGION") ?? "us-east-1"
         };
 
-        var credentials = new BasicAWSCredentials(
-            Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID") ?? "foo",
-            Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY") ?? "bar");
-
-        return services.AddSingleton<IAmazonS3>(_ => new AmazonS3Client(credentials, s3Config));
+        // Credentials come from the SDK's default chain (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY, profile, etc), like
+        // every other AWS client here. There is deliberately no hardcoded fallback: a missing credential fails loudly
+        // instead of silently signing requests with a made-up key.
+        return services.AddSingleton<IAmazonS3>(_ => new AmazonS3Client(s3Config));
     }
 
     public static IServiceCollection AddS3FileStorage(this IServiceCollection services)

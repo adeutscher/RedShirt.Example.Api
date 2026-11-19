@@ -17,6 +17,9 @@ builder.Configuration
         .Build()
     );
 
+// Fail fast if authentication is disabled anywhere but Development.
+builder.EnsureDisabledAuthenticationIsAllowed();
+
 if (builder.Configuration.GetSection(UploadOptions.ConfigurationSectionName).Get<UploadOptions>() is
     {
         MaxUploadSizeBytes: > 0
@@ -42,6 +45,8 @@ builder.Services
     .AddControllersWithViews();
 
 var app = builder.Build();
+app.WarnIfAuthenticationDisabled();
+app.WarnAboutExceptionMessageExposure();
 
 app
     .ConsiderUsingForwardedHeaders()
@@ -72,14 +77,21 @@ app.UseStaticFiles();
 
 app.UseRouting();
 app.ConsiderUsingAuthentication();
-// Always set UseAuthorization because requirements aren't guaranteed to be based on authenticated identity.
-app.UseAuthorization();
 
 if (Environment.GetEnvironmentVariable("NSWAG_RUN") != "1")
 {
-    // Note: Must add after UseRouting is declared.
+    /*
+     * Order matters:
+     *  * After UseRouting, so endpoint rate-limit metadata ([EnableRateLimiting]) is visible.
+     *  * After authentication, so the partition key can use the validated JWT subject.
+     *  * Before UseAuthorization, so requests that fail authorization (missing, invalid, or under-privileged tokens)
+     *      are still counted. Unauthenticated callers are partitioned by remote IP.
+     */
     app.ConsiderAddingRateLimitParts();
 }
+
+// Always set UseAuthorization because requirements aren't guaranteed to be based on authenticated identity.
+app.UseAuthorization();
 
 app
     .MapControllerRoute(

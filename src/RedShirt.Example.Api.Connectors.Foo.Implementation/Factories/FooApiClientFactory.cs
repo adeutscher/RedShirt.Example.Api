@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using RedShirt.Example.Api.Connectors.Common.Http.Extensions;
 using RedShirt.Example.Api.Connectors.Common.Http.Models;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Clients;
 using RedShirt.Example.Api.Connectors.Foo.Implementation.Services.Resilience;
@@ -25,7 +26,7 @@ internal sealed class FooApiClientFactory(
         var httpClient = configuration.Value.ClientPerRequest
             ? new HttpClient(new FooApiClientHandler(apiRequestRetryWrapperService)
             {
-                InnerHandler = new HttpClientHandler()
+                InnerHandler = ConnectorHttpClientBuilderExtensions.CreateConnectorPrimaryHandler()
             })
             : httpClientFactory.CreateClient(nameof(FooApiClient));
         return new FooApiClient(httpClient, configuration.Value.BaseUrl);

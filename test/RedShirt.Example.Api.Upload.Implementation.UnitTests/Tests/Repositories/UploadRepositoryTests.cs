@@ -327,4 +327,102 @@ public class UploadRepositoryTests : IDisposable
         Assert.Single(secondPage.Records);
         Assert.NotEqual(firstPage.Records[0].Id, secondPage.Records[0].Id);
     }
+
+    [Fact]
+    public async Task SearchAsync_IgnoresAnotherCallersContinuationToken()
+    {
+        var repository = UploadRepositoryTestSupport.CreateRepository(_dbContextFactory);
+        await SeedUploadAsync(repository, "user-a", "a1.txt", "idem-a1");
+        await SeedUploadAsync(repository, "user-a", "a2.txt", "idem-a2");
+        await SeedUploadAsync(repository, "user-b", "b1.txt", "idem-b1");
+
+        var userAFirstPage = await repository.SearchAsync(
+            new UploadServiceSearchRequest {PageSize = 1, UploadedByUserId = "user-a"},
+            null,
+            TestContext.Current.CancellationToken);
+        Assert.NotNull(userAFirstPage.ContinuationToken);
+
+        // user-b's controller scopes the request to user-b, then presents user-a's token.
+        var userBPage = await repository.SearchAsync(
+            new UploadServiceSearchRequest {PageSize = 10, UploadedByUserId = "user-b"},
+            userAFirstPage.ContinuationToken,
+            TestContext.Current.CancellationToken);
+
+        var record = Assert.Single(userBPage.Records);
+        Assert.Equal("user-b", record.UploadedByUserId);
+    }
+
+    [Fact]
+    public async Task SearchAsync_UnscopedTokenDoesNotWidenScopedSearch()
+    {
+        var repository = UploadRepositoryTestSupport.CreateRepository(_dbContextFactory);
+        await SeedUploadAsync(repository, "user-a", "a1.txt", "idem-a1");
+        await SeedUploadAsync(repository, "user-a", "a2.txt", "idem-a2");
+        await SeedUploadAsync(repository, "user-b", "b1.txt", "idem-b1");
+
+        // An unrestricted caller (no uploader filter) issues the token.
+        var unrestrictedFirstPage = await repository.SearchAsync(
+            new UploadServiceSearchRequest {PageSize = 1},
+            null,
+            TestContext.Current.CancellationToken);
+        Assert.NotNull(unrestrictedFirstPage.ContinuationToken);
+
+        var scopedPage = await repository.SearchAsync(
+            new UploadServiceSearchRequest {PageSize = 10, UploadedByUserId = "user-b"},
+            unrestrictedFirstPage.ContinuationToken,
+            TestContext.Current.CancellationToken);
+
+        Assert.All(scopedPage.Records, r => Assert.Equal("user-b", r.UploadedByUserId));
+        Assert.Single(scopedPage.Records);
+    }
+
+    [Fact]
+    public async Task SearchAsync_SameCallerContinues_WhenScopedFilterIsRepeated()
+    {
+        var repository = UploadRepositoryTestSupport.CreateRepository(_dbContextFactory);
+        await SeedUploadAsync(repository, "user-a", "a1.txt", "idem-a1");
+        await SeedUploadAsync(repository, "user-a", "a2.txt", "idem-a2");
+        await SeedUploadAsync(repository, "user-b", "b1.txt", "idem-b1");
+
+        var firstPage = await repository.SearchAsync(
+            new UploadServiceSearchRequest {PageSize = 1, UploadedByUserId = "user-a"},
+            null,
+            TestContext.Current.CancellationToken);
+        var secondPage = await repository.SearchAsync(
+            new UploadServiceSearchRequest {PageSize = 1, UploadedByUserId = "user-a"},
+            firstPage.ContinuationToken,
+            TestContext.Current.CancellationToken);
+
+        var first = Assert.Single(firstPage.Records);
+        var second = Assert.Single(secondPage.Records);
+        Assert.Equal("user-a", second.UploadedByUserId);
+        Assert.NotEqual(first.Id, second.Id);
+    }
+
+    [Fact]
+    public async Task SearchAsync_IgnoresTokenIssuedByAnotherEntity()
+    {
+        var cache = new InMemoryRemoteCacheService();
+        var repository = UploadRepositoryTestSupport.CreateRepository(_dbContextFactory, cache);
+        await SeedUploadAsync(repository, "user-a", "a1.txt", "idem-a1");
+        await SeedUploadAsync(repository, "user-b", "b1.txt", "idem-b1");
+
+        // A product search's cached parameters: same member names, no uploader filter.
+        var token = Guid.NewGuid();
+        var productShaped = """
+                            {"OrderBys":[],"SearchParameters":{"PageSize":10},"LastId":"00000000-0000-0000-0000-000000000000","LastUpdatedAtUtc":"2999-01-01T00:00:00Z"}
+                            """;
+        await cache.SetStringAsync($"continuation:product:{token}", productShaped, TimeSpan.FromMinutes(5),
+            TestContext.Current.CancellationToken);
+        await cache.SetStringAsync($"continuation:{token}", productShaped, TimeSpan.FromMinutes(5),
+            TestContext.Current.CancellationToken);
+
+        var page = await repository.SearchAsync(
+            new UploadServiceSearchRequest {PageSize = 10, UploadedByUserId = "user-b"},
+            token,
+            TestContext.Current.CancellationToken);
+
+        var record = Assert.Single(page.Records);
+        Assert.Equal("user-b", record.UploadedByUserId);
+    }
 }

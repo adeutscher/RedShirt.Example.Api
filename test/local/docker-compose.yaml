@@ -4,8 +4,8 @@ services:
   ministack:
     image: ministackorg/ministack:latest
     ports:
-      - 4566:4566
-      - 8883:8883
+      - "127.0.0.1:4566:4566"
+      - "127.0.0.1:8883:8883"
     environment:
       MINISTACK_HOST: ministack
     healthcheck:
@@ -29,6 +29,9 @@ services:
     entrypoint: ["/bin/bash", "/make-local-aws-resources.sh"]
     environment:
       MINISTACK_ENDPOINT: http://ministack:4566
+      # Same placeholder credentials as the api service. MiniStack does not validate them.
+      AWS_ACCESS_KEY_ID: foo
+      AWS_SECRET_ACCESS_KEY: bar
     restart: "no"
     volumes:
       - type: bind
@@ -39,12 +42,12 @@ services:
   redis:
     image: redis:latest
     ports:
-      - '6379:6379'
+      - "127.0.0.1:6379:6379"
 
   mariadb:
     image: mariadb:latest
     ports:
-      - '3306:3306'
+      - "127.0.0.1:3306:3306"
     environment:
       MARIADB_ROOT_PASSWORD: ${LOCAL_SQL_PASSWORD}
       MARIADB_DATABASE: example
@@ -58,7 +61,7 @@ services:
   wiremock-foo:
     image: wiremock/wiremock:3.13.1
     ports:
-      - "9100:8080"
+      - "127.0.0.1:9100:8080"
     volumes:
       - ./wiremock/foo:/home/wiremock
     entrypoint:
@@ -71,7 +74,7 @@ services:
   wiremock-bar:
     image: wiremock/wiremock:3.13.1
     ports:
-      - "9101:8080"
+      - "127.0.0.1:9101:8080"
     volumes:
       - ./wiremock/bar:/home/wiremock
     entrypoint:
@@ -90,7 +93,7 @@ services:
         /opt/keycloak/bin/kc.sh import --file /opt/keycloak/data/import/realm-example.json --override true
         exec /opt/keycloak/bin/kc.sh start-dev
     ports:
-      - "9080:8080"
+      - "127.0.0.1:9080:8080"
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
@@ -121,12 +124,14 @@ services:
       keycloak:
         condition: service_started
     ports:
-      - "9000:8080"
+      - "127.0.0.1:9000:8080"
     environment:
       # AspNetCore
       ##
       ASPNETCORE_ENVIRONMENT: Development # Enable swagger
       ASPNETCORE_URLS: http://*:8080
+      # Put upstream exception messages (connectors, MQTT) in 502 responses. Development only, ignored elsewhere.
+      EXCEPTION_HANDLING__EXPOSE_UPSTREAM_EXCEPTION_MESSAGES: "${EXCEPTION_HANDLING__EXPOSE_UPSTREAM_EXCEPTION_MESSAGES-false}"
       # Forwarding headers (X-Forwarded-* from trusted reverse proxies in front of Kestrel)
       ##
       FORWARDING_HEADERS__RESPECT_HEADERS: "${FORWARDING_HEADERS__RESPECT_HEADERS-false}"
@@ -157,6 +162,9 @@ services:
       # Azure Key Vault (when AddSecretManagerAzureKeyVault is used instead of SSM)
       COMMON__SECRETS__AZURE_KEY_VAULT__KEY_VAULT_URL: "${COMMON__SECRETS__AZURE_KEY_VAULT__KEY_VAULT_URL-https://localhost:8443/}"
       COMMON__SECRETS__AZURE_KEY_VAULT__GENERATE_LOCAL_TESTING_TOKEN: true
+      # Required with GENERATE_LOCAL_TESTING_TOKEN once Key Vault is the secret manager: the emulator's CA certificate
+      # (public part only), mounted read-only. See "Pivoting to Azure Key Vault" in README.md.
+      COMMON__SECRETS__AZURE_KEY_VAULT__LOCAL_TESTING_CA_CERTIFICATE_PATH: "${COMMON__SECRETS__AZURE_KEY_VAULT__LOCAL_TESTING_CA_CERTIFICATE_PATH-}"
       # Docker Secrets
       # Set alternate secret path (default on null: /run/secrets)
       COMMON__SECRETS__DOCKER__DIRECTORY: null

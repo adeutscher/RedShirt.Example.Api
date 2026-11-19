@@ -114,6 +114,56 @@ internal static class AuthenticationServiceCollectionExtensions
         return app;
     }
 
+    internal const string DisabledAuthenticationWarning =
+        "Authentication is DISABLED (Authentication:DisableAuthentication=true). Endpoints without an authorization " +
+        "attribute accept anonymous requests and resource scoping allows everything. Never use this outside local " +
+        "development.";
+
+    /// <summary>
+    ///     Refuses to start when authentication is disabled outside the Development environment.
+    ///     <para>
+    ///         Disabling authentication is a local convenience (and how NSwag generates the OpenAPI document without an
+    ///         identity provider). One stray environment variable must not be able to open a deployed API, so any other
+    ///         environment fails fast at startup instead.
+    ///     </para>
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    ///     Authentication is disabled and the environment is not Development.
+    /// </exception>
+    internal static void EnsureDisabledAuthenticationIsAllowed(IConfiguration configuration,
+        IHostEnvironment environment)
+    {
+        if (IsAuthenticationEnabled(GetAuthenticationOptionsFromConfiguration(configuration))
+            || environment.IsDevelopment())
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            "Authentication:DisableAuthentication is true, but the environment is " +
+            $"'{environment.EnvironmentName}'. Authentication may only be disabled in the Development environment.");
+    }
+
+    /// <inheritdoc cref="EnsureDisabledAuthenticationIsAllowed(IConfiguration, IHostEnvironment)" />
+    internal static WebApplicationBuilder EnsureDisabledAuthenticationIsAllowed(this WebApplicationBuilder builder)
+    {
+        EnsureDisabledAuthenticationIsAllowed(builder.Configuration, builder.Environment);
+        return builder;
+    }
+
+    /// <summary>
+    ///     Logs a warning at startup when authentication is disabled, so the mode is visible in the logs.
+    /// </summary>
+    internal static WebApplication WarnIfAuthenticationDisabled(this WebApplication app)
+    {
+        if (!IsAuthenticationEnabled(GetAuthenticationOptionsFromConfiguration(app.Configuration)))
+        {
+            app.Logger.LogWarning(DisabledAuthenticationWarning);
+        }
+
+        return app;
+    }
+
     internal static bool IsAuthenticationEnabled(IConfigurationRoot configuration)
     {
         var options = GetAuthenticationOptionsFromConfiguration(configuration);

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using RedShirt.Example.Api.Common.Exceptions.Responses;
@@ -8,6 +9,7 @@ using RedShirt.Example.Api.Core.UseCases.ExampleItem.Models;
 using RedShirt.Example.Api.Core.UseCases.ExampleItem.Queries.GetRecord;
 using RedShirt.Example.Api.Core.UseCases.ExampleItem.Queries.ListRecords;
 using RedShirt.Example.Api.Models.ExampleItem;
+using System.Security.Claims;
 
 namespace RedShirt.Example.Api.UnitTests.Tests.Controllers;
 
@@ -16,7 +18,16 @@ namespace RedShirt.Example.Api.UnitTests.Tests.Controllers;
 /// </summary>
 public class ExampleItemControllerTests
 {
-    private readonly ExampleItemController _controller = new();
+    private readonly ExampleItemController _controller = new()
+    {
+        ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("sub", "user-1")], "test"))
+            }
+        }
+    };
 
     [Fact]
     public async Task Delete_PropagatesBadRequestException()
@@ -168,7 +179,7 @@ public class ExampleItemControllerTests
         var createHandler = new Mock<ICreateExampleItemCommandHandler>();
         createHandler
             .Setup(h => h.Handle(
-                It.Is<CreateExampleItemCommand>(c => c.Model.Name == "widget" && c.IdempotencyKey == "idem-1"),
+                It.Is<CreateExampleItemCommand>(c => c.Model.Name == "widget" && c.CallerId == "user-1" && c.IdempotencyKey == "idem-1"),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
         var request = new ExampleItemPutRequest {Name = "widget"};
@@ -179,7 +190,27 @@ public class ExampleItemControllerTests
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Same(expected, ok.Value);
         createHandler.Verify(h => h.Handle(
-            It.Is<CreateExampleItemCommand>(c => c.Model.Name == "widget" && c.IdempotencyKey == "idem-1"),
+            It.Is<CreateExampleItemCommand>(c => c.Model.Name == "widget" && c.CallerId == "user-1" && c.IdempotencyKey == "idem-1"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Put_UsesAnonymousCallerId_WhenUserHasNoSubject()
+    {
+        var controller = new ExampleItemController
+        {
+            ControllerContext = new ControllerContext {HttpContext = new DefaultHttpContext()}
+        };
+        var createHandler = new Mock<ICreateExampleItemCommandHandler>();
+        createHandler
+            .Setup(h => h.Handle(It.IsAny<CreateExampleItemCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ExampleItemModel {Name = "widget"});
+
+        await controller.Put(new ExampleItemPutRequest {Name = "widget"}, "idem-1", createHandler.Object,
+            TestContext.Current.CancellationToken);
+
+        createHandler.Verify(h => h.Handle(
+            It.Is<CreateExampleItemCommand>(c => c.CallerId == "anonymous"),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 }

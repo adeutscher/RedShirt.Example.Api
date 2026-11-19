@@ -5,13 +5,17 @@ using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Moq;
 using NSwag;
 using NSwag.Generation;
 using RedShirt.Example.Api.Authorization;
 using RedShirt.Example.Api.Authorization.Constants;
 using RedShirt.Example.Api.Authorization.Requirements;
 using RedShirt.Example.Api.Extensions;
+using ApiAuthenticationExtensions = RedShirt.Example.Api.Extensions.AuthenticationServiceCollectionExtensions;
 using ApiAuthenticationOptions = RedShirt.Example.Api.Configuration.AuthenticationOptions;
 
 namespace RedShirt.Example.Api.UnitTests.Tests.Extensions;
@@ -226,5 +230,105 @@ public class AuthenticationServiceCollectionExtensionsTests
         var returned = app.ConsiderUsingAuthentication();
 
         Assert.Same(app, returned);
+    }
+
+    private static IHostEnvironment Environment(string name)
+    {
+        var environment = new Mock<IHostEnvironment>();
+        environment.SetupGet(e => e.EnvironmentName).Returns(name);
+        return environment.Object;
+    }
+
+    [Theory]
+    [InlineData("Production")]
+    [InlineData("Staging")]
+    [InlineData("")]
+    public void EnsureDisabledAuthenticationIsAllowed_Throws_WhenDisabledOutsideDevelopment(string environmentName)
+    {
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            ApiAuthenticationExtensions.EnsureDisabledAuthenticationIsAllowed(
+                DisabledAuthenticationConfiguration(), Environment(environmentName)));
+
+        Assert.Contains("Development", exception.Message);
+    }
+
+    [Fact]
+    public void EnsureDisabledAuthenticationIsAllowed_Allows_WhenDisabledInDevelopment()
+    {
+        ApiAuthenticationExtensions.EnsureDisabledAuthenticationIsAllowed(
+            DisabledAuthenticationConfiguration(), Environment(Environments.Development));
+    }
+
+    [Theory]
+    [InlineData("Production")]
+    [InlineData("Development")]
+    public void EnsureDisabledAuthenticationIsAllowed_Allows_WhenAuthenticationIsEnabled(string environmentName)
+    {
+        ApiAuthenticationExtensions.EnsureDisabledAuthenticationIsAllowed(
+            EnabledAuthenticationConfiguration(), Environment(environmentName));
+        ApiAuthenticationExtensions.EnsureDisabledAuthenticationIsAllowed(
+            new ConfigurationBuilder().Build(), Environment(environmentName));
+    }
+
+    [Theory]
+    [InlineData("true", true)]
+    [InlineData("false", false)]
+    public void WarnIfAuthenticationDisabled_LogsWarningOnlyWhenDisabled(string disabled, bool expectWarning)
+    {
+        var logs = new CapturingLoggerProvider();
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            EnvironmentName = Environments.Development
+        });
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Authentication:DisableAuthentication"] = disabled
+        });
+        builder.Logging.ClearProviders();
+        builder.Logging.AddProvider(logs);
+        using var app = builder.Build();
+
+        var returned = app.WarnIfAuthenticationDisabled();
+
+        Assert.Same(app, returned);
+        Assert.Equal(expectWarning, logs.Entries.Any(entry =>
+            entry.Level == LogLevel.Warning
+            && entry.Message == ApiAuthenticationExtensions.DisabledAuthenticationWarning));
+    }
+
+    private sealed class CapturingLoggerProvider : ILoggerProvider
+    {
+        public List<(LogLevel Level, string Message)> Entries { get; } = [];
+
+        public ILogger CreateLogger(string categoryName)
+        {
+            return new CapturingLogger(Entries);
+        }
+
+        public void Dispose()
+        {
+        }
+
+        private sealed class CapturingLogger(List<(LogLevel Level, string Message)> entries) : ILogger
+        {
+            public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+            {
+                return null;
+            }
+
+            public bool IsEnabled(LogLevel logLevel)
+            {
+                return true;
+            }
+
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+                Func<TState, Exception?, string> formatter)
+            {
+                lock (entries)
+                {
+                    entries.Add((logLevel, formatter(state, exception)));
+                }
+            }
+        }
     }
 }

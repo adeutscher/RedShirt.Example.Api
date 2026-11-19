@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
 using RedShirt.Example.Api.Attributes.Authorization;
+using RedShirt.Example.Api.Authorization.Extensions;
 using RedShirt.Example.Api.Connectors.Foo.Core.Models;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Foo.Commands.Create;
@@ -50,6 +51,7 @@ public class FooController : ControllerBase
         var model = await createFooCommandHandler.Handle(
             new CreateFooCommand(
                 request.Name,
+                User.GetCallerIdOrAnonymous(),
                 string.IsNullOrWhiteSpace(idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey),
             cancellationToken);
 

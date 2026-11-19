@@ -89,6 +89,10 @@ Each snippet is matched by its exact text, so the tool can tell whether it is al
 it again later (remove deletes it). An anchor only owns the lines between itself and the anchor above it, which keeps
 identical snippets for two anchors in the same file apart.
 
+The permission anchors sit inside list initializers. If the last item above one of them has no trailing comma (common
+for a hand-added entry), create adds that comma before inserting its items. Remove leaves it in place, since a trailing
+comma is valid C#.
+
 Only the full-access roles get the new permissions. Granting them to other roles (such as `billing`) is a business
 decision, so do that by hand in `BespokeRolePermissionMap`.
 

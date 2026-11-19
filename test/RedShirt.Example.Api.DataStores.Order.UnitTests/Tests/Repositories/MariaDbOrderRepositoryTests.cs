@@ -202,7 +202,7 @@ public class MariaDbOrderRepositoryTests
 
         Assert.Equal(10, result.Records.Count);
         Assert.NotNull(result.ContinuationToken);
-        Assert.Equal($"continuation:{result.ContinuationToken}", storedKey);
+        Assert.Equal($"continuation:order:{result.ContinuationToken}", storedKey);
         Assert.False(string.IsNullOrWhiteSpace(storedValue));
         using var document = JsonDocument.Parse(storedValue!);
         Assert.Equal("Pending", document.RootElement.GetProperty("SearchParameters").GetProperty("Status").GetString());
@@ -210,7 +210,7 @@ public class MariaDbOrderRepositoryTests
     }
 
     [Fact]
-    public async Task SearchAsync_UsesCachedParameters_WhenContinuationTokenProvided()
+    public async Task SearchAsync_UsesCachedParameters_WhenContinuationTokenProvidedWithoutFilters()
     {
         var continuationToken = Guid.NewGuid();
         var lastId = Guid.NewGuid();
@@ -224,21 +224,21 @@ public class MariaDbOrderRepositoryTests
         });
         var cache = new Mock<IRemoteCacheService>();
         cache
-            .Setup(c => c.GetStringAsync($"continuation:{continuationToken}", It.IsAny<CancellationToken>()))
+            .Setup(c => c.GetStringAsync($"continuation:order:{continuationToken}", It.IsAny<CancellationToken>()))
             .ReturnsAsync(cachedJson);
         var repository = CreateRepository(
             cache.Object,
             retryWrapperService: CreateRetryReturning([CreateEntity()]).Object);
 
         var result = await repository.SearchAsync(
-            CreateSearchRequest(99, status: "Ignored"),
+            CreateSearchRequest(99),
             continuationToken,
             TestContext.Current.CancellationToken);
 
         Assert.Single(result.Records);
         Assert.Null(result.ContinuationToken);
         cache.Verify(c => c.GetStringAsync(
-            $"continuation:{continuationToken}",
+            $"continuation:order:{continuationToken}",
             TestContext.Current.CancellationToken), Times.Once);
     }
 

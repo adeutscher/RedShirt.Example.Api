@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
 using RedShirt.Example.Api.Attributes.Authorization;
+using RedShirt.Example.Api.Authorization.Extensions;
 using RedShirt.Example.Api.Authorization.ResourceScoping.Customer;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Order.Commands.Create;
@@ -88,6 +89,12 @@ public class OrderController : ControllerBase
             await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id),
                 cancellationToken);
         await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
+        if (request.CustomerId is { } newCustomerId)
+        {
+            // Moving the record: the caller must also be allowed to act for the target customer.
+            await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, newCustomerId);
+        }
+
         var model = await patchOrderCommandHandler.Handle(
             new PatchOrderCommand(
                 id,
@@ -111,15 +118,19 @@ public class OrderController : ControllerBase
         [FromHeader(Name = EndpointConstants.IdempotencyKeyHeader)]
         string idempotencyKey,
         [FromServices]
+        ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
+        [FromServices]
         ICreateOrderCommandHandler createOrderCommandHandler,
         CancellationToken cancellationToken)
     {
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, request.CustomerId);
         var model = await createOrderCommandHandler.Handle(
             new CreateOrderCommand(
                 request.CustomerId,
                 request.Status,
                 request.TotalAmount,
                 request.TotalPrice,
+                User.GetCallerIdOrAnonymous(),
                 string.IsNullOrWhiteSpace(idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey),
             cancellationToken);
 
@@ -148,6 +159,8 @@ public class OrderController : ControllerBase
             await getOrderRecordQueryHandler.Handle(new GetOrderRecordQuery(id),
                 cancellationToken);
         await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
+        // The replacement may name another customer: the caller must also be allowed to act for it.
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, request.CustomerId);
         var model = await updateOrderCommandHandler.Handle(
             new UpdateOrderCommand(
                 id,

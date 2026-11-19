@@ -98,6 +98,21 @@ internal sealed class ResourceModel
     public IReadOnlyList<ContractProperty> SearchProperties => Required.SearchRequest?.Properties ?? [];
     public string ContinuationTokenType => Required.ContinuationTokenType ?? "Guid?";
 
+    /// <summary>
+    ///     With customer scope, the CustomerId each write request can set. The controller checks the caller may act
+    ///     for that customer too, not only for the existing record's customer, so a scoped caller cannot create a
+    ///     record for another customer or move one there. Null when the request has no CustomerId.
+    /// </summary>
+    public ContractProperty? PostCustomerId => ScopedCustomerId(PostProperties);
+
+    public ContractProperty? PutCustomerId => ScopedCustomerId(PutProperties);
+    public ContractProperty? PatchCustomerId => ScopedCustomerId(PatchProperties);
+
+    private ContractProperty? ScopedCustomerId(IReadOnlyList<ContractProperty> properties)
+    {
+        return CustomerScope ? properties.FirstOrDefault(property => property.Name == "CustomerId") : null;
+    }
+
     public IReadOnlyList<ContractProperty> PostNullable =>
         PostProperties.Where(property => property.IsNullable).ToList();
 

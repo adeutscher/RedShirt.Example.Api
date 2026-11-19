@@ -19,16 +19,17 @@ public class Create{{ n }}CommandHandlerTests
         var idempotencyWrapper = new Mock<ICacheBasedIdempotencyWrapperService>();
         idempotencyWrapper
             .Setup(w => w.RunIdempotentlyAsync(
-                It.IsAny<string>(),
+                It.IsAny<IdempotencyScope>(),
                 It.IsAny<Func<Task<{{ dto }}>>>(),
                 It.IsAny<CancellationToken>()))
-            .Returns((string _, Func<Task<{{ dto }}>> callback, CancellationToken _) => callback());
+            .Returns((IdempotencyScope _, Func<Task<{{ dto }}>> callback, CancellationToken _) => callback());
         var validator = new Mock<ICoreRequestValidator>();
         var handler = new Create{{ n }}CommandHandler(service.Object, idempotencyWrapper.Object, validator.Object);
         var command = new Create{{ n }}Command(
 {{~ for p in model.post_properties ~}}
             {{ p.sample_value }},
 {{~ end ~}}
+            "caller-1",
             "idempotency-key");
 
         var result = await handler.Handle(command, TestContext.Current.CancellationToken);
@@ -40,7 +41,7 @@ public class Create{{ n }}CommandHandlerTests
 {{~ end ~}}
         validator.Verify(v => v.ValidateAsync(command, TestContext.Current.CancellationToken), Times.Once);
         idempotencyWrapper.Verify(w => w.RunIdempotentlyAsync(
-            "idempotency-key",
+            new IdempotencyScope(nameof(Create{{ n }}Command), "caller-1", "idempotency-key"),
             It.IsAny<Func<Task<{{ dto }}>>>(),
             TestContext.Current.CancellationToken), Times.Once);
     }

@@ -29,6 +29,31 @@ STUB
 
 # Special Cases
 
+## Broker Transport Security
+
+The broker URL's scheme decides whether the connection is encrypted:
+
+| Scheme                          | Transport                    | Default port | Encrypted |
+| ------------------------------- | ---------------------------- | ------------ | --------- |
+| `mqtts://`                      | MQTT over TLS                | 8883         | Yes       |
+| `wss://`                        | MQTT over WebSocket over TLS | 443          | Yes       |
+| `mqtt://`, `tcp://`, bare host  | MQTT over TCP                | 1883         | No        |
+| `ws://`                         | MQTT over WebSocket          | 80           | No        |
+
+`mqtts://` validates the broker certificate against the system trust store, including the host name. There is no
+setting to skip validation.
+
+Outside the `Development` environment, the API logs a warning (once per broker URL) when it connects over a plaintext
+scheme. The warning says whether broker credentials are being sent in the clear.
+
+### Known Gap: AWS IoT Resolution Builds `ws://`
+
+When `ResolveBrokerAddressExternally` is on, `AwsIotMqttBrokerUrlResolver` always builds a `ws://` URL. That is what
+the local MiniStack stack needs, but it is not usable against real AWS IoT Core. IoT Core accepts MQTT over WebSocket
+only as `wss://` with a SigV4 signed upgrade, and MQTT over TLS only with an X.509 client certificate (or a custom
+authorizer). Neither is implemented, so connecting to AWS IoT Core is not supported yet. Other brokers work through a
+directly configured `BrokerUrl`. Outside Development, the plaintext warning flags the resolver's `ws://` URL.
+
 ## AWS IoT Endpoint Resolution
 
 During local testing, it was discovered that pointing the Broker URL didn't cut it for connecting to MiniStack in the

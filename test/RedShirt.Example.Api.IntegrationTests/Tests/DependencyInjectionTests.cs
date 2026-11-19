@@ -2,6 +2,8 @@ using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.Internal;
 using RedShirt.Example.Api.Attributes;
 using RedShirt.Example.Api.Extensions;
 using System.Reflection;
@@ -42,6 +44,11 @@ public class DependencyInjectionTests
             .Build();
 
         var serviceCollection = new ServiceCollection();
+        // Provided by the host in a real application (WebApplication.CreateBuilder registers it).
+        serviceCollection.AddSingleton<IHostEnvironment>(new HostingEnvironment
+        {
+            EnvironmentName = Environments.Production
+        });
 
         var environment = new Dictionary<string, string>
         {
@@ -115,6 +122,11 @@ public class DependencyInjectionTests
             .Build();
 
         var serviceCollection = new ServiceCollection();
+        // Provided by the host in a real application (WebApplication.CreateBuilder registers it).
+        serviceCollection.AddSingleton<IHostEnvironment>(new HostingEnvironment
+        {
+            EnvironmentName = Environments.Production
+        });
 
         var environment = new Dictionary<string, string>
         {
@@ -183,6 +195,11 @@ public class DependencyInjectionTests
             .Build();
 
         var serviceCollection = new ServiceCollection();
+        // Provided by the host in a real application (WebApplication.CreateBuilder registers it).
+        serviceCollection.AddSingleton<IHostEnvironment>(new HostingEnvironment
+        {
+            EnvironmentName = Environments.Production
+        });
 
         var environment = new Dictionary<string, string>
         {

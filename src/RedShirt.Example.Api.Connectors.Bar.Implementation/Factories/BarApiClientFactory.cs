@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using RedShirt.Example.Api.Connectors.Bar.Implementation.Clients;
 using RedShirt.Example.Api.Connectors.Bar.Implementation.Services.Resilience;
+using RedShirt.Example.Api.Connectors.Common.Http.Extensions;
 using RedShirt.Example.Api.Connectors.Common.Http.Models;
 
 namespace RedShirt.Example.Api.Connectors.Bar.Implementation.Factories;
@@ -25,7 +26,7 @@ internal sealed class BarApiClientFactory(
         var httpClient = configuration.Value.ClientPerRequest
             ? new HttpClient(new BarApiClientHandler(apiRequestRetryWrapperService)
             {
-                InnerHandler = new HttpClientHandler()
+                InnerHandler = ConnectorHttpClientBuilderExtensions.CreateConnectorPrimaryHandler()
             })
             : httpClientFactory.CreateClient(nameof(BarApiClient));
         return new BarApiClient(httpClient, configuration.Value.BaseUrl);

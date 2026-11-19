@@ -51,10 +51,12 @@
         Azure DevOps alike). RuntimeIdentifier is passed through so RID-specific output
         (bin/<Configuration>/<TargetFramework>/<RID>/) is found as well. SkipNSwag=true opts out; only the
         Dockerfile publish stage uses it, because its build stage has already regenerated the document.
+        NSwag runs with authentication enabled so the document includes the bearer scheme. The placeholder
+        authority is never contacted: JwtBearer only fetches issuer metadata when the first request arrives.
     -->
     <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(SkipNSwag)' != 'true'">
         <Exec Command="$(NSwagExe_Net100) run nswag.json /variables:Configuration=$(Configuration),RuntimeIdentifier=$(RuntimeIdentifier)"
-              EnvironmentVariables="NSWAG_RUN=1;AUTHENTICATION__DISABLE_AUTHENTICATION=true"/>
+              EnvironmentVariables="NSWAG_RUN=1;AUTHENTICATION__DISABLE_AUTHENTICATION=false;AUTHENTICATION__AUTHORITY=https://openapi-generation.invalid/"/>
     </Target>
 
 </Project>

@@ -20,6 +20,13 @@ If you added it to `~/.bashrc`, reload:
 . ~/.bashrc
 ```
 
+## Host ports
+
+Every published port in `docker-compose.yaml` is bound to `127.0.0.1`, so the stack (Redis without auth, MariaDB,
+Keycloak with `admin`/`admin`, WireMock admin UIs, MiniStack, and the API) is reachable only from this machine. To
+reach a service from another machine, change its mapping to `"0.0.0.0:<host>:<container>"` locally and do not commit
+it. Containers still reach each other by service name on the Compose network.
+
 ## Steps
 
 1. Bring up supporting containers (everything except the `api` service):
@@ -246,7 +253,15 @@ Search as `billinguser` or `developeruser` is forced to that customer id (other 
 
 In Swagger UI, use **Authorize**, choose **Bearer**, and paste the access token only (no `Bearer ` prefix).
 
-To run the API without JWT checks locally, set `AUTHENTICATION__DISABLE_AUTHENTICATION=true`. NSwag generation sets that variable in the API project’s post-build `Exec` so OpenAPI generation does not require an identity provider.
+To run the API without JWT checks locally, set `AUTHENTICATION__DISABLE_AUTHENTICATION=true`. This only works with `ASPNETCORE_ENVIRONMENT=Development` (the compose default): in any other environment the API refuses to start, and when it does start it logs a warning. OpenAPI generation does not use this switch. The API project's post-build `Exec` runs NSwag with authentication enabled and a placeholder authority, which is never contacted.
+
+## Upstream error details
+
+When a connector (Foo, Bar) or the MQTT broker fails, the API answers 502 with a generic detail and logs the real
+exception. To see the exception message in the response while debugging locally, set
+`EXCEPTION_HANDLING__EXPOSE_UPSTREAM_EXCEPTION_MESSAGES=true` before starting the API. It only takes effect with
+`ASPNETCORE_ENVIRONMENT=Development` (the compose default). In any other environment it is ignored, and the API logs a
+warning at startup either way.
 
 ## Uploads
 
@@ -438,6 +453,57 @@ Notes:
 * Both endpoints require a bearer token with `api:write` for `POST /messages` and `api:read` for `GET /messages/event-stream`.
 * Events are scoped to the authenticated user's id (`sub` / name identifier claim).
 * If MQTT connectivity fails, the API returns **502 Bad Gateway** with a problem-details body.
+
+## Pivoting to Azure Key Vault
+
+The local stack uses SSM (through MiniStack) as its secret manager. If the template is pivoted to Azure Key Vault, local
+testing needs a Key Vault emulator, and the API's local testing mode only trusts that emulator's own certificate (see
+`docs/patterns/secret-manager.md`). The API fails at startup until the certificate is in place. Steps to be aware of:
+
+1. Swap the secret manager in `src/RedShirt.Example.Api/Extensions/ServiceCollectionExtensions.cs`: use
+   `.AddSecretManagerAzureKeyVault(configuration)` instead of `.AddSecretManagerSsm(configuration)`.
+
+2. Generate the emulator certificate:
+
+    ```bash
+    ./scripts/azure/generate-azure-key-vault-cert.sh
+    ```
+
+    This writes the emulator's key material to `config/azure-key-vault/` and copies only the public certificate to
+    `config/azure-key-vault-ca/`. Both are git-ignored. The certificate covers
+    `azure-key-vault-emulator.vault.azure.net`, `localhost` and `127.0.0.1`, and expires after 365 days, so re-run the
+    script when it expires or when the emulator's host name changes.
+
+3. Add an emulator service to `docker-compose.yaml`, reachable as `azure-key-vault-emulator.vault.azure.net` so the
+   host name matches the certificate. The JobWorker template uses this one:
+
+    ```yaml
+    azure-key-vault-emulator:
+      image: jamesgoulddev/azure-keyvault-emulator:latest
+      container_name: azure-key-vault-emulator.vault.azure.net
+      ports:
+        - "127.0.0.1:4997:4997"
+      volumes:
+        - ./config/azure-key-vault:/https:ro
+      environment:
+        - ASPNETCORE_URLS=https://+:4997
+        - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/emulator.local.pfx
+        - ASPNETCORE_Kestrel__Certificates__Default__Password=YourSecurePassword
+        - AZURE_TENANT_ID=00000000-0000-0000-0000-000000000000
+    ```
+
+4. Give the `api` service the public certificate only (never `config/azure-key-vault/`), and point it at the emulator:
+
+    ```yaml
+    volumes:
+      - ./config/azure-key-vault-ca:/run/azure-key-vault-ca:ro
+    environment:
+      COMMON__SECRETS__AZURE_KEY_VAULT__KEY_VAULT_URL: https://azure-key-vault-emulator.vault.azure.net:4997
+      COMMON__SECRETS__AZURE_KEY_VAULT__LOCAL_TESTING_CA_CERTIFICATE_PATH: /run/azure-key-vault-ca/emulator.local.crt
+    ```
+
+5. Load the secrets into the emulator, and point every secret path setting at a Key Vault name. SSM paths such as
+   `/mysql/connection-string` are not valid Key Vault secret names (only letters, digits and dashes are allowed).
 
 ## CRUD integration test
 

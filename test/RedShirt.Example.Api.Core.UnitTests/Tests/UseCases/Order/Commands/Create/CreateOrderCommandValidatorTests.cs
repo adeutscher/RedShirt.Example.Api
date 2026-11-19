@@ -13,7 +13,7 @@ public class CreateOrderCommandValidatorTests
     public async Task Validate_Fails_WhenStatusIsEmpty()
     {
         var result = await _validator.ValidateAsync(
-            new CreateOrderCommand(Guid.NewGuid(), "   ", 42.00m, null, "idem-1"),
+            new CreateOrderCommand(Guid.NewGuid(), "   ", 42.00m, null, "caller-1", "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.False(result.IsValid);
@@ -23,7 +23,7 @@ public class CreateOrderCommandValidatorTests
     public async Task Validate_Succeeds_WhenStatusIsPresent()
     {
         var result = await _validator.ValidateAsync(
-            new CreateOrderCommand(Guid.NewGuid(), "Pending", 42.00m, null, "idem-1"),
+            new CreateOrderCommand(Guid.NewGuid(), "Pending", 42.00m, null, "caller-1", "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsValid);

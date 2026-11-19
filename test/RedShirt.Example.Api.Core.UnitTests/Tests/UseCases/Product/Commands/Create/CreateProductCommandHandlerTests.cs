@@ -28,10 +28,10 @@ public class CreateProductCommandHandlerTests
         var wrapper = new Mock<ICacheBasedIdempotencyWrapperService>();
         wrapper
             .Setup(w => w.RunIdempotentlyAsync(
-                It.IsAny<string>(),
+                It.IsAny<IdempotencyScope>(),
                 It.IsAny<Func<Task<ProductDto>>>(),
                 It.IsAny<CancellationToken>()))
-            .Returns((string _, Func<Task<ProductDto>> callback, CancellationToken _) => callback());
+            .Returns((IdempotencyScope _, Func<Task<ProductDto>> callback, CancellationToken _) => callback());
         return wrapper;
     }
 
@@ -51,14 +51,14 @@ public class CreateProductCommandHandlerTests
         var wrapper = new Mock<ICacheBasedIdempotencyWrapperService>();
         wrapper
             .Setup(w => w.RunIdempotentlyAsync(
-                "idem-1",
+                new IdempotencyScope(nameof(CreateProductCommand), "caller-1", "idem-1"),
                 It.IsAny<Func<Task<ProductDto>>>(),
                 TestContext.Current.CancellationToken))
             .ReturnsAsync(cached);
         var handler = CreateHandler(productService.Object, wrapper.Object);
 
         var result = await handler.Handle(
-            new CreateProductCommand("SKU-1", "Fresh", 9.99m, "idem-1"),
+            new CreateProductCommand("SKU-1", "Fresh", 9.99m, "caller-1", "idem-1"),
             TestContext.Current.CancellationToken);
 
         Assert.Same(cached, result);
@@ -88,7 +88,7 @@ public class CreateProductCommandHandlerTests
         var wrapper = CreateInvokingWrapper();
         var validator = new Mock<ICoreRequestValidator>();
         var handler = CreateHandler(productService.Object, wrapper.Object, validator.Object);
-        var command = new CreateProductCommand("SKU-1", "Widget", 9.99m, "idem-1");
+        var command = new CreateProductCommand("SKU-1", "Widget", 9.99m, "caller-1", "idem-1");
 
         var result = await handler.Handle(command, TestContext.Current.CancellationToken);
 
@@ -102,7 +102,7 @@ public class CreateProductCommandHandlerTests
             s => s.PostAsync(It.IsAny<ProductServicePostRequest>(), TestContext.Current.CancellationToken),
             Times.Once);
         wrapper.Verify(w => w.RunIdempotentlyAsync(
-            "idem-1",
+            new IdempotencyScope(nameof(CreateProductCommand), "caller-1", "idem-1"),
             It.IsAny<Func<Task<ProductDto>>>(),
             TestContext.Current.CancellationToken), Times.Once);
     }

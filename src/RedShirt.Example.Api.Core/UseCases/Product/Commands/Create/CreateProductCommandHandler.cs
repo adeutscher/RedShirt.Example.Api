@@ -18,7 +18,8 @@ internal class CreateProductCommandHandler(
     {
         await coreRequestValidator.ValidateAsync(command, cancellationToken);
 
-        return await idempotencyWrapperService.RunIdempotentlyAsync(command.IdempotencyKey, async () =>
+        return await idempotencyWrapperService.RunIdempotentlyAsync(
+            new IdempotencyScope(nameof(CreateProductCommand), command.CallerId, command.IdempotencyKey), async () =>
             await productService.PostAsync(new ProductServicePostRequest
             {
                 Sku = command.Sku,

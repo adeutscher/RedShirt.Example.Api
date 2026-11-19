@@ -9,6 +9,9 @@ namespace RedShirt.Example.Api.Core.UnitTests.Tests.Services;
 
 public class CacheBasedIdempotencyServiceTests
 {
+    private static readonly IdempotencyScope Scope = new("CreateThingCommand", "user-1", "key");
+    private const string RecordKey = "idempotent-record:CreateThingCommand:user-1:key";
+
     private static CacheBasedIdempotencyService CreateService(
         IRemoteCacheService? dataCacheService = null,
         IAbstractedLockService? lockService = null,
@@ -46,21 +49,21 @@ public class CacheBasedIdempotencyServiceTests
     public class GetLockAsync
     {
         [Fact]
-        public async Task PrefixesKey_AndReturnsLockFromLockService()
+        public async Task PrefixesScopedKey_AndReturnsLockFromLockService()
         {
             var expectedLock = new Mock<IAbstractedLock>(MockBehavior.Strict);
             var lockService = new Mock<IAbstractedLockService>(MockBehavior.Strict);
             lockService
-                .Setup(s => s.GetLockAsync("idempotent-concurrency:submission-1", It.IsAny<CancellationToken>()))
+                .Setup(s => s.GetLockAsync("idempotent-concurrency:CreateThingCommand:user-1:submission-1", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedLock.Object);
 
             var service = CreateService(lockService: lockService.Object);
 
-            var result = await service.GetLockAsync("submission-1", TestContext.Current.CancellationToken);
+            var result = await service.GetLockAsync(Scope with {Key = "submission-1"}, TestContext.Current.CancellationToken);
 
             Assert.Same(expectedLock.Object, result);
             lockService.Verify(
-                s => s.GetLockAsync("idempotent-concurrency:submission-1", It.IsAny<CancellationToken>()),
+                s => s.GetLockAsync("idempotent-concurrency:CreateThingCommand:user-1:submission-1", It.IsAny<CancellationToken>()),
                 Times.Once);
             lockService.VerifyNoOtherCalls();
         }
@@ -74,15 +77,15 @@ public class CacheBasedIdempotencyServiceTests
             var payload = new SampleRecord("alpha", 3);
             var cache = new Mock<IRemoteCacheService>(MockBehavior.Strict);
             cache
-                .Setup(c => c.GetStringAsync("key", It.IsAny<CancellationToken>()))
+                .Setup(c => c.GetStringAsync(RecordKey, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(JsonSerializer.Serialize(payload));
 
             var service = CreateService(cache.Object);
 
-            var result = await service.GetRecordAsync<SampleRecord>("key", TestContext.Current.CancellationToken);
+            var result = await service.GetRecordAsync<SampleRecord>(Scope, TestContext.Current.CancellationToken);
 
             Assert.Equal(payload, result);
-            cache.Verify(c => c.GetStringAsync("key", It.IsAny<CancellationToken>()), Times.Once);
+            cache.Verify(c => c.GetStringAsync(RecordKey, It.IsAny<CancellationToken>()), Times.Once);
             cache.VerifyNoOtherCalls();
         }
 
@@ -91,15 +94,15 @@ public class CacheBasedIdempotencyServiceTests
         {
             var cache = new Mock<IRemoteCacheService>(MockBehavior.Strict);
             cache
-                .Setup(c => c.GetStringAsync("missing", It.IsAny<CancellationToken>()))
+                .Setup(c => c.GetStringAsync(RecordKey, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((string?) null);
 
             var service = CreateService(cache.Object);
 
-            var result = await service.GetRecordAsync<SampleRecord>("missing", TestContext.Current.CancellationToken);
+            var result = await service.GetRecordAsync<SampleRecord>(Scope, TestContext.Current.CancellationToken);
 
             Assert.Null(result);
-            cache.Verify(c => c.GetStringAsync("missing", It.IsAny<CancellationToken>()), Times.Once);
+            cache.Verify(c => c.GetStringAsync(RecordKey, It.IsAny<CancellationToken>()), Times.Once);
             cache.VerifyNoOtherCalls();
         }
 
@@ -108,15 +111,15 @@ public class CacheBasedIdempotencyServiceTests
         {
             var cache = new Mock<IRemoteCacheService>(MockBehavior.Strict);
             cache
-                .Setup(c => c.GetStringAsync("key", It.IsAny<CancellationToken>()))
+                .Setup(c => c.GetStringAsync(RecordKey, It.IsAny<CancellationToken>()))
                 .ReturnsAsync("{not-json");
 
             var service = CreateService(cache.Object);
 
-            var result = await service.GetRecordAsync<SampleRecord>("key", TestContext.Current.CancellationToken);
+            var result = await service.GetRecordAsync<SampleRecord>(Scope, TestContext.Current.CancellationToken);
 
             Assert.Null(result);
-            cache.Verify(c => c.GetStringAsync("key", It.IsAny<CancellationToken>()), Times.Once);
+            cache.Verify(c => c.GetStringAsync(RecordKey, It.IsAny<CancellationToken>()), Times.Once);
             cache.VerifyNoOtherCalls();
         }
     }
@@ -130,7 +133,7 @@ public class CacheBasedIdempotencyServiceTests
             var cache = new Mock<IRemoteCacheService>(MockBehavior.Strict);
             cache
                 .Setup(c => c.SetStringAsync(
-                    "key",
+                    RecordKey,
                     JsonSerializer.Serialize(payload),
                     TimeSpan.FromMinutes(15),
                     It.IsAny<CancellationToken>()))
@@ -138,10 +141,10 @@ public class CacheBasedIdempotencyServiceTests
 
             var service = CreateService(cache.Object, idempotencyTimeMinutes: 15);
 
-            await service.SetRecordAsync("key", payload, TestContext.Current.CancellationToken);
+            await service.SetRecordAsync(Scope, payload, TestContext.Current.CancellationToken);
 
             cache.Verify(c => c.SetStringAsync(
-                "key",
+                RecordKey,
                 JsonSerializer.Serialize(payload),
                 TimeSpan.FromMinutes(15),
                 It.IsAny<CancellationToken>()), Times.Once);
@@ -157,7 +160,7 @@ public class CacheBasedIdempotencyServiceTests
             var cache = new Mock<IRemoteCacheService>(MockBehavior.Strict);
             cache
                 .Setup(c => c.SetStringAsync(
-                    "key",
+                    RecordKey,
                     JsonSerializer.Serialize(payload),
                     TimeSpan.FromMinutes(1),
                     It.IsAny<CancellationToken>()))
@@ -165,14 +168,50 @@ public class CacheBasedIdempotencyServiceTests
 
             var service = CreateService(cache.Object, idempotencyTimeMinutes: idempotencyTimeMinutes);
 
-            await service.SetRecordAsync("key", payload, TestContext.Current.CancellationToken);
+            await service.SetRecordAsync(Scope, payload, TestContext.Current.CancellationToken);
 
             cache.Verify(c => c.SetStringAsync(
-                "key",
+                RecordKey,
                 JsonSerializer.Serialize(payload),
                 TimeSpan.FromMinutes(1),
                 It.IsAny<CancellationToken>()), Times.Once);
             cache.VerifyNoOtherCalls();
+        }
+    }
+
+    public class KeyScoping
+    {
+        [Theory]
+        [InlineData("CreateThingCommand", "user-2", "key")]
+        [InlineData("CreateOtherCommand", "user-1", "key")]
+        public async Task DifferentCallerOrOperation_ReadsDifferentRecordKey(string operation, string callerId,
+            string key)
+        {
+            var otherKey = "idempotent-record:" + new IdempotencyScope(operation, callerId, key).ToCacheKeyFragment();
+            Assert.NotEqual(RecordKey, otherKey);
+
+            var cache = new Mock<IRemoteCacheService>(MockBehavior.Strict);
+            cache
+                .Setup(c => c.GetStringAsync(otherKey, It.IsAny<CancellationToken>()))
+                .ReturnsAsync((string?) null);
+
+            var service = CreateService(cache.Object);
+
+            var result = await service.GetRecordAsync<SampleRecord>(new IdempotencyScope(operation, callerId, key),
+                TestContext.Current.CancellationToken);
+
+            Assert.Null(result);
+            cache.Verify(c => c.GetStringAsync(otherKey, It.IsAny<CancellationToken>()), Times.Once);
+            cache.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public void SeparatorInsidePart_DoesNotCollideWithOtherSplit()
+        {
+            var first = new IdempotencyScope("Op", "a:b", "c").ToCacheKeyFragment();
+            var second = new IdempotencyScope("Op", "a", "b:c").ToCacheKeyFragment();
+
+            Assert.NotEqual(first, second);
         }
     }
 

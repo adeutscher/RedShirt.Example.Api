@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using RedShirt.Example.Api.Attributes;
 using RedShirt.Example.Api.Attributes.Authorization;
+using RedShirt.Example.Api.Authorization.Extensions;
 using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Product.Commands.Create;
 using RedShirt.Example.Api.Core.UseCases.Product.Commands.Delete;
@@ -93,6 +94,7 @@ public class ProductController : ControllerBase
                 request.Sku,
                 request.Name,
                 request.Price,
+                User.GetCallerIdOrAnonymous(),
                 string.IsNullOrWhiteSpace(idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey),
             cancellationToken);
 

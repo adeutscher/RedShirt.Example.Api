@@ -8,7 +8,7 @@ api = model.api_namespace
 use_cases = model.use_case_namespace
 u = ["Microsoft.AspNetCore.Mvc", "Microsoft.AspNetCore.RateLimiting", api + ".Attributes", api + ".Attributes.Authorization", api + ".Constants", model.dto_namespace] | array.add_range model.key_namespaces
 if scope; u = u | array.add (api + ".Authorization.ResourceScoping.Customer"); end
-if model.has_create; u = u | array.add (use_cases + ".Commands.Create"); end
+if model.has_create; u = u | array.add (use_cases + ".Commands.Create") | array.add (api + ".Authorization.Extensions"); end
 if model.has_delete; u = u | array.add (use_cases + ".Commands.Delete"); end
 if model.has_patch; u = u | array.add (use_cases + ".Commands.Patch"); end
 if model.has_update; u = u | array.add (use_cases + ".Commands.Update"); end
@@ -114,6 +114,19 @@ public class {{ n }}Controller : ControllerBase
             await get{{ n }}RecordQueryHandler.Handle(new Get{{ n }}RecordQuery({{ kv }}),
                 cancellationToken);
         await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
+{{~ if model.patch_customer_id ~}}
+{{~ if model.patch_customer_id.is_nullable ~}}
+        if (request.CustomerId is { } newCustomerId)
+        {
+            // Moving the record: the caller must also be allowed to act for the target customer.
+            await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, newCustomerId);
+        }
+
+{{~ else ~}}
+        // The patch may name another customer: the caller must also be allowed to act for it.
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, request.CustomerId);
+{{~ end ~}}
+{{~ end ~}}
 {{~ end ~}}
         var model = await patch{{ n }}CommandHandler.Handle(
             new Patch{{ n }}Command(
@@ -140,15 +153,31 @@ public class {{ n }}Controller : ControllerBase
         {{ n }}PostRequest request,
         [FromHeader(Name = EndpointConstants.IdempotencyKeyHeader)]
         string idempotencyKey,
+{{~ if model.post_customer_id ~}}
+        [FromServices]
+        ICustomerScopedResourceEnforcer customerScopedResourceEnforcer,
+{{~ end ~}}
         [FromServices]
         ICreate{{ n }}CommandHandler create{{ n }}CommandHandler,
         CancellationToken cancellationToken)
     {
+{{~ if model.post_customer_id ~}}
+{{~ if model.post_customer_id.is_nullable ~}}
+        if (request.CustomerId is { } requestedCustomerId)
+        {
+            await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, requestedCustomerId);
+        }
+
+{{~ else ~}}
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, request.CustomerId);
+{{~ end ~}}
+{{~ end ~}}
         var model = await create{{ n }}CommandHandler.Handle(
             new Create{{ n }}Command(
 {{~ for p in model.post_properties ~}}
                 request.{{ p.name }},
 {{~ end ~}}
+                User.GetCallerIdOrAnonymous(),
                 string.IsNullOrWhiteSpace(idempotencyKey) ? Guid.NewGuid().ToString() : idempotencyKey),
             cancellationToken);
 
@@ -185,6 +214,19 @@ public class {{ n }}Controller : ControllerBase
             await get{{ n }}RecordQueryHandler.Handle(new Get{{ n }}RecordQuery({{ kv }}),
                 cancellationToken);
         await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.CustomerId);
+{{~ if model.put_customer_id ~}}
+{{~ if model.put_customer_id.is_nullable ~}}
+        if (request.CustomerId is { } newCustomerId)
+        {
+            // Moving the record: the caller must also be allowed to act for the target customer.
+            await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, newCustomerId);
+        }
+
+{{~ else ~}}
+        // The replacement may name another customer: the caller must also be allowed to act for it.
+        await customerScopedResourceEnforcer.EnsureCanAccessAsync(User, request.CustomerId);
+{{~ end ~}}
+{{~ end ~}}
 {{~ end ~}}
         var model = await update{{ n }}CommandHandler.Handle(
             new Update{{ n }}Command(
