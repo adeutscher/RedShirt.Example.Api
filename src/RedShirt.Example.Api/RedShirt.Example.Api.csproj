@@ -53,7 +53,7 @@
         authority and audience are never used: JwtBearer only fetches issuer metadata when the first request arrives.
     -->
     <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(SkipNSwag)' != 'true'">
-        <Exec Command="$(NSwagExe_Net100) run nswag.json /variables:Configuration=$(Configuration),RuntimeIdentifier=$(RuntimeIdentifier)"
+        <Exec Command="$(NSwagExe_Net110) run nswag.json /variables:Configuration=$(Configuration),RuntimeIdentifier=$(RuntimeIdentifier)"
               EnvironmentVariables="NSWAG_RUN=1;AUTHENTICATION__DISABLE_AUTHENTICATION=false;AUTHENTICATION__AUTHORITY=https://openapi-generation.invalid/;AUTHENTICATION__AUDIENCE=openapi-generation"/>
     </Target>
 
