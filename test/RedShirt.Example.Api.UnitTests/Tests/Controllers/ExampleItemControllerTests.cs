@@ -179,7 +179,8 @@ public class ExampleItemControllerTests
         var createHandler = new Mock<ICreateExampleItemCommandHandler>();
         createHandler
             .Setup(h => h.Handle(
-                It.Is<CreateExampleItemCommand>(c => c.Model.Name == "widget" && c.CallerId == "user-1" && c.IdempotencyKey == "idem-1"),
+                It.Is<CreateExampleItemCommand>(c =>
+                    c.Model.Name == "widget" && c.CallerId == "user-1" && c.IdempotencyKey == "idem-1"),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
         var request = new ExampleItemPutRequest {Name = "widget"};
@@ -190,7 +191,8 @@ public class ExampleItemControllerTests
         var ok = Assert.IsType<OkObjectResult>(result);
         Assert.Same(expected, ok.Value);
         createHandler.Verify(h => h.Handle(
-            It.Is<CreateExampleItemCommand>(c => c.Model.Name == "widget" && c.CallerId == "user-1" && c.IdempotencyKey == "idem-1"),
+            It.Is<CreateExampleItemCommand>(c =>
+                c.Model.Name == "widget" && c.CallerId == "user-1" && c.IdempotencyKey == "idem-1"),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 

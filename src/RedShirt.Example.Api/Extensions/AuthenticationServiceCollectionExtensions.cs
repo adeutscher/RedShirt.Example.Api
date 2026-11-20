@@ -11,6 +11,11 @@ namespace RedShirt.Example.Api.Extensions;
 
 internal static class AuthenticationServiceCollectionExtensions
 {
+    internal const string DisabledAuthenticationWarning =
+        "Authentication is DISABLED (Authentication:DisableAuthentication=true). Endpoints without an authorization " +
+        "attribute accept anonymous requests and resource scoping allows everything. Never use this outside local " +
+        "development.";
+
     private static AuthenticationOptions? GetAuthenticationOptionsFromConfiguration(IConfiguration configuration)
     {
         return configuration.GetSection(AuthenticationOptions.ConfigurationSectionName)
@@ -123,11 +128,6 @@ internal static class AuthenticationServiceCollectionExtensions
         return app;
     }
 
-    internal const string DisabledAuthenticationWarning =
-        "Authentication is DISABLED (Authentication:DisableAuthentication=true). Endpoints without an authorization " +
-        "attribute accept anonymous requests and resource scoping allows everything. Never use this outside local " +
-        "development.";
-
     /// <summary>
     ///     Refuses to start when authentication is disabled outside the Development environment.
     ///     <para>
@@ -160,6 +160,12 @@ internal static class AuthenticationServiceCollectionExtensions
         return builder;
     }
 
+    internal static bool IsAuthenticationEnabled(IConfigurationRoot configuration)
+    {
+        var options = GetAuthenticationOptionsFromConfiguration(configuration);
+        return IsAuthenticationEnabled(options);
+    }
+
     /// <summary>
     ///     Logs a warning at startup when authentication is disabled, so the mode is visible in the logs.
     /// </summary>
@@ -171,11 +177,5 @@ internal static class AuthenticationServiceCollectionExtensions
         }
 
         return app;
-    }
-
-    internal static bool IsAuthenticationEnabled(IConfigurationRoot configuration)
-    {
-        var options = GetAuthenticationOptionsFromConfiguration(configuration);
-        return IsAuthenticationEnabled(options);
     }
 }

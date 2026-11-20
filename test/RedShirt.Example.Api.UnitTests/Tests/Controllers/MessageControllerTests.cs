@@ -24,13 +24,6 @@ public class MessageControllerTests
 
     private readonly Mock<IStreamExampleMessagesQueryHandler> _streamHandler = new();
 
-    public MessageControllerTests()
-    {
-        _streamHandler
-            .Setup(handler => handler.Handle(It.IsAny<StreamExampleMessagesQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(AsyncEnumerable.Empty<ExampleMessageModel>());
-    }
-
     private static (MessageController Controller, CompletionCapturingResponseFeature Response) Controller()
     {
         var response = new CompletionCapturingResponseFeature();
@@ -49,19 +42,11 @@ public class MessageControllerTests
         return controller.GetEventStream(_streamHandler.Object, _limiter, TestContext.Current.CancellationToken);
     }
 
-    [Fact]
-    public async Task GetEventStream_UnderLimit_StreamsAndReleasesSlotWhenRequestCompletes()
+    public MessageControllerTests()
     {
-        var (controller, response) = Controller();
-
-        var result = await GetEventStream(controller);
-
-        Assert.IsType<ServerSentEventsResult<string>>(result);
-        Assert.Equal(1, _limiter.GetOpenCount(UserId));
-
-        await response.CompleteAsync();
-
-        Assert.Equal(0, _limiter.GetOpenCount(UserId));
+        _streamHandler
+            .Setup(handler => handler.Handle(It.IsAny<StreamExampleMessagesQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(AsyncEnumerable.Empty<ExampleMessageModel>());
     }
 
     [Fact]
@@ -96,6 +81,21 @@ public class MessageControllerTests
         Assert.Equal(0, _limiter.GetOpenCount(UserId));
     }
 
+    [Fact]
+    public async Task GetEventStream_UnderLimit_StreamsAndReleasesSlotWhenRequestCompletes()
+    {
+        var (controller, response) = Controller();
+
+        var result = await GetEventStream(controller);
+
+        Assert.IsType<ServerSentEventsResult<string>>(result);
+        Assert.Equal(1, _limiter.GetOpenCount(UserId));
+
+        await response.CompleteAsync();
+
+        Assert.Equal(0, _limiter.GetOpenCount(UserId));
+    }
+
     /// <summary>
     ///     The default response feature drops OnCompleted callbacks, and RegisterForDispose relies on them. This one keeps
     ///     them so a test can end the request the way the server does.
@@ -104,17 +104,17 @@ public class MessageControllerTests
     {
         private readonly List<(Func<object, Task> Callback, object State)> _onCompleted = [];
 
-        public override void OnCompleted(Func<object, Task> callback, object state)
-        {
-            _onCompleted.Add((callback, state));
-        }
-
         public async Task CompleteAsync()
         {
             foreach (var (callback, state) in _onCompleted)
             {
                 await callback(state);
             }
+        }
+
+        public override void OnCompleted(Func<object, Task> callback, object state)
+        {
+            _onCompleted.Add((callback, state));
         }
     }
 }

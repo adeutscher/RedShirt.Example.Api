@@ -61,8 +61,8 @@ Recapped in reverse:
 
 ## Token Validation
 
-With authentication enabled, the API checks each bearer token against `Authentication:*` settings
-(`AUTHENTICATION__*` environment variables):
+With authentication enabled, the API checks each bearer token against `Authentication:*` settings (`AUTHENTICATION__*`
+environment variables):
 
 * **Issuer:** `iss` must equal `Authentication:Authority`. Startup fails when it is unset.
 * **Audience:** `aud` must contain `Authentication:Audience`. Startup fails when it is unset. Without this check, any
@@ -85,7 +85,7 @@ this is intentional.
 At time of writing, I flat-out don't have tidy answer to this conundrum for this template that I'm entirely happy with.
 I could have fallback copies of policies that are defined if authentication is disabled, but it feels like a lot of
 irresponsible duplication to give such a critical security feature such a clear off switch. The off switch is much too
-powerful just for the sake of local testing. For the moment, logging this message in documentation is good enough. 
+powerful just for the sake of local testing. For the moment, logging this message in documentation is good enough.
 
 Guard rails on the switch:
 

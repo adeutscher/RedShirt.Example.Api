@@ -418,7 +418,9 @@ public static class RepositoryLevelGenerator
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
-                                dtoProperty.Name, $"LIKE @{paramName}Contains {{{baseNamespace}.DataStores.Common.DapperMySql.Utility.SqlQueryHelper.LikeEscapeClause}}") + ",")
+                                dtoProperty.Name,
+                                $"LIKE @{paramName}Contains {{{baseNamespace}.DataStores.Common.DapperMySql.Utility.SqlQueryHelper.LikeEscapeClause}}") +
+                            ",")
                         // Escape the caller's wildcards so Contains means a literal substring match.
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             "new {" + paramName +

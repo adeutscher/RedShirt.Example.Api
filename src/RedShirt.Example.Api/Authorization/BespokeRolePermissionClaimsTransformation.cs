@@ -24,6 +24,30 @@ internal sealed class BespokeRolePermissionClaimsTransformation(
 
     private int _warnedAboutTokenPermissions;
 
+    private void RemoveTokenPermissions(ClaimsPrincipal principal)
+    {
+        var removed = 0;
+        foreach (var identity in principal.Identities)
+        {
+            foreach (var claim in identity.FindAll(BespokeAuthorizationPermissions.ClaimType).ToList())
+            {
+                if (identity.TryRemoveClaim(claim))
+                {
+                    removed++;
+                }
+            }
+        }
+
+        if (removed > 0 && Interlocked.Exchange(ref _warnedAboutTokenPermissions, 1) == 0)
+        {
+            logger.LogWarning(
+                "Ignored {Count} '{ClaimType}' claim(s) supplied by the identity provider. Permissions are mapped from "
+                + "roles by this API. Check the identity provider for a mapper that emits this claim. This warning is "
+                + "logged once per process.",
+                removed, BespokeAuthorizationPermissions.ClaimType);
+        }
+    }
+
     public Task<ClaimsPrincipal> TransformAsync(ClaimsPrincipal principal)
     {
         if (principal.Identity is not ClaimsIdentity {IsAuthenticated: true} identity)
@@ -51,29 +75,5 @@ internal sealed class BespokeRolePermissionClaimsTransformation(
 
         principal.AddIdentity(permissions);
         return Task.FromResult(principal);
-    }
-
-    private void RemoveTokenPermissions(ClaimsPrincipal principal)
-    {
-        var removed = 0;
-        foreach (var identity in principal.Identities)
-        {
-            foreach (var claim in identity.FindAll(BespokeAuthorizationPermissions.ClaimType).ToList())
-            {
-                if (identity.TryRemoveClaim(claim))
-                {
-                    removed++;
-                }
-            }
-        }
-
-        if (removed > 0 && Interlocked.Exchange(ref _warnedAboutTokenPermissions, 1) == 0)
-        {
-            logger.LogWarning(
-                "Ignored {Count} '{ClaimType}' claim(s) supplied by the identity provider. Permissions are mapped from "
-                + "roles by this API. Check the identity provider for a mapper that emits this claim. This warning is "
-                + "logged once per process.",
-                removed, BespokeAuthorizationPermissions.ClaimType);
-        }
     }
 }

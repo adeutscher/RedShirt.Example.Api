@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RedShirt.Example.Api.Configuration;
@@ -30,6 +29,19 @@ public class ServerSentEventsExtensionsTests
         return (builder.Build(), logs);
     }
 
+    [Fact]
+    public void AddServerSentEventConnectionLimits_BindsOptionsAndRegistersSingletonLimiter()
+    {
+        var (app, _) = BuildApp("Production", "3");
+        using var disposableApp = app;
+
+        Assert.Equal(3, app.Services.GetRequiredService<IOptions<ServerSentEventsOptions>>().Value
+            .MaxConnectionsPerUser);
+        Assert.Same(
+            app.Services.GetRequiredService<IServerSentEventConnectionLimiter>(),
+            app.Services.GetRequiredService<IServerSentEventConnectionLimiter>());
+    }
+
     [Theory]
     [InlineData("Production", null, true)]
     [InlineData("Production", "0", true)]
@@ -49,19 +61,6 @@ public class ServerSentEventsExtensionsTests
         Assert.Equal(expectWarning, logs.Entries.Any(entry =>
             entry.Level == LogLevel.Warning
             && entry.Message == ServerSentEventsExtensions.UnlimitedConnectionsWarning));
-    }
-
-    [Fact]
-    public void AddServerSentEventConnectionLimits_BindsOptionsAndRegistersSingletonLimiter()
-    {
-        var (app, _) = BuildApp("Production", "3");
-        using var disposableApp = app;
-
-        Assert.Equal(3, app.Services.GetRequiredService<IOptions<ServerSentEventsOptions>>().Value
-            .MaxConnectionsPerUser);
-        Assert.Same(
-            app.Services.GetRequiredService<IServerSentEventConnectionLimiter>(),
-            app.Services.GetRequiredService<IServerSentEventConnectionLimiter>());
     }
 
     private sealed class CapturingLoggerProvider : ILoggerProvider

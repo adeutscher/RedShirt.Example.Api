@@ -21,6 +21,8 @@ internal sealed class MariaDbProductRepository(
     private const int MaxPageSize = 100;
     private const string ConnectionStringName = DatabaseConstants.PrimaryDatabaseConnectionStringName;
 
+    private const string ContinuationEntity = "product";
+
     private static ProductDto ToDto(ProductEntity entity)
     {
         return new ProductDto
@@ -156,7 +158,8 @@ internal sealed class MariaDbProductRepository(
         ContinuationParameters? continuationParameters = null;
         if (continuationToken is not null)
         {
-            var continuationParametersKey = ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value);
+            var continuationParametersKey =
+                ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value);
             continuationParameters =
                 await cacheService.GetObjectAsync<ContinuationParameters>(continuationParametersKey,
                     cancellationToken);
@@ -242,8 +245,6 @@ internal sealed class MariaDbProductRepository(
             ContinuationToken = continuationToken
         };
     }
-
-    private const string ContinuationEntity = "product";
 
     private sealed class ContinuationParameters
     {

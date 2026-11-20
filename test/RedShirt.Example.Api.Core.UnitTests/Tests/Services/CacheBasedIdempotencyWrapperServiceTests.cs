@@ -38,7 +38,8 @@ public class CacheBasedIdempotencyWrapperServiceTests
                 TestContext.Current.CancellationToken));
 
         idempotency.Verify(
-            s => s.SetRecordAsync(It.IsAny<IdempotencyScope>(), It.IsAny<SampleResult>(), It.IsAny<CancellationToken>()),
+            s => s.SetRecordAsync(It.IsAny<IdempotencyScope>(), It.IsAny<SampleResult>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
         lockHandle.Verify(l => l.UnlockAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -100,7 +101,8 @@ public class CacheBasedIdempotencyWrapperServiceTests
         Assert.False(callbackInvoked);
         idempotency.Verify(s => s.GetLockAsync(Scope, TestContext.Current.CancellationToken), Times.Once);
         idempotency.Verify(
-            s => s.SetRecordAsync(It.IsAny<IdempotencyScope>(), It.IsAny<SampleResult>(), It.IsAny<CancellationToken>()),
+            s => s.SetRecordAsync(It.IsAny<IdempotencyScope>(), It.IsAny<SampleResult>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
         lockHandle.Verify(l => l.UnlockAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -129,7 +131,8 @@ public class CacheBasedIdempotencyWrapperServiceTests
         Assert.False(callbackInvoked);
         idempotency.Verify(s => s.GetLockAsync(Scope, TestContext.Current.CancellationToken), Times.Once);
         idempotency.Verify(
-            s => s.SetRecordAsync(It.IsAny<IdempotencyScope>(), It.IsAny<SampleResult>(), It.IsAny<CancellationToken>()),
+            s => s.SetRecordAsync(It.IsAny<IdempotencyScope>(), It.IsAny<SampleResult>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
         lockHandle.Verify(l => l.UnlockAsync(It.IsAny<CancellationToken>()), Times.Never);
     }

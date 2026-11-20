@@ -20,9 +20,9 @@ internal class CreateFooCommandHandler(
 
         return await idempotencyWrapperService.RunIdempotentlyAsync(
             new IdempotencyScope(nameof(CreateFooCommand), command.CallerId, command.IdempotencyKey), async () =>
-            await fooConnector.CreateAsync(new CreateFooConnectorRequest
-            {
-                Name = command.Name
-            }, cancellationToken), cancellationToken);
+                await fooConnector.CreateAsync(new CreateFooConnectorRequest
+                {
+                    Name = command.Name
+                }, cancellationToken), cancellationToken);
     }
 }

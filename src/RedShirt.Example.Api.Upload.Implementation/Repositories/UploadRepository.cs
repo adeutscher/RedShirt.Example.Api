@@ -43,6 +43,8 @@ internal sealed class UploadRepository(
 {
     private const int MaxPageSize = 100;
     private const string ConnectionStringName = DatabaseConstants.PrimaryDatabaseConnectionStringName;
+
+    private const string ContinuationEntity = "upload";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private static UploadAggregateEntity ToEntity(UploadAggregate aggregate)
@@ -291,7 +293,8 @@ internal sealed class UploadRepository(
         if (continuationToken is not null)
         {
             continuationParameters =
-                await cacheService.GetObjectAsync<ContinuationParameters>(ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value),
+                await cacheService.GetObjectAsync<ContinuationParameters>(
+                    ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value),
                     cancellationToken);
         }
 
@@ -383,8 +386,6 @@ internal sealed class UploadRepository(
 
         await transaction.CommitAsync(cancellationToken);
     }
-
-    private const string ContinuationEntity = "upload";
 
     private sealed class ContinuationParameters
     {

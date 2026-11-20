@@ -17,6 +17,8 @@ internal sealed class CustomerRepository(
     private const int MaxPageSize = 100;
     private const string ConnectionStringName = DatabaseConstants.PrimaryDatabaseConnectionStringName;
 
+    private const string ContinuationEntity = "customer";
+
     private static PredicateBuilder<CustomerEntity> BuildSearchPredicate(CustomerServiceSearchRequest parameters)
     {
         var builder = new PredicateBuilder<CustomerEntity>();
@@ -146,7 +148,8 @@ internal sealed class CustomerRepository(
         ContinuationParameters? continuationParameters = null;
         if (continuationToken is not null)
         {
-            var continuationParametersKey = ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value);
+            var continuationParametersKey =
+                ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value);
             continuationParameters =
                 await cacheService.GetObjectAsync<ContinuationParameters>(continuationParametersKey, cancellationToken);
         }
@@ -218,8 +221,6 @@ internal sealed class CustomerRepository(
             ContinuationToken = continuationToken
         };
     }
-
-    private const string ContinuationEntity = "customer";
 
     private sealed class ContinuationParameters
     {

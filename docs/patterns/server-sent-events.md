@@ -120,7 +120,7 @@ So the cap is less about one user hogging the API and more about one buggy or ho
 broker connections. A client that reconnects in a tight loop without closing its old streams is the common accident.
 
 | Client type                         | Suggested starting point | Why                                                 |
-| ----------------------------------- | ------------------------ | --------------------------------------------------- |
+|-------------------------------------|--------------------------|-----------------------------------------------------|
 | Interactive users (browser, mobile) | 5                        | A phone, a laptop, and a few tabs                   |
 | Internal staff tools and dashboards | 10                       | Power users keep many tabs open                     |
 | Service accounts and integrations   | 1 or 2                   | One consumer stream, plus one for a restart overlap |
@@ -154,12 +154,12 @@ Things to do alongside the cap:
 
 The broker URL's scheme decides whether the connection is encrypted:
 
-| Scheme                          | Transport                    | Default port | Encrypted |
-| ------------------------------- | ---------------------------- | ------------ | --------- |
-| `mqtts://`                      | MQTT over TLS                | 8883         | Yes       |
-| `wss://`                        | MQTT over WebSocket over TLS | 443          | Yes       |
-| `mqtt://`, `tcp://`, bare host  | MQTT over TCP                | 1883         | No        |
-| `ws://`                         | MQTT over WebSocket          | 80           | No        |
+| Scheme                         | Transport                    | Default port | Encrypted |
+|--------------------------------|------------------------------|--------------|-----------|
+| `mqtts://`                     | MQTT over TLS                | 8883         | Yes       |
+| `wss://`                       | MQTT over WebSocket over TLS | 443          | Yes       |
+| `mqtt://`, `tcp://`, bare host | MQTT over TCP                | 1883         | No        |
+| `ws://`                        | MQTT over WebSocket          | 80           | No        |
 
 `mqtts://` validates the broker certificate against the system trust store, including the host name. There is no
 setting to skip validation.

@@ -14,35 +14,6 @@ public class ServerSentEventConnectionLimiterTests
         }));
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
-    public void TryAcquire_ZeroOrNegative_IsUnlimited(int maxConnectionsPerUser)
-    {
-        var limiter = Limiter(maxConnectionsPerUser);
-
-        for (var i = 0; i < 100; i++)
-        {
-            Assert.True(limiter.TryAcquire("user-1", out _));
-        }
-
-        Assert.Equal(0, limiter.GetOpenCount("user-1"));
-    }
-
-    [Fact]
-    public void TryAcquire_AtLimit_IsRefused()
-    {
-        var limiter = Limiter(3);
-
-        Assert.True(limiter.TryAcquire("user-1", out _));
-        Assert.True(limiter.TryAcquire("user-1", out _));
-        Assert.True(limiter.TryAcquire("user-1", out _));
-
-        Assert.False(limiter.TryAcquire("user-1", out var refused));
-        Assert.Null(refused);
-        Assert.Equal(3, limiter.GetOpenCount("user-1"));
-    }
-
     [Fact]
     public void Dispose_FreesSlot()
     {
@@ -72,23 +43,17 @@ public class ServerSentEventConnectionLimiterTests
     }
 
     [Fact]
-    public void TryAcquire_CountsEachUserSeparately()
+    public void TryAcquire_AtLimit_IsRefused()
     {
-        var limiter = Limiter(1);
+        var limiter = Limiter(3);
 
         Assert.True(limiter.TryAcquire("user-1", out _));
-        Assert.True(limiter.TryAcquire("user-2", out _));
-        Assert.False(limiter.TryAcquire("user-1", out _));
-        Assert.False(limiter.TryAcquire("user-2", out _));
-    }
+        Assert.True(limiter.TryAcquire("user-1", out _));
+        Assert.True(limiter.TryAcquire("user-1", out _));
 
-    [Fact]
-    public void TryAcquire_UserIdsAreCaseSensitive()
-    {
-        var limiter = Limiter(1);
-
-        Assert.True(limiter.TryAcquire("user-a", out _));
-        Assert.True(limiter.TryAcquire("USER-A", out _));
+        Assert.False(limiter.TryAcquire("user-1", out var refused));
+        Assert.Null(refused);
+        Assert.Equal(3, limiter.GetOpenCount("user-1"));
     }
 
     [Fact]
@@ -110,5 +75,40 @@ public class ServerSentEventConnectionLimiterTests
 
         Assert.Equal(limit, results.Count(acquired => acquired));
         Assert.Equal(limit, limiter.GetOpenCount("user-1"));
+    }
+
+    [Fact]
+    public void TryAcquire_CountsEachUserSeparately()
+    {
+        var limiter = Limiter(1);
+
+        Assert.True(limiter.TryAcquire("user-1", out _));
+        Assert.True(limiter.TryAcquire("user-2", out _));
+        Assert.False(limiter.TryAcquire("user-1", out _));
+        Assert.False(limiter.TryAcquire("user-2", out _));
+    }
+
+    [Fact]
+    public void TryAcquire_UserIdsAreCaseSensitive()
+    {
+        var limiter = Limiter(1);
+
+        Assert.True(limiter.TryAcquire("user-a", out _));
+        Assert.True(limiter.TryAcquire("USER-A", out _));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void TryAcquire_ZeroOrNegative_IsUnlimited(int maxConnectionsPerUser)
+    {
+        var limiter = Limiter(maxConnectionsPerUser);
+
+        for (var i = 0; i < 100; i++)
+        {
+            Assert.True(limiter.TryAcquire("user-1", out _));
+        }
+
+        Assert.Equal(0, limiter.GetOpenCount("user-1"));
     }
 }

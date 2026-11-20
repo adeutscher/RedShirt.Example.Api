@@ -56,6 +56,13 @@ public class AuthenticationServiceCollectionExtensionsTests
         });
     }
 
+    private static IHostEnvironment Environment(string name)
+    {
+        var environment = new Mock<IHostEnvironment>();
+        environment.SetupGet(e => e.EnvironmentName).Returns(name);
+        return environment.Object;
+    }
+
     [Fact]
     public async Task AddApiSwaggerDocument_WhenDisabled_DoesNotAdvertiseBearerSecurity()
     {
@@ -124,18 +131,6 @@ public class AuthenticationServiceCollectionExtensionsTests
         Assert.True(authorization is null || authorization.FallbackPolicy is null);
     }
 
-    [Fact]
-    public void ConsiderAddingAuthentication_WhenEnabledWithoutAuthority_Throws()
-    {
-        var configuration = EnabledAuthenticationConfiguration("   ");
-        var services = new ServiceCollection();
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            services.ConsiderAddingAuthentication(configuration));
-
-        Assert.Contains("Authority", exception.Message, StringComparison.Ordinal);
-    }
-
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -149,6 +144,18 @@ public class AuthenticationServiceCollectionExtensionsTests
             services.ConsiderAddingAuthentication(configuration));
 
         Assert.Contains("Audience", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ConsiderAddingAuthentication_WhenEnabledWithoutAuthority_Throws()
+    {
+        var configuration = EnabledAuthenticationConfiguration("   ");
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            services.ConsiderAddingAuthentication(configuration));
+
+        Assert.Contains("Authority", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -262,11 +269,22 @@ public class AuthenticationServiceCollectionExtensionsTests
         Assert.Same(app, returned);
     }
 
-    private static IHostEnvironment Environment(string name)
+    [Theory]
+    [InlineData("Production")]
+    [InlineData("Development")]
+    public void EnsureDisabledAuthenticationIsAllowed_Allows_WhenAuthenticationIsEnabled(string environmentName)
     {
-        var environment = new Mock<IHostEnvironment>();
-        environment.SetupGet(e => e.EnvironmentName).Returns(name);
-        return environment.Object;
+        ApiAuthenticationExtensions.EnsureDisabledAuthenticationIsAllowed(
+            EnabledAuthenticationConfiguration(), Environment(environmentName));
+        ApiAuthenticationExtensions.EnsureDisabledAuthenticationIsAllowed(
+            new ConfigurationBuilder().Build(), Environment(environmentName));
+    }
+
+    [Fact]
+    public void EnsureDisabledAuthenticationIsAllowed_Allows_WhenDisabledInDevelopment()
+    {
+        ApiAuthenticationExtensions.EnsureDisabledAuthenticationIsAllowed(
+            DisabledAuthenticationConfiguration(), Environment(Environments.Development));
     }
 
     [Theory]
@@ -280,24 +298,6 @@ public class AuthenticationServiceCollectionExtensionsTests
                 DisabledAuthenticationConfiguration(), Environment(environmentName)));
 
         Assert.Contains("Development", exception.Message);
-    }
-
-    [Fact]
-    public void EnsureDisabledAuthenticationIsAllowed_Allows_WhenDisabledInDevelopment()
-    {
-        ApiAuthenticationExtensions.EnsureDisabledAuthenticationIsAllowed(
-            DisabledAuthenticationConfiguration(), Environment(Environments.Development));
-    }
-
-    [Theory]
-    [InlineData("Production")]
-    [InlineData("Development")]
-    public void EnsureDisabledAuthenticationIsAllowed_Allows_WhenAuthenticationIsEnabled(string environmentName)
-    {
-        ApiAuthenticationExtensions.EnsureDisabledAuthenticationIsAllowed(
-            EnabledAuthenticationConfiguration(), Environment(environmentName));
-        ApiAuthenticationExtensions.EnsureDisabledAuthenticationIsAllowed(
-            new ConfigurationBuilder().Build(), Environment(environmentName));
     }
 
     [Theory]

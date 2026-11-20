@@ -91,47 +91,26 @@ public class MqttApiClientEventReceiverTests
     }
 
     [Theory]
-    [InlineData(1_000)]
-    [InlineData(1_024)]
-    public async Task HandleApplicationMessage_AtOrUnderLimit_IsDelivered(int sizeBytes)
+    [InlineData(null, MqttApiClientEventReceiverConfiguration.DefaultMaxPayloadBytes)]
+    [InlineData(4_096, 4_096)]
+    [InlineData(0, null)]
+    [InlineData(-5, null)]
+    public void EffectiveMaxPayloadBytes(int? configured, int? expected)
     {
-        var received = await Handle(Receiver(1_024), MessageOfSize(sizeBytes));
-
-        var item = Assert.Single(received);
-        Assert.Equal(Topic, item.Topic);
-        Assert.False(LoggedDrop());
-    }
-
-    [Fact]
-    public async Task HandleApplicationMessage_OverLimit_IsDroppedAndLogged()
-    {
-        var received = await Handle(Receiver(1_024), MessageOfSize(1_025));
-
-        Assert.Empty(received);
-        Assert.True(LoggedDrop());
-    }
-
-    [Fact]
-    public async Task HandleApplicationMessage_Unset_UsesDefaultLimit()
-    {
-        var receiver = Receiver(null);
-
-        Assert.Single(await Handle(receiver,
-            MessageOfSize(MqttApiClientEventReceiverConfiguration.DefaultMaxPayloadBytes)));
-        Assert.Empty(await Handle(receiver,
-            MessageOfSize(MqttApiClientEventReceiverConfiguration.DefaultMaxPayloadBytes + 1)));
+        Assert.Equal(expected,
+            new MqttApiClientEventReceiverConfiguration {MaxPayloadBytes = configured}.EffectiveMaxPayloadBytes);
     }
 
     [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
-    public async Task HandleApplicationMessage_ZeroOrNegative_DeliversAnySize(int maxPayloadBytes)
+    [InlineData(null, MqttApiClientEventReceiverConfiguration.DefaultMaxQueuedEventsPerStream)]
+    [InlineData(10, 10)]
+    [InlineData(0, null)]
+    [InlineData(-5, null)]
+    public void EffectiveMaxQueuedEventsPerStream(int? configured, int? expected)
     {
-        var received = await Handle(Receiver(maxPayloadBytes),
-            MessageOfSize(MqttApiClientEventReceiverConfiguration.DefaultMaxPayloadBytes * 2));
-
-        Assert.Single(received);
-        Assert.False(LoggedDrop());
+        Assert.Equal(expected,
+            new MqttApiClientEventReceiverConfiguration {MaxQueuedEventsPerStream = configured}
+                .EffectiveMaxQueuedEventsPerStream);
     }
 
     [Fact]
@@ -145,53 +124,6 @@ public class MqttApiClientEventReceiverTests
 
         Assert.True(channel.Reader.TryRead(out _));
         Assert.False(channel.Reader.TryRead(out _));
-    }
-
-    [Theory]
-    [InlineData(null, MqttApiClientEventReceiverConfiguration.DefaultMaxPayloadBytes)]
-    [InlineData(4_096, 4_096)]
-    [InlineData(0, null)]
-    [InlineData(-5, null)]
-    public void EffectiveMaxPayloadBytes(int? configured, int? expected)
-    {
-        Assert.Equal(expected,
-            new MqttApiClientEventReceiverConfiguration {MaxPayloadBytes = configured}.EffectiveMaxPayloadBytes);
-    }
-
-    [Fact]
-    public async Task HandleApplicationMessage_UpToQueueLimit_AllDeliveredInOrder()
-    {
-        var receiver = Receiver(null, 3);
-        var channel = receiver.CreateChannel();
-
-        for (var i = 1; i <= 3; i++)
-        {
-            receiver.HandleApplicationMessage(NumberedMessage(i), channel.Writer);
-        }
-
-        channel.Writer.TryComplete();
-        var received = await ReadAll(channel);
-
-        Assert.Equal(["1", "2", "3"], received.Select(item => item.Payload.Message));
-        Assert.Equal(0, LoggedStreamCloses());
-    }
-
-    [Fact]
-    public async Task HandleApplicationMessage_QueueFull_EndsStreamAfterQueuedEvents()
-    {
-        var receiver = Receiver(null, 3);
-        var channel = receiver.CreateChannel();
-
-        for (var i = 1; i <= 4; i++)
-        {
-            receiver.HandleApplicationMessage(NumberedMessage(i), channel.Writer);
-        }
-
-        // The writer completed itself, so reading ends after the queued events without the test completing it.
-        var received = await ReadAll(channel);
-
-        Assert.Equal(["1", "2", "3"], received.Select(item => item.Payload.Message));
-        Assert.Equal(1, LoggedStreamCloses());
     }
 
     [Fact]
@@ -213,6 +145,45 @@ public class MqttApiClientEventReceiverTests
         Assert.Equal(1, LoggedStreamCloses());
     }
 
+    [Theory]
+    [InlineData(1_000)]
+    [InlineData(1_024)]
+    public async Task HandleApplicationMessage_AtOrUnderLimit_IsDelivered(int sizeBytes)
+    {
+        var received = await Handle(Receiver(1_024), MessageOfSize(sizeBytes));
+
+        var item = Assert.Single(received);
+        Assert.Equal(Topic, item.Topic);
+        Assert.False(LoggedDrop());
+    }
+
+    [Fact]
+    public async Task HandleApplicationMessage_OverLimit_IsDroppedAndLogged()
+    {
+        var received = await Handle(Receiver(1_024), MessageOfSize(1_025));
+
+        Assert.Empty(received);
+        Assert.True(LoggedDrop());
+    }
+
+    [Fact]
+    public async Task HandleApplicationMessage_QueueFull_EndsStreamAfterQueuedEvents()
+    {
+        var receiver = Receiver(null, 3);
+        var channel = receiver.CreateChannel();
+
+        for (var i = 1; i <= 4; i++)
+        {
+            receiver.HandleApplicationMessage(NumberedMessage(i), channel.Writer);
+        }
+
+        // The writer completed itself, so reading ends after the queued events without the test completing it.
+        var received = await ReadAll(channel);
+
+        Assert.Equal(["1", "2", "3"], received.Select(item => item.Payload.Message));
+        Assert.Equal(1, LoggedStreamCloses());
+    }
+
     [Fact]
     public void HandleApplicationMessage_UnsetQueueLimit_UsesDefault()
     {
@@ -229,6 +200,35 @@ public class MqttApiClientEventReceiverTests
         receiver.HandleApplicationMessage(NumberedMessage(-1), channel.Writer);
 
         Assert.Equal(1, LoggedStreamCloses());
+    }
+
+    [Fact]
+    public async Task HandleApplicationMessage_Unset_UsesDefaultLimit()
+    {
+        var receiver = Receiver(null);
+
+        Assert.Single(await Handle(receiver,
+            MessageOfSize(MqttApiClientEventReceiverConfiguration.DefaultMaxPayloadBytes)));
+        Assert.Empty(await Handle(receiver,
+            MessageOfSize(MqttApiClientEventReceiverConfiguration.DefaultMaxPayloadBytes + 1)));
+    }
+
+    [Fact]
+    public async Task HandleApplicationMessage_UpToQueueLimit_AllDeliveredInOrder()
+    {
+        var receiver = Receiver(null, 3);
+        var channel = receiver.CreateChannel();
+
+        for (var i = 1; i <= 3; i++)
+        {
+            receiver.HandleApplicationMessage(NumberedMessage(i), channel.Writer);
+        }
+
+        channel.Writer.TryComplete();
+        var received = await ReadAll(channel);
+
+        Assert.Equal(["1", "2", "3"], received.Select(item => item.Payload.Message));
+        Assert.Equal(0, LoggedStreamCloses());
     }
 
     [Theory]
@@ -252,15 +252,15 @@ public class MqttApiClientEventReceiverTests
     }
 
     [Theory]
-    [InlineData(null, MqttApiClientEventReceiverConfiguration.DefaultMaxQueuedEventsPerStream)]
-    [InlineData(10, 10)]
-    [InlineData(0, null)]
-    [InlineData(-5, null)]
-    public void EffectiveMaxQueuedEventsPerStream(int? configured, int? expected)
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task HandleApplicationMessage_ZeroOrNegative_DeliversAnySize(int maxPayloadBytes)
     {
-        Assert.Equal(expected,
-            new MqttApiClientEventReceiverConfiguration {MaxQueuedEventsPerStream = configured}
-                .EffectiveMaxQueuedEventsPerStream);
+        var received = await Handle(Receiver(maxPayloadBytes),
+            MessageOfSize(MqttApiClientEventReceiverConfiguration.DefaultMaxPayloadBytes * 2));
+
+        Assert.Single(received);
+        Assert.False(LoggedDrop());
     }
 
     public sealed record TestPayload(string Message);

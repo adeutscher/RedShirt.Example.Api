@@ -27,6 +27,14 @@ public class ExceptionHandlingExtensionsTests
         return logs.Entries.Where(entry => entry.Level == LogLevel.Warning).ToList();
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("false")]
+    public void WarnAboutExceptionMessageExposure_IsSilent_WhenSettingIsOff(string? expose)
+    {
+        Assert.Empty(StartAndCaptureWarnings(expose, Environments.Development));
+    }
+
     [Fact]
     public void WarnAboutExceptionMessageExposure_WarnsThatMessagesAreExposed_InDevelopment()
     {
@@ -41,14 +49,6 @@ public class ExceptionHandlingExtensionsTests
         var warning = Assert.Single(StartAndCaptureWarnings("true", Environments.Production));
 
         Assert.Equal(ExceptionHandlingExtensions.IgnoredWarning, warning.Message);
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("false")]
-    public void WarnAboutExceptionMessageExposure_IsSilent_WhenSettingIsOff(string? expose)
-    {
-        Assert.Empty(StartAndCaptureWarnings(expose, Environments.Development));
     }
 
     private sealed class CapturingLoggerProvider : ILoggerProvider

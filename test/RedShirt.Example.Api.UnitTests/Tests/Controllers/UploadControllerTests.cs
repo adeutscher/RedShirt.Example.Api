@@ -30,22 +30,7 @@ public sealed class UploadControllerTests : IDisposable
     private readonly ServiceProvider _provider;
     private readonly Mock<IGetUploadSummaryQueryHandler> _summaryHandler = new();
 
-    public UploadControllerTests()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddApiAuthorizationPolicies();
-        // Supplies the ProblemDetailsFactory that ControllerBase.Problem() resolves from request services.
-        services.AddMvcCore();
-        _provider = services.BuildServiceProvider();
-    }
-
     private IUploadScopedResourceEnforcer Enforcer => _provider.GetRequiredService<IUploadScopedResourceEnforcer>();
-
-    public void Dispose()
-    {
-        _provider.Dispose();
-    }
 
     private async Task<UploadController> ControllerForRoles(params string[] roles)
     {
@@ -109,30 +94,27 @@ public sealed class UploadControllerTests : IDisposable
             times);
     }
 
-    [Theory]
-    [InlineData(BespokeAuthorizationRoles.Analyst)]
-    [InlineData(BespokeAuthorizationRoles.Billing)]
-    [InlineData(BespokeAuthorizationRoles.UploadValidator)]
-    [InlineData("unmapped-role")]
-    public async Task Delete_Purge_RoleWithoutPurgePermission_ForbidsEvenForOwnUpload(string role)
+    public UploadControllerTests()
     {
-        UploadOwnedBy(CallerUserId);
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddApiAuthorizationPolicies();
+        // Supplies the ProblemDetailsFactory that ControllerBase.Problem() resolves from request services.
+        services.AddMvcCore();
+        _provider = services.BuildServiceProvider();
+    }
 
-        var result = await Purge(await ControllerForRoles(role));
-
-        Assert.IsType<ForbidResult>(result);
-        _summaryHandler.Verify(
-            handler => handler.Handle(It.IsAny<GetUploadSummaryQuery>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-        VerifyPurged(Times.Never());
+    public void Dispose()
+    {
+        _provider.Dispose();
     }
 
     [Fact]
-    public async Task Delete_Purge_Developer_OwnUpload_Purges()
+    public async Task Delete_Purge_Admin_OtherUsersUpload_Purges()
     {
-        UploadOwnedBy(CallerUserId);
+        UploadOwnedBy(OtherUserId);
 
-        var result = await Purge(await ControllerForRoles(BespokeAuthorizationRoles.Developer));
+        var result = await Purge(await ControllerForRoles(BespokeAuthorizationRoles.Admin));
 
         Assert.IsType<NoContentResult>(result);
         VerifyPurged(Times.Once());
@@ -150,11 +132,11 @@ public sealed class UploadControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task Delete_Purge_Admin_OtherUsersUpload_Purges()
+    public async Task Delete_Purge_Developer_OwnUpload_Purges()
     {
-        UploadOwnedBy(OtherUserId);
+        UploadOwnedBy(CallerUserId);
 
-        var result = await Purge(await ControllerForRoles(BespokeAuthorizationRoles.Admin));
+        var result = await Purge(await ControllerForRoles(BespokeAuthorizationRoles.Developer));
 
         Assert.IsType<NoContentResult>(result);
         VerifyPurged(Times.Once());
@@ -170,6 +152,24 @@ public sealed class UploadControllerTests : IDisposable
 
         await Assert.ThrowsAsync<ResourceNotFoundException>(() => Purge(controller));
 
+        VerifyPurged(Times.Never());
+    }
+
+    [Theory]
+    [InlineData(BespokeAuthorizationRoles.Analyst)]
+    [InlineData(BespokeAuthorizationRoles.Billing)]
+    [InlineData(BespokeAuthorizationRoles.UploadValidator)]
+    [InlineData("unmapped-role")]
+    public async Task Delete_Purge_RoleWithoutPurgePermission_ForbidsEvenForOwnUpload(string role)
+    {
+        UploadOwnedBy(CallerUserId);
+
+        var result = await Purge(await ControllerForRoles(role));
+
+        Assert.IsType<ForbidResult>(result);
+        _summaryHandler.Verify(
+            handler => handler.Handle(It.IsAny<GetUploadSummaryQuery>(), It.IsAny<CancellationToken>()),
+            Times.Never);
         VerifyPurged(Times.Never());
     }
 

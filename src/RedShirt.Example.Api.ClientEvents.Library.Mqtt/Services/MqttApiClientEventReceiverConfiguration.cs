@@ -47,20 +47,12 @@ internal sealed class MqttApiClientEventReceiverConfiguration
     /// <summary>
     ///     Effective queue bound, or <see langword="null" /> when the queue is unbounded.
     /// </summary>
-    public int? EffectiveMaxQueuedEventsPerStream => (MaxQueuedEventsPerStream ?? DefaultMaxQueuedEventsPerStream) switch
-    {
-        <= 0 => null,
-        var limit => limit
-    };
-
-    /// <summary>
-    ///     Returns <see langword="true" /> the first time it is called in this process. Used to warn once, not once per
-    ///     stream, when the check is off.
-    /// </summary>
-    internal static bool ShouldWarnAboutUnlimitedPayloads()
-    {
-        return Interlocked.Exchange(ref _warnedAboutUnlimitedPayloads, 1) == 0;
-    }
+    public int? EffectiveMaxQueuedEventsPerStream =>
+        (MaxQueuedEventsPerStream ?? DefaultMaxQueuedEventsPerStream) switch
+        {
+            <= 0 => null,
+            var limit => limit
+        };
 
     /// <summary>
     ///     Returns <see langword="true" /> the first time it is called in this process. Used to warn once, not once per
@@ -69,5 +61,14 @@ internal sealed class MqttApiClientEventReceiverConfiguration
     internal static bool ShouldWarnAboutUnboundedQueues()
     {
         return Interlocked.Exchange(ref _warnedAboutUnboundedQueues, 1) == 0;
+    }
+
+    /// <summary>
+    ///     Returns <see langword="true" /> the first time it is called in this process. Used to warn once, not once per
+    ///     stream, when the check is off.
+    /// </summary>
+    internal static bool ShouldWarnAboutUnlimitedPayloads()
+    {
+        return Interlocked.Exchange(ref _warnedAboutUnlimitedPayloads, 1) == 0;
     }
 }

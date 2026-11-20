@@ -15,6 +15,24 @@ internal static class SecurityHeadersExtensions
     /// </summary>
     internal static readonly PathString SwaggerPathPrefix = new("/swagger");
 
+    private static void ApplySecurityHeaders(HttpContext context)
+    {
+        var headers = context.Response.Headers;
+        headers[HeaderNames.XContentTypeOptions] = "nosniff";
+        headers[HeaderNames.XFrameOptions] = "DENY";
+        headers["Referrer-Policy"] = "no-referrer";
+
+        if (!context.Request.Path.StartsWithSegments(SwaggerPathPrefix))
+        {
+            headers[HeaderNames.ContentSecurityPolicy] = ApiContentSecurityPolicy;
+        }
+
+        if (!headers.ContainsKey(HeaderNames.CacheControl))
+        {
+            headers[HeaderNames.CacheControl] = "no-store";
+        }
+    }
+
     /// <summary>
     ///     Adds defensive response headers to every response.
     ///     <para>
@@ -36,23 +54,5 @@ internal static class SecurityHeadersExtensions
             return next(context);
         });
         return app;
-    }
-
-    private static void ApplySecurityHeaders(HttpContext context)
-    {
-        var headers = context.Response.Headers;
-        headers[HeaderNames.XContentTypeOptions] = "nosniff";
-        headers[HeaderNames.XFrameOptions] = "DENY";
-        headers["Referrer-Policy"] = "no-referrer";
-
-        if (!context.Request.Path.StartsWithSegments(SwaggerPathPrefix))
-        {
-            headers[HeaderNames.ContentSecurityPolicy] = ApiContentSecurityPolicy;
-        }
-
-        if (!headers.ContainsKey(HeaderNames.CacheControl))
-        {
-            headers[HeaderNames.CacheControl] = "no-store";
-        }
     }
 }

@@ -31,6 +31,20 @@ public class ContinuationTokenScopeTests
     }
 
     [Fact]
+    public void IsCompatible_IsFalse_WhenIncomingSetsFilterThatCachedDidNot()
+    {
+        var cached = new SampleSearch {PageSize = 10};
+
+        Assert.False(ContinuationTokenScope.IsCompatible(new SampleSearch {OwnerId = "user-b"}, cached));
+    }
+
+    [Fact]
+    public void IsCompatible_IsFalse_WhenScopedFilterDiffers()
+    {
+        Assert.False(ContinuationTokenScope.IsCompatible(new SampleSearch {OwnerId = "user-b"}, Cached));
+    }
+
+    [Fact]
     public void IsCompatible_IsTrue_WhenIncomingOmitsEveryFilter()
     {
         Assert.True(ContinuationTokenScope.IsCompatible(new SampleSearch(), Cached));
@@ -45,17 +59,12 @@ public class ContinuationTokenScopeTests
     }
 
     [Fact]
-    public void IsCompatible_IsFalse_WhenScopedFilterDiffers()
+    public void IsCompatible_SkipsIgnoredProperties()
     {
-        Assert.False(ContinuationTokenScope.IsCompatible(new SampleSearch {OwnerId = "user-b"}, Cached));
-    }
+        var incoming = new SampleSearch {PageSize = 50, OwnerId = "user-a"};
 
-    [Fact]
-    public void IsCompatible_IsFalse_WhenIncomingSetsFilterThatCachedDidNot()
-    {
-        var cached = new SampleSearch {PageSize = 10};
-
-        Assert.False(ContinuationTokenScope.IsCompatible(new SampleSearch {OwnerId = "user-b"}, cached));
+        Assert.False(ContinuationTokenScope.IsCompatible(incoming, Cached));
+        Assert.True(ContinuationTokenScope.IsCompatible(incoming, Cached, nameof(SampleSearch.PageSize)));
     }
 
     [Fact]
@@ -72,15 +81,6 @@ public class ContinuationTokenScopeTests
     {
         // IncludeArchived = false is the default, so the cached true is kept.
         Assert.True(ContinuationTokenScope.IsCompatible(new SampleSearch {IncludeArchived = false}, Cached));
-    }
-
-    [Fact]
-    public void IsCompatible_SkipsIgnoredProperties()
-    {
-        var incoming = new SampleSearch {PageSize = 50, OwnerId = "user-a"};
-
-        Assert.False(ContinuationTokenScope.IsCompatible(incoming, Cached));
-        Assert.True(ContinuationTokenScope.IsCompatible(incoming, Cached, nameof(SampleSearch.PageSize)));
     }
 
     private sealed class SampleSearch

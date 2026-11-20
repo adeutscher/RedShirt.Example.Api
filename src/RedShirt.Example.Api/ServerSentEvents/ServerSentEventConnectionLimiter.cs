@@ -24,6 +24,27 @@ internal sealed class ServerSentEventConnectionLimiter(IOptions<ServerSentEvents
     private readonly int _limit = options.Value.MaxConnectionsPerUser;
     private readonly Lock _lock = new();
 
+    private void Release(string userId)
+    {
+        lock (_lock)
+        {
+            if (!_counts.TryGetValue(userId, out var count))
+            {
+                return;
+            }
+
+            if (count <= 1)
+            {
+                // Drop the entry so users who have disconnected do not keep memory.
+                _counts.Remove(userId);
+            }
+            else
+            {
+                _counts[userId] = count - 1;
+            }
+        }
+    }
+
     public bool TryAcquire(string userId, [NotNullWhen(true)] out IDisposable? lease)
     {
         if (_limit <= 0)
@@ -57,27 +78,6 @@ internal sealed class ServerSentEventConnectionLimiter(IOptions<ServerSentEvents
         lock (_lock)
         {
             return _counts.GetValueOrDefault(userId);
-        }
-    }
-
-    private void Release(string userId)
-    {
-        lock (_lock)
-        {
-            if (!_counts.TryGetValue(userId, out var count))
-            {
-                return;
-            }
-
-            if (count <= 1)
-            {
-                // Drop the entry so users who have disconnected do not keep memory.
-                _counts.Remove(userId);
-            }
-            else
-            {
-                _counts[userId] = count - 1;
-            }
         }
     }
 

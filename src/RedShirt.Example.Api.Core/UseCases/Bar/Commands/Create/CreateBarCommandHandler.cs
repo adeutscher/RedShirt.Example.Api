@@ -20,9 +20,9 @@ internal class CreateBarCommandHandler(
 
         return await idempotencyWrapperService.RunIdempotentlyAsync(
             new IdempotencyScope(nameof(CreateBarCommand), command.CallerId, command.IdempotencyKey), async () =>
-            await barConnector.CreateAsync(new CreateBarConnectorRequest
-            {
-                Name = command.Name
-            }, cancellationToken), cancellationToken);
+                await barConnector.CreateAsync(new CreateBarConnectorRequest
+                {
+                    Name = command.Name
+                }, cancellationToken), cancellationToken);
     }
 }

@@ -20,12 +20,12 @@ internal class CreateOrderCommandHandler(
 
         return await idempotencyWrapperService.RunIdempotentlyAsync(
             new IdempotencyScope(nameof(CreateOrderCommand), command.CallerId, command.IdempotencyKey), async () =>
-            await orderService.PostAsync(new OrderServicePostRequest
-            {
-                CustomerId = command.CustomerId,
-                Status = command.Status,
-                TotalAmount = command.TotalAmount,
-                TotalPrice = command.TotalPrice
-            }, cancellationToken), cancellationToken);
+                await orderService.PostAsync(new OrderServicePostRequest
+                {
+                    CustomerId = command.CustomerId,
+                    Status = command.Status,
+                    TotalAmount = command.TotalAmount,
+                    TotalPrice = command.TotalPrice
+                }, cancellationToken), cancellationToken);
     }
 }
