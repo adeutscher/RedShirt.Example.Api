@@ -9,8 +9,8 @@ namespace RedShirt.Example.Api.Core.UnitTests.Tests.Services;
 
 public class CacheBasedIdempotencyServiceTests
 {
-    private static readonly IdempotencyScope Scope = new("CreateThingCommand", "user-1", "key");
     private const string RecordKey = "idempotent-record:CreateThingCommand:user-1:key";
+    private static readonly IdempotencyScope Scope = new("CreateThingCommand", "user-1", "key");
 
     private static CacheBasedIdempotencyService CreateService(
         IRemoteCacheService? dataCacheService = null,
@@ -54,16 +54,19 @@ public class CacheBasedIdempotencyServiceTests
             var expectedLock = new Mock<IAbstractedLock>(MockBehavior.Strict);
             var lockService = new Mock<IAbstractedLockService>(MockBehavior.Strict);
             lockService
-                .Setup(s => s.GetLockAsync("idempotent-concurrency:CreateThingCommand:user-1:submission-1", It.IsAny<CancellationToken>()))
+                .Setup(s => s.GetLockAsync("idempotent-concurrency:CreateThingCommand:user-1:submission-1",
+                    It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedLock.Object);
 
             var service = CreateService(lockService: lockService.Object);
 
-            var result = await service.GetLockAsync(Scope with {Key = "submission-1"}, TestContext.Current.CancellationToken);
+            var result = await service.GetLockAsync(Scope with {Key = "submission-1"},
+                TestContext.Current.CancellationToken);
 
             Assert.Same(expectedLock.Object, result);
             lockService.Verify(
-                s => s.GetLockAsync("idempotent-concurrency:CreateThingCommand:user-1:submission-1", It.IsAny<CancellationToken>()),
+                s => s.GetLockAsync("idempotent-concurrency:CreateThingCommand:user-1:submission-1",
+                    It.IsAny<CancellationToken>()),
                 Times.Once);
             lockService.VerifyNoOtherCalls();
         }

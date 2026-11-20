@@ -1,8 +1,11 @@
+using Dapper;
+using Microsoft.Data.Sqlite;
 using Moq;
 using RedShirt.Example.Api.Common.Distributed.Services.Abstractions;
 using RedShirt.Example.Api.DataStores.Common.DapperMySql.Factories;
 using RedShirt.Example.Api.DataStores.Common.DapperMySql.Services;
 using RedShirt.Example.Api.DataStores.Common.DapperMySql.Services.Resilience;
+using RedShirt.Example.Api.DataStores.Common.DapperMySql.Utility;
 using RedShirt.Example.Api.DataStores.Constants;
 using RedShirt.Example.Api.DataStores.Order.Models;
 using RedShirt.Example.Api.DataStores.Order.Models.Generated;
@@ -35,7 +38,9 @@ public class MariaDbOrderRepositoryTests
 
     private static OrderEntity CreateEntity(
         Guid? id = null,
-        DateTime? updatedAtUtc = null)
+        DateTime? updatedAtUtc = null,
+        string? status = null,
+        decimal? totalAmount = null)
     {
         var dto = CreateDto(id, updatedAtUtc);
         return new OrderEntity
@@ -44,8 +49,8 @@ public class MariaDbOrderRepositoryTests
             CreatedAtUtc = dto.CreatedAtUtc,
             UpdatedAtUtc = dto.UpdatedAtUtc,
             CustomerId = dto.CustomerId,
-            Status = dto.Status,
-            TotalAmount = dto.TotalAmount,
+            Status = status ?? dto.Status,
+            TotalAmount = totalAmount ?? dto.TotalAmount,
             TotalPrice = dto.TotalPrice
         };
     }
@@ -54,7 +59,9 @@ public class MariaDbOrderRepositoryTests
         int pageSize = 10,
         Guid? customerId = null,
         string? status = null,
-        decimal? totalAmount = null)
+        decimal? totalAmount = null,
+        string? statusContains = null,
+        decimal? totalAmountGreaterThan = null)
     {
         return new OrderServiceSearchRequest
         {
@@ -65,9 +72,9 @@ public class MariaDbOrderRepositoryTests
             UpdatedAfterUtc = null,
             CustomerId = customerId,
             Status = status,
-            StatusContains = null,
+            StatusContains = statusContains,
             TotalAmount = totalAmount,
-            TotalAmountGreaterThan = null,
+            TotalAmountGreaterThan = totalAmountGreaterThan,
             TotalAmountLessThan = null,
             TotalPrice = null,
             TotalPriceGreaterThan = null,
@@ -108,6 +115,57 @@ public class MariaDbOrderRepositoryTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(records);
         return retry;
+    }
+
+    /// <summary>
+    ///     A repository whose searches run against a shared in-memory SQLite database seeded with
+    ///     <paramref name="rows" />. SQLite accepts the backtick-quoted SQL the repository builds.
+    /// </summary>
+    private static async Task<SqliteSearch> CreateSqliteRepositoryAsync(
+        IRemoteCacheService? cacheService = null,
+        params OrderEntity[] rows)
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        SqlMapper.AddTypeHandler(SqliteGuidHandler.Instance);
+
+        // The repository disposes its connection, so it gets its own connection to a shared in-memory database. The
+        // keeper connection keeps the database alive for the test.
+        var connectionString = $"Data Source={Guid.NewGuid():N};Mode=Memory;Cache=Shared";
+        var keeper = new SqliteConnection(connectionString);
+        await keeper.OpenAsync(cancellationToken);
+
+        var properties = typeof(OrderEntity).GetProperties();
+        var columns = string.Join(", ",
+            properties.Select(p => DatabaseUtility.QuoteResource(DapperDtoSqlHelper.GetColumnName(p))));
+        await keeper.ExecuteAsync($"CREATE TABLE `Order` ({columns})");
+        if (rows.Length > 0)
+        {
+            await keeper.ExecuteAsync(
+                $"INSERT INTO `Order` ({columns}) VALUES ({string.Join(", ", properties.Select(p => "@" + p.Name))})",
+                rows);
+        }
+
+        var factory = new Mock<ISqlConnectionFactory>();
+        factory
+            .Setup(f => f.GetMySqlConnectionAsync(
+                DatabaseConstants.PrimaryDatabaseConnectionStringName,
+                It.IsAny<CancellationToken>()))
+            .Returns(async (string _, CancellationToken token) =>
+            {
+                var repositoryConnection = new SqliteConnection(connectionString);
+                await repositoryConnection.OpenAsync(token);
+                return repositoryConnection;
+            });
+        var retry = new Mock<IMySqlRetryWrapperService>();
+        retry
+            .Setup(r => r.RunAsync(
+                It.IsAny<Func<CancellationToken, Task<IEnumerable<OrderEntity>>>>(),
+                It.IsAny<CancellationToken>()))
+            .Returns<Func<CancellationToken, Task<IEnumerable<OrderEntity>>>, CancellationToken>((run, token) =>
+                run(token));
+
+        return new SqliteSearch(keeper,
+            CreateRepository(cacheService, sqlConnectionFactory: factory.Object, retryWrapperService: retry.Object));
     }
 
     [Fact]
@@ -158,6 +216,34 @@ public class MariaDbOrderRepositoryTests
     }
 
     [Fact]
+    public async Task SearchAsync_IgnoresSqlInCachedContinuationParameters()
+    {
+        // A cache entry written by an older version, or by anyone with write access to Redis, can carry extra fields.
+        // The sort order must come from code, so this payload would drop the table if it reached the query.
+        var continuationToken = Guid.NewGuid();
+        var searchRequest = CreateSearchRequest();
+        var cachedJson = JsonSerializer.Serialize(new
+        {
+            OrderBys = new List<string> {"`Id` DESC LIMIT 1; DROP TABLE `Order`; /*"},
+            SearchParameters = searchRequest,
+            LastId = Guid.NewGuid(),
+            LastUpdatedAtUtc = DateTime.UtcNow
+        });
+        var cache = new Mock<IRemoteCacheService>();
+        cache
+            .Setup(c => c.GetStringAsync($"continuation:order:{continuationToken}", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(cachedJson);
+        await using var sqlite = await CreateSqliteRepositoryAsync(cache.Object);
+
+        var result = await sqlite.Repository.SearchAsync(searchRequest, continuationToken,
+            TestContext.Current.CancellationToken);
+
+        Assert.Empty(result.Records);
+        Assert.Equal(1L, await sqlite.Keeper.ExecuteScalarAsync<long>(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'Order'"));
+    }
+
+    [Fact]
     public async Task SearchAsync_ReturnsRecords_WithoutContinuation_WhenPageNotFull()
     {
         var records = new List<OrderEntity> {CreateEntity(), CreateEntity()};
@@ -170,6 +256,43 @@ public class MariaDbOrderRepositoryTests
 
         Assert.Equal(2, result.Records.Count);
         Assert.Null(result.ContinuationToken);
+    }
+
+    [Theory]
+    [InlineData("%", new[] {"AB%100"})]
+    [InlineData("_", new[] {"AB_100"})]
+    [InlineData("!", new[] {"XAB!1"})]
+    [InlineData("B-1", new[] {"AB-100"})]
+    [InlineData("AB", new[] {"AB%100", "AB-100", "AB_100", "XAB!1"})]
+    public async Task SearchAsync_StatusContainsMatchesSubstringLiterally(string term, string[] expected)
+    {
+        // The caller's % and _ must not act as wildcards, and a plain term matches anywhere in the value.
+        await using var sqlite = await CreateSqliteRepositoryAsync(null,
+            CreateEntity(status: "AB-100"),
+            CreateEntity(status: "AB%100"),
+            CreateEntity(status: "AB_100"),
+            CreateEntity(status: "XAB!1"));
+
+        var result = await sqlite.Repository.SearchAsync(CreateSearchRequest(statusContains: term), null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(expected, result.Records.Select(r => r.Status).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task SearchAsync_StatusEqualsAndContainsBothApply()
+    {
+        // Each filter binds its own parameter. When two shared one, the last value bound was used for both.
+        await using var sqlite = await CreateSqliteRepositoryAsync(null,
+            CreateEntity(status: "AB-100"),
+            CreateEntity(status: "AB-200"));
+
+        var result = await sqlite.Repository.SearchAsync(
+            CreateSearchRequest(status: "AB-100", statusContains: "B-1"),
+            null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal("AB-100", Assert.Single(result.Records).Status);
     }
 
     [Fact]
@@ -207,6 +330,22 @@ public class MariaDbOrderRepositoryTests
         using var document = JsonDocument.Parse(storedValue!);
         Assert.Equal("Pending", document.RootElement.GetProperty("SearchParameters").GetProperty("Status").GetString());
         Assert.Equal(records[^1].Id, document.RootElement.GetProperty("LastId").GetGuid());
+    }
+
+    [Fact]
+    public async Task SearchAsync_TotalAmountEqualsAndGreaterThanBothApply()
+    {
+        // Same scale throughout: SQLite compares these decimals as text.
+        await using var sqlite = await CreateSqliteRepositoryAsync(null,
+            CreateEntity(totalAmount: 10.00m),
+            CreateEntity(totalAmount: 20.00m));
+
+        var result = await sqlite.Repository.SearchAsync(
+            CreateSearchRequest(totalAmount: 20.00m, totalAmountGreaterThan: 15.00m),
+            null,
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(20.00m, Assert.Single(result.Records).TotalAmount);
     }
 
     [Fact]
@@ -268,5 +407,32 @@ public class MariaDbOrderRepositoryTests
                 && e.Status == dto.Status
                 && e.TotalAmount == dto.TotalAmount),
             TestContext.Current.CancellationToken), Times.Once);
+    }
+
+    /// <summary>
+    ///     SQLite stores <see cref="Guid" /> parameters as text, which Dapper does not map back to <see cref="Guid" />.
+    ///     Handlers are process-wide. That is fine here: nothing in this test project talks to a real MariaDB.
+    /// </summary>
+    private sealed class SqliteGuidHandler : SqlMapper.TypeHandler<Guid>
+    {
+        public static readonly SqliteGuidHandler Instance = new();
+
+        public override Guid Parse(object value)
+        {
+            return Guid.Parse((string) value);
+        }
+
+        public override void SetValue(IDbDataParameter parameter, Guid value)
+        {
+            parameter.Value = value.ToString();
+        }
+    }
+
+    private sealed record SqliteSearch(SqliteConnection Keeper, MariaDbOrderRepository Repository) : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync()
+        {
+            return Keeper.DisposeAsync();
+        }
     }
 }

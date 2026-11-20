@@ -53,20 +53,6 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(3, "parameters = continuationParameters.SearchParameters;")
             .CloseBracket(2)
             .AppendLine()
-            // declare order-bys
-            .AppendLineWithIndent(2, "var orderBys = continuationParameters?.OrderBys ??")
-            .AppendLineWithIndent(2, "[")
-            .AppendLineWithIndent(3,
-                "$\"{" +
-                $"{classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullEntityName}.{classSummaryModel.UpdatedAt.Name}))" +
-                "} DESC\",")
-            // The key breaks ties between records updated at the same instant, so pages have a total order.
-            .AppendLineWithIndent(3,
-                "$\"{" +
-                $"{classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullEntityName}.{classSummaryModel.Key.Name}))" +
-                "} DESC\"")
-            .AppendLineWithIndent(2, "];")
-            .AppendLine()
             // Declare queryBuilder
             .AppendLineWithIndent(2, "var queryBuilder = new Dapper.SqlBuilder();")
             .AppendLine()
@@ -74,9 +60,18 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(2, "/** Apply WHERE filters **/")
             .AppendLineWithIndent(2, "queryBuilder = SetupQueryBuilder(queryBuilder, parameters);")
             .AppendLine()
-            // Apply OrderBys
-            .AppendLineWithIndent(2, "/** Apply OrderBys filters **/")
-            .AppendLineWithIndent(2, "foreach (var orderBy in orderBys){queryBuilder = queryBuilder.OrderBy(orderBy);}")
+            // Apply the sort order. It is always generated here and never read from the cache: the keyset condition
+            // depends on this exact order, and SQL text read back from Redis would allow SQL injection.
+            .AppendLineWithIndent(2, "/** Apply sort order (never read from the cache) **/")
+            .AppendLineWithIndent(2,
+                "queryBuilder = queryBuilder.OrderBy($\"{" +
+                $"{classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullEntityName}.{classSummaryModel.UpdatedAt.Name}))" +
+                "} DESC\");")
+            // The key breaks ties between records updated at the same instant, so pages have a total order.
+            .AppendLineWithIndent(2,
+                "queryBuilder = queryBuilder.OrderBy($\"{" +
+                $"{classSummaryModel.BaseNamespace}.DataStores.Common.DapperMySql.Utility.DatabaseUtility.QuoteResource(nameof({classSummaryModel.FullEntityName}.{classSummaryModel.Key.Name}))" +
+                "} DESC\");")
             .AppendLine()
             // Apply ContinuationToken filtering
             .AppendLineWithIndent(2, "if (continuationParameters is not null)")
@@ -132,7 +127,6 @@ public static class RepositoryLevelGenerator
             .AppendLineWithIndent(3,
                 $"await {classSummaryModel.BaseNamespace}.Common.Distributed.Extensions.RemoteCacheExtensions.SetObjectAsync(cacheService, {ContinuationScope(classSummaryModel)}.CacheKey(ContinuationEntity, continuationToken.Value), new ContinuationParameters")
             .OpenBracket(3)
-            .AppendLineWithIndent(4, "OrderBys = orderBys,")
             .AppendLineWithIndent(4, "SearchParameters = parameters,")
             .AppendLineWithIndent(4, $"Last{classSummaryModel.Key.Name} = lastRecord.{classSummaryModel.Key.Name},")
             .AppendLineWithIndent(4,
@@ -159,7 +153,6 @@ public static class RepositoryLevelGenerator
     {
         return sb.AppendLineWithIndent("private sealed class ContinuationParameters")
             .OpenBracket()
-            .AppendLineWithIndent(2, "public required List<string> OrderBys { get; init; }")
             .AppendLineWithIndent(2,
                 $"public required {classSummaryModel.RequestClassSearch} SearchParameters " +
                 "{ get; init; }")
@@ -340,9 +333,9 @@ public static class RepositoryLevelGenerator
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
-                                dtoProperty.Name, $"> @{paramName}") + ",")
+                                dtoProperty.Name, $"> @{paramName}GreaterThan") + ",")
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            "new {" + paramName + $" = parameters.{dtoProperty.Name}GreaterThan.Value" + "}")
+                            "new {" + paramName + $"GreaterThan = parameters.{dtoProperty.Name}GreaterThan.Value" + "}")
                         .AppendLineWithIndent(baseIndentLevel + 1, ");")
                         .CloseBracket(baseIndentLevel);
 
@@ -425,9 +418,14 @@ public static class RepositoryLevelGenerator
                         .AppendLineWithIndent(baseIndentLevel + 1, "builder = builder.Where(")
                         .AppendLineWithIndent(baseIndentLevel + 2,
                             WrapSimpleDatabaseUtilityQuoteString(baseNamespace, classSummaryModel.FullEntityName,
-                                dtoProperty.Name, $"LIKE @{paramName}") + ",")
+                                dtoProperty.Name,
+                                $"LIKE @{paramName}Contains {{{baseNamespace}.DataStores.Common.DapperMySql.Utility.SqlQueryHelper.LikeEscapeClause}}") +
+                            ",")
+                        // Escape the caller's wildcards so Contains means a literal substring match.
                         .AppendLineWithIndent(baseIndentLevel + 2,
-                            "new {" + paramName + $" = parameters.{dtoProperty.Name}Contains" + "}")
+                            "new {" + paramName +
+                            $"Contains = {baseNamespace}.DataStores.Common.DapperMySql.Utility.SqlQueryHelper.EncodeTermForLike(parameters.{dtoProperty.Name}Contains)" +
+                            "}")
                         .AppendLineWithIndent(baseIndentLevel + 1, ");")
                         .CloseBracket(baseIndentLevel);
 

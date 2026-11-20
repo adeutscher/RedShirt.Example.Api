@@ -25,11 +25,11 @@ internal sealed class ApiExceptionHandler(
     IHostEnvironment environment,
     ILogger<ApiExceptionHandler> logger) : IExceptionHandler
 {
-    private readonly bool _exposeUpstreamExceptionMessages =
-        options.Value.EffectiveExposeUpstreamExceptionMessages(environment);
-
     internal const string UpstreamFailureDetail =
         "A service this API depends on failed or is unavailable. Try again later.";
+
+    private readonly bool _exposeUpstreamExceptionMessages =
+        options.Value.EffectiveExposeUpstreamExceptionMessages(environment);
 
     private static bool TryMapException(Exception exception, out int statusCode, out string title,
         out bool isUpstreamFailure)

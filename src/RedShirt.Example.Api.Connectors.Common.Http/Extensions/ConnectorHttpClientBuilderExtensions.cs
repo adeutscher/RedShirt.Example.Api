@@ -10,33 +10,6 @@ public static class ConnectorHttpClientBuilderExtensions
     public const int DefaultHandlerLifetimeSeconds = 120;
 
     /// <summary>
-    ///     Creates the primary handler every connector <see cref="HttpClient" /> should use.
-    ///     <para>
-    ///         Automatic redirects are off. Connectors put credentials on each request (an <c>x-api-key</c> header, an
-    ///         OAuth client secret in a token request body). When a redirect is followed, .NET drops only the
-    ///         <c>Authorization</c> header, so a custom header goes to the redirect target as-is, and a 307 or 308 resends
-    ///         the body. A redirect from a dependency instead surfaces as an unsuccessful status code.
-    ///     </para>
-    /// </summary>
-    public static HttpClientHandler CreateConnectorPrimaryHandler()
-    {
-        return new HttpClientHandler
-        {
-            AllowAutoRedirect = false
-        };
-    }
-
-    /// <summary>
-    ///     Uses <see cref="CreateConnectorPrimaryHandler" /> as the named client's primary handler. For connector clients
-    ///     that do not need <see cref="ConfigureConnectorConnections{TConfiguration}" /> (for example an OAuth token
-    ///     client).
-    /// </summary>
-    public static IHttpClientBuilder ConfigureConnectorPrimaryHandler(this IHttpClientBuilder builder)
-    {
-        return builder.ConfigurePrimaryHttpMessageHandler(CreateConnectorPrimaryHandler);
-    }
-
-    /// <summary>
     ///     Applies <see cref="IConnectorConnectionConfiguration.HandlerLifetimeSeconds" /> and
     ///     <see cref="IConnectorConnectionConfiguration.MaxConnectionsPerServer" /> from
     ///     <typeparamref name="TConfiguration" /> to the pooled named client.
@@ -68,6 +41,33 @@ public static class ConnectorHttpClientBuilderExtensions
             });
 
         return builder;
+    }
+
+    /// <summary>
+    ///     Uses <see cref="CreateConnectorPrimaryHandler" /> as the named client's primary handler. For connector clients
+    ///     that do not need <see cref="ConfigureConnectorConnections{TConfiguration}" /> (for example an OAuth token
+    ///     client).
+    /// </summary>
+    public static IHttpClientBuilder ConfigureConnectorPrimaryHandler(this IHttpClientBuilder builder)
+    {
+        return builder.ConfigurePrimaryHttpMessageHandler(CreateConnectorPrimaryHandler);
+    }
+
+    /// <summary>
+    ///     Creates the primary handler every connector <see cref="HttpClient" /> should use.
+    ///     <para>
+    ///         Automatic redirects are off. Connectors put credentials on each request (an <c>x-api-key</c> header, an
+    ///         OAuth client secret in a token request body). When a redirect is followed, .NET drops only the
+    ///         <c>Authorization</c> header, so a custom header goes to the redirect target as-is, and a 307 or 308 resends
+    ///         the body. A redirect from a dependency instead surfaces as an unsuccessful status code.
+    ///     </para>
+    /// </summary>
+    public static HttpClientHandler CreateConnectorPrimaryHandler()
+    {
+        return new HttpClientHandler
+        {
+            AllowAutoRedirect = false
+        };
     }
 
     /// <summary>

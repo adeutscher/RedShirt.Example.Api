@@ -9,10 +9,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.15" />
-        <PackageReference Include="Microsoft.OpenApi" Version="3.11.0"/>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>
-        <PackageReference Include="NSwag.AspNetCore" Version="14.8.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.15"/>
+        <PackageReference Include="NSwag.AspNetCore" Version="14.8.0"/>
         <PackageReference Include="NSwag.MSBuild" Version="14.8.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -52,11 +50,11 @@
         (bin/<Configuration>/<TargetFramework>/<RID>/) is found as well. SkipNSwag=true opts out; only the
         Dockerfile publish stage uses it, because its build stage has already regenerated the document.
         NSwag runs with authentication enabled so the document includes the bearer scheme. The placeholder
-        authority is never contacted: JwtBearer only fetches issuer metadata when the first request arrives.
+        authority and audience are never used: JwtBearer only fetches issuer metadata when the first request arrives.
     -->
     <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(SkipNSwag)' != 'true'">
         <Exec Command="$(NSwagExe_Net100) run nswag.json /variables:Configuration=$(Configuration),RuntimeIdentifier=$(RuntimeIdentifier)"
-              EnvironmentVariables="NSWAG_RUN=1;AUTHENTICATION__DISABLE_AUTHENTICATION=false;AUTHENTICATION__AUTHORITY=https://openapi-generation.invalid/"/>
+              EnvironmentVariables="NSWAG_RUN=1;AUTHENTICATION__DISABLE_AUTHENTICATION=false;AUTHENTICATION__AUTHORITY=https://openapi-generation.invalid/;AUTHENTICATION__AUDIENCE=openapi-generation"/>
     </Target>
 
 </Project>

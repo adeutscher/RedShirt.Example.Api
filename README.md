@@ -66,6 +66,9 @@ Repo features in more detail:
         * "Pooled only" settings are ignored when `ClientPerRequest` is true. The Bar token endpoint keeps its own
           pooled client whatever `ClientPerRequest` says.
 * Configuration is based on environment variables.
+* Hardened HTTP responses: security headers on every response, and host filtering with a startup warning while any
+  host is allowed.
+    * For more information, see [`docs/patterns/hosting.md`](docs/patterns/hosting.md).
 * File upload and tracking examples.
 * Server-sent events over MQTT.
     * For more information, see [`docs/patterns/server-sent-events.md`](docs/patterns/server-sent-events.md)

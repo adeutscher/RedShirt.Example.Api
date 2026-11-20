@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Protocol;
 using RedShirt.Example.Api.ClientEvents.Library.Core.Exceptions;
@@ -15,8 +16,12 @@ namespace RedShirt.Example.Api.ClientEvents.Library.Mqtt.Services;
 internal sealed class MqttApiClientEventReceiver<TPayload>(
     IMqttClientFactory mqttClientFactory,
     IMqttClientEventsRetryWrapperService retryWrapperService,
+    IOptions<MqttApiClientEventReceiverConfiguration> options,
     ILogger<MqttApiClientEventReceiver<TPayload>> logger) : IApiClientEventReceiver<TPayload>
 {
+    private readonly int? _maxPayloadBytes = options.Value.EffectiveMaxPayloadBytes;
+    private readonly int? _maxQueuedEvents = options.Value.EffectiveMaxQueuedEventsPerStream;
+
     private static async Task DisconnectSafelyAsync(IMqttClient client, CancellationToken cancellationToken)
     {
         if (!client.IsConnected)
@@ -46,43 +51,38 @@ internal sealed class MqttApiClientEventReceiver<TPayload>(
         IMqttClient? client = null;
         Channel<ApiClientEventReceived<TPayload>>? channel = null;
 
+        if (_maxPayloadBytes is null && MqttApiClientEventReceiverConfiguration.ShouldWarnAboutUnlimitedPayloads())
+        {
+            logger.LogWarning(
+                "ClientEvents:Mqtt:MaxPayloadBytes is zero or negative, so MQTT client event payloads of any size are " +
+                "accepted. Leave it unset for the {DefaultMaxPayloadBytes}-byte default, or set a positive limit.",
+                MqttApiClientEventReceiverConfiguration.DefaultMaxPayloadBytes);
+        }
+
+        if (_maxQueuedEvents is null && MqttApiClientEventReceiverConfiguration.ShouldWarnAboutUnboundedQueues())
+        {
+            logger.LogWarning(
+                "ClientEvents:Mqtt:MaxQueuedEventsPerStream is zero or negative, so a slow event stream can queue " +
+                "events without limit. Leave it unset for the default of {DefaultMaxQueuedEventsPerStream}, or set a " +
+                "positive limit.",
+                MqttApiClientEventReceiverConfiguration.DefaultMaxQueuedEventsPerStream);
+        }
+
         try
         {
             client = await retryWrapperService.RunAsync(
                 mqttClientFactory.CreateConnectedClientAsync,
                 cancellationToken);
 
-            channel = Channel.CreateUnbounded<ApiClientEventReceived<TPayload>>(
-                new UnboundedChannelOptions {SingleReader = true, SingleWriter = false});
+            channel = CreateChannel();
 
-            // MQTT pushes messages on this callback thread; ReceiveAsync exposes an IAsyncEnumerable to callers.
-            // The channel bridges those models: WriteAsync enqueues from the handler, and then the ReadAllAsync invocation
-            // below dequeues messages into the async iterator that SSE (and any other consumers) pull from.
-            client.ApplicationMessageReceivedAsync += async args =>
+            // MQTT pushes messages on this callback thread, and ReceiveAsync exposes an IAsyncEnumerable to callers.
+            // The channel bridges those models: TryWrite enqueues from the handler, and then the ReadAllAsync
+            // invocation below dequeues messages into the async iterator that SSE (and any other consumers) pull from.
+            client.ApplicationMessageReceivedAsync += args =>
             {
-                try
-                {
-                    var payloadText = args.ApplicationMessage.ConvertPayloadToString();
-                    var payload = JsonSerializer.Deserialize<TPayload>(payloadText);
-                    if (payload is null)
-                    {
-                        return;
-                    }
-
-                    // Must forward into the channel: the handler cannot yield return, and the reader is blocked
-                    // on ReadAllAsync until a message arrives from the broker. WriteAsync is in-process only
-                    // (an unbounded Channel queue). It does not send MQTT traffic. The broker already delivered
-                    // the payload before this callback ran.
-                    await channel.Writer.WriteAsync(new ApiClientEventReceived<TPayload>
-                    {
-                        Topic = args.ApplicationMessage.Topic,
-                        Payload = payload
-                    }, cancellationToken);
-                }
-                catch (Exception exception)
-                {
-                    logger.LogWarning(exception, "Failed to deserialize MQTT client event payload");
-                }
+                HandleApplicationMessage(args.ApplicationMessage, channel.Writer);
+                return Task.CompletedTask;
             };
 
             var subscribeBuilder = new MqttClientSubscribeOptionsBuilder();
@@ -128,6 +128,83 @@ internal sealed class MqttApiClientEventReceiver<TPayload>(
                 await DisconnectSafelyAsync(client, cancellationToken);
                 client.Dispose();
             }
+        }
+    }
+
+    /// <summary>
+    ///     Creates the queue between the MQTT callback and the stream reader. It is bounded unless
+    ///     <see cref="MqttApiClientEventReceiverConfiguration.MaxQueuedEventsPerStream" /> turns the bound off.
+    /// </summary>
+    internal Channel<ApiClientEventReceived<TPayload>> CreateChannel()
+    {
+        return _maxQueuedEvents is { } capacity
+            ? Channel.CreateBounded<ApiClientEventReceived<TPayload>>(new BoundedChannelOptions(capacity)
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                // Only TryWrite is used, which never waits. Wait makes it return false when full.
+                FullMode = BoundedChannelFullMode.Wait
+            })
+            : Channel.CreateUnbounded<ApiClientEventReceived<TPayload>>(
+                new UnboundedChannelOptions {SingleReader = true, SingleWriter = false});
+    }
+
+    /// <summary>
+    ///     Turns one broker message into a received event and writes it to <paramref name="writer" />. Messages that
+    ///     are too large, fail to deserialize, or deserialize to null are dropped with a log entry. When the queue is
+    ///     full, the writer is completed: the reader gets what is already queued and the stream then ends.
+    /// </summary>
+    internal void HandleApplicationMessage(MqttApplicationMessage message,
+        ChannelWriter<ApiClientEventReceived<TPayload>> writer)
+    {
+        // Check the size before building a string. Anything with access to the broker can publish to these topics,
+        // not only this API, so the payload size cannot be assumed from what the send endpoints accept.
+        if (_maxPayloadBytes is { } maxPayloadBytes && message.Payload.Length > maxPayloadBytes)
+        {
+            logger.LogWarning(
+                "Dropped MQTT client event payload of {PayloadBytes} bytes on topic {Topic}: the limit is " +
+                "{MaxPayloadBytes} bytes",
+                message.Payload.Length, message.Topic, maxPayloadBytes);
+            return;
+        }
+
+        ApiClientEventReceived<TPayload> received;
+        try
+        {
+            var payloadText = message.ConvertPayloadToString();
+            var payload = JsonSerializer.Deserialize<TPayload>(payloadText);
+            if (payload is null)
+            {
+                return;
+            }
+
+            received = new ApiClientEventReceived<TPayload>
+            {
+                Topic = message.Topic,
+                Payload = payload
+            };
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Failed to deserialize MQTT client event payload");
+            return;
+        }
+
+        // TryWrite never waits, so a slow reader cannot hold up the MQTT client's message handling (and with it
+        // QoS 1 acknowledgements). It returns false when the bounded queue is full, or once the writer is completed.
+        if (writer.TryWrite(received))
+        {
+            return;
+        }
+
+        // The reader has fallen too far behind. Dropping events silently would leave the client with gaps it cannot
+        // detect (the stream has no event IDs or replay), so end the stream instead. The client reconnects and
+        // reloads state. TryComplete returns true only the first time, so this is logged once per stream.
+        if (writer.TryComplete())
+        {
+            logger.LogWarning(
+                "Closed MQTT client event stream on topic {Topic}: the reader fell {MaxQueuedEvents} events behind",
+                message.Topic, _maxQueuedEvents);
         }
     }
 }

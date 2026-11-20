@@ -1079,6 +1079,16 @@
               }
             }
           },
+          "429": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "502": {
             "description": ""
           }

@@ -30,14 +30,14 @@ internal sealed class ApiMqttClientFactory(
     private const int DefaultMqttTcpPort = 1883;
     private const int DefaultMqttTlsPort = 8883;
 
+    private static readonly string ServerHostname =
+        string.IsNullOrWhiteSpace(Environment.MachineName) ? "unknown" : Environment.MachineName;
+
     /// <summary>
     ///     Broker URLs already warned about for plaintext transport, so the warning appears once per broker, not once
     ///     per connection.
     /// </summary>
     private readonly ConcurrentDictionary<string, byte> _plaintextWarnedBrokerUrls = new(StringComparer.Ordinal);
-
-    private static readonly string ServerHostname =
-        string.IsNullOrWhiteSpace(Environment.MachineName) ? "unknown" : Environment.MachineName;
 
     /// <summary>
     ///     Try to resolve broker URI and then validate.

@@ -21,6 +21,8 @@ internal sealed class MariaDbProductRepository(
     private const int MaxPageSize = 100;
     private const string ConnectionStringName = DatabaseConstants.PrimaryDatabaseConnectionStringName;
 
+    private const string ContinuationEntity = "product";
+
     private static ProductDto ToDto(ProductEntity entity)
     {
         return new ProductDto
@@ -87,8 +89,8 @@ internal sealed class MariaDbProductRepository(
         if (!string.IsNullOrWhiteSpace(parameters.SkuContains))
         {
             builder = builder.Where(
-                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Sku))} LIKE @sku",
-                new {sku = parameters.SkuContains});
+                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Sku))} LIKE @skuContains {SqlQueryHelper.LikeEscapeClause}",
+                new {skuContains = SqlQueryHelper.EncodeTermForLike(parameters.SkuContains)});
         }
 
         if (!string.IsNullOrWhiteSpace(parameters.Name))
@@ -101,8 +103,8 @@ internal sealed class MariaDbProductRepository(
         if (!string.IsNullOrWhiteSpace(parameters.NameContains))
         {
             builder = builder.Where(
-                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Name))} LIKE @name",
-                new {name = parameters.NameContains});
+                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Name))} LIKE @nameContains {SqlQueryHelper.LikeEscapeClause}",
+                new {nameContains = SqlQueryHelper.EncodeTermForLike(parameters.NameContains)});
         }
 
         if (parameters.Price.HasValue)
@@ -115,8 +117,8 @@ internal sealed class MariaDbProductRepository(
         if (parameters.PriceGreaterThan.HasValue)
         {
             builder = builder.Where(
-                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Price))} > @price",
-                new {price = parameters.PriceGreaterThan.Value});
+                $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Price))} > @priceGreaterThan",
+                new {priceGreaterThan = parameters.PriceGreaterThan.Value});
         }
 
         if (parameters.PriceLessThan.HasValue)
@@ -156,7 +158,8 @@ internal sealed class MariaDbProductRepository(
         ContinuationParameters? continuationParameters = null;
         if (continuationToken is not null)
         {
-            var continuationParametersKey = ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value);
+            var continuationParametersKey =
+                ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value);
             continuationParameters =
                 await cacheService.GetObjectAsync<ContinuationParameters>(continuationParametersKey,
                     cancellationToken);
@@ -176,20 +179,15 @@ internal sealed class MariaDbProductRepository(
             parameters = continuationParameters.SearchParameters;
         }
 
-        var orderBys = continuationParameters?.OrderBys ??
-        [
-            $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.UpdatedAtUtc))} DESC",
-            // The key breaks ties between records updated at the same instant, so pages have a total order.
-            $"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Id))} DESC"
-        ];
-
         var queryBuilder = new SqlBuilder();
         queryBuilder = SetupQueryBuilder(queryBuilder, parameters);
 
-        foreach (var orderBy in orderBys)
-        {
-            queryBuilder = queryBuilder.OrderBy(orderBy);
-        }
+        // Always built here, never read from the cache: the keyset condition below depends on this exact order, and
+        // SQL text read back from Redis would let anyone who can write to the cache inject SQL.
+        queryBuilder = queryBuilder
+            .OrderBy($"{DatabaseUtility.QuoteResource(nameof(ProductEntity.UpdatedAtUtc))} DESC")
+            // The key breaks ties between records updated at the same instant, so pages have a total order.
+            .OrderBy($"{DatabaseUtility.QuoteResource(nameof(ProductEntity.Id))} DESC");
 
         if (continuationParameters is not null)
         {
@@ -233,7 +231,6 @@ internal sealed class MariaDbProductRepository(
                 ContinuationTokenScope.CacheKey(ContinuationEntity, continuationToken.Value),
                 new ContinuationParameters
                 {
-                    OrderBys = orderBys,
                     SearchParameters = parameters,
                     LastId = lastRecord.Id,
                     LastUpdatedAtUtc = lastRecord.UpdatedAtUtc
@@ -249,11 +246,8 @@ internal sealed class MariaDbProductRepository(
         };
     }
 
-    private const string ContinuationEntity = "product";
-
     private sealed class ContinuationParameters
     {
-        public required List<string> OrderBys { get; init; }
         public required ProductServiceSearchRequest SearchParameters { get; init; }
         public required Guid LastId { get; init; }
         public required DateTime LastUpdatedAtUtc { get; init; }

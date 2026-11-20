@@ -46,21 +46,31 @@ public class UploadController : ControllerBase
         IDeleteUploadCommandHandler deleteUploadCommandHandler,
         CancellationToken cancellationToken)
     {
+        // Check the purge permission before looking the upload up. Otherwise a caller without it could tell which IDs
+        // exist from 404 (missing) versus 403 (exists).
+        if (purge
+            && !User.HasClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.UploadPurge))
+        {
+            return Forbid();
+        }
+
         var existing = await getUploadSummaryQueryHandler.Handle(new GetUploadSummaryQuery(id), cancellationToken);
 
         if (purge)
         {
-            if (!User.HasClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.UploadPurge))
-            {
-                return Forbid();
-            }
+            // Purging is an extra permission on top of ownership, not a replacement for it. Only unrestricted callers
+            // can purge uploads belonging to someone else.
+            await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.UploadedByUserId);
         }
         else
         {
             await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.UploadedByUserId, true);
             if (UploadScope.IsValidator(User) && existing.State != UploadState.Rejected)
             {
-                return Forbid($"Validators can only delete resources in {UploadState.Rejected} state.");
+                // Not Forbid(...): its string arguments are authentication scheme names, not a message.
+                return Problem(
+                    statusCode: StatusCodes.Status403Forbidden,
+                    detail: $"Validators can only delete resources in {UploadState.Rejected} state.");
             }
         }
 

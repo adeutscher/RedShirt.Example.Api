@@ -20,10 +20,10 @@ internal class CreateCustomerCommandHandler(
 
         return await idempotencyWrapperService.RunIdempotentlyAsync(
             new IdempotencyScope(nameof(CreateCustomerCommand), command.CallerId, command.IdempotencyKey), async () =>
-            await customerService.PostAsync(new CustomerServicePostRequest
-            {
-                Email = command.Email,
-                DisplayName = command.DisplayName
-            }, cancellationToken), cancellationToken);
+                await customerService.PostAsync(new CustomerServicePostRequest
+                {
+                    Email = command.Email,
+                    DisplayName = command.DisplayName
+                }, cancellationToken), cancellationToken);
     }
 }

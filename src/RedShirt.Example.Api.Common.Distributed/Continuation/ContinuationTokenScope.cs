@@ -27,6 +27,26 @@ public static class ContinuationTokenScope
 {
     private static readonly ConcurrentDictionary<Type, PropertyInfo[]> PropertiesByType = new();
 
+    private static PropertyInfo[] ReadableProperties(Type type)
+    {
+        return type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(property => property.CanRead && property.GetIndexParameters().Length == 0)
+            .ToArray();
+    }
+
+    private static bool IsUnset(object? value, Type propertyType)
+    {
+        if (value is null)
+        {
+            return true;
+        }
+
+        // Nullable<T> boxes a held value as T, so only a null box is unset (Guid.Empty in a Guid? is a real filter).
+        return propertyType.IsValueType
+               && Nullable.GetUnderlyingType(propertyType) is null
+               && value.Equals(Activator.CreateInstance(propertyType));
+    }
+
     /// <summary>
     ///     Cache key for a continuation token issued by <paramref name="entity" />'s search.
     /// </summary>
@@ -75,25 +95,5 @@ public static class ContinuationTokenScope
         }
 
         return true;
-    }
-
-    private static PropertyInfo[] ReadableProperties(Type type)
-    {
-        return type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(property => property.CanRead && property.GetIndexParameters().Length == 0)
-            .ToArray();
-    }
-
-    private static bool IsUnset(object? value, Type propertyType)
-    {
-        if (value is null)
-        {
-            return true;
-        }
-
-        // Nullable<T> boxes a held value as T, so only a null box is unset (Guid.Empty in a Guid? is a real filter).
-        return propertyType.IsValueType
-               && Nullable.GetUnderlyingType(propertyType) is null
-               && value.Equals(Activator.CreateInstance(propertyType));
     }
 }

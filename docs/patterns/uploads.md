@@ -118,6 +118,9 @@ The upload feature uses scoped permissions to ensure that users cannot meddle in
 * **Search**: non-admin callers only see uploads where `UploadedByUserId`
   matches their JWT `sub`.
 * **GET / DELETE / details**: uploader or admin only.
+* **Purge** (`DELETE ?purge=true`): needs `upload:purge` (developer and admin) on top of the owner rule above, so
+  developers can purge only their own uploads and admins can purge any. Callers without `upload:purge` get 403
+  before the upload is looked up, so the response never reveals whether an upload ID exists.
 * **Download link** (state-dependent):
     * Non-`Stored`: admin or `upload:validator` (validators fetch content for validation; uploaders cannot download
       until stored).

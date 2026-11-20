@@ -53,6 +53,49 @@ public class OrderControllerTests
         };
     }
 
+    // Write actions must check the customer named in the request, not only the existing order's customer.
+    // Otherwise a customer-scoped caller could create orders for, or move orders to, another customer.
+
+    /// <summary>
+    ///     Enforcer for a caller scoped to <see cref="OwnCustomerId" />: any other customer is "not found".
+    /// </summary>
+    private static Mock<ICustomerScopedResourceEnforcer> CreateScopedEnforcer()
+    {
+        var enforcer = new Mock<ICustomerScopedResourceEnforcer>(MockBehavior.Strict);
+        enforcer
+            .Setup(e => e.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(), OwnCustomerId))
+            .Returns(Task.CompletedTask);
+        enforcer
+            .Setup(e => e.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(),
+                It.Is<Guid>(id => id != OwnCustomerId)))
+            .ThrowsAsync(new ResourceNotFoundException());
+        return enforcer;
+    }
+
+    private static OrderDto CreateDto(Guid id, Guid customerId)
+    {
+        return new OrderDto
+        {
+            Id = id,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow,
+            CustomerId = customerId,
+            Status = "Pending",
+            TotalAmount = 1m,
+            TotalPrice = null
+        };
+    }
+
+    private static Mock<IGetOrderRecordQueryHandler> CreateGetHandlerReturning(OrderDto existing)
+    {
+        var getHandler = new Mock<IGetOrderRecordQueryHandler>();
+        getHandler
+            .Setup(h => h.Handle(It.Is<GetOrderRecordQuery>(q => q.Id == existing.Id),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+        return getHandler;
+    }
+
     [Fact]
     public async Task Delete_DoesNotDelete_WhenResourceAuthorizationFails()
     {
@@ -116,104 +159,6 @@ public class OrderControllerTests
     }
 
     [Fact]
-    public async Task Search_PassesConstrainedCustomerId()
-    {
-        var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
-        authorizer
-            .Setup(a => a.ConstrainSearchCustomerId(It.IsAny<ClaimsPrincipal>(), null))
-            .Returns(CustomerId);
-        var expected = new OrderSearchResponse
-        {
-            ContinuationToken = null,
-            Records = []
-        };
-        var searchHandler = new Mock<ISearchOrderRecordsQueryHandler>();
-        searchHandler
-            .Setup(handler => handler.Handle(
-                It.Is<SearchOrderRecordsQuery>(query => query.CustomerId == CustomerId),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expected);
-
-        var result = await _controller.Search(new OrderSearchRequest(),
-            authorizer.Object, searchHandler.Object,
-            TestContext.Current.CancellationToken);
-
-        var ok = Assert.IsType<OkObjectResult>(result);
-        Assert.Same(expected, ok.Value);
-    }
-
-    // Write actions must check the customer named in the request, not only the existing order's customer.
-    // Otherwise a customer-scoped caller could create orders for, or move orders to, another customer.
-
-    /// <summary>
-    ///     Enforcer for a caller scoped to <see cref="OwnCustomerId" />: any other customer is "not found".
-    /// </summary>
-    private static Mock<ICustomerScopedResourceEnforcer> CreateScopedEnforcer()
-    {
-        var enforcer = new Mock<ICustomerScopedResourceEnforcer>(MockBehavior.Strict);
-        enforcer
-            .Setup(e => e.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(), OwnCustomerId))
-            .Returns(Task.CompletedTask);
-        enforcer
-            .Setup(e => e.EnsureCanAccessAsync(It.IsAny<ClaimsPrincipal>(),
-                It.Is<Guid>(id => id != OwnCustomerId)))
-            .ThrowsAsync(new ResourceNotFoundException());
-        return enforcer;
-    }
-
-    private static OrderDto CreateDto(Guid id, Guid customerId)
-    {
-        return new OrderDto
-        {
-            Id = id,
-            CreatedAtUtc = DateTime.UtcNow,
-            UpdatedAtUtc = DateTime.UtcNow,
-            CustomerId = customerId,
-            Status = "Pending",
-            TotalAmount = 1m,
-            TotalPrice = null
-        };
-    }
-
-    private static Mock<IGetOrderRecordQueryHandler> CreateGetHandlerReturning(OrderDto existing)
-    {
-        var getHandler = new Mock<IGetOrderRecordQueryHandler>();
-        getHandler
-            .Setup(h => h.Handle(It.Is<GetOrderRecordQuery>(q => q.Id == existing.Id),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existing);
-        return getHandler;
-    }
-
-    [Fact]
-    public async Task Post_Throws_AndCreatesNothing_WhenCustomerIsOutsideCallerScope()
-    {
-        var createHandler = new Mock<ICreateOrderCommandHandler>(MockBehavior.Strict);
-        var request = new OrderPostRequest {CustomerId = OtherCustomerId, Status = "Pending", TotalAmount = 1m};
-
-        await Assert.ThrowsAsync<ResourceNotFoundException>(() => _controller.Post(request, "idem-1",
-            CreateScopedEnforcer().Object, createHandler.Object, TestContext.Current.CancellationToken));
-
-        createHandler.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task Post_Creates_WhenCustomerIsInCallerScope()
-    {
-        var createHandler = new Mock<ICreateOrderCommandHandler>();
-        createHandler
-            .Setup(h => h.Handle(It.Is<CreateOrderCommand>(c => c.CustomerId == OwnCustomerId),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CreateDto(Guid.NewGuid(), OwnCustomerId));
-        var request = new OrderPostRequest {CustomerId = OwnCustomerId, Status = "Pending", TotalAmount = 1m};
-
-        var result = await _controller.Post(request, "idem-1", CreateScopedEnforcer().Object,
-            createHandler.Object, TestContext.Current.CancellationToken);
-
-        Assert.IsType<OkObjectResult>(result);
-    }
-
-    [Fact]
     public async Task Patch_Throws_AndUpdatesNothing_WhenMovingOrderToCustomerOutsideCallerScope()
     {
         var existing = CreateDto(Guid.NewGuid(), OwnCustomerId);
@@ -240,6 +185,34 @@ public class OrderControllerTests
             TestContext.Current.CancellationToken);
 
         Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Post_Creates_WhenCustomerIsInCallerScope()
+    {
+        var createHandler = new Mock<ICreateOrderCommandHandler>();
+        createHandler
+            .Setup(h => h.Handle(It.Is<CreateOrderCommand>(c => c.CustomerId == OwnCustomerId),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateDto(Guid.NewGuid(), OwnCustomerId));
+        var request = new OrderPostRequest {CustomerId = OwnCustomerId, Status = "Pending", TotalAmount = 1m};
+
+        var result = await _controller.Post(request, "idem-1", CreateScopedEnforcer().Object,
+            createHandler.Object, TestContext.Current.CancellationToken);
+
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Post_Throws_AndCreatesNothing_WhenCustomerIsOutsideCallerScope()
+    {
+        var createHandler = new Mock<ICreateOrderCommandHandler>(MockBehavior.Strict);
+        var request = new OrderPostRequest {CustomerId = OtherCustomerId, Status = "Pending", TotalAmount = 1m};
+
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() => _controller.Post(request, "idem-1",
+            CreateScopedEnforcer().Object, createHandler.Object, TestContext.Current.CancellationToken));
+
+        createHandler.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -270,5 +243,32 @@ public class OrderControllerTests
             CreateScopedEnforcer().Object, updateHandler.Object, TestContext.Current.CancellationToken);
 
         Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Search_PassesConstrainedCustomerId()
+    {
+        var authorizer = new Mock<ICustomerScopedResourceEnforcer>();
+        authorizer
+            .Setup(a => a.ConstrainSearchCustomerId(It.IsAny<ClaimsPrincipal>(), null))
+            .Returns(CustomerId);
+        var expected = new OrderSearchResponse
+        {
+            ContinuationToken = null,
+            Records = []
+        };
+        var searchHandler = new Mock<ISearchOrderRecordsQueryHandler>();
+        searchHandler
+            .Setup(handler => handler.Handle(
+                It.Is<SearchOrderRecordsQuery>(query => query.CustomerId == CustomerId),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expected);
+
+        var result = await _controller.Search(new OrderSearchRequest(),
+            authorizer.Object, searchHandler.Object,
+            TestContext.Current.CancellationToken);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(expected, ok.Value);
     }
 }

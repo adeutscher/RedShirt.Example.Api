@@ -20,11 +20,11 @@ internal class CreateProductCommandHandler(
 
         return await idempotencyWrapperService.RunIdempotentlyAsync(
             new IdempotencyScope(nameof(CreateProductCommand), command.CallerId, command.IdempotencyKey), async () =>
-            await productService.PostAsync(new ProductServicePostRequest
-            {
-                Sku = command.Sku,
-                Name = command.Name,
-                Price = command.Price
-            }, cancellationToken), cancellationToken);
+                await productService.PostAsync(new ProductServicePostRequest
+                {
+                    Sku = command.Sku,
+                    Name = command.Name,
+                    Price = command.Price
+                }, cancellationToken), cancellationToken);
     }
 }

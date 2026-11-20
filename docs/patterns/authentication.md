@@ -22,6 +22,10 @@ Small reminder that **authorization** is different from **authentication**:
     * The transformer inherits from `IClaimsTransformation` which defines the async `TransformAsync` method, so making
       some sort of callout to resolve roles to permissions isn't out of the question. However, given that it runs with
       every request some per-instance caching is probably in order.
+    * Permissions belong to this API, not to the token. Any `permission` claims that arrive in the token are removed
+      (with a one-time warning in the log), and the mapped permissions are added on a separate identity whose
+      authentication type is `RedShirt.Example.Api.Permissions`. Without this, a misconfigured identity provider
+      mapper (for example, one fed by a user-editable attribute) could hand out `api:unrestricted` directly.
 3. Authorization policies are created according to calling `AddAuthentication` (an extension on `IServiceCollection`).
     * Authorization falls back to a defined fallback policy if a specific policy is not named.
     * Authorization policies have requirements.
@@ -55,6 +59,18 @@ Recapped in reverse:
 3. The request's identity information may be enriched by a transformer. An example of this in this template would be
    resolving roles defined in the original identity to permissions in the enriched identity.
 
+## Token Validation
+
+With authentication enabled, the API checks each bearer token against `Authentication:*` settings (`AUTHENTICATION__*`
+environment variables):
+
+* **Issuer:** `iss` must equal `Authentication:Authority`. Startup fails when it is unset.
+* **Audience:** `aud` must contain `Authentication:Audience`. Startup fails when it is unset. Without this check, any
+  token the authority issues would be accepted, including tokens meant for other clients or APIs in the same realm.
+  With Keycloak, add an audience mapper to the client so its tokens carry the API's audience.
+* **Lifetime and signature:** tokens must be unexpired and signed by a key from the authority's metadata
+  (`Authentication:MetadataAddress` when the authority URL is not reachable from the API).
+
 ## On Disabling Authentication
 
 As described above, authentication is a separate concept from authorization and authorization can have requirements can
@@ -69,7 +85,7 @@ this is intentional.
 At time of writing, I flat-out don't have tidy answer to this conundrum for this template that I'm entirely happy with.
 I could have fallback copies of policies that are defined if authentication is disabled, but it feels like a lot of
 irresponsible duplication to give such a critical security feature such a clear off switch. The off switch is much too
-powerful just for the sake of local testing. For the moment, logging this message in documentation is good enough. 
+powerful just for the sake of local testing. For the moment, logging this message in documentation is good enough.
 
 Guard rails on the switch:
 

@@ -42,11 +42,16 @@ builder.Services
     .AddApiSwaggerDocument(builder.Configuration)
     .ConfigureApiServices(builder.Configuration)
     .ConsiderConfiguringForwardingHeaders(builder.Configuration)
-    .AddControllersWithViews();
+    .AddControllers();
 
 var app = builder.Build();
 app.WarnIfAuthenticationDisabled();
 app.WarnAboutExceptionMessageExposure();
+app.WarnIfAllHostsAllowed();
+app.WarnIfServerSentEventConnectionsUnlimited();
+
+// First, so every response (including exception handler and status code page responses) gets the headers.
+app.UseSecurityHeaders();
 
 app
     .ConsiderUsingForwardedHeaders()
@@ -73,7 +78,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
 
 app.UseRouting();
 app.ConsiderUsingAuthentication();
@@ -93,10 +97,9 @@ if (Environment.GetEnvironmentVariable("NSWAG_RUN") != "1")
 // Always set UseAuthorization because requirements aren't guaranteed to be based on authenticated identity.
 app.UseAuthorization();
 
+// Every controller uses attribute routing ([Route]), so there is no conventional route.
 app
-    .MapControllerRoute(
-        "default",
-        "{controller=Home}/{action=Index}/{id?}")
+    .MapControllers()
     .ConsiderRequiringRateLimiting(app.Configuration);
 
 await app.RunAsync();

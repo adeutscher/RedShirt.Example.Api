@@ -21,6 +21,8 @@ public static class ServiceCollectionExtensions
             .Configure<ApiMqttClientFactory.ConfigurationModel>(
                 configuration.GetSection(ConfigurationSectionName))
             .Configure<MqttClientEventsRetryWrapperService.ConfigurationModel>(
+                configuration.GetSection(ConfigurationSectionName))
+            .Configure<MqttApiClientEventReceiverConfiguration>(
                 configuration.GetSection(ConfigurationSectionName));
 
         services.TryAddSingleton<IMqttClientEventsExceptionArbiterService, MqttClientEventsExceptionArbiterService>();
