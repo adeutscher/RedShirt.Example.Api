@@ -415,15 +415,16 @@ The API publishes example message events to MiniStack's embedded IoT MQTT broker
 
 Local Compose resolves the MQTT broker address from IoT `DescribeEndpoint` (the same hostname AWS SDK clients use). MiniStack routes WebSocket upgrades by that IoT endpoint hostname, not by the bare gateway host `ministack:4566`; connecting without it returns HTTP `403` instead of `101 Switching Protocols`. The API connects to `ministack:4566` and sends the DescribeEndpoint value as the HTTP `Host` header. Username and password secret paths are intentionally `null` so the MQTT client connects without credentials.
 
-| Variable                                                              | Local default          |
-|-----------------------------------------------------------------------|------------------------|
-| `CLIENT_EVENTS__MQTT__RESOLVE_BROKER_ADDRESS_EXTERNALLY`              | `true`                 |
-| `CLIENT_EVENTS__MQTT__AWS__BROKER_CONNECT_HOST`                       | unset (connect to DescribeEndpoint host) |
-| `CLIENT_EVENTS__MQTT__BROKER_URL`                                     | unset (use DescribeEndpoint) |
-| `CLIENT_EVENTS__MQTT__CLIENT_ID_PREFIX`                               | `RedShirt.Example.Api` |
-| `CLIENT_EVENTS__MQTT__USERNAME_SECRET_PATH`                           | `null`                 |
-| `CLIENT_EVENTS__MQTT__PASSWORD_SECRET_PATH`                           | `null`                 |
-| `CLIENT_EVENTS__MQTT__RETRY_COUNT`                                    | `3`                    |
+| Variable                                                 | Local default                            |
+| -------------------------------------------------------- | ---------------------------------------- |
+| `CLIENT_EVENTS__MQTT__RESOLVE_BROKER_ADDRESS_EXTERNALLY` | `true`                                   |
+| `CLIENT_EVENTS__MQTT__AWS__BROKER_CONNECT_HOST`          | unset (connect to DescribeEndpoint host) |
+| `CLIENT_EVENTS__MQTT__BROKER_URL`                        | unset (use DescribeEndpoint)             |
+| `CLIENT_EVENTS__MQTT__CLIENT_ID_PREFIX`                  | `RedShirt.Example.Api`                   |
+| `CLIENT_EVENTS__MQTT__USERNAME_SECRET_PATH`              | `null`                                   |
+| `CLIENT_EVENTS__MQTT__PASSWORD_SECRET_PATH`              | `null`                                   |
+| `CLIENT_EVENTS__MQTT__RETRY_COUNT`                       | `3`                                      |
+| `SERVER_SENT_EVENTS__MAX_CONNECTIONS_PER_USER`           | `3`                                      |
 
 MiniStack advertises IoT endpoint hostnames under `MINISTACK_HOST` (set to `ministack` in compose). Docker maps that hostname to the MiniStack container via a network alias in `docker-compose.yaml`; if you reset MiniStack state, run `aws iot describe-endpoint` and update the alias to match. MiniStack also exposes native MQTT over TLS on port `8883` when needed; the compose file maps that port for host-side tooling.
 

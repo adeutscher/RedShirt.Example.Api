@@ -37,6 +37,7 @@ internal static class ServiceCollectionExtensions
             .AddProblemDetails()
             .AddApiExceptionHandlingOptions(configuration)
             .AddExceptionHandler<ApiExceptionHandler>()
+            .AddServerSentEventConnectionLimits(configuration)
             // Host
             ////
             .ConsiderAddingAuthentication(configuration)

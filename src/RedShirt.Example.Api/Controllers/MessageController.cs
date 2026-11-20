@@ -7,6 +7,7 @@ using RedShirt.Example.Api.Constants;
 using RedShirt.Example.Api.Core.UseCases.Messages.Commands.Send;
 using RedShirt.Example.Api.Core.UseCases.Messages.Queries.Stream;
 using RedShirt.Example.Api.Models.Messages;
+using RedShirt.Example.Api.ServerSentEvents;
 using System.Runtime.CompilerServices;
 
 namespace RedShirt.Example.Api.Controllers;
@@ -38,16 +39,30 @@ public class MessageController : ControllerBase
     [Produces("text/event-stream")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<IResult> GetEventStream(
         [FromServices]
         IStreamExampleMessagesQueryHandler streamExampleMessagesQueryHandler,
+        [FromServices]
+        IServerSentEventConnectionLimiter connectionLimiter,
         CancellationToken cancellationToken)
     {
         if (!User.TryGetUserId(out var userId))
         {
             return TypedResults.BadRequest("Authenticated user id is required.");
         }
+
+        if (!connectionLimiter.TryAcquire(userId, out var lease))
+        {
+            return TypedResults.Problem(
+                statusCode: StatusCodes.Status429TooManyRequests,
+                detail: "Too many open event streams for this user. Close one before opening another.");
+        }
+
+        // Frees the slot when the request ends, however it ends: stream finished, client disconnected, or an exception
+        // before streaming started.
+        HttpContext.Response.RegisterForDispose(lease);
 
         var messageStream =
             await streamExampleMessagesQueryHandler.Handle(new StreamExampleMessagesQuery(userId), cancellationToken);

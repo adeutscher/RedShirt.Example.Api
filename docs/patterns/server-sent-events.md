@@ -25,7 +25,70 @@ This template has a simple messaging example:
 
 # Configuration Options
 
-STUB
+The MQTT client settings are listed in the [test/local README](../../test/local/README.md#messages-server-sent-events).
+
+## Connections Per User
+
+`ServerSentEvents:MaxConnectionsPerUser` (environment variable `SERVER_SENT_EVENTS__MAX_CONNECTIONS_PER_USER`) caps how
+many event streams one user can hold open at the same time.
+
+* Users are identified by the JWT subject, the same value that picks their MQTT topic.
+* A request over the cap gets `429 Too Many Requests` with a ProblemDetails body, before any MQTT connection is made.
+* A slot is freed when the request ends, whether the stream finished, the client disconnected, or the request failed.
+* Zero, a negative value, or leaving it unset means unlimited. The API logs a warning at startup in that case, in every
+  environment.
+* The local Compose stack sets it to `3`.
+
+The count is kept in memory on each API instance. It is not shared between instances. If a load balancer spreads one
+user's streams across several instances, that user can hold up to the cap times the number of instances. Sticky
+sessions bring this closer to the configured value. A cross-instance count (for example in Redis) would be exact, but it
+adds a dependency to every stream open and needs cleanup for instances that die while holding slots. That trade was not
+worth it for this template.
+
+### Choosing a Limit
+
+This section is opinion, not a rule. The right number depends on the application: who the clients are, how many devices
+and tabs they use, how the clients are written, and what the broker and hosting plan allow. Treat the numbers below as
+a place to start and adjust them from what you see in production.
+
+First, what one stream costs in this template:
+
+* An HTTP connection that Kestrel holds open for as long as the client listens.
+* Its own MQTT client connection to the broker. Streams do not share a broker connection, so the broker sees one
+  connection per open stream. Managed brokers usually have connection quotas, and some (AWS IoT Core among them) bill
+  by connection time.
+* An in-process channel that buffers messages until the client reads them.
+
+So the cap is less about one user hogging the API and more about one buggy or hostile client turning into hundreds of
+broker connections. A client that reconnects in a tight loop without closing its old streams is the common accident.
+
+| Client type                         | Suggested starting point | Why                                                 |
+| ----------------------------------- | ------------------------ | --------------------------------------------------- |
+| Interactive users (browser, mobile) | 5                        | A phone, a laptop, and a few tabs                   |
+| Internal staff tools and dashboards | 10                       | Power users keep many tabs open                     |
+| Service accounts and integrations   | 1 or 2                   | One consumer stream, plus one for a restart overlap |
+
+Some reasoning behind those numbers:
+
+* **Browsers already limit themselves over HTTP/1.1.** A browser allows about 6 connections per origin, and every
+  open stream uses one of them, so a user with many tabs breaks their own page loads long before reaching a high cap.
+  HTTP/2 removes that limit, so the server-side cap matters more when the API is served over HTTP/2.
+* **A cap far below real use only produces support tickets.** If legitimate users hit `429`, raise the cap or change the
+  client, rather than leaving it.
+* **A cap far above real use protects nothing.** 50 streams per user is close to unlimited for a single bad client.
+* **Service accounts should not need many.** A backend consumer should hold one stream and fan messages out
+  internally. Allow a second slot so a restarting consumer can connect before the old connection times out.
+* **One cap covers every client type.** This template has a single setting. If interactive users and service accounts
+  need very different caps, a per-role cap (read from the permission claims) is the next step.
+
+Things to do alongside the cap:
+
+* Have clients treat `429` as "back off and retry later with jitter", not "retry now".
+* Share one stream between browser tabs where possible, for example with a `BroadcastChannel` or a `SharedWorker`
+  that holds the only connection.
+* Size the broker for the worst case: users times cap times API instances, unless sticky sessions are in place.
+* Keep an instance-wide backstop. Kestrel's `Limits.MaxConcurrentConnections` limits all connections on an instance, no
+  matter which user opened them. The rate limiter limits how often streams are opened, not how many stay open.
 
 # Special Cases
 
