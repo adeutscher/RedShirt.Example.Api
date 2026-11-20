@@ -46,16 +46,17 @@ public class UploadController : ControllerBase
         IDeleteUploadCommandHandler deleteUploadCommandHandler,
         CancellationToken cancellationToken)
     {
+        // Check the purge permission before looking the upload up. Otherwise a caller without it could tell which IDs
+        // exist from 404 (missing) versus 403 (exists).
+        if (purge
+            && !User.HasClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.UploadPurge))
+        {
+            return Forbid();
+        }
+
         var existing = await getUploadSummaryQueryHandler.Handle(new GetUploadSummaryQuery(id), cancellationToken);
 
-        if (purge)
-        {
-            if (!User.HasClaim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.UploadPurge))
-            {
-                return Forbid();
-            }
-        }
-        else
+        if (!purge)
         {
             await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.UploadedByUserId, true);
             if (UploadScope.IsValidator(User) && existing.State != UploadState.Rejected)
