@@ -67,7 +67,10 @@ public class UploadController : ControllerBase
             await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.UploadedByUserId, true);
             if (UploadScope.IsValidator(User) && existing.State != UploadState.Rejected)
             {
-                return Forbid($"Validators can only delete resources in {UploadState.Rejected} state.");
+                // Not Forbid(...): its string arguments are authentication scheme names, not a message.
+                return Problem(
+                    statusCode: StatusCodes.Status403Forbidden,
+                    detail: $"Validators can only delete resources in {UploadState.Rejected} state.");
             }
         }
 

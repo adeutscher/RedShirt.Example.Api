@@ -35,6 +35,8 @@ public sealed class UploadControllerTests : IDisposable
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddApiAuthorizationPolicies();
+        // Supplies the ProblemDetailsFactory that ControllerBase.Problem() resolves from request services.
+        services.AddMvcCore();
         _provider = services.BuildServiceProvider();
     }
 
@@ -57,12 +59,12 @@ public sealed class UploadControllerTests : IDisposable
         {
             ControllerContext = new ControllerContext
             {
-                HttpContext = new DefaultHttpContext {User = user}
+                HttpContext = new DefaultHttpContext {User = user, RequestServices = _provider}
             }
         };
     }
 
-    private void UploadOwnedBy(string uploadedByUserId)
+    private void UploadOwnedBy(string uploadedByUserId, UploadState state = UploadState.Stored)
     {
         _summaryHandler
             .Setup(handler => handler.Handle(It.IsAny<GetUploadSummaryQuery>(), It.IsAny<CancellationToken>()))
@@ -72,7 +74,7 @@ public sealed class UploadControllerTests : IDisposable
                 DateCreatedUtc = DateTime.UtcNow,
                 DateUpdatedUtc = DateTime.UtcNow,
                 UploadedByUserId = uploadedByUserId,
-                State = UploadState.Stored,
+                State = state,
                 FileName = "file.txt",
                 IsValidated = true,
                 IsRejected = false
@@ -83,6 +85,20 @@ public sealed class UploadControllerTests : IDisposable
     {
         return controller.Delete(UploadId, true, _summaryHandler.Object, Enforcer, _deleteHandler.Object,
             TestContext.Current.CancellationToken);
+    }
+
+    private Task<IActionResult> SoftDelete(UploadController controller)
+    {
+        return controller.Delete(UploadId, false, _summaryHandler.Object, Enforcer, _deleteHandler.Object,
+            TestContext.Current.CancellationToken);
+    }
+
+    private void VerifyDeleted(Times times)
+    {
+        _deleteHandler.Verify(
+            handler => handler.Handle(It.Is<DeleteUploadCommand>(command => command.Id == UploadId && !command.Purge),
+                It.IsAny<CancellationToken>()),
+            times);
     }
 
     private void VerifyPurged(Times times)
@@ -155,5 +171,36 @@ public sealed class UploadControllerTests : IDisposable
         await Assert.ThrowsAsync<ResourceNotFoundException>(() => Purge(controller));
 
         VerifyPurged(Times.Never());
+    }
+
+    [Theory]
+    [InlineData(UploadState.Stored)]
+    [InlineData(UploadState.NotValidated)]
+    public async Task Delete_Validator_NotRejected_IsForbiddenProblem(UploadState state)
+    {
+        UploadOwnedBy(OtherUserId, state);
+
+        var result = await SoftDelete(await ControllerForRoles(BespokeAuthorizationRoles.UploadValidator));
+
+        var objectResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status403Forbidden, objectResult.StatusCode);
+        var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
+        Assert.Equal(StatusCodes.Status403Forbidden, problem.Status);
+        Assert.Contains(nameof(UploadState.Rejected), problem.Detail);
+        VerifyDeleted(Times.Never());
+    }
+
+    [Fact]
+    public async Task Delete_Validator_Rejected_Deletes()
+    {
+        UploadOwnedBy(OtherUserId, UploadState.Rejected);
+        _deleteHandler
+            .Setup(handler => handler.Handle(It.IsAny<DeleteUploadCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UploadSummaryModel?) null);
+
+        var result = await SoftDelete(await ControllerForRoles(BespokeAuthorizationRoles.UploadValidator));
+
+        Assert.IsType<NoContentResult>(result);
+        VerifyDeleted(Times.Once());
     }
 }
