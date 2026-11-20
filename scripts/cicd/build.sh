@@ -17,7 +17,7 @@
 #     (restore and build only, no tests) after the main solution.
 #
 # .NET and test projects:
-#   * .NET 10 SDK or later, with global.json setting
+#   * .NET 11 SDK or later, with global.json setting
 #     "test": { "runner": "Microsoft.Testing.Platform" }. Older SDKs or the VSTest
 #     runner reject the "dotnet test" options used here.
 #   * Every test project in the solution uses xunit.v3 4.x or later. Earlier versions

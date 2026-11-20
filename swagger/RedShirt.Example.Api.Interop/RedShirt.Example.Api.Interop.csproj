@@ -19,7 +19,7 @@
             BeforeTargets="CoreCompile"
             Inputs="swagger.json;nswag.json"
             Outputs="Client.generated.cs">
-        <Exec Command="$(NSwagExe_Net100) run nswag.json"
+        <Exec Command="$(NSwagExe_Net110) run nswag.json"
               WorkingDirectory="$(MSBuildProjectDirectory)"/>
     </Target>
 

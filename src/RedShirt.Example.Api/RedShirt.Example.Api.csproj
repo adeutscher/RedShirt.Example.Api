@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net11.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.15"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="11.0.0"/>
         <PackageReference Include="NSwag.AspNetCore" Version="14.8.0"/>
         <PackageReference Include="NSwag.MSBuild" Version="14.8.0">
             <PrivateAssets>all</PrivateAssets>
@@ -53,7 +53,7 @@
         authority and audience are never used: JwtBearer only fetches issuer metadata when the first request arrives.
     -->
     <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(SkipNSwag)' != 'true'">
-        <Exec Command="$(NSwagExe_Net100) run nswag.json /variables:Configuration=$(Configuration),RuntimeIdentifier=$(RuntimeIdentifier)"
+        <Exec Command="$(NSwagExe_Net110) run nswag.json /variables:Configuration=$(Configuration),RuntimeIdentifier=$(RuntimeIdentifier)"
               EnvironmentVariables="NSWAG_RUN=1;AUTHENTICATION__DISABLE_AUTHENTICATION=false;AUTHENTICATION__AUTHORITY=https://openapi-generation.invalid/;AUTHENTICATION__AUDIENCE=openapi-generation"/>
     </Target>
 

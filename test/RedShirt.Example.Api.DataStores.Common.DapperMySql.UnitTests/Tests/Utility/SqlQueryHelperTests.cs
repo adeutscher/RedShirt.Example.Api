@@ -20,6 +20,10 @@ public class SqlQueryHelperTests
     [Fact]
     public void LikeEscapeClause_NamesTheEscapeCharacter()
     {
+        // LikeEscapeClause is the constant under test, so it is deliberately the 'actual' argument.
+        // xUnit2000 assumes any constant is the expected value, which does not apply here.
+#pragma warning disable xUnit2000
         Assert.Equal($"ESCAPE '{SqlQueryHelper.LikeEscapeCharacter}'", SqlQueryHelper.LikeEscapeClause);
+#pragma warning restore xUnit2000
     }
 }
