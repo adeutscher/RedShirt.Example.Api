@@ -423,7 +423,7 @@ Local Compose resolves the MQTT broker address from IoT `DescribeEndpoint` (the 
 | `CLIENT_EVENTS__MQTT__CLIENT_ID_PREFIX`                  | `RedShirt.Example.Api`                   |
 | `CLIENT_EVENTS__MQTT__USERNAME_SECRET_PATH`              | `null`                                   |
 | `CLIENT_EVENTS__MQTT__PASSWORD_SECRET_PATH`              | `null`                                   |
-| `CLIENT_EVENTS__MQTT__MAX_PAYLOAD_BYTES`                 | unset (131072 bytes)                     |
+| `CLIENT_EVENTS__MQTT__MAX_PAYLOAD_BYTES`                 | `131072`                                 |
 | `CLIENT_EVENTS__MQTT__RETRY_COUNT`                       | `3`                                      |
 | `SERVER_SENT_EVENTS__MAX_CONNECTIONS_PER_USER`           | `3`                                      |
 
