@@ -56,7 +56,13 @@ public class UploadController : ControllerBase
 
         var existing = await getUploadSummaryQueryHandler.Handle(new GetUploadSummaryQuery(id), cancellationToken);
 
-        if (!purge)
+        if (purge)
+        {
+            // Purging is an extra permission on top of ownership, not a replacement for it. Only unrestricted callers
+            // can purge uploads belonging to someone else.
+            await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.UploadedByUserId);
+        }
+        else
         {
             await uploadScopedResourceEnforcer.EnsureCanAccessAsync(User, existing.UploadedByUserId, true);
             if (UploadScope.IsValidator(User) && existing.State != UploadState.Rejected)
