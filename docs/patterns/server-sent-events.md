@@ -56,6 +56,34 @@ or anything that has broker credentials, can publish to the same topics, so what
 about what arrives. If your broker has its own limit (for example Mosquitto's `message_size_limit`), keep this setting
 at or below it.
 
+## Slow Clients
+
+Each open stream has a queue between the MQTT client, which pushes events as the broker delivers them, and the HTTP
+response, which can only send as fast as the client reads. A client on a poor connection, or a browser tab that has
+stalled, stops reading. Once the response buffer fills, the queue is all that is left to absorb new events.
+
+`ClientEvents:Mqtt:MaxQueuedEventsPerStream` (environment variable `CLIENT_EVENTS__MQTT__MAX_QUEUED_EVENTS_PER_STREAM`)
+bounds that queue.
+
+* When unset, a stream can fall 256 events behind.
+* When a stream falls further behind, the API closes it. The events already queued are still sent, then the stream
+  ends normally and a warning names the topic. The client reconnects.
+* Zero or negative removes the bound, which is logged as a warning the first time a stream opens.
+
+Closing the stream is deliberate. The alternatives are worse:
+
+* **Waiting for the client** would hold up the MQTT client's message handling, which delays QoS 1 acknowledgements and
+  can lead the broker to disconnect it.
+* **Dropping events** would keep the stream open with gaps the client cannot see, because this stream has no event IDs
+  or replay.
+
+A closed stream tells the client something may have been missed. Clients should reconnect with a delay (see
+[Backing Off With Jitter](#backing-off-with-jitter)) and reload current state after reconnecting.
+
+The queue bound and the payload limit together set the worst-case memory for one stream: roughly
+`MaxQueuedEventsPerStream` times `MaxPayloadBytes`, or about 32 MiB at the defaults. Typical events are a few hundred
+bytes, so a real queue is far smaller. If you raise the payload limit, consider lowering the queue bound to match.
+
 ## Connections Per User
 
 `ServerSentEvents:MaxConnectionsPerUser` (environment variable `SERVER_SENT_EVENTS__MAX_CONNECTIONS_PER_USER`) caps how

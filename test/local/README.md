@@ -424,6 +424,7 @@ Local Compose resolves the MQTT broker address from IoT `DescribeEndpoint` (the 
 | `CLIENT_EVENTS__MQTT__USERNAME_SECRET_PATH`              | `null`                                   |
 | `CLIENT_EVENTS__MQTT__PASSWORD_SECRET_PATH`              | `null`                                   |
 | `CLIENT_EVENTS__MQTT__MAX_PAYLOAD_BYTES`                 | `131072`                                 |
+| `CLIENT_EVENTS__MQTT__MAX_QUEUED_EVENTS_PER_STREAM`      | `256`                                    |
 | `CLIENT_EVENTS__MQTT__RETRY_COUNT`                       | `3`                                      |
 | `SERVER_SENT_EVENTS__MAX_CONNECTIONS_PER_USER`           | `3`                                      |
 
