@@ -83,9 +83,10 @@ Some reasoning behind those numbers:
 
 Things to do alongside the cap:
 
-* Have clients treat `429` as "back off and retry later with jitter", not "retry now".
-* Share one stream between browser tabs where possible, for example with a `BroadcastChannel` or a `SharedWorker`
-  that holds the only connection.
+* Have clients treat `429` as "back off and retry later with jitter", not "retry now". See
+  [Backing Off With Jitter](#backing-off-with-jitter).
+* Share one stream between browser tabs where possible. See
+  [Sharing One Stream Between Tabs](#sharing-one-stream-between-tabs).
 * Size the broker for the worst case: users times cap times API instances, unless sticky sessions are in place.
 * Keep an instance-wide backstop. Kestrel's `Limits.MaxConcurrentConnections` limits all connections on an instance, no
   matter which user opened them. The rate limiter limits how often streams are opened, not how many stay open.
@@ -368,6 +369,213 @@ async function listenToMessageStream(
 
 To exercise the stream locally, open a terminal running the listener above, then publish a message with
 `POST /messages` (requires `api:write`). The listener should print lines like `[message] hello from mqtt`.
+
+### Backing Off With Jitter
+
+When the API answers `429 Too Many Requests`, the user is already at the per-user stream cap (see
+[Connections Per User](#connections-per-user)). Retrying at once only adds load and will keep failing until one of their
+other streams closes. The same goes for `502`, `503`, `504`, and network errors, when the API or the broker is having
+trouble: if every client retries on the same schedule, they all reconnect together and knock it over again.
+
+The usual fix is exponential backoff with "full jitter": after each failure, double a ceiling (up to a maximum) and wait
+a random time between zero and that ceiling. The randomness spreads out clients that failed at the same moment.
+
+This builds on `listenToMessageStream` from the JavaScript example above, with two changes. It takes an `AbortSignal`,
+and it throws an error that carries the HTTP status:
+
+```javascript
+class HttpStatusError extends Error {
+  constructor(status, retryAfter, body) {
+    super(`HTTP ${status}: ${body}`);
+    this.status = status;
+    this.retryAfter = retryAfter;
+  }
+}
+
+async function listenToMessageStream(apiBaseUrl, accessToken, onEvent, signal) {
+  const url = `${apiBaseUrl.replace(/\/$/, "")}/messages/event-stream`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "text/event-stream",
+    },
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new HttpStatusError(
+      response.status,
+      response.headers.get("Retry-After"),
+      await response.text(),
+    );
+  }
+
+  // ... the rest is unchanged: read response.body and call onEvent(eventName, data) for each event.
+}
+```
+
+The retry loop:
+
+```javascript
+// 429: over the per-user stream cap. 502/503/504: the API or the broker is having trouble.
+const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
+
+function sleep(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason);
+      return;
+    }
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(signal.reason);
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+async function streamWithBackoff({
+  apiBaseUrl,
+  getAccessToken,
+  onEvent,
+  signal,
+  baseDelayMs = 1_000,
+  maxDelayMs = 60_000,
+  healthyAfterMs = 30_000,
+}) {
+  let attempt = 0;
+
+  while (!signal?.aborted) {
+    const startedAt = Date.now();
+    let retryAfterMs = 0;
+
+    try {
+      // Ask for a token on every attempt, so a refreshed token is picked up after a long outage.
+      await listenToMessageStream(apiBaseUrl, await getAccessToken(), onEvent, signal);
+      // The server closed the stream normally (for example during a deployment). Reconnect, with a delay as well.
+    } catch (error) {
+      if (signal?.aborted) {
+        return;
+      }
+      if (error instanceof HttpStatusError) {
+        if (!RETRYABLE_STATUSES.has(error.status)) {
+          // 400, 401, 403: retrying the same request will not help. Let the caller refresh the token or report it.
+          throw error;
+        }
+        // The API does not send Retry-After today, but respect it if a proxy or a later version does.
+        retryAfterMs = (Number(error.retryAfter) || 0) * 1_000;
+      }
+      // Anything else is a network error or a dropped connection, which is worth retrying.
+    }
+
+    // A stream that stayed up for a while was healthy, so the next failure starts again from a short delay.
+    attempt = Date.now() - startedAt >= healthyAfterMs ? 1 : attempt + 1;
+
+    const ceilingMs = Math.min(maxDelayMs, baseDelayMs * 2 ** (attempt - 1));
+    const delayMs = Math.max(retryAfterMs, Math.random() * ceilingMs);
+
+    try {
+      await sleep(delayMs, signal);
+    } catch {
+      return; // Aborted while waiting.
+    }
+  }
+}
+```
+
+With the defaults, the waits are random within 0 to 1 second, then 0 to 2, 0 to 4, and so on up to 0 to 60 seconds.
+
+Usage:
+
+```javascript
+const stop = new AbortController();
+
+streamWithBackoff({
+  apiBaseUrl: "https://api.example.com",
+  getAccessToken: () => auth.getAccessToken(), // Your OIDC client.
+  onEvent: (eventName, data) => console.log(`[${eventName}] ${data}`),
+  signal: stop.signal,
+}).catch((error) => console.error("Event stream stopped:", error));
+
+// Later, for example on sign-out or when the component unmounts:
+stop.abort();
+```
+
+### Sharing One Stream Between Tabs
+
+Every open tab with its own stream uses one of the user's slots. A user with four tabs open at a cap of 3 sees the
+fourth tab get `429` and back off forever. Sharing one stream between tabs avoids that, and it also saves a broker
+connection per tab.
+
+The approach below uses two browser APIs:
+
+* **Web Locks** (`navigator.locks`) pick a leader. Only one tab at a time holds the lock, and the browser releases it
+  when that tab closes or crashes, so a waiting tab takes over without any heartbeat code.
+* **`BroadcastChannel`** passes each event from the leader to the other tabs of the same origin.
+
+```javascript
+function shareMessageStream({ streamKey, apiBaseUrl, getAccessToken, onEvent, signal }) {
+  const channel = new BroadcastChannel(streamKey);
+  channel.onmessage = (message) => onEvent(message.data.eventName, message.data.data);
+  signal?.addEventListener("abort", () => channel.close(), { once: true });
+
+  // Every tab queues for the lock. The callback runs in one tab at a time, and the lock is held until it returns.
+  return navigator.locks
+    .request(`${streamKey}:leader`, { signal }, () =>
+      streamWithBackoff({
+        apiBaseUrl,
+        getAccessToken,
+        signal,
+        onEvent: (eventName, data) => {
+          // A BroadcastChannel does not deliver to the tab that posted, so the leader handles its own copy here.
+          onEvent(eventName, data);
+          channel.postMessage({ eventName, data });
+        },
+      }),
+    )
+    .catch((error) => {
+      if (error.name !== "AbortError") {
+        throw error;
+      }
+    });
+}
+```
+
+Usage is the same as before, plus a key:
+
+```javascript
+const stop = new AbortController();
+
+shareMessageStream({
+  // Include the user, so two accounts signed in to the same browser (in different tabs) do not share a stream.
+  streamKey: `example-messages:${userId}`,
+  apiBaseUrl: "https://api.example.com",
+  getAccessToken: () => auth.getAccessToken(),
+  onEvent: (eventName, data) => console.log(`[${eventName}] ${data}`),
+  signal: stop.signal,
+});
+```
+
+Things to know before relying on it:
+
+* **Sharing is per origin and per browser profile.** Other browsers, other devices, and private windows each elect
+  their own leader and use their own slot. The cap still has to allow for those.
+* **Events can be missed during a handover.** When the leader tab closes, there is a short gap before the next tab
+  connects. This template's stream has no event IDs or replay, so anything published in that gap is lost. If that
+  matters, have the new leader reload current state after it connects.
+* **Mobile browsers may freeze background tabs.** A frozen leader can keep the lock without receiving anything. If
+  that is a problem, abort the stream on `visibilitychange` when the page is hidden, and request the lock again when it
+  becomes visible.
+* **Stop it on sign-out.** Abort the signal in every tab (for example by broadcasting a sign-out message), or a
+  leftover leader keeps streaming with the old user's token until that token expires.
+* A `SharedWorker` that holds the only connection is another way to do this. Support for it has historically been
+  missing on some mobile browsers, so check your audience's browsers before choosing it. Web Locks and
+  `BroadcastChannel` keep everything in the page.
 
 ## Python
 
