@@ -23,6 +23,19 @@ This template has a simple messaging example:
 * The GET endpoint at `/messages/event-stream` can be used by a client to receive events related to their user. Users
   will not receive messages intended for other users.
 
+### Remove the Send Endpoint Unless You Need It
+
+Unless you are building some kind of messaging application, remove `POST /messages` (the `Post` action on
+`MessageController`, with its `SendExampleMessageCommand` and handler). It was added mostly as a convenient way to
+trigger events for an SSE demonstration, not as a pattern to copy.
+
+In a typical API, events come from the server's own work: an upload finished validating, an order changed state, a
+background job completed. The code doing that work publishes the event with `IApiClientEventSender<T>` (or a domain
+service like `IExampleMessageSendService`). Letting clients publish arbitrary text to other connections opens a channel
+you then have to police for size, rate, and content, and most applications have no use for it.
+
+Keep the event stream endpoint and the receive side. Those are the parts most applications want.
+
 # Configuration Options
 
 The MQTT client settings are listed in the [test/local README](../../test/local/README.md#messages-server-sent-events).
