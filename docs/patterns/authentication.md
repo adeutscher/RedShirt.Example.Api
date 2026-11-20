@@ -22,6 +22,10 @@ Small reminder that **authorization** is different from **authentication**:
     * The transformer inherits from `IClaimsTransformation` which defines the async `TransformAsync` method, so making
       some sort of callout to resolve roles to permissions isn't out of the question. However, given that it runs with
       every request some per-instance caching is probably in order.
+    * Permissions belong to this API, not to the token. Any `permission` claims that arrive in the token are removed
+      (with a one-time warning in the log), and the mapped permissions are added on a separate identity whose
+      authentication type is `RedShirt.Example.Api.Permissions`. Without this, a misconfigured identity provider
+      mapper (for example, one fed by a user-editable attribute) could hand out `api:unrestricted` directly.
 3. Authorization policies are created according to calling `AddAuthentication` (an extension on `IServiceCollection`).
     * Authorization falls back to a defined fallback policy if a specific policy is not named.
     * Authorization policies have requirements.

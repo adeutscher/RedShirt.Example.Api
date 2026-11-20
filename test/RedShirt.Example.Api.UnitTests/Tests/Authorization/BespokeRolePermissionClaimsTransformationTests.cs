@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using RedShirt.Example.Api.Authorization;
 using RedShirt.Example.Api.Authorization.Constants;
 using System.Security.Claims;
@@ -20,10 +21,24 @@ public class BespokeRolePermissionClaimsTransformationTests
         return new ClaimsPrincipal(identity);
     }
 
+    private static BespokeRolePermissionClaimsTransformation CreateTransformation()
+    {
+        return new BespokeRolePermissionClaimsTransformation(
+            NullLogger<BespokeRolePermissionClaimsTransformation>.Instance);
+    }
+
+    private static string[] Permissions(ClaimsPrincipal principal)
+    {
+        return principal.FindAll(BespokeAuthorizationPermissions.ClaimType)
+            .Select(claim => claim.Value)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+    }
+
     [Fact]
     public async Task TransformAsync_Admin_AddsUnrestrictedPermissionClaim()
     {
-        var transformation = new BespokeRolePermissionClaimsTransformation();
+        var transformation = CreateTransformation();
 
         var principal = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.Admin));
 
@@ -33,24 +48,75 @@ public class BespokeRolePermissionClaimsTransformationTests
     }
 
     [Fact]
-    public async Task TransformAsync_AlreadyHasPermissionClaim_DoesNotAddAgain()
+    public async Task TransformAsync_CalledTwice_DoesNotAddAgain()
+    {
+        var transformation = CreateTransformation();
+
+        var once = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.Analyst));
+        var twice = await transformation.TransformAsync(once);
+
+        Assert.Equal([BespokeAuthorizationPermissions.ProductRead], Permissions(twice));
+        Assert.Single(twice.Identities,
+            identity => identity.AuthenticationType
+                        == BespokeRolePermissionClaimsTransformation.PermissionsAuthenticationType);
+    }
+
+    [Fact]
+    public async Task TransformAsync_TokenPermissionClaimWithoutRoles_GrantsNothing()
     {
         var identity = new ClaimsIdentity("test", "preferred_username", "role");
-        identity.AddClaim(new Claim("role", BespokeAuthorizationRoles.Admin));
-        identity.AddClaim(new Claim(BespokeAuthorizationPermissions.ClaimType, "preexisting"));
-        var transformation = new BespokeRolePermissionClaimsTransformation();
+        identity.AddClaim(new Claim(BespokeAuthorizationPermissions.ClaimType,
+            BespokeAuthorizationPermissions.Unrestricted));
+        identity.AddClaim(new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Write));
+        var transformation = CreateTransformation();
 
         var principal = await transformation.TransformAsync(new ClaimsPrincipal(identity));
 
-        Assert.Equal(
-            ["preexisting"],
-            principal.FindAll(BespokeAuthorizationPermissions.ClaimType).Select(claim => claim.Value));
+        Assert.Empty(Permissions(principal));
+    }
+
+    [Fact]
+    public async Task TransformAsync_TokenPermissionClaimWithRole_GrantsOnlyMappedPermissions()
+    {
+        var identity = new ClaimsIdentity("test", "preferred_username", "role");
+        identity.AddClaim(new Claim("role", BespokeAuthorizationRoles.Analyst));
+        identity.AddClaim(new Claim(BespokeAuthorizationPermissions.ClaimType,
+            BespokeAuthorizationPermissions.Unrestricted));
+        var transformation = CreateTransformation();
+
+        var principal = await transformation.TransformAsync(new ClaimsPrincipal(identity));
+
+        Assert.Equal([BespokeAuthorizationPermissions.ProductRead], Permissions(principal));
+    }
+
+    [Fact]
+    public async Task TransformAsync_TokenPermissionClaimOnSecondIdentity_IsRemoved()
+    {
+        var principal = PrincipalWithRoles(BespokeAuthorizationRoles.Analyst);
+        principal.AddIdentity(new ClaimsIdentity(
+            [new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Unrestricted)],
+            "other"));
+        var transformation = CreateTransformation();
+
+        var result = await transformation.TransformAsync(principal);
+
+        Assert.Equal([BespokeAuthorizationPermissions.ProductRead], Permissions(result));
+    }
+
+    [Fact]
+    public async Task TransformAsync_KeepsTokenIdentityAsPrimary()
+    {
+        var transformation = CreateTransformation();
+
+        var principal = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.Analyst));
+
+        Assert.Equal("test", principal.Identity?.AuthenticationType);
     }
 
     [Fact]
     public async Task TransformAsync_Analyst_AddsProductReadPermissionClaim()
     {
-        var transformation = new BespokeRolePermissionClaimsTransformation();
+        var transformation = CreateTransformation();
 
         var principal = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.Analyst));
 
@@ -62,7 +128,7 @@ public class BespokeRolePermissionClaimsTransformationTests
     [Fact]
     public async Task TransformAsync_Developer_AddsFullAccessPermissionClaimsWithoutUnrestricted()
     {
-        var transformation = new BespokeRolePermissionClaimsTransformation();
+        var transformation = CreateTransformation();
 
         var principal = await transformation.TransformAsync(PrincipalWithRoles(BespokeAuthorizationRoles.Developer));
 
@@ -93,7 +159,7 @@ public class BespokeRolePermissionClaimsTransformationTests
     [Fact]
     public async Task TransformAsync_Unauthenticated_DoesNotAddClaims()
     {
-        var transformation = new BespokeRolePermissionClaimsTransformation();
+        var transformation = CreateTransformation();
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
         var result = await transformation.TransformAsync(principal);

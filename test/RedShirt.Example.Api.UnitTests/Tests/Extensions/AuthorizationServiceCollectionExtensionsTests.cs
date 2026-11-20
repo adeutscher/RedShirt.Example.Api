@@ -112,6 +112,31 @@ public class AuthorizationServiceCollectionExtensionsTests
         Assert.False(read.Succeeded);
     }
 
+    [Fact]
+    public async Task AuthorizeAsync_TokenSuppliedPermissionClaims_AreNotTrusted()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddApiAuthorizationPolicies();
+
+        using var provider = services.BuildServiceProvider();
+        var transformation = provider.GetRequiredService<IClaimsTransformation>();
+        var authorization = provider.GetRequiredService<IAuthorizationService>();
+
+        var identity = new ClaimsIdentity("test", "preferred_username", "role");
+        identity.AddClaim(new Claim(BespokeAuthorizationPermissions.ClaimType,
+            BespokeAuthorizationPermissions.Unrestricted));
+        identity.AddClaim(new Claim(BespokeAuthorizationPermissions.ClaimType, BespokeAuthorizationPermissions.Write));
+        var user = await transformation.TransformAsync(new ClaimsPrincipal(identity));
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Method = HttpMethods.Get;
+
+        var write = await authorization.AuthorizeAsync(user, httpContext, BespokeAuthorizationPolicies.Write);
+
+        Assert.False(write.Succeeded);
+        Assert.False(CustomerScope.IsUnrestricted(user));
+    }
+
     [Theory]
     [InlineData(BespokeAuthorizationRoles.Analyst, BespokeAuthorizationPolicies.ProductReadApproved, true)]
     [InlineData(BespokeAuthorizationRoles.Analyst, BespokeAuthorizationPolicies.ProductWrite, false)]
