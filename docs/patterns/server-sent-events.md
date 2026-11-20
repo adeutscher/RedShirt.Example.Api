@@ -27,6 +27,22 @@ This template has a simple messaging example:
 
 The MQTT client settings are listed in the [test/local README](../../test/local/README.md#messages-server-sent-events).
 
+## Payload Size From the Broker
+
+`ClientEvents:Mqtt:MaxPayloadBytes` (environment variable `CLIENT_EVENTS__MQTT__MAX_PAYLOAD_BYTES`) is the largest MQTT
+payload, in bytes, that the API passes on to event streams.
+
+* It is checked before the payload is turned into a string or deserialized. A larger payload is dropped with a
+  warning that names the topic and the size. Later messages on the same stream still arrive.
+* When unset, the limit is 131072 bytes (128 KiB). That matches the largest message AWS IoT Core accepts, so anything
+  such a broker delivers still fits, while one oversized message cannot take much memory on each open stream.
+* Zero or negative turns the check off, which is logged as a warning the first time a stream opens.
+
+The check is on the receive side because the API is not the only thing that can publish to the broker. Other services,
+or anything that has broker credentials, can publish to the same topics, so what the send endpoint accepts says nothing
+about what arrives. If your broker has its own limit (for example Mosquitto's `message_size_limit`), keep this setting
+at or below it.
+
 ## Connections Per User
 
 `ServerSentEvents:MaxConnectionsPerUser` (environment variable `SERVER_SENT_EVENTS__MAX_CONNECTIONS_PER_USER`) caps how
